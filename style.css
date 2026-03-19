@@ -1,22 +1,85 @@
+/* 1. Общие настройки */
+:root {
+    --primary-green: #2B6446; /* Твой зеленый */
+    --light-white: #FFFFFF; /* Чистый белый */
+}
+
 body {
-    background-color: #2B6446 ;
-    color: #2d3436;
+    background-color: var(--primary-green) !important;
+    color: var(--light-white) !important;
+    font-family: 'Arial', sans-serif; /* Можно поменять на шрифт из логотипа позже */
 }
 
+/* 2. Навигация */
 .custom-nav {
-    background-color: white;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    background-color: #ffffff !important;
+    padding: 10px 0;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
 }
 
-.logo-text {
-    font-weight: 800;
+.logo-img img {
+    height: 80px; /* Було 40px, поставив 80px. Можеш змінити це число під себе */
+    width: auto;
+    transition: 0.3s;
+}
+
+.nav-link {
     color: #2B6446 !important;
+    font-weight: 600;
+}
+
+/* Кнопка переключения языков */
+.btn-lang {
+    background-color: #2B6446 !important;
+    color: #ffffff !important;
+    border-radius: 50px;
+    padding: 5px 18px;
+    font-weight: bold;
+    border: none;
+}
+
+.btn-lang:hover {
+    background-color: #f8f9fa;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.logo-wrap {
+    text-decoration: none;
+    line-height: 0.8;
+}
+.logo-s {
+    font-size: 4.5rem; /* Размер буквы S */
+    font-weight: 700;
+    color: #2B6446;
+    font-family: "Arial Black", sans-serif;
+    margin-right: 5px;
+}
+.logo-text-stack {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: #2B6446;
+}
+.logo-lova {
+    font-size: 1.8rem;
+    font-family: "Times New Roman", serif; /* Засечки как в оригинале */
+    margin-bottom: -2px;
+}
+.logo-sofi {
+    font-size: 1.8rem;
+    font-weight: bold;
+    font-family: "Times New Roman", serif;
     letter-spacing: 1px;
 }
-
+.logo-sub {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    font-family: Arial, sans-serif;
+    margin-top: 2px;
+}
+/* 3. Hero секция */
 .hero-section {
-    background: linear-gradient(rgba(13, 110, 253, 0.05), rgba(13, 110, 253, 0.1)), url('https://via.placeholder.com/1200x400');
-    background-size: cover;
     padding: 100px 0;
 }
 
@@ -26,27 +89,51 @@ body {
     margin-bottom: 20px;
 }
 
+.hero-subtitle {
+    font-size: 1.25rem;
+}
+
+/* Большая кнопка в Hero */
+.btn-custom-lg {
+    background-color: var(--light-white);
+    color: var(--primary-green);
+    padding: 15px 40px;
+    border-radius: 50px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: 0.3s ease;
+}
+
+.btn-custom-lg:hover {
+    background-color: #f8f9fa;
+    color: var(--primary-green);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* 4. Карточки цен (Ящички) */
 .price-card {
     border: none;
     border-radius: 20px;
     padding: 20px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    background-color: var(--light-white); /* Белый фон */
+    color: var(--primary-green) !important; /* Зеленый текст */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
 }
 
 .price-card:hover {
     transform: translateY(-10px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
 }
 
+/* Зеленая рамка для HIT */
 .price-card.featured {
-    border: 2px solid #2B6446;
+    border: 2px solid var(--primary-green);
 }
 
 .price-tag {
     font-size: 2.5rem;
     font-weight: 800;
-    color: #2B6446;
     margin: 20px 0;
 }
 
@@ -55,23 +142,38 @@ body {
     color: #636e72;
 }
 
-.btn-primary-custom {
-    background-color: #2B6446;
-    color: white;
+/* 5. Кнопки внутри карточек */
+.btn-primary-green {
+    background-color: var(--primary-green);
+    color: var(--light-white);
     border-radius: 10px;
     padding: 12px;
     font-weight: 600;
+    border: none;
+    transition: 0.3s ease;
 }
 
-.btn-custom-lg {
-    background-color: #2B6446;
+.btn-primary-green:hover {
+    background-color: #26593e;
     color: white;
-    padding: 15px 40px;
-    border-radius: 50px;
-    font-weight: bold;
-    text-decoration: none;
 }
 
+.btn-outline-primary-green {
+    background-color: transparent;
+    color: var(--primary-green);
+    border-radius: 10px;
+    padding: 12px;
+    font-weight: 600;
+    border: 2px solid var(--primary-green);
+    transition: 0.3s ease;
+}
+
+.btn-outline-primary-green:hover {
+    background-color: var(--primary-green);
+    color: var(--light-white);
+}
+
+/* 6. Список фишек */
 .features-list {
     list-style: none;
     padding: 0;
@@ -81,45 +183,18 @@ body {
 
 .features-list li::before {
     content: "✓";
-    color: #2B6446;
     font-weight: bold;
     margin-right: 10px;
 }
 
-.price-card {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    border: 2px solid transparent;
-    transition: all 0.4s ease;
-    cursor: pointer;
-    background: #fff;
-    height: 100%; 
+/* Подвал */
+.footer {
+    padding: 40px 0;
+    border-top: 1px solid rgba(255,255,255,0.1);
 }
 
-.price-card:hover {
-    transform: translateY(-15px);
-    border-color: #2B6446;
-    box-shadow: 0 20px 40px rgba(13, 110, 253, 0.15); 
-}
-
-.price-card:hover h3 {
-    color: #2B6446;
-    transition: 0.3s;
-}
-
-.price-card:hover .btn-outline-primary {
-    background-color: #2B6446;;
-    color: white;
-}
-
-.price-card.featured {
-    background-color: #ffffff;
-    position: relative;
-    overflow: hidden;
-}
-
-.badge-hit {
+/* Эффект для "Хита продаж" (групповое обучение) */
+.price-card.featured .badge-hit {
     position: absolute;
     top: 15px;
     right: -30px;
@@ -129,36 +204,4 @@ body {
     transform: rotate(45deg);
     font-size: 0.8rem;
     font-weight: bold;
-}
-/*trial*/
-.price-card.free-trial {
-    border: 2px solid #2B6446;
-}
-.free-trial .price-tag {
-    color: #2B6446;
-}
-.btn-free {
-    background-color: #2B6446;
-    color: white;
-    border: none;
-    transition: 0.3s;
-}
-.btn-free:hover {
-    background-color: #0f4726;
-    color: white;
-    box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
-}
-.free-trial:hover {
-    border-style: solid;
-    border-color: #6c757d;
-}
-
-.btn-outline-secondary:hover {
-    background-color: #6c757d;
-    color: white;
-}
-.card-body {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
 }

@@ -3,83 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SlovaSofi School | Škola jazykov</title>
+    <title>SlovaSofi School | Школа мов</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="bg-primary-green text-light-white">
 
-    <nav class="navbar navbar-expand-lg sticky-top custom-nav">
-      <div class="container">
-        <a class="navbar-brand logo-text" href="#">SLOVASOFI - LANGUAGE SCHOOL</a>
-        <div class="navbar-nav ms-auto">
-          <a class="nav-link" href="#prices">Kurzy</a>
-          <a class="nav-link" href="#contact">Kontakt</a>
+<nav class="navbar navbar-expand-lg sticky-top custom-nav navbar-light">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center logo-wrap" href="#">
+        <span class="logo-s">S</span>
+        <div class="logo-text-stack">
+            <span class="logo-lova">lova</span>
+            <span class="logo-sofi">SOFI</span>
+            <span class="logo-sub">LANGUAGE SCHOOL</span>
         </div>
-      </div>
-    </nav>
+    </a>
+    
+    <div class="d-flex align-items-center ms-auto">
+        <div class="navbar-nav me-3">
+          <a class="nav-link" href="#prices">Курси</a>
+          <a class="nav-link" href="#contact">Контакти</a>
+        </div>
+        <button class="btn btn-lang">UA</button>
+    </div>
+  </div>
+</nav>
 
     <header class="hero-section text-center">
         <div class="container">
-            <h1 class="hero-title">Slovenčina s ľahkosťou</h1>
-            <p class="hero-subtitle">Выучи словацкий язык для жизни и работы в Словакии.</p>
-            <a href="#prices" class="btn btn-custom-lg">Посмотреть цены</a>
+            <h1 class="hero-title">Словацька мова легко</h1>
+            <p class="hero-subtitle">Вивчіть словацька мову для життя та роботи в Словаччині.</p>
+            <a href="#prices" class="btn btn-custom-lg">Переглянути ціни</a>
         </div>
     </header>
 
     <section id="prices" class="container py-5">
         <div class="row g-4 justify-content-center">
-            <div class="col-md-4">
-                <div class="card h-100 price-card free-trial">
-        <div class="card-body text-center"> <h3>Пробный урок</h3>
-            <div class="price-tag">0&euro;<span>/Бесплатно</span></div>
-            <ul class="features-list text-start">
-                <li>Знакомство с учителем</li>
-                <li>Тест уровня языка</li>
-                <li>30 минут общения</li>
-            </ul>
-            <a href="https://l.instagram.com/?u=https%3A%2F%2Ft.me%2Fslovasofii%3Futm_source%3Dig%26utm_medium%3Dsocial%26utm_content%3Dlink_in_bio%26fbclid%3DPAZXh0bgNhZW0CMTEAc3J0YwZhcHBfaWQMMjU2MjgxMDQwNTU4AAGnp_gxkvrBAt7Y5lu7f-eBmRh5uP_MCcmTP-iTj1ZHBskylOK14g1VFZ0C8vc_aem_4OXoVbeQUydbb1pTdJjayg&e=AT7Wtro0_eCpn1px2mZ58n0DEF6fJS0nitM9SewLY9HWkkmc9BOMd7VDZbPQnhgBJTtZc3QtYp_kaqMcDuWZLmGApJAFSnQL8V6L-NawxHt6Ug-b-1mISWHPlA" class="btn btn-free w-100 py-3 fw-bold">Записаться бесплатно</a>
-        </div>
-    </div>
-            </div>
             
             <div class="col-md-4">
-        <div class="card h-100 price-card">
-            <div class="card-body">
-                <h3>Индивидуально</h3>
-                <div class="price-tag">14&euro;<span>/Урок</span></div>
-                <ul class="features-list">
-                    <li>Персональный график</li>
-                    <li>Упор на разговор</li>
-                </ul>
-                <a href="https://buy.stripe.com/test_6oUdR80V43mCcZS7WH4Vy00" class="btn btn-outline-primary w-100 py-3 fw-bold">Заказать урок</a>
+                <div class="card h-100 price-card free-trial">
+                    <div class="card-body">
+                        <h3>Пробний урок</h3>
+                        <div class="price-tag">0&euro;<span>/zadarmo</span></div>
+                        <ul class="features-list">
+                            <li>Знайомство з вчителем</li>
+                            <li>Тестування рівня мови</li>
+                            <li>30 хвилин спілкування</li>
+                        </ul>
+                        <a href="https://t.me/твой_ник" class="btn btn-free w-100 py-3 fw-bold">Записатися безкоштовно</a>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <div class="col-md-4">
-        <div class="card h-100 price-card featured">
-            <div class="card-body">
-                <div class="badge-hit">HIT</div>
-                <h3>Skupina A1</h3>
-                <div class="price-tag">49&euro;<span>/Курс</span></div>
-                <ul class="features-list">
-                    <li>10 занятий</li>
-                    <li>До 3 человек в группе</li>
-                </ul>
-                <a href="https://buy.stripe.com/test_8x29ASgU20aq2leccX4Vy01" class="btn btn-primary-custom w-100 py-3 fw-bold">Купить курс</a>
+            <div class="col-md-4">
+                <div class="card h-100 price-card">
+                    <div class="card-body">
+                        <h3>Індивідуально</h3>
+                        <div class="price-tag">14&euro;<span>/lekcia</span></div>
+                        <ul class="features-list">
+                            <li>Персональний графік</li>
+                            <li>Упор на розмову</li>
+                        </ul>
+                        <a href="https://buy.stripe.com/test_6oUdR80V43mCcZS7WH4Vy00" class="btn btn-outline-primary-green w-100 py-3 fw-bold">Замовити урок</a>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 price-card featured">
+                    <div class="card-body">
+                        <div class="badge-hit">HIT</div>
+                        <h3>Група А1</h3>
+                        <div class="price-tag">49&euro;<span>/kurz</span></div>
+                        <ul class="features-list">
+                            <li>12 lekcií</li>
+                            <li>Malá група</li>
+                        </ul>
+                        <a href="https://buy.stripe.com/test_8x29ASgU20aq2leccX4Vy01" class="btn btn-primary-green w-100 py-3 fw-bold">Купити зараз</a>
+                    </div>
+                </div>
+            </div>
 
         </div>
     </section>
 
     <footer class="footer text-center">
         <div class="container">
-            <p>© 2026 SlovaSofi s.r.o. | Bratislava</p>
+            <p>© 2026 Slovenský Svet s.r.o. | Bratislava</p>
         </div>
     </footer>
 
