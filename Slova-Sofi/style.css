@@ -1,0 +1,164 @@
+body {
+    background-color: #fcfcfc;
+    color: #2d3436;
+}
+
+.custom-nav {
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.logo-text {
+    font-weight: 800;
+    color: #0d6efd !important;
+    letter-spacing: 1px;
+}
+
+.hero-section {
+    background: linear-gradient(rgba(13, 110, 253, 0.05), rgba(13, 110, 253, 0.1)), url('https://via.placeholder.com/1200x400');
+    background-size: cover;
+    padding: 100px 0;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.price-card {
+    border: none;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.price-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+}
+
+.price-card.featured {
+    border: 2px solid #0d6efd;
+}
+
+.price-tag {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #0d6efd;
+    margin: 20px 0;
+}
+
+.price-tag span {
+    font-size: 1rem;
+    color: #636e72;
+}
+
+.btn-primary-custom {
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 10px;
+    padding: 12px;
+    font-weight: 600;
+}
+
+.btn-custom-lg {
+    background-color: #0d6efd;
+    color: white;
+    padding: 15px 40px;
+    border-radius: 50px;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.features-list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 30px;
+    text-align: left;
+}
+
+.features-list li::before {
+    content: "✓";
+    color: #0d6efd;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.price-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Это вытолкнет кнопку вниз */
+    border: 2px solid transparent;
+    transition: all 0.4s ease;
+    cursor: pointer;
+    background: #fff;
+    height: 100%; /* Чтобы все карточки в ряду были одной высоты */
+}
+
+.price-card:hover {
+    transform: translateY(-15px);
+    border-color: #0d6efd; 
+    box-shadow: 0 20px 40px rgba(13, 110, 253, 0.15); 
+}
+
+.price-card:hover h3 {
+    color: #0d6efd;
+    transition: 0.3s;
+}
+
+.price-card:hover .btn-outline-primary {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.price-card.featured {
+    background-color: #ffffff;
+    position: relative;
+    overflow: hidden;
+}
+
+.badge-hit {
+    position: absolute;
+    top: 15px;
+    right: -30px;
+    background: #ff4757;
+    color: white;
+    padding: 5px 35px;
+    transform: rotate(45deg);
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+/*trial*/
+.price-card.free-trial {
+    border: 2px solid #2ecc71; /* Зеленый цвет */
+}
+.free-trial .price-tag {
+    color: #2ecc71; /* Цвет цены */
+}
+.btn-free {
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    transition: 0.3s;
+}
+.btn-free:hover {
+    background-color: #27ae60;
+    color: white;
+    box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+}
+.free-trial:hover {
+    border-style: solid;
+    border-color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: white;
+}
+.card-body {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
