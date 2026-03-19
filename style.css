@@ -1,5 +1,5 @@
 body {
-    background-color: #fcfcfc;
+    background-color: #2B6446 ;
     color: #2d3436;
 }
 
@@ -10,7 +10,7 @@ body {
 
 .logo-text {
     font-weight: 800;
-    color: #0d6efd !important;
+    color: #2B6446 !important;
     letter-spacing: 1px;
 }
 
@@ -40,13 +40,13 @@ body {
 }
 
 .price-card.featured {
-    border: 2px solid #0d6efd;
+    border: 2px solid #2B6446;
 }
 
 .price-tag {
     font-size: 2.5rem;
     font-weight: 800;
-    color: #0d6efd;
+    color: #2B6446;
     margin: 20px 0;
 }
 
@@ -56,7 +56,7 @@ body {
 }
 
 .btn-primary-custom {
-    background-color: #0d6efd;
+    background-color: #2B6446;
     color: white;
     border-radius: 10px;
     padding: 12px;
@@ -64,7 +64,7 @@ body {
 }
 
 .btn-custom-lg {
-    background-color: #0d6efd;
+    background-color: #2B6446;
     color: white;
     padding: 15px 40px;
     border-radius: 50px;
@@ -81,7 +81,7 @@ body {
 
 .features-list li::before {
     content: "✓";
-    color: #0d6efd;
+    color: #2B6446;
     font-weight: bold;
     margin-right: 10px;
 }
@@ -89,27 +89,27 @@ body {
 .price-card {
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* Это вытолкнет кнопку вниз */
+    justify-content: space-between;
     border: 2px solid transparent;
     transition: all 0.4s ease;
     cursor: pointer;
     background: #fff;
-    height: 100%; /* Чтобы все карточки в ряду были одной высоты */
+    height: 100%; 
 }
 
 .price-card:hover {
     transform: translateY(-15px);
-    border-color: #0d6efd; 
+    border-color: #2B6446;
     box-shadow: 0 20px 40px rgba(13, 110, 253, 0.15); 
 }
 
 .price-card:hover h3 {
-    color: #0d6efd;
+    color: #2B6446;
     transition: 0.3s;
 }
 
 .price-card:hover .btn-outline-primary {
-    background-color: #0d6efd;
+    background-color: #2B6446;;
     color: white;
 }
 
@@ -132,19 +132,19 @@ body {
 }
 /*trial*/
 .price-card.free-trial {
-    border: 2px solid #2ecc71; /* Зеленый цвет */
+    border: 2px solid #2B6446;
 }
 .free-trial .price-tag {
-    color: #2ecc71; /* Цвет цены */
+    color: #2B6446;
 }
 .btn-free {
-    background-color: #2ecc71;
+    background-color: #2B6446;
     color: white;
     border: none;
     transition: 0.3s;
 }
 .btn-free:hover {
-    background-color: #27ae60;
+    background-color: #0f4726;
     color: white;
     box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
 }
