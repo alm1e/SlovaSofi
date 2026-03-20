@@ -108,26 +108,42 @@ body {
     border: none;
     border-radius: 20px;
     padding: 20px;
-    background-color: var(--light-white); /* Белый фон */
-    color: var(--primary-green) !important; /* Зеленый текст */
+    background-color: var(--light-white); 
+    color: var(--primary-green) !important; 
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
+    
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Чтобы все карточки в ряду были одной высоты */
+    
+    position: relative; /* Говорим ярлыку, что он внутри этой карточки */
+    overflow: hidden;
 }
+
 
 .price-card:hover {
     transform: translateY(-10px);
     box-shadow: 0 15px 30px rgba(0,0,0,0.2);
 }
 
+.card-body {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Заставляет тело карточки занимать всё место */
+    padding: 0;   /* Убираем лишние отступы, если они мешают */
+}
+
 /* Зеленая рамка для HIT */
 .price-card.featured {
-    border: 2px solid var(--primary-green);
+    border: 3px solid var(--primary-green);
+    margin-top: 0 !important;
 }
 
 .price-tag {
     font-size: 2.5rem;
     font-weight: 800;
-    margin: 20px 0;
+    margin: 10px 0 20px 0;
 }
 
 .price-tag span {
@@ -135,66 +151,51 @@ body {
     color: #636e72;
 }
 
-/* 5. Кнопки внутри карточек */
-.btn-primary-green {
-    background-color: var(--primary-green);
-    color: var(--light-white);
-    border-radius: 10px;
-    padding: 12px;
-    font-weight: 600;
+.btn-card-green-cta {
+    background-color: var(--primary-green) !important;
+    color: var(--light-white) !important;
+    border-radius: 12px;
+    padding: 15px;
+    font-weight: 700;
     border: none;
-    transition: 0.3s ease;
+    transition: all 0.3s ease;
+    text-align: center;
+    text-decoration: none;
+    margin-top: auto; /* Финальный толчок кнопки вниз */
+}
+.btn-card-green-cta:hover {
+    background-color: #214d35 !important;
+    transform: scale(1.02);
 }
 
-.btn-primary-green:hover {
-    background-color: #26593e;
-    color: white;
-}
-
-.btn-outline-primary-green {
-    background-color: transparent;
-    color: var(--primary-green);
-    border-radius: 10px;
-    padding: 12px;
-    font-weight: 600;
-    border: 2px solid var(--primary-green);
-    transition: 0.3s ease;
-}
-
-.btn-outline-primary-green:hover {
-    background-color: var(--primary-green);
-    color: var(--light-white);
-}
-
-/* 6. Список фишек */
 .features-list {
     list-style: none;
     padding: 0;
     margin-bottom: 30px;
     text-align: left;
+    flex-grow: 1; /* РАСТЯГИВАЕТСЯ, ТКЛЯЯ КНОПКУ ВНИЗ */
 }
-
+.features-list li {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+}
 .features-list li::before {
     content: "✓";
     font-weight: bold;
     margin-right: 10px;
+    color: var(--primary-green);
 }
 
-/* Подвал */
 .footer {
     padding: 40px 0;
     border-top: 1px solid rgba(255,255,255,0.1);
 }
 
-/* Эффект для "Хита продаж" (групповое обучение) */
-.price-card.featured .badge-hit {
-    position: absolute;
-    top: 15px;
-    right: -30px;
-    background: #ff4757;
-    color: white;
-    padding: 5px 35px;
-    transform: rotate(45deg);
-    font-size: 0.8rem;
-    font-weight: bold;
+.badge-hit-svg {
+    position: absolute; /* Абсолют относительно карточки */
+    top: 0;             /* Мертво прилипаем к верхнему краю */
+    right: 0;           /* Мертво прилипаем к правому краю */
+    z-index: 10;        /* Поверх текста */
 }
+
