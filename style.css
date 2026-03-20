@@ -226,3 +226,8 @@ body {
 .btn-lang-item:hover:not(.active) {
     background-color: #e2e2e2;
 }
+.free-trial-wide {
+    background-color: #ffffff;
+    border: 2px solid #2B6446 !important;
+    border-radius: 20px !important;
+}
