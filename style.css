@@ -17,18 +17,11 @@ body {
     box-shadow: 0 2px 15px rgba(0,0,0,0.05);
 }
 
-.logo-img img {
-    height: 80px; /* Було 40px, поставив 80px. Можеш змінити це число під себе */
-    width: auto;
-    transition: 0.3s;
-}
-
 .nav-link {
     color: #2B6446 !important;
     font-weight: 600;
 }
 
-/* Кнопка переключения языков */
 .btn-lang {
     background-color: #2B6446 !important;
     color: #ffffff !important;
