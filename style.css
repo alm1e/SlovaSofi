@@ -188,33 +188,35 @@ body {
 /* Контейнер для кнопок */
 .lang-switcher {
     display: flex;
-    background-color: #f1f1f1;
+    background-color: #f1f1f1; 
     border-radius: 50px;
-    padding: 3px;
-    margin-left: 15px;
-    flex-shrink: 0; 
+    padding: 2px;
+    margin-left: 20px;
+    border: none; 
+    width: fit-content;
 }
-@media (max-width: 991.98px) {
-    .lang-switcher {
-        margin-left: 0;
-        margin-top: 15px; /* Отступ от ссылок меню сверху */
-        display: inline-flex; /* Чтобы он не растягивался на всю ширину */
-        align-self: flex-start; /* Прижимаем к левому краю в мобильном меню */
-    }
-    /* Сами кнопки выбора языка */
-    .btn-lang-item {
-        border: none;
+ /* Сами кнопки выбора языка */   
+.btn-lang-item {
+        border: none !important; 
         background: transparent;
         color: #2B6446;
         font-size: 0.75rem;
         font-weight: bold;
-        padding: 5px 12px;
+        padding: 6px 14px;
         border-radius: 50px;
         cursor: pointer;
-        transition: all 0.3s ease;
-    }
+        transition: all 0.2s ease;
+        outline: none !important;
+        box-shadow: none !important;
 }
-
+@media (max-width: 991.98px) {
+    .lang-switcher {
+        margin-left: 0;
+        margin-top: 15px; 
+        display: inline-flex; 
+        align-self: flex-start; 
+    } 
+}
 /* Стиль для активной кнопки (выбранный язык) */
 .btn-lang-item.active {
     background-color: #2B6446;
