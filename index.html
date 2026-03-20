@@ -8,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <link rel="stylesheet" href="style.css">
+    
 </head>
 <body class="bg-primary-green text-light-white">
 
@@ -24,19 +25,23 @@
     
     <div class="d-flex align-items-center ms-auto">
         <div class="navbar-nav me-3">
-          <a class="nav-link" href="#prices">Курси</a>
-          <a class="nav-link" href="#contact">Контакти</a>
+          <a class="nav-link" href="#prices" data-key="nav_courses">Курси</a>
+          <a class="nav-link" href="#contact" data-key="nav_contacts">Контакти</a>
         </div>
-        <button class="btn btn-lang">UA</button>
+        <div class="lang-switcher">
+            <button class="btn-lang-item active" onclick="changeLanguage('ua')">UA</button>
+            <button class="btn-lang-item" onclick="changeLanguage('ru')">RU</button>
+            <button class="btn-lang-item" onclick="changeLanguage('en')">EN</button>
+        </div>
     </div>
   </div>
 </nav>
 
     <header class="hero-section text-center">
         <div class="container">
-            <h1 class="hero-title">Словацька мова легко</h1>
-            <p class="hero-subtitle">Вивчіть словацька мову для життя та роботи в Словаччині.</p>
-            <a href="#prices" class="btn btn-custom-lg">Переглянути ціни</a>
+            <h1 class="hero-title" data-key="hero_title">Словацька мова легко</h1>
+            <p class="hero-subtitle" data-key="hero_sub">Вивчіть словацька мову для життя та роботи в Словаччині.</p>
+            <a href="#prices" class="btn btn-custom-lg" data-key="hero_btn">Переглянути ціни</a>
         </div>
     </header>
 
@@ -46,14 +51,14 @@
             <div class="col-md-4">
                 <div class="card h-100 price-card free-trial">
                     <div class="card-body">
-                        <h3>Пробний урок</h3>
-                        <div class="price-tag">0&euro;<span>/zadarmo</span></div>
+                        <h3 data-key="card1_title">Пробний урок</h3>
+                        <div class="price-tag">0&euro;<span data-key="card1_sub">/zadarmo</span></div>
                         <ul class="features-list">
-                            <li>Знайомство з вчителем</li>
-                            <li>Тестування рівня мови</li>
-                            <li>30 хвилин спілкування</li>
+                            <li data-key="card1_f1">Знайомство з вчителем</li>
+                            <li data-key="card1_f2">Тестування рівня мови</li>
+                            <li data-key="card1_f3">30 хвилин спілкування</li>
                         </ul>
-                        <a href="https://t.me/slovasofii" class="btn btn-card-green-cta w-100">Записатися безкоштовно</a>
+                        <a href="https://t.me/slovasofii" class="btn btn-card-green-cta w-100" data-key="card1_btn">Записатися безкоштовно</a>
                     </div>
                 </div>
             </div>
@@ -61,13 +66,13 @@
             <div class="col-md-4">
                 <div class="card h-100 price-card">
                     <div class="card-body">
-                        <h3>Індивідуально</h3>
-                        <div class="price-tag">14&euro;<span>/lekcia</span></div>
+                        <h3 data-key="card2_title">Індивідуально</h3>
+                        <div class="price-tag">14&euro;<span data-key="card2_sub">/lekcia</span></div>
                         <ul class="features-list">
-                            <li>Персональний графік</li>
-                            <li>Упор на розмову</li>
+                            <li data-key="card2_f1">Персональний графік</li>
+                            <li data-key="card2_f2">Упор на розмову</li>
                         </ul>
-                        <a href="https://buy.stripe.com/test_6oUdR80V43mCcZS7WH4Vy00" class="btn btn-card-green-cta w-100">Замовити урок</a>
+                        <a href="https://buy.stripe.com/test_6oUdR80V43mCcZS7WH4Vy00" class="btn btn-card-green-cta w-100" data-key="card2_btn">Замовити урок</a>
                     </div>
                 </div>
             </div>
@@ -79,13 +84,13 @@
                             <path d="M0 0H35L120 85V120L0 0Z" fill="#ff4757"/>
                             <text x="60" y="60" transform="rotate(45 70 60)" fill="white" font-size="16" font-weight="bold" font-family="Arial, sans-serif" text-anchor="middle">HIT</text>
                         </svg>
-                        <h3>Група А1</h3>
-                        <div class="price-tag">49&euro;<span>/kurz</span></div>
+                        <h3 data-key="card3_title">Група А1</h3>
+                        <div class="price-tag">49&euro;<span data-key="card3_sub">/kurz</span></div>
                         <ul class="features-list">
-                            <li>12 lekcií</li>
-                            <li>Malá група</li>
+                            <li data-key="card3_f1">12 lekcií</li>
+                            <li data-key="card3_f2">Malá група</li>
                         </ul>
-                        <a href="https://buy.stripe.com/test_8x29ASgU20aq2leccX4Vy01" class="btn btn-card-green-cta w-100">Купити зараз</a>
+                        <a href="https://buy.stripe.com/test_8x29ASgU20aq2leccX4Vy01" class="btn btn-card-green-cta w-100" data-key="card3_btn">Купити зараз</a>
                     </div>
                 </div>
             </div>
@@ -101,4 +106,102 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+<script>
+    const translations = {
+    'ua': {
+        'nav_courses': 'Курси',
+        'nav_contacts': 'Контакти',
+        'hero_title': 'Словацька мова легко',
+        'hero_sub': 'Вивчіть словацька мову для життя та роботи в Словаччині.',
+        'hero_btn': 'Переглянути ціни',
+        // Карточка 1
+        'card1_title': 'Пробний урок',
+        'card1_sub': '/zadarmo',
+        'card1_f1': 'Знайомство з вчителем',
+        'card1_f2': 'Тестування рівня мови',
+        'card1_f3': '30 хвилин спілкування',
+        'card1_btn': 'Записатися безкоштовно',
+        // Карточка 2
+        'card2_title': 'Індивідуально',
+        'card2_sub': '/lekcia',
+        'card2_f1': 'Персональний графік',
+        'card2_f2': 'Упор на розмову',
+        'card2_btn': 'Замовити урок',
+        // Карточка 3
+        'card3_title': 'Група А1',
+        'card3_sub': '/kurz',
+        'card3_f1': '12 lekcií',
+        'card3_f2': 'Malá група',
+        'card3_btn': 'Купити зараз'
+    },
+    'ru': {
+        'nav_courses': 'Курсы',
+        'nav_contacts': 'Контакты',
+        'hero_title': 'Словацкий язык легко',
+        'hero_sub': 'Изучите словацкий язык для жизни и работы в Словакии.',
+        'hero_btn': 'Посмотреть цены',
+        // Карточка 1
+        'card1_title': 'Пробный урок',
+        'card1_sub': '/бесплатно',
+        'card1_f1': 'Знакомство с учителем',
+        'card1_f2': 'Тестирование уровня языка',
+        'card1_f3': '30 минут общения',
+        'card1_btn': 'Записаться бесплатно',
+        // Карточка 2
+        'card2_title': 'Индивидуально',
+        'card2_sub': '/занятие',
+        'card2_f1': 'Персональный график',
+        'card2_f2': 'Упор на разговорную речь',
+        'card2_btn': 'Заказать урок',
+        // Карточка 3
+        'card3_title': 'Группа А1',
+        'card3_sub': '/курс',
+        'card3_f1': '12 занятий',
+        'card3_f2': 'Маленькая группа',
+        'card3_btn': 'Купить сейчас'
+    },
+    'en': {
+        'nav_courses': 'Courses',
+        'nav_contacts': 'Contacts',
+        'hero_title': 'Slovak Made Easy',
+        'hero_sub': 'Learn Slovak for life and work in Slovakia.',
+        'hero_btn': 'View Prices',
+        // Карточка 1
+        'card1_title': 'Trial Lesson',
+        'card1_sub': '/free',
+        'card1_f1': 'Meeting the teacher',
+        'card1_f2': 'Language level testing',
+        'card1_f3': '30 minutes of conversation',
+        'card1_btn': 'Book for Free',
+        // Карточка 2
+        'card2_title': 'Individual',
+        'card2_sub': '/lesson',
+        'card2_f1': 'Personal schedule',
+        'card2_f2': 'Focus on speaking',
+        'card2_btn': 'Order a lesson',
+        // Карточка 3
+        'card3_title': 'Group A1',
+        'card3_sub': '/course',
+        'card3_f1': '12 lessons',
+        'card3_f2': 'Small group',
+        'card3_btn': 'Buy now'
+    }
+};
+
+    function changeLanguage(lang) {
+    document.querySelectorAll('.btn-lang-item').forEach(btn => {
+        btn.classList.remove('active');
+        if(btn.innerText.toLowerCase() === lang) {
+            btn.classList.add('active');
+        }
+    });
+
+    document.querySelectorAll('[data-key]').forEach(element => {
+        const key = element.getAttribute('data-key');
+        if(translations[lang][key]) {
+            element.innerText = translations[lang][key];
+        }
+    });
+}
+</script>
 </html>

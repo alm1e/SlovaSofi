@@ -22,20 +22,6 @@ body {
     font-weight: 600;
 }
 
-.btn-lang {
-    background-color: #2B6446 !important;
-    color: #ffffff !important;
-    border-radius: 50px;
-    padding: 5px 18px;
-    font-weight: bold;
-    border: none;
-}
-
-.btn-lang:hover {
-    background-color: #f8f9fa;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
 .logo-wrap {
     text-decoration: none;
     line-height: 0.8;
@@ -199,3 +185,34 @@ body {
     z-index: 10;        /* Поверх текста */
 }
 
+/* Контейнер для кнопок */
+.lang-switcher {
+    display: flex;
+    background-color: #f1f1f1; /* Светлый фон под кнопками */
+    border-radius: 50px;
+    padding: 3px;
+    margin-left: 15px;
+}
+
+/* Сами кнопки выбора языка */
+.btn-lang-item {
+    border: none;
+    background: transparent;
+    color: #2B6446;
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 5px 12px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Стиль для активной кнопки (выбранный язык) */
+.btn-lang-item.active {
+    background-color: #2B6446;
+    color: #ffffff;
+}
+
+.btn-lang-item:hover:not(.active) {
+    background-color: #e2e2e2;
+}
