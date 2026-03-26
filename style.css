@@ -101,9 +101,9 @@ body {
     
     display: flex;
     flex-direction: column;
-    height: 100%; /* Чтобы все карточки в ряду были одной высоты */
+    height: 100%; 
     
-    position: relative; /* Говорим ярлыку, что он внутри этой карточки */
+    position: relative; 
     overflow: hidden;
 }
 
@@ -116,8 +116,8 @@ body {
 .card-body {
     display: flex;
     flex-direction: column;
-    flex-grow: 1; /* Заставляет тело карточки занимать всё место */
-    padding: 0;   /* Убираем лишние отступы, если они мешают */
+    flex-grow: 1; 
+    padding: 0;   
 }
 
 /* Зеленая рамка для HIT */
@@ -147,7 +147,7 @@ body {
     transition: all 0.3s ease;
     text-align: center;
     text-decoration: none;
-    margin-top: auto; /* Финальный толчок кнопки вниз */
+    margin-top: auto; 
 }
 .btn-card-green-cta:hover {
     background-color: #214d35 !important;
@@ -159,7 +159,7 @@ body {
     padding: 0;
     margin-bottom: 30px;
     text-align: left;
-    flex-grow: 1; /* РАСТЯГИВАЕТСЯ, ТКЛЯЯ КНОПКУ ВНИЗ */
+    flex-grow: 1; 
 }
 .features-list li {
     margin-bottom: 10px;
@@ -179,10 +179,10 @@ body {
 }
 
 .badge-hit-svg {
-    position: absolute; /* Абсолют относительно карточки */
-    top: 0;             /* Мертво прилипаем к верхнему краю */
-    right: 0;           /* Мертво прилипаем к правому краю */
-    z-index: 10;        /* Поверх текста */
+    position: absolute; 
+    top: 0;             
+    right: 0;           
+    z-index: 10;        
 }
 
 /* Контейнер для кнопок */
@@ -230,4 +230,81 @@ body {
     background-color: #ffffff;
     border: 2px solid #2B6446 !important;
     border-radius: 20px !important;
+}
+
+#teachers {
+    padding-top: 80px;
+    padding-bottom: 80px;
+}
+/* Карточка преподавателя */
+.teacher-card {
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: default;
+    height: 100%;
+    backdrop-filter: blur(5px); 
+}
+/* Эффект при наведении на карточку */
+.teacher-card:hover {
+    transform: translateY(-12px);
+    background: rgba(255, 255, 255, 0.1) !important; 
+    border-color: #2B6446 !important; 
+    shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+}
+/* Контейнер для фото */
+.teacher-avatar-container {
+    width: 180px;  
+    height: 180px; 
+    margin: 0 auto;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 5px solid #2B6446; 
+    position: relative;
+    transition: all 0.4s ease-in-out;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+}
+
+.teacher-avatar-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;  
+    transition: all 0.4s ease-in-out;
+}
+
+#teacher-sofia-img {
+    object-position: center 15%;
+}
+
+#teacher-victoria-img {
+    object-position: center; 
+}
+
+.teacher-card:hover .teacher-avatar-container {
+    transform: scale(1.15) translateY(-5px); 
+    box-shadow: 0 10px 25px rgba(43, 100, 70, 0.5); 
+}
+.teacher-card:hover .teacher-avatar-container img {
+    transform: scale(1.1); 
+}
+
+.teacher-card h3 {
+    font-size: 1.5rem;
+    margin-top: 15px;
+    letter-spacing: 0.5px;
+}
+
+.teacher-card .text-success {
+    color: #4CAF50 !important; 
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.teacher-card .opacity-75 {
+    line-height: 1.6;
+    margin-top: 10px;
+}
+
+@media (max-width: 768px) {
+    .teacher-card {
+        margin-bottom: 20px;
+    }
 }
