@@ -1,13 +1,13 @@
 /* 1. Общие настройки */
 :root {
-    --primary-green: #2B6446; /* Твой зеленый */
-    --light-white: #FFFFFF; /* Чистый белый */
+    --primary-green: #2B6446; 
+    --light-white: #FFFFFF; 
 }
 
 body {
     background-color: var(--primary-green) !important;
     color: var(--light-white) !important;
-    font-family: 'Arial', sans-serif; /* Можно поменять на шрифт из логотипа позже */
+    font-family: 'Arial', sans-serif; 
 }
 
 /* 2. Навигация */
@@ -27,7 +27,7 @@ body {
     line-height: 0.8;
 }
 .logo-s {
-    font-size: 4.5rem; /* Размер буквы S */
+    font-size: 4.5rem; 
     font-weight: 700;
     color: #2B6446;
     font-family: "Arial Black", sans-serif;
@@ -41,7 +41,7 @@ body {
 }
 .logo-lova {
     font-size: 1.8rem;
-    font-family: "Times New Roman", serif; /* Засечки как в оригинале */
+    font-family: "Times New Roman", serif; 
     margin-bottom: -2px;
 }
 .logo-sofi {
