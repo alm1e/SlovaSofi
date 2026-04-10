@@ -26,7 +26,7 @@
     <div class="d-flex align-items-center ms-auto">
         <div class="navbar-nav me-3">
             <a class="nav-link" href="#prices" data-key="nav_courses">Курси</a>
-            <a class="nav-link" href="#contact" data-key="nav_contacts">Контакти</a>
+            <a class="nav-link" href="#teachers" data-key="nav_teachers">Викладачі</a>
             <div class="lang-switcher">
                 <button class="btn-lang-item active" onclick="changeLanguage('ua')">UA</button>
                 <button class="btn-lang-item" onclick="changeLanguage('ru')">RU</button>
@@ -115,35 +115,60 @@
         </div>
     </div>
     <!-- ИНФОРМАЦИЯ О ПРЕПОДАВАТЕЛЯХ -->
-    <div class="text-center mb-5">
-            <h2 class="fw-bold text-light-white" data-key="teachers_title">Наші викладачі</h2>
-            <div class="underline mx-auto" style="width: 60px; height: 4px; background: #2B6446; margin-top: 10px; border-radius: 2px;"></div>
-        </div>
-        
-        <div class="row g-4 justify-content-center text-center">
-            <div class="col-md-5 col-lg-4">
-                <div class="teacher-card p-4 shadow-sm" style="background: rgba(255, 255, 255, 0.05); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                    <div class="teacher-avatar-container mb-3 mx-auto" style="width: 140px; height: 140px; border-radius: 50%; overflow: hidden; border: 4px solid #2B6446;">
-                        <img src="sofia.jpg" id="teacher-sofia-img" alt="Sofia" style="width: 100%; height: 100%; object-fit: cover;">
-                    </div>
-                    <h3 class="fw-bold">Софія</h3>
-                    <p class="text-success fw-bold small" data-key="sofia_role">Засновниця школи & Викладач</p>
-                    <p class="small opacity-75" data-key="sofia_bio">Автор методики "Словацька легко", спеціаліст з адаптації іноземців у Словаччині.</p>
-                </div>
-            </div>
+    </section> 
 
-            <div class="col-md-5 col-lg-4">
-                <div class="teacher-card p-4 shadow-sm" style="background: rgba(255, 255, 255, 0.05); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                    <div class="teacher-avatar-container mb-3 mx-auto" style="width: 140px; height: 140px; border-radius: 50%; overflow: hidden; border: 4px solid #2B6446;">
-                        <img src="victoria.jpg" id="teacher-victoria-img" alt="Victoria" style="width: 100%; height: 100%; object-fit: cover;">
-                    </div>
-                    <h3 class="fw-bold">Вікторія</h3>
-                    <p class="text-success fw-bold small" data-key="victoria_role">Співзасновниця & Викладач</p>
-                    <p class="small opacity-75" data-key="victoria_bio">Твій провідник у словацьке середовище. Створює навчальні стратегії, які реально працюють для кар'єри та життя в ЄС.</p>
+    <section id="teachers" class="container py-5 mt-5">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold text-light-white" data-key="teachers_title">Наші викладачі</h2>
+        <p class="opacity-75" data-key="teachers_subtitle">Понад 100+ студентів вже заговорили словацькою разом з нами</p>
+        <div class="underline mx-auto" style="width: 60px; height: 4px; background: #2B6446; margin-top: 10px; border-radius: 2px;"></div>
+    </div>
+    
+    <div class="row g-4 justify-content-center text-center">
+        <div class="col-md-5 col-lg-4">
+            <div class="teacher-card p-4 shadow-sm">
+                <div class="teacher-avatar-container mb-3 mx-auto">
+                    <img src="sofia.jpg" id="teacher-sofia-img" alt="Sofia">
                 </div>
+                <h3 class="fw-bold" data-key="sofia_name">Софія</h3>
+                <p class="text-success fw-bold small" data-key="sofia_role">Засновниця & Методолог</p>
+                <p class="small opacity-75" data-key="sofia_bio">Створила систему навчання, яка допомагає швидко заговорити словацькою без зубріння.</p>
             </div>
         </div>
-</section>
+
+        <div class="col-md-5 col-lg-4">
+            <div class="teacher-card p-4 shadow-sm">
+                <div class="teacher-avatar-container mb-3 mx-auto">
+                    <img src="victoria.jpg" id="teacher-victoria-img" alt="Victoria">
+                </div>
+                <h3 class="fw-bold" data-key="victoria_name">Виктория</h3>
+                <p class="text-success fw-bold small" data-key="victoria_role">Старший викладач</p>
+                <p class="small opacity-75" data-key="victoria_bio">Допомагає перейти від "розумію" до "говорю" та контролює результати кожного студента.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-5 pt-5 text-center">
+        <h4 class="fw-bold mb-4" data-key="team_others_title">Інші викладачі нашої команди</h4>
+        <div class="d-flex flex-wrap justify-content-center gap-4 opacity-75">
+            <div class="team-mini-item">
+                <div class="mini-avatar mb-2"></div> 
+                <span class="small" data-key="team_name1">Анастасія — викладач</span>
+            </div>
+            <div class="team-mini-item">
+                <div class="mini-avatar mb-2"></div>
+                <span class="small" data-key="team_name2">Мирослава — викладач</span>
+            </div>
+            <div class="team-mini-item">
+                <div class="mini-avatar mb-2"></div>
+                <span class="small" data-key="team_name3">Віталій — викладач</span>
+            </div>
+        </div>
+        <p class="small mt-4 mx-auto opacity-50" style="max-width: 600px;" data-key="team_footer">
+            Кожен викладач проходить відбір та навчання за нашою методикою, тому ти отримуєш однаково високий результат.
+        </p>
+    </div>
+    </section>
 
     <footer class="footer text-center">
         <div class="container">
@@ -158,7 +183,7 @@
     const translations = {
     'ua': {
         'nav_courses': 'Курси',
-        'nav_contacts': 'Контакти',
+        'nav_teachers': 'Викладачі',
         'hero_title': 'Словацька мова легко',
         'hero_sub': 'Вивчіть словацька мову для життя та роботи в Словаччині.',
         'hero_btn': 'Переглянути ціни',
@@ -189,10 +214,24 @@
         'card_pair_f1': 'З другом або партнером',
         'card_pair_f2': 'Більше практики',
         'card_pair_btn': 'Замовити урок',
+        // Учителя
+        'teachers_title': 'Наші викладачі',
+        'teachers_subtitle': 'Понад 100+ студентів вже заговорили словацькою разом з нами',
+        'sofia_name': 'Софія',
+        'sofia_role': 'Засновниця & Методолог',
+        'sofia_bio': 'Створила систему навчання, яка допомагає швидко заговорити словацькою без зубріння.',
+        'victoria_name': 'Виктория',
+        'victoria_role': 'Старший викладач',
+        'victoria_bio': 'Допомагає перейти від "розумію" до "говорю" та контролює результати кожного студента.',
+        'team_name1': 'Анастасія — викладач',
+        'team_name2': 'Мирослава — викладач',
+        'team_name3': 'Віталій — викладач',
+        'team_others_title': 'Інші викладачі нашої команди',
+        'team_footer': 'Кожен викладач проходить відбір та навчання за нашою методикою, тому ти отримуєш однаково високий результат.'
     },
     'ru': {
         'nav_courses': 'Курсы',
-        'nav_contacts': 'Контакты',
+        'nav_teachers': 'Преподаватели',
         'hero_title': 'Словацкий язык легко',
         'hero_sub': 'Изучите словацкий язык для жизни и работы в Словакии.',
         'hero_btn': 'Посмотреть цены',
@@ -223,10 +262,24 @@
         'card_pair_f1': 'С другом или партнером',
         'card_pair_f2': 'Больше практики',
         'card_pair_btn': 'Заказать урок',
+        // Учителя
+        'teachers_title': 'Наши преподаватели',
+        'teachers_subtitle': 'Более 100+ студентов уже заговорили на словацком вместе с нами',
+        'sofia_name': 'София',
+        'sofia_role': 'Основательница & Методолог',
+        'sofia_bio': 'Создала систему обучения, которая помогает быстро заговорить на словацком без зубрежки.',
+        'victoria_name': 'Виктория',
+        'victoria_role': 'Старший преподаватель',
+        'victoria_bio': 'Помогает перейти от "понимаю" к "говорю" и контролирует результаты каждого студента.',
+        'team_name1': 'Анастасия — преподаватель',
+        'team_name2': 'Мирослава — преподаватель',
+        'team_name3': 'Виталий — преподаватель',
+        'team_others_title': 'Другие преподаватели нашей команды',
+        'team_footer': 'Каждый преподаватель проходит отбор и обучение по нашей методике, поэтому вы получаете стабильный результат.'
     },
     'en': {
         'nav_courses': 'Courses',
-        'nav_contacts': 'Contacts',
+        'nav_teachers': 'Teachers',
         'hero_title': 'Slovak Made Easy',
         'hero_sub': 'Learn Slovak for life and work in Slovakia.',
         'hero_btn': 'View Prices',
@@ -256,6 +309,20 @@
         'card_pair_f1': 'With a friend or partner',
         'card_pair_f2': 'More practice',
         'card_pair_btn': 'Order a lesson',
+        // Учителя
+        'teachers_title': 'Our Teachers',
+        'teachers_subtitle': 'Over 100+ students are already speaking Slovak with us',
+        'sofia_name': 'Sofia',
+        'sofia_role': 'Founder & Methodologist',
+        'sofia_bio': 'Created a learning system that helps you start speaking Slovak quickly without rote learning.',
+        'victoria_name': 'Victoria',
+        'victoria_role': 'Senior Teacher',
+        'victoria_bio': 'Helps transition from "understanding" to "speaking" and monitors every student\'s results.',
+        'team_name1': 'Anastasia — teacher',
+        'team_name2': 'Myroslava — teacher',
+        'team_name3': 'Vitaliy — teacher',
+        'team_others_title': 'Other teachers of our team',
+        'team_footer': 'Every teacher undergoes selection and training according to our methodology, ensuring a stable result.'
     }
 };
 
