@@ -1,5 +1,4 @@
-<script> 
-    const translations = {
+const translations = {
 'ua': {
     'nav_courses': 'Курси',
     'nav_teachers': 'Викладачі',
@@ -159,4 +158,3 @@
         }
     });
 }           
-</script>
