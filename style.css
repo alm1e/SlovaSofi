@@ -334,7 +334,22 @@ body {
     border-color: #4CAF50;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
+.social-links{
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+}
+.social-icon{
+    width: 48px;
+    height: 48px;
+    background-color: #ffffff;
+    color: #4CAF50;
+    display: flex;
+    justify-content: center;
+}
+.social-icon::hover{
 
+}
 @media (max-width: 768px) {
     .teacher-card {
         margin-bottom: 20px;
