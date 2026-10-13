@@ -94,6 +94,7 @@ registerForm?.addEventListener("submit", async (event) => {
             email: registerForm.elements.email.value.trim(),
             password: registerForm.elements.password.value,
             options: {
+                emailRedirectTo: new URL("login.html", window.location.href).href,
                 data: {
                     first_name: firstName,
                     last_name: lastName,
