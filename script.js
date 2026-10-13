@@ -45,7 +45,15 @@ const translations = {
     'team_name2': 'Мирослава — викладач',
     'team_name3': 'Віталій — викладач',
     'team_others_title': 'Інші викладачі нашої команди',
-    'team_footer': 'Кожен викладач проходить відбір та навчання за нашою методикою, тому ти отримуєш однаково високий результат.'
+    'team_footer': 'Кожен викладач проходить відбір та навчання за нашою методикою, тому ти отримуєш однаково високий результат.',
+    'account': "Особистий кабінет",
+    'login_title': "Вхід до кабінету",
+    'login_subtitle': "Увійдіть, щоб переглянути свої курси та уроки.",
+    'email_label': "Електронна пошта",
+    'password_label': "Пароль",
+    'login_button': "Увійти",
+    'register_note': "Ще не маєте акаунта? Реєстрацію учнів додамо окремо.",
+    'back_home': "Повернутися на головну"
 },
 'ru': {
     'nav_courses': 'Курсы',
@@ -93,7 +101,15 @@ const translations = {
     'team_name2': 'Мирослава — преподаватель',
     'team_name3': 'Виталий — преподаватель',
     'team_others_title': 'Другие преподаватели нашей команды',
-    'team_footer': 'Каждый преподаватель проходит отбор и обучение по нашей методике, поэтому вы получаете стабильный результат.'
+    'team_footer': 'Каждый преподаватель проходит отбор и обучение по нашей методике, поэтому вы получаете стабильный результат.',
+    'account': "Личный кабинет",
+    'login_title': "Вход в личный кабинет",
+    'login_subtitle': "Войдите, чтобы посмотреть свои курсы и уроки.",
+    'email_label': "Электронная почта",
+    'password_label': "Пароль",
+    'login_button': "Войти",
+    'register_note': "Ещё нет аккаунта? Регистрацию учеников добавим позже.",
+    'back_home': "Вернуться на главную"
 },
 'en': {
     'nav_courses': 'Courses',
@@ -140,7 +156,15 @@ const translations = {
     'team_name2': 'Myroslava — teacher',
     'team_name3': 'Vitaliy — teacher',
     'team_others_title': 'Other teachers of our team',
-    'team_footer': 'Every teacher undergoes selection and training according to our methodology, ensuring a stable result.'
+    'team_footer': 'Every teacher undergoes selection and training according to our methodology, ensuring a stable result.',
+    'account': "Student portal",
+    'login_title': "Sign in",
+    'login_subtitle': "Sign in to view your courses and lessons.",
+    'email_label': "Email address",
+    'password_label': "Password",
+    'login_button': "Sign in",
+    'register_note': "Don't have an account yet? Student registration will be added later.",
+    'back_home': "Back to home"
     }
 };
     function changeLanguage(lang) {
@@ -157,4 +181,4 @@ const translations = {
             element.innerText = translations[lang][key];
         }
     });
-}           
+}

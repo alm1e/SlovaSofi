@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вхід до кабінету | SlovaSofi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-page">
+    <main class="auth-wrapper">
+        <section class="auth-card">
+            <a class="navbar-brand d-flex align-items-center logo-wrap justify-content-center mb-4" href="index.html">
+                <span class="logo-s">S</span>
+                <span class="logo-text-stack">
+                    <span class="logo-lova">lova</span>
+                    <span class="logo-sofi">OFI</span>
+                    <span class="logo-sub">LANGUAGE SCHOOL</span>
+                </span>
+            </a>
+
+            <div class="lang-switcher d-flex gap-1 justify-content-end mb-3">
+                <button type="button" class="btn-lang-item" data-lang="ua">UA</button>
+                <button type="button" class="btn-lang-item" data-lang="ru">RU</button>
+                <button type="button" class="btn-lang-item" data-lang="en">EN</button>
+            </div>
+
+            <h1 class="auth-title" data-key="login_title">Вхід до кабінету</h1>
+            <p class="auth-subtitle" data-key="login_subtitle">
+                Увійдіть, щоб переглянути свої курси та уроки.
+            </p>
+
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label for="email" class="form-label" data-key="email_label">Електронна пошта</label>
+                    <input type="email" class="form-control" id="email" name="email"
+                           placeholder="Введіть електронну пошту" autocomplete="email" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label" data-key="password_label">Пароль</label>
+                    <input type="password" class="form-control" id="password" name="password"
+                           placeholder="Введіть пароль" autocomplete="current-password" required>
+                </div>
+
+                <div id="authMessage" class="mb-3" role="status" aria-live="polite"></div>
+
+                <button type="submit" class="btn btn-card-green-cta w-100 mt-2" data-key="login_button">
+                    Увійти
+                </button>
+            </form>
+
+            <p class="auth-note mb-0">
+                <span data-key="register_prompt">Ще не маєте акаунта?</span>
+                <a href="register.html" data-key="register_link">Зареєструватися</a>
+            </p>
+
+            <a href="index.html" class="auth-back-link" data-key="back_home">
+                Повернутися на головну
+            </a>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+
+    <script>
+        const loginTranslations = {
+            ua: {
+                login_title: "Вхід до кабінету",
+                login_subtitle: "Увійдіть, щоб переглянути свої курси та уроки.",
+                email_label: "Електронна пошта",
+                password_label: "Пароль",
+                login_button: "Увійти",
+                back_home: "Повернутися на головну",
+                register_prompt: "Ще не маєте акаунта?",
+                register_link: "Зареєструватися",
+                email_placeholder: "Введіть електронну пошту",
+                password_placeholder: "Введіть пароль"
+            },
+            ru: {
+                login_title: "Вход в личный кабинет",
+                login_subtitle: "Войдите, чтобы посмотреть свои курсы и уроки.",
+                email_label: "Электронная почта",
+                password_label: "Пароль",
+                login_button: "Войти",
+                back_home: "Вернуться на главную",
+                register_prompt: "Ещё нет аккаунта?",
+                register_link: "Зарегистрироваться",
+                email_placeholder: "Введите электронную почту",
+                password_placeholder: "Введите пароль"
+            },
+            en: {
+                login_title: "Sign in",
+                login_subtitle: "Sign in to view your courses and lessons.",
+                email_label: "Email address",
+                password_label: "Password",
+                login_button: "Sign in",
+                back_home: "Back to home",
+                register_prompt: "Don't have an account?",
+                register_link: "Register",
+                email_placeholder: "Enter your email",
+                password_placeholder: "Enter your password"
+            }
+        };
+
+        function setLoginLanguage(lang) {
+            const translations = loginTranslations[lang];
+            if (!translations) return;
+
+            document.querySelectorAll("[data-key]").forEach((element) => {
+                element.textContent = translations[element.dataset.key] || "";
+            });
+
+            document.getElementById("email").placeholder = translations.email_placeholder;
+            document.getElementById("password").placeholder = translations.password_placeholder;
+
+            document.querySelectorAll(".btn-lang-item[data-lang]").forEach((button) => {
+                button.classList.toggle("active", button.dataset.lang === lang);
+            });
+
+            localStorage.setItem("siteLanguage", lang);
+        }
+
+        document.querySelectorAll(".btn-lang-item[data-lang]").forEach((button) => {
+            button.addEventListener("click", () => setLoginLanguage(button.dataset.lang));
+        });
+
+        setLoginLanguage(localStorage.getItem("siteLanguage") || "ua");
+    </script>
+
+    <script src="auth.js"></script>
+</body>
+</html>
