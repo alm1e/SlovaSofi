@@ -9,14 +9,20 @@
         if (!context?.owner_id || !context?.permissions) {
             throw new Error("Не удалось определить школьный кабинет и права доступа.");
         }
-        const ownerId = context.owner_id;
+        const isAdmin = context.role === "admin";
         const permissions = context.permissions;
         const [settingsResult, classesResult, lessonsResult, rosterResult, assignmentsResult] = await Promise.all([
-            client.from("teacher_workspace_settings").select("legacy_imported").eq("user_id", ownerId).maybeSingle(),
-            client.from("teacher_classes").select("id,name,course").eq("teacher_id", ownerId).order("created_at"),
-            client.from("teacher_lessons").select("id,title,unit,activities").eq("teacher_id", ownerId).order("created_at"),
-            client.from("class_students").select("id,class_id,display_name,email,linked_user_id").eq("teacher_id", ownerId),
-            client.from("class_lesson_assignments").select("class_id,lesson_id").eq("teacher_id", ownerId)
+            client.from("teacher_workspace_settings").select("legacy_imported").eq("user_id", userId).maybeSingle(),
+            (isAdmin
+                ? client.from("teacher_classes").select("id,name,course,teacher_id").order("created_at")
+                : client.from("teacher_classes").select("id,name,course,teacher_id").eq("teacher_id", userId).order("created_at")),
+            client.from("teacher_lessons").select("id,title,unit,activities,teacher_id").order("created_at"),
+            (isAdmin
+                ? client.from("class_students").select("id,class_id,teacher_id,display_name,email,linked_user_id")
+                : client.from("class_students").select("id,class_id,teacher_id,display_name,email,linked_user_id").eq("teacher_id", userId)),
+            (isAdmin
+                ? client.from("class_lesson_assignments").select("class_id,lesson_id,teacher_id")
+                : client.from("class_lesson_assignments").select("class_id,lesson_id,teacher_id").eq("teacher_id", userId))
         ]);
         fail(settingsResult.error, "Не удалось загрузить настройки кабинета");
         fail(classesResult.error, "Не удалось загрузить классы");
@@ -24,10 +30,21 @@
         fail(rosterResult.error, "Не удалось загрузить список учеников");
         fail(assignmentsResult.error, "Не удалось загрузить назначения уроков");
 
+        const teacherIds = [...new Set(classesResult.data.map((group) => group.teacher_id))];
+        const { data: { user }, error: userError } = await client.auth.getUser();
+        fail(userError, "Не удалось загрузить текущий аккаунт");
+        const { data: profiles, error: profilesError } = teacherIds.length
+            ? await client.from("profiles").select("id,first_name,last_name").in("id", teacherIds)
+            : { data: [], error: null };
+        fail(profilesError, "Не удалось загрузить профили преподавателей");
+        const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
         const classes = classesResult.data.map((group) => ({
             id: group.id,
             name: group.name,
             course: group.course,
+            teacherId: group.teacher_id,
+            teacherName: [profileById.get(group.teacher_id)?.first_name, profileById.get(group.teacher_id)?.last_name]
+                .filter(Boolean).join(" ") || (group.teacher_id === userId ? user?.email : "Преподаватель"),
             studentRecords: rosterResult.data.filter((student) => student.class_id === group.id),
             students: rosterResult.data.filter((student) => student.class_id === group.id).map((student) => student.display_name)
         }));
@@ -43,6 +60,7 @@
                 : [];
             return {
                 ...lesson,
+                teacherId: lesson.teacher_id,
                 classIds: assignmentsByLesson.get(lesson.id) || [],
                 sections,
                 activities: sections.length
@@ -52,18 +70,16 @@
         });
         const settings = settingsResult.data;
 
-        if (userId === ownerId && !settings?.legacy_imported) await saveSettings(client, ownerId, true);
+        if (!settingsResult.data?.legacy_imported) await saveSettings(client, userId, true);
         let staff = [];
         if (permissions.manage_teachers) {
-            const { data: staffRows, error: staffError } = await client.from("teacher_workspace_members")
-                .select("id,email,permissions,created_at").eq("owner_id", ownerId).order("created_at");
-            fail(staffError, "Не удалось загрузить список преподавателей");
-            staff = staffRows;
+            staff = (await manageTeacher(client, { action: "list" })).staff;
         }
         return {
             data: { classes, lessons },
             migratedLegacy: false,
-            workspaceOwnerId: ownerId,
+            workspaceOwnerId: userId,
+            role: context.role,
             permissions,
             staff
         };
@@ -77,19 +93,23 @@
         fail(error, "Не удалось сохранить настройки кабинета");
     }
 
-    async function saveWorkspace(client, userId, data, access) {
-        const ownerId = access?.workspaceOwnerId || userId;
+    async function saveWorkspace(client, userId, data, access, deletedLessonIds = []) {
         const permissions = access?.permissions || {};
         if (permissions.manage_classes_students) {
-            const classes = data.classes.map(({ id, name, course }) => ({ id, teacher_id: ownerId, name, course }));
+            const classes = data.classes.map(({ id, name, course, teacherId }) => ({
+                id,
+                teacher_id: access?.role === "admin" ? teacherId || userId : userId,
+                name,
+                course
+            }));
             await upsertRows(client, "teacher_classes", classes, "Не удалось сохранить классы");
-            await syncRoster(client, ownerId, data.classes);
-            await deleteMissing(client, "teacher_classes", ownerId, classes.map((row) => row.id), "Не удалось удалить классы");
+            await syncRoster(client, userId, access?.role === "admin", data.classes);
+            await deleteMissing(client, "teacher_classes", userId, classes.map((row) => row.id), "Не удалось удалить классы", access?.role === "admin");
         }
         if (permissions.edit_lessons) {
-            const lessons = data.lessons.map(({ id, title, unit, activities, sections }) => ({
+            const lessons = data.lessons.map(({ id, title, unit, activities, sections, teacherId }) => ({
                 id,
-                teacher_id: ownerId,
+                teacher_id: teacherId || userId,
                 title,
                 unit,
                 activities: Array.isArray(sections) && sections.length
@@ -98,12 +118,15 @@
                 updated_at: new Date().toISOString()
             }));
             await upsertRows(client, "teacher_lessons", lessons, "Не удалось сохранить уроки");
-            await deleteMissing(client, "teacher_lessons", ownerId, lessons.map((row) => row.id), "Не удалось удалить уроки");
         }
         if (permissions.view_assign_lessons) {
-            await syncAssignments(client, ownerId, data.classes, data.lessons);
+            await syncAssignments(client, userId, access?.role === "admin", data.classes, data.lessons);
         }
-        if (ownerId === userId) await saveSettings(client, ownerId, true);
+        if (deletedLessonIds.length) {
+            const { error } = await client.from("teacher_lessons").delete().in("id", deletedLessonIds);
+            fail(error, "Не удалось удалить уроки");
+        }
+        await saveSettings(client, userId, true);
     }
 
     async function inviteStudent(client, classId, displayName, email) {
@@ -133,15 +156,16 @@
         fail(error, operation);
     }
 
-    async function syncRoster(client, userId, classes) {
-        const { data: existing, error: readError } = await client.from("class_students")
-            .select("id,class_id,display_name,email,linked_user_id").eq("teacher_id", userId);
+    async function syncRoster(client, userId, isAdmin, classes) {
+        let query = client.from("class_students").select("id,class_id,teacher_id,display_name,email,linked_user_id");
+        if (!isAdmin) query = query.eq("teacher_id", userId);
+        const { data: existing, error: readError } = await query;
         fail(readError, "Не удалось прочитать список учеников перед сохранением");
         const studentsByIdentity = new Map(existing.map((student) => [`${student.class_id}\u0000${student.display_name}`, student]));
         const desired = classes.flatMap((group) => group.students.map((displayName) => ({
             id: studentsByIdentity.get(`${group.id}\u0000${displayName}`)?.id || crypto.randomUUID(),
             class_id: group.id,
-            teacher_id: userId,
+            teacher_id: isAdmin ? group.teacherId || userId : userId,
             display_name: displayName,
             email: studentsByIdentity.get(`${group.id}\u0000${displayName}`)?.email || null,
             linked_user_id: studentsByIdentity.get(`${group.id}\u0000${displayName}`)?.linked_user_id || null
@@ -152,14 +176,19 @@
         await deleteIds(client, "class_students", staleIds, "Не удалось удалить учеников из списка");
     }
 
-    async function syncAssignments(client, userId, classes, lessons) {
-        const { data: existing, error: readError } = await client.from("class_lesson_assignments")
-            .select("class_id,lesson_id").eq("teacher_id", userId);
+    async function syncAssignments(client, userId, isAdmin, classes, lessons) {
+        let query = client.from("class_lesson_assignments").select("class_id,lesson_id,teacher_id");
+        if (!isAdmin) query = query.eq("teacher_id", userId);
+        const { data: existing, error: readError } = await query;
         fail(readError, "Не удалось прочитать назначения уроков перед сохранением");
         const desired = lessons.flatMap((lesson) => {
             const classIds = Array.isArray(lesson.classIds) ? lesson.classIds : lesson.classId ? [lesson.classId] : [];
             return classIds.filter((classId) => classes.some((group) => group.id === classId))
-                .map((classId) => ({ class_id: classId, lesson_id: lesson.id, teacher_id: userId }));
+                .map((classId) => ({
+                    class_id: classId,
+                    lesson_id: lesson.id,
+                    teacher_id: classes.find((group) => group.id === classId)?.teacherId || userId
+                }));
         });
         if (desired.length) {
             const { error } = await client.from("class_lesson_assignments").upsert(desired, { onConflict: "class_id,lesson_id" });
@@ -168,14 +197,18 @@
         const desiredKeys = new Set(desired.map((row) => `${row.class_id}\u0000${row.lesson_id}`));
         for (const row of existing) {
             if (desiredKeys.has(`${row.class_id}\u0000${row.lesson_id}`)) continue;
-            const { error } = await client.from("class_lesson_assignments").delete()
-                .eq("teacher_id", userId).eq("class_id", row.class_id).eq("lesson_id", row.lesson_id);
+            let query = client.from("class_lesson_assignments").delete()
+                .eq("class_id", row.class_id).eq("lesson_id", row.lesson_id);
+            if (!isAdmin) query = query.eq("teacher_id", userId);
+            const { error } = await query;
             fail(error, "Не удалось снять назначение урока");
         }
     }
 
-    async function deleteMissing(client, table, userId, desiredIds, operation) {
-        const { data: existing, error: readError } = await client.from(table).select("id").eq("teacher_id", userId);
+    async function deleteMissing(client, table, userId, desiredIds, operation, isAdmin = false) {
+        let query = client.from(table).select("id");
+        if (!isAdmin) query = query.eq("teacher_id", userId);
+        const { data: existing, error: readError } = await query;
         fail(readError, operation);
         const desired = new Set(desiredIds);
         const staleIds = existing.filter((row) => !desired.has(row.id)).map((row) => row.id);

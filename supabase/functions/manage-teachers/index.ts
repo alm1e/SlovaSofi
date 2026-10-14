@@ -6,28 +6,25 @@ const corsHeaders = {
     "Content-Type": "application/json"
 };
 
-const permissionKeys = [
-    "view_classes_students",
-    "manage_classes_students",
-    "view_assign_lessons",
-    "edit_lessons",
-    "manage_teachers"
-] as const;
+type Payload = {
+    action?: unknown;
+    email?: unknown;
+    memberId?: unknown;
+    permissions?: unknown;
+};
 
-type Permissions = Record<typeof permissionKeys[number], boolean>;
-
-function jsonResponse(status: number, body: Record<string, string>, origin: string) {
+function jsonResponse(status: number, body: unknown, origin: string) {
     return new Response(JSON.stringify(body), {
         status,
         headers: { ...corsHeaders, "Access-Control-Allow-Origin": origin }
     });
 }
 
-function validPermissions(value: unknown): value is Permissions {
+function validPermissions(value: unknown): value is { edit_lessons: boolean } {
     if (!value || typeof value !== "object" || Array.isArray(value)) return false;
     const candidate = value as Record<string, unknown>;
-    return permissionKeys.every((key) => typeof candidate[key] === "boolean")
-        && Object.keys(candidate).every((key) => permissionKeys.includes(key as typeof permissionKeys[number]));
+    return typeof candidate.edit_lessons === "boolean"
+        && Object.keys(candidate).every((key) => key === "edit_lessons");
 }
 
 Deno.serve(async (request: Request) => {
@@ -37,7 +34,7 @@ Deno.serve(async (request: Request) => {
     const requestOrigin = request.headers.get("origin") || "";
 
     if (!configuredOrigin || requestOrigin !== configuredOrigin) {
-        return jsonResponse(403, { error: "This site is not allowed to manage staff." }, configuredOrigin);
+        return jsonResponse(403, { error: "This site is not allowed to manage teachers." }, configuredOrigin);
     }
     if (request.method === "OPTIONS") {
         return new Response("ok", {
@@ -50,35 +47,34 @@ Deno.serve(async (request: Request) => {
 
     const authorization = request.headers.get("authorization");
     if (!authorization?.startsWith("Bearer ")) {
-        return jsonResponse(401, { error: "Sign in before managing staff." }, configuredOrigin);
+        return jsonResponse(401, { error: "Sign in as an administrator to manage teachers." }, configuredOrigin);
     }
 
-    let payload: { action?: unknown; email?: unknown; permissions?: unknown; memberId?: unknown };
+    let payload: Payload;
     try {
         payload = await request.json();
     } catch {
         return jsonResponse(400, { error: "The request must contain valid JSON." }, configuredOrigin);
     }
-
     const action = typeof payload.action === "string" ? payload.action : "";
     const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
     const memberId = typeof payload.memberId === "string" ? payload.memberId.trim() : "";
-    if (!["invite", "update", "remove"].includes(action)) {
-        return jsonResponse(400, { error: "Choose a valid staff action." }, configuredOrigin);
+    if (!["list", "invite", "update", "remove"].includes(action)) {
+        return jsonResponse(400, { error: "Choose a valid teacher action." }, configuredOrigin);
     }
     if ((action === "invite" && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254))
-        || (action !== "invite" && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(memberId))
-        || (action !== "remove" && (!validPermissions(payload.permissions)
-            || !Object.values(payload.permissions).some((allowed) => allowed === true)))) {
-        return jsonResponse(400, { error: "Enter a valid email, staff member, and complete permission set." }, configuredOrigin);
+        || (action !== "list" && action !== "invite"
+            && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(memberId))
+        || (action !== "list" && action !== "remove" && !validPermissions(payload.permissions))) {
+        return jsonResponse(400, { error: "Enter a valid email, teacher account, and editor permission." }, configuredOrigin);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!supabaseUrl || !anonKey || !serviceRoleKey) {
-        console.error("Staff management function is missing Supabase environment variables.");
-        return jsonResponse(500, { error: "Staff management is not configured on the server." }, configuredOrigin);
+        console.error("Teacher management function is missing Supabase environment variables.");
+        return jsonResponse(500, { error: "Teacher management is not configured on the server." }, configuredOrigin);
     }
 
     const userClient = createClient(supabaseUrl, anonKey, {
@@ -89,115 +85,144 @@ Deno.serve(async (request: Request) => {
     if (authError || !user) {
         return jsonResponse(401, { error: "Your session expired. Sign in again and retry." }, configuredOrigin);
     }
-    const [{ data: context, error: contextError }, { data: canManage, error: permissionError }] = await Promise.all([
-        userClient.rpc("teacher_workspace_context"),
-        userClient.rpc("teacher_workspace_has_permission", { permission_name: "manage_teachers" })
-    ]);
-    if (contextError || permissionError || !context?.owner_id) {
-        console.error("Could not verify staff management access.", contextError || permissionError);
-        return jsonResponse(500, { error: "Could not verify workspace permissions. Apply the latest database migration." }, configuredOrigin);
+    const { data: canManage, error: permissionError } = await userClient.rpc(
+        "teacher_workspace_has_permission",
+        { permission_name: "manage_teachers" }
+    );
+    if (permissionError) {
+        console.error("Could not verify administrator access.", permissionError);
+        return jsonResponse(500, { error: "Could not verify administrator access. Apply the latest database migration." }, configuredOrigin);
     }
-    if (canManage !== true) return jsonResponse(403, { error: "You do not have permission to manage staff." }, configuredOrigin);
+    if (canManage !== true) {
+        return jsonResponse(403, { error: "Only the platform administrator can manage teacher accounts." }, configuredOrigin);
+    }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey, {
         auth: { autoRefreshToken: false, persistSession: false }
     });
-    const ownerId = String(context.owner_id);
 
-    if (action === "remove") {
-        const { data: deleted, error: deleteError } = await adminClient.from("teacher_workspace_members")
-            .delete().eq("id", memberId).eq("owner_id", ownerId).select("id").maybeSingle();
-        if (deleteError) {
-            console.error("Could not remove the workspace teacher.", deleteError);
-            return jsonResponse(500, { error: "Could not remove this teacher." }, configuredOrigin);
+    if (action === "list") {
+        const { data: profiles, error: profilesError } = await adminClient.from("profiles")
+            .select("id,role").eq("role", "teacher");
+        if (profilesError) {
+            console.error("Could not load teacher profiles.", profilesError);
+            return jsonResponse(500, { error: "Could not load teacher accounts." }, configuredOrigin);
         }
-        if (!deleted) return jsonResponse(404, { error: "Teacher not found in this workspace." }, configuredOrigin);
-        return jsonResponse(200, { message: "Teacher access removed." }, configuredOrigin);
-    }
-
-    if (action === "update") {
-        const { data: updated, error: updateError } = await adminClient.from("teacher_workspace_members")
-            .update({ permissions: payload.permissions })
-            .eq("id", memberId).eq("owner_id", ownerId).select("id").maybeSingle();
-        if (updateError) {
-            console.error("Could not update workspace teacher permissions.", updateError);
-            return jsonResponse(500, { error: "Could not update teacher permissions." }, configuredOrigin);
+        const teacherIds = profiles.map((profile) => profile.id);
+        if (!teacherIds.length) return jsonResponse(200, { staff: [] }, configuredOrigin);
+        const { data: editors, error: editorsError } = await adminClient.from("teacher_lesson_editors")
+            .select("user_id,created_at").in("user_id", teacherIds);
+        if (editorsError) {
+            console.error("Could not load teacher editor permissions.", editorsError);
+            return jsonResponse(500, { error: "Could not load lesson-editing permissions." }, configuredOrigin);
         }
-        if (!updated) return jsonResponse(404, { error: "Teacher not found in this workspace." }, configuredOrigin);
-        return jsonResponse(200, { message: "Teacher permissions updated." }, configuredOrigin);
-    }
-
-    const { data: existingMembership, error: membershipLookupError } = await adminClient.from("teacher_workspace_members")
-        .select("id").eq("owner_id", ownerId).eq("email", email).maybeSingle();
-    if (membershipLookupError) {
-        console.error("Could not check existing workspace teacher access.", membershipLookupError);
-        return jsonResponse(500, { error: "Could not check existing staff access." }, configuredOrigin);
-    }
-    if (existingMembership) return jsonResponse(409, { error: "This email already has access to the workspace." }, configuredOrigin);
-
-    let invitedUser: { id: string; user_metadata?: Record<string, unknown> } | null = null;
-    for (let page = 1; !invitedUser; page += 1) {
-        const { data: users, error: usersError } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
-        if (usersError) {
-            console.error("Could not check whether the staff account already exists.", usersError);
-            return jsonResponse(500, { error: "Could not check the teacher account." }, configuredOrigin);
+        const editorIds = new Set(editors.map((editor) => editor.user_id));
+        const users = [];
+        for (let page = 1; ; page += 1) {
+            const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
+            if (error) {
+                console.error("Could not load teacher email addresses.", error);
+                return jsonResponse(500, { error: "Could not load teacher email addresses." }, configuredOrigin);
+            }
+            users.push(...data.users.filter((candidate) => teacherIds.includes(candidate.id)));
+            if (data.users.length < 1000) break;
         }
-        invitedUser = users.users.find((candidate) => candidate.email?.toLowerCase() === email) || null;
-        if (users.users.length < 1000) break;
+        const staff = users.map((candidate) => ({
+            id: candidate.id,
+            email: candidate.email || "",
+            permissions: { edit_lessons: editorIds.has(candidate.id) },
+            created_at: candidate.created_at
+        }));
+        return jsonResponse(200, { staff }, configuredOrigin);
     }
 
-    if (invitedUser?.user_metadata?.role === "student") {
-        return jsonResponse(409, { error: "This email belongs to a student account. Use a different email for a teacher." }, configuredOrigin);
-    }
-    if (invitedUser) {
-        const [{ data: otherMembership, error: otherMembershipError }, { count: ownedClasses, error: classesError }, { count: ownedLessons, error: lessonsError }, { data: ownSettings, error: settingsError }] = await Promise.all([
-            adminClient.from("teacher_workspace_members").select("id").eq("member_id", invitedUser.id).maybeSingle(),
-            adminClient.from("teacher_classes").select("id", { count: "exact", head: true }).eq("teacher_id", invitedUser.id),
-            adminClient.from("teacher_lessons").select("id", { count: "exact", head: true }).eq("teacher_id", invitedUser.id),
-            adminClient.from("teacher_workspace_settings").select("user_id").eq("user_id", invitedUser.id).maybeSingle()
-        ]);
-        const ownershipError = otherMembershipError || classesError || lessonsError || settingsError;
-        if (ownershipError) {
-            console.error("Could not check whether the account already owns or belongs to a workspace.", ownershipError);
-            return jsonResponse(500, { error: "Could not verify this teacher's existing workspace." }, configuredOrigin);
+    let teacher: { id: string; email?: string; user_metadata?: Record<string, unknown> } | null = null;
+    if (action === "invite") {
+        for (let page = 1; !teacher; page += 1) {
+            const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
+            if (error) {
+                console.error("Could not check for an existing teacher account.", error);
+                return jsonResponse(500, { error: "Could not check the teacher account." }, configuredOrigin);
+            }
+            teacher = data.users.find((candidate) => candidate.email?.toLowerCase() === email) || null;
+            if (data.users.length < 1000) break;
         }
-        if (otherMembership || ownSettings || (ownedClasses || 0) > 0 || (ownedLessons || 0) > 0) {
-            return jsonResponse(409, {
-                error: "This account already owns or belongs to a workspace and cannot be added to another school."
-            }, configuredOrigin);
+        if (teacher?.user_metadata?.role === "student" || teacher?.user_metadata?.role === "admin") {
+            return jsonResponse(409, { error: "This email already belongs to a non-teacher account." }, configuredOrigin);
         }
-    }
-
-    const alreadyHadAccount = Boolean(invitedUser);
-    if (!invitedUser) {
-        const redirectTo = new URL("teacher.html", appBaseUrl).href;
-        const { data: invitation, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-            redirectTo,
-            data: { role: "teacher" }
+        let isNewTeacher = false;
+        if (!teacher) {
+            const redirectTo = new URL("teacher.html", appBaseUrl).href;
+            const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
+                redirectTo,
+                data: { role: "teacher" }
+            });
+            if (error || !data.user) {
+                console.error("Could not send the teacher invitation.", error);
+                return jsonResponse(502, { error: error?.message || "The teacher invitation could not be sent." }, configuredOrigin);
+            }
+            teacher = data.user;
+            isNewTeacher = true;
+        } else {
+            const { data: existingProfile, error: existingProfileError } = await adminClient.from("profiles")
+                .select("role").eq("id", teacher.id).maybeSingle();
+            if (existingProfileError) {
+                console.error("Could not verify the existing account role.", existingProfileError);
+                return jsonResponse(500, { error: "Could not verify the existing account role." }, configuredOrigin);
+            }
+            if (!existingProfile || existingProfile.role !== "teacher") {
+                return jsonResponse(409, { error: "This email is already linked to a non-teacher account." }, configuredOrigin);
+            }
+        }
+        if (isNewTeacher) {
+            const { data: profile, error: profileError } = await adminClient.from("profiles")
+                .update({ role: "teacher" }).eq("id", teacher.id).select("id").maybeSingle();
+            if (profileError || !profile) {
+                console.error("Could not set the invited account's teacher role.", profileError);
+                return jsonResponse(500, { error: "The invitation was sent, but the teacher role could not be set." }, configuredOrigin);
+            }
+        }
+        const { error: metadataError } = await adminClient.auth.admin.updateUserById(teacher.id, {
+            user_metadata: { ...teacher.user_metadata, role: "teacher" }
         });
-        if (inviteError || !invitation.user) {
-            console.error("Could not send the teacher invitation.", inviteError);
-            return jsonResponse(502, {
-                error: inviteError?.message || "The email invitation could not be sent. Check the Auth email settings."
-            }, configuredOrigin);
+        if (metadataError) {
+            console.error("Could not set the invited account's teacher metadata.", metadataError);
+            return jsonResponse(500, { error: "The invitation was sent, but the account role could not be set." }, configuredOrigin);
         }
-        invitedUser = invitation.user;
+    } else {
+        const { data: profile, error: profileError } = await adminClient.from("profiles")
+            .select("id,role").eq("id", memberId).maybeSingle();
+        if (profileError) {
+            console.error("Could not verify the teacher account.", profileError);
+            return jsonResponse(500, { error: "Could not verify the teacher account." }, configuredOrigin);
+        }
+        if (!profile || profile.role !== "teacher") {
+            return jsonResponse(404, { error: "Teacher account not found." }, configuredOrigin);
+        }
+        teacher = { id: profile.id };
     }
 
-    const { error: insertError } = await adminClient.from("teacher_workspace_members").insert({
-        owner_id: ownerId,
-        member_id: invitedUser.id,
-        email,
-        permissions: payload.permissions
-    });
-    if (insertError) {
-        console.error("Could not save the teacher workspace membership.", insertError);
-        return jsonResponse(500, {
-            error: "The account was found or invited, but workspace access could not be saved. Retry the invitation."
-        }, configuredOrigin);
+    if (!teacher) {
+        console.error("Teacher management finished without a resolved account.");
+        return jsonResponse(500, { error: "Could not resolve the teacher account." }, configuredOrigin);
     }
 
-    return jsonResponse(200, {
-        message: alreadyHadAccount ? "Teacher access granted." : "Teacher invitation sent."
-    }, configuredOrigin);
+    if (action === "remove" || (payload.permissions as { edit_lessons: boolean }).edit_lessons === false) {
+        const { error } = await adminClient.from("teacher_lesson_editors").delete().eq("user_id", teacher.id);
+        if (error) {
+            console.error("Could not revoke lesson-editing permission.", error);
+            return jsonResponse(500, { error: "Could not remove lesson-editing permission." }, configuredOrigin);
+        }
+    } else {
+        const { error } = await adminClient.from("teacher_lesson_editors").upsert(
+            { user_id: teacher.id },
+            { onConflict: "user_id" }
+        );
+        if (error) {
+            console.error("Could not grant lesson-editing permission.", error);
+            return jsonResponse(500, { error: "Could not grant lesson-editing permission." }, configuredOrigin);
+        }
+    }
+
+    return jsonResponse(200, { message: action === "invite" ? "Teacher account saved." : "Teacher access updated." }, configuredOrigin);
 });

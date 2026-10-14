@@ -76,17 +76,18 @@ Deno.serve(async (request: Request) => {
         userClient.rpc("teacher_workspace_context"),
         userClient.rpc("teacher_workspace_has_permission", { permission_name: "manage_classes_students" })
     ]);
-    if (contextError || permissionError || !context?.owner_id) {
+    if (contextError || permissionError || !context?.owner_id || !["teacher", "admin"].includes(context.role)) {
         console.error("Could not verify student invitation permissions.", contextError || permissionError);
-        return jsonResponse(500, { error: "Could not verify workspace permissions. Apply the latest database migration." }, configuredOrigin);
+        return jsonResponse(500, { error: "Could not verify class permissions. Apply the latest database migration." }, configuredOrigin);
     }
     if (canManageClasses !== true) {
         return jsonResponse(403, { error: "You do not have permission to manage class students." }, configuredOrigin);
     }
 
-    const workspaceOwnerId = String(context.owner_id);
-    const { data: group, error: classError } = await adminClient.from("teacher_classes")
-        .select("id").eq("id", classId).eq("teacher_id", workspaceOwnerId).maybeSingle();
+    const isAdmin = context.role === "admin";
+    let classQuery = adminClient.from("teacher_classes").select("id,teacher_id").eq("id", classId);
+    if (!isAdmin) classQuery = classQuery.eq("teacher_id", user.id);
+    const { data: group, error: classError } = await classQuery.maybeSingle();
     if (classError) {
         console.error("Could not verify class ownership.", classError);
         return jsonResponse(500, { error: "Could not verify that this class belongs to you." }, configuredOrigin);
@@ -102,7 +103,7 @@ Deno.serve(async (request: Request) => {
     if (existingStudent) return jsonResponse(409, { error: "This email is already in the class." }, configuredOrigin);
 
     const { data: studentRecord, error: insertError } = await adminClient.from("class_students")
-        .insert({ class_id: classId, teacher_id: workspaceOwnerId, display_name: displayName, email })
+        .insert({ class_id: classId, teacher_id: group.teacher_id, display_name: displayName, email })
         .select("id").single();
     if (insertError) {
         console.error("Could not add the student invitation to the class.", insertError);

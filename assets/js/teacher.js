@@ -136,52 +136,49 @@ Object.assign(translations.en, {
 });
 const staffLabels = {
     ua: {
-        nav: "Викладачі", title: "Викладачі", description: "Запрошуйте викладачів до спільного кабінету та керуйте їхніми правами.",
+        nav: "Викладачі", title: "Викладачі", description: "Запрошуйте викладачів і надавайте право редагувати спільні уроки.",
         add: "＋ Додати викладача", empty: "Поки немає інших викладачів", emptyHint: "Додайте колегу та оберіть, що він зможе робити.",
         inviteTitle: "Додати викладача", editTitle: "Права доступу викладача", email: "Email викладача", role: "Роль", teacher: "Викладач",
         passwordTitle: "Створіть пароль", passwordHint: "Запрошення прийнято. Створіть пароль для входу до кабінету.", password: "Пароль (не менше 8 символів)", setPassword: "Зберегти пароль",
-        permissions: "Права доступу", viewClasses: "Перегляд класів і учнів", manageClasses: "Керування класами й учнями",
-        viewLessons: "Перегляд і призначення уроків", editLessons: "Створення та редагування уроків",
+        permissions: "Доступ до уроків", viewClasses: "Перегляд класів і учнів", manageClasses: "Керування класами й учнями",
+        viewLessons: "Перегляд і призначення уроків", editLessons: "Редагування спільних уроків",
         manageTeachers: "Запрошення й керування викладачами", cancel: "Скасувати", invite: "Надіслати запрошення",
-        save: "Зберегти права", edit: "Змінити права", remove: "Забрати доступ", removeConfirm: "Забрати доступ до шкільного кабінету у {email}?",
-        memberRole: "Викладач", noPermission: "Виберіть хоча б одне право.",
+        save: "Зберегти права", edit: "Змінити права", remove: "Зняти право редактора", removeConfirm: "Зняти право редагувати уроки у {email}?",
+        memberRole: "Викладач", noPermission: "Виберіть хоча б одне право.", noEditor: "Без права редагувати уроки",
         added: "Викладача додано до кабінету. Якщо в нього ще немає акаунта, надіслано лист-запрошення.", updated: "Права доступу оновлено.",
         removed: "Доступ викладача відкликано.", error: "Не вдалося змінити доступ:"
     },
     ru: {
-        nav: "Учителя", title: "Учителя", description: "Приглашайте учителей в общий кабинет и настраивайте их права.",
+        nav: "Учителя", title: "Учителя", description: "Приглашайте учителей и выдавайте право редактировать общие уроки.",
         add: "＋ Добавить учителя", empty: "Пока нет других учителей", emptyHint: "Добавьте коллегу и выберите, что ему разрешено.",
         inviteTitle: "Добавить учителя", editTitle: "Права доступа учителя", email: "Email учителя", role: "Роль", teacher: "Учитель",
         passwordTitle: "Создайте пароль", passwordHint: "Приглашение принято. Создайте пароль для входа в кабинет.", password: "Пароль (не менее 8 символов)", setPassword: "Сохранить пароль",
-        permissions: "Права доступа", viewClasses: "Просмотр классов и учеников", manageClasses: "Управление классами и учениками",
-        viewLessons: "Просмотр и назначение уроков", editLessons: "Создание и редактирование уроков",
+        permissions: "Доступ к урокам", viewClasses: "Просмотр классов и учеников", manageClasses: "Управление классами и учениками",
+        viewLessons: "Просмотр и назначение уроков", editLessons: "Редактирование общих уроков",
         manageTeachers: "Приглашение и управление учителями", cancel: "Отмена", invite: "Отправить приглашение",
-        save: "Сохранить права", edit: "Изменить права", remove: "Отозвать доступ", removeConfirm: "Отозвать доступ к кабинету у {email}?",
-        memberRole: "Учитель", noPermission: "Выберите хотя бы одно право.",
+        save: "Сохранить права", edit: "Изменить права", remove: "Снять права редактора", removeConfirm: "Снять право редактировать уроки у {email}?",
+        memberRole: "Учитель", noPermission: "Выберите хотя бы одно право.", noEditor: "Без права редактировать уроки",
         added: "Учитель добавлен в кабинет. Если у него ещё нет аккаунта, отправлено приглашение.", updated: "Права доступа обновлены.",
         removed: "Доступ учителя отозван.", error: "Не удалось изменить доступ:"
     },
     en: {
-        nav: "Teachers", title: "Teachers", description: "Invite teachers to the shared workspace and manage their permissions.",
+        nav: "Teachers", title: "Teachers", description: "Invite teachers and grant permission to edit shared lessons.",
         add: "＋ Add teacher", empty: "No other teachers yet", emptyHint: "Invite a colleague and choose what they can do.",
         inviteTitle: "Add teacher", editTitle: "Teacher permissions", email: "Teacher email", role: "Role", teacher: "Teacher",
         passwordTitle: "Create a password", passwordHint: "Invitation accepted. Create a password to access your workspace.", password: "Password (at least 8 characters)", setPassword: "Save password",
-        permissions: "Access permissions", viewClasses: "View classes and students", manageClasses: "Manage classes and students",
-        viewLessons: "View and assign lessons", editLessons: "Create and edit lessons",
+        permissions: "Lesson access", viewClasses: "View classes and students", manageClasses: "Manage classes and students",
+        viewLessons: "View and assign lessons", editLessons: "Edit shared lessons",
         manageTeachers: "Invite and manage teachers", cancel: "Cancel", invite: "Send invitation",
-        save: "Save permissions", edit: "Edit permissions", remove: "Remove access", removeConfirm: "Remove {email}'s access to this workspace?",
-        memberRole: "Teacher", noPermission: "Select at least one permission.",
+        save: "Save access", edit: "Edit access", remove: "Remove editor access", removeConfirm: "Remove lesson-editing access for {email}?",
+        memberRole: "Teacher", noPermission: "Select at least one permission.", noEditor: "Cannot edit lessons",
         added: "Teacher added to the workspace. An invitation email was sent if they did not already have an account.", updated: "Permissions updated.",
         removed: "Teacher access removed.", error: "Could not update access:"
     }
 };
 const permissionLabels = [
-    ["view_classes_students", "viewClasses"],
-    ["manage_classes_students", "manageClasses"],
-    ["view_assign_lessons", "viewLessons"],
-    ["edit_lessons", "editLessons"],
-    ["manage_teachers", "manageTeachers"]
+    ["edit_lessons", "editLessons"]
 ];
+const roleLabels = { admin: { ua: "Адміністратор", ru: "Администратор", en: "Administrator" } };
 const ownerPermissions = Object.fromEntries(permissionLabels.map(([key]) => [key, true]));
 let currentLanguage = ["ua", "ru", "en"].includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
 let currentUser = null;
@@ -259,7 +256,7 @@ const modalCard = document.getElementById("modalCard");
 
 function loadData() {
     try {
-        const saved = localStorage.getItem(STORAGE_KEY);
+        const saved = localStorage.getItem(storageKey());
         if (!saved) return structuredClone(initialData);
         const parsed = JSON.parse(saved);
         if (!parsed || !Array.isArray(parsed.classes) || !Array.isArray(parsed.lessons)) {
@@ -281,14 +278,18 @@ function loadData() {
     }
 }
 
-function persist() {
+function storageKey(userId = currentUser?.id) {
+    return `${STORAGE_KEY}:${userId || "demo"}`;
+}
+
+function persist(deletedLessonIds = []) {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        localStorage.setItem(storageKey(), JSON.stringify(data));
         if (currentUser && window.teacherWorkspaceApi) {
             const snapshot = structuredClone(data);
             const userId = currentUser.id;
             workspaceSaveQueue = workspaceSaveQueue
-                .then(() => window.teacherWorkspaceApi.saveWorkspace(window.supabaseClient, userId, snapshot, workspaceAccess))
+                .then(() => window.teacherWorkspaceApi.saveWorkspace(window.supabaseClient, userId, snapshot, workspaceAccess, deletedLessonIds))
                 .catch((error) => {
                     console.error("Не удалось синхронизировать кабинет с Supabase.", error);
                     showToast(`${t("toast.databaseSaveError")} ${error.message}`);
@@ -344,6 +345,7 @@ async function loadCurrentUser() {
         if (sessionError) throw sessionError;
         if (!session) {
             updateUserIdentity(null);
+            data = loadData();
             workspaceAccess = { workspaceOwnerId: null, permissions: ownerPermissions, staff: [] };
             translateStaticUI();
             render();
@@ -352,6 +354,7 @@ async function loadCurrentUser() {
         const { data: { user }, error } = await window.supabaseClient.auth.getUser();
         if (error) throw error;
         updateUserIdentity(user);
+        data = { classes: [], lessons: [] };
         workspaceAccess = { workspaceOwnerId: null, permissions: {}, staff: [] };
         translateStaticUI();
         render();
@@ -360,10 +363,11 @@ async function loadCurrentUser() {
             data = workspace.data;
             workspaceAccess = {
                 workspaceOwnerId: workspace.workspaceOwnerId,
+                role: workspace.role,
                 permissions: workspace.permissions,
                 staff: workspace.staff
             };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            localStorage.setItem(storageKey(user.id), JSON.stringify(data));
             translateStaticUI();
             render();
             const storageNote = document.querySelector(".storage-note");
@@ -377,6 +381,7 @@ async function loadCurrentUser() {
     } catch (error) {
         console.error("Could not load the signed-in user profile.", error);
         updateUserIdentity(null);
+        data = loadData();
         workspaceAccess = { workspaceOwnerId: null, permissions: ownerPermissions, staff: [] };
         translateStaticUI();
         render();
@@ -777,6 +782,9 @@ function translateStaticUI() {
     const staffNav = document.querySelector(".staff-nav-item");
     staffNav.hidden = !hasPermission("manage_teachers");
     staffNav.querySelector("[data-staff-nav]").textContent = staffText("nav");
+    document.querySelectorAll('[data-i18n="teacher.role"]').forEach((element) => {
+        element.textContent = workspaceAccess.role === "admin" ? roleLabels.admin[currentLanguage] : t("teacher.role");
+    });
     document.querySelector('[data-view="classes"]').hidden = !hasPermission("view_classes_students") && !hasPermission("manage_classes_students");
     document.querySelector('[data-view="students"]').hidden = !hasPermission("view_classes_students") && !hasPermission("manage_classes_students");
     document.querySelector('[data-view="lessons"]').hidden = !hasPermission("view_assign_lessons") && !hasPermission("edit_lessons");
@@ -792,7 +800,8 @@ function renderOverview() {
     const firstName = profileMetadata.first_name || profileMetadata.firstName;
     const profileName = [firstName, profileMetadata.last_name || profileMetadata.lastName].filter(Boolean).join(" ") || profileMetadata.full_name || profileMetadata.name || currentUser?.email || t("profile.signedOut");
     const initials = [firstName, profileMetadata.last_name || profileMetadata.lastName].filter(Boolean).map((part) => part[0]).join("").toLocaleUpperCase() || initialsFor(profileName);
-    return `<section class="profile-hero"><div class="profile-identity"><span class="profile-avatar">${escapeHtml(initials)}</span><div><span class="eyebrow">✦ ${t("welcome.badge")}</span><h1 id="welcomeHeading">${t("welcome.title", { name: firstName || profileName })}</h1><p>${escapeHtml(currentUser?.email || t("profile.notSignedIn"))}</p></div></div><div class="profile-role">${t("teacher.role")}</div></section>
+    const roleLabel = workspaceAccess.role === "admin" ? roleLabels.admin[currentLanguage] : t("teacher.role");
+    return `<section class="profile-hero"><div class="profile-identity"><span class="profile-avatar">${escapeHtml(initials)}</span><div><span class="eyebrow">✦ ${t("welcome.badge")}</span><h1 id="welcomeHeading">${t("welcome.title", { name: firstName || profileName })}</h1><p>${escapeHtml(currentUser?.email || t("profile.notSignedIn"))}</p></div></div><div class="profile-role">${roleLabel}</div></section>
         <div class="profile-welcome"><div><h2>${t("profile.dashboardTitle")}</h2><p>${t("profile.dashboardHint")}</p><span class="storage-note">${t("welcome.storage")}</span></div>${hasPermission("edit_lessons") ? `<button class="button" data-action="new-lesson">${t("action.createLesson")}</button>` : ""}</div>
         <div class="stats-grid profile-stats">
             <article class="stat-card"><span class="stat-icon">▣</span><span>${t("stat.classes")}</span><strong>${data.classes.length}</strong></article>
@@ -820,7 +829,7 @@ function renderClasses() {
         <div class="card-grid class-grid">${filtered.length ? filtered.map((item, index) => `<article class="class-card class-card-enhanced class-tone-${index % 4}">
             ${canManageClasses ? `<div class="card-actions"><button class="mini-action" data-action="edit-class" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editClass")}">✎</button><button class="mini-action" data-action="delete-class" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}">×</button></div>` : ""}
             <div class="class-card-top"><span class="class-card-avatar">${escapeHtml(item.name.slice(0, 2).toUpperCase())}</span><span class="class-course-pill">${escapeHtml(formatCourse(item.course))}</span></div><h3>${escapeHtml(item.name)}</h3>
-            <div class="class-teacher-line"><span class="class-person-icon" aria-hidden="true">♙</span><span><small>${t("classes.teacherLabel")}</small><strong>${escapeHtml(teacherName)}</strong></span></div>
+            <div class="class-teacher-line"><span class="class-person-icon" aria-hidden="true">♙</span><span><small>${t("classes.teacherLabel")}</small><strong>${escapeHtml(item.teacherName || teacherName)}</strong></span></div>
             <div class="class-roster"><div class="class-roster-heading"><strong>${t("classes.studentsLabel")}</strong><span>${item.students.length}</span></div>
                 ${item.students.length ? `<ul class="class-roster-list">${item.students.map((student) => `<li><span class="class-student-avatar">${escapeHtml(student.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toLocaleUpperCase())}</span><span>${escapeHtml(student)}</span></li>`).join("")}</ul>` : `<p class="class-roster-empty">${t("classes.noStudents")}</p>`}
             </div>
@@ -862,7 +871,7 @@ function renderStaff() {
     const members = workspaceAccess.staff || [];
     return `<div class="section-heading"><div><h1>${staffText("title")}</h1><p>${staffText("description")}</p></div><button class="button" data-action="add-teacher">${staffText("add")}</button></div>
         <div class="staff-grid">
-            ${members.length ? members.map((member) => `<article class="staff-card"><span class="avatar">${escapeHtml(initialsFor(member.email))}</span><div class="staff-card-main"><strong>${escapeHtml(member.email)}</strong><small>${staffText("memberRole")}</small><span class="staff-permissions">${permissionLabels.filter(([key]) => member.permissions?.[key]).map(([, label]) => staffText(label)).join(" · ")}</span></div>
+            ${members.length ? members.map((member) => `<article class="staff-card"><span class="avatar">${escapeHtml(initialsFor(member.email))}</span><div class="staff-card-main"><strong>${escapeHtml(member.email)}</strong><small>${staffText("memberRole")}</small><span class="staff-permissions">${permissionLabels.filter(([key]) => member.permissions?.[key]).map(([, label]) => staffText(label)).join(" · ") || staffText("noEditor")}</span></div>
                 <div class="staff-card-actions"><button type="button" class="button secondary small" data-action="edit-teacher" data-id="${escapeHtml(member.id)}">${staffText("edit")}</button><button type="button" class="mini-action" data-action="remove-teacher" data-id="${escapeHtml(member.id)}" aria-label="${staffText("remove")}" title="${staffText("remove")}">×</button></div></article>`).join("") : emptyMessage(staffText("empty"), staffText("emptyHint"))}
         </div>`;
 }
@@ -903,10 +912,11 @@ function openTeacherForm(member = null) {
             data = workspace.data;
             workspaceAccess = {
                 workspaceOwnerId: workspace.workspaceOwnerId,
+                role: workspace.role,
                 permissions: workspace.permissions,
                 staff: workspace.staff
             };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            localStorage.setItem(storageKey(currentUser.id), JSON.stringify(data));
             closeModal();
             translateStaticUI();
             render();
@@ -957,10 +967,11 @@ async function removeTeacher(memberId) {
         data = workspace.data;
         workspaceAccess = {
             workspaceOwnerId: workspace.workspaceOwnerId,
+            role: workspace.role,
             permissions: workspace.permissions,
             staff: workspace.staff
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        localStorage.setItem(storageKey(currentUser.id), JSON.stringify(data));
         render();
         showToast(staffText("removed"));
     } catch (error) {
@@ -1294,7 +1305,7 @@ function openClassEditor(item) {
         const form = new FormData(event.currentTarget);
         const name = String(form.get("name")).trim();
         if (!name) return;
-        const updated = { id: item?.id || crypto.randomUUID(), name, course: String(form.get("course")).trim() || t("class.unnamedCourse"), students: String(form.get("students")).split(",").map((student) => student.trim()).filter(Boolean) };
+        const updated = { id: item?.id || crypto.randomUUID(), teacherId: item?.teacherId || currentUser?.id, teacherName: item?.teacherName, name, course: String(form.get("course")).trim() || t("class.unnamedCourse"), students: String(form.get("students")).split(",").map((student) => student.trim()).filter(Boolean) };
         if (item) data.classes = data.classes.map((current) => current.id === item.id ? updated : current);
         else data.classes.push(updated);
         persist();
@@ -1332,10 +1343,11 @@ function openStudentInvite(group) {
             data = workspace.data;
             workspaceAccess = {
                 workspaceOwnerId: workspace.workspaceOwnerId,
+                role: workspace.role,
                 permissions: workspace.permissions,
                 staff: workspace.staff
             };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            localStorage.setItem(storageKey(currentUser.id), JSON.stringify(data));
             closeModal();
             render();
             showToast(t("toast.studentInvited"));
@@ -1572,7 +1584,7 @@ function saveLesson(event) {
         return;
     }
     const existingLesson = data.lessons.find((current) => current.id === editingLessonId);
-    const lesson = { id: editingLessonId || crypto.randomUUID(), title, unit, classIds: existingLesson ? lessonClassIds(existingLesson) : [], sections: structuredClone(draftSections), activities: draftSections.flatMap((section) => section.activities) };
+    const lesson = { id: editingLessonId || crypto.randomUUID(), teacherId: existingLesson?.teacherId || currentUser?.id, title, unit, classIds: existingLesson ? lessonClassIds(existingLesson) : [], sections: structuredClone(draftSections), activities: draftSections.flatMap((section) => section.activities) };
     const previousLessons = data.lessons;
     const wasEditing = Boolean(editingLessonId);
     data.lessons = editingLessonId
@@ -1624,7 +1636,7 @@ function deleteLesson(id) {
     const lesson = data.lessons.find((item) => item.id === id);
     if (!lesson || !window.confirm(t("confirm.deleteLesson", { name: lesson.title }))) return;
     data.lessons = data.lessons.filter((item) => item.id !== id);
-    persist();
+    persist([id]);
     render();
     showToast(t("toast.lessonDeleted"));
 }
