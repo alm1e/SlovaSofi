@@ -2,20 +2,57 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#f5f8f5">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f3f7f2">
     <title>SlovaSofi · Учнівський кабінет</title>
+    <link rel="stylesheet" href="assets/css/teacher.css">
     <link rel="stylesheet" href="assets/css/student.css">
 </head>
-<body>
-    <main class="student-shell">
-        <a class="student-brand" href="index.html"><span>S</span> Slova<span>Sofi</span></a>
-        <section class="student-card" id="studentCard" aria-live="polite">
-            <p class="student-eyebrow">SLOVASOFI</p>
-            <h1 id="studentHeading">Завантаження…</h1>
-            <p id="studentMessage"></p>
-        </section>
+<body class="platform student-platform">
+    <aside class="sidebar" id="studentSidebar">
+        <a class="brand" href="index.html" aria-label="SlovaSofi — на головну">
+            <span class="brand-mark">S</span>
+            <span>Slova<span class="brand-accent">Sofi</span><small>STUDENT SPACE</small></span>
+        </a>
+        <nav class="side-nav" aria-label="Навігація">
+            <button class="nav-item active" type="button" data-view="classes">
+                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M8 4.5v15M8 9h12.5M8 14h12.5"/></svg></span>
+                <span data-i18n="nav.classes">Мої класи</span>
+            </button>
+            <button class="nav-item" type="button" data-view="lessons">
+                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21V5.5Z"/><path d="M4 6h13M8 9.5h8M8 13h7"/></svg></span>
+                <span data-i18n="nav.lessons">Мои уроки</span>
+            </button>
+        </nav>
+        <div class="sidebar-bottom">
+            <div class="teacher-mini student-identity">
+                <span class="avatar student-avatar">…</span>
+                <span class="user-summary"><b class="student-name">Загрузка…</b><small data-i18n="profile.role">Ученик</small></span>
+            </div>
+            <button class="student-logout" id="studentLogout" type="button" data-i18n="profile.logout">Выйти из профиля</button>
+            <a class="home-link" href="index.html" data-i18n="nav.home">← На главную</a>
+        </div>
+    </aside>
+
+    <main class="main-area">
+        <header class="topbar">
+            <button class="icon-button menu-toggle" id="studentMenuToggle" type="button" aria-label="Открыть меню">☰</button>
+            <div class="breadcrumbs">SlovaSofi <span>/</span> <b id="studentBreadcrumb">Мои классы</b></div>
+            <div class="topbar-right">
+                <div class="lang-switcher" role="group" aria-label="Язык">
+                    <button class="language-button" type="button" data-lang="ua" aria-label="Українська">UA</button>
+                    <button class="language-button" type="button" data-lang="ru" aria-label="Русский">RU</button>
+                    <button class="language-button" type="button" data-lang="en" aria-label="English">EN</button>
+                </div>
+                <span class="student-profile-avatar" aria-label="Профиль ученика">
+                    <span class="avatar top-avatar student-avatar">…</span>
+                </span>
+            </div>
+        </header>
+        <section class="page-content" id="studentPageContent"></section>
     </main>
+
+    <div class="toast" id="studentToast" role="status" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase-config.js"></script>
     <script src="assets/js/student.js"></script>
