@@ -72,8 +72,21 @@ Deno.serve(async (request: Request) => {
     const adminClient = createClient(supabaseUrl, serviceRoleKey, {
         auth: { autoRefreshToken: false, persistSession: false }
     });
+    const [{ data: context, error: contextError }, { data: canManageClasses, error: permissionError }] = await Promise.all([
+        userClient.rpc("teacher_workspace_context"),
+        userClient.rpc("teacher_workspace_has_permission", { permission_name: "manage_classes_students" })
+    ]);
+    if (contextError || permissionError || !context?.owner_id) {
+        console.error("Could not verify student invitation permissions.", contextError || permissionError);
+        return jsonResponse(500, { error: "Could not verify workspace permissions. Apply the latest database migration." }, configuredOrigin);
+    }
+    if (canManageClasses !== true) {
+        return jsonResponse(403, { error: "You do not have permission to manage class students." }, configuredOrigin);
+    }
+
+    const workspaceOwnerId = String(context.owner_id);
     const { data: group, error: classError } = await adminClient.from("teacher_classes")
-        .select("id").eq("id", classId).eq("teacher_id", user.id).maybeSingle();
+        .select("id").eq("id", classId).eq("teacher_id", workspaceOwnerId).maybeSingle();
     if (classError) {
         console.error("Could not verify class ownership.", classError);
         return jsonResponse(500, { error: "Could not verify that this class belongs to you." }, configuredOrigin);
@@ -89,7 +102,7 @@ Deno.serve(async (request: Request) => {
     if (existingStudent) return jsonResponse(409, { error: "This email is already in the class." }, configuredOrigin);
 
     const { data: studentRecord, error: insertError } = await adminClient.from("class_students")
-        .insert({ class_id: classId, teacher_id: user.id, display_name: displayName, email })
+        .insert({ class_id: classId, teacher_id: workspaceOwnerId, display_name: displayName, email })
         .select("id").single();
     if (insertError) {
         console.error("Could not add the student invitation to the class.", insertError);

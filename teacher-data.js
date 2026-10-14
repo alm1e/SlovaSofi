@@ -4,12 +4,19 @@
     }
 
     async function loadWorkspace(client, userId) {
+        const { data: context, error: contextError } = await client.rpc("teacher_workspace_context");
+        fail(contextError, "Не удалось определить школьный кабинет и права доступа");
+        if (!context?.owner_id || !context?.permissions) {
+            throw new Error("Не удалось определить школьный кабинет и права доступа.");
+        }
+        const ownerId = context.owner_id;
+        const permissions = context.permissions;
         const [settingsResult, classesResult, lessonsResult, rosterResult, assignmentsResult] = await Promise.all([
-            client.from("teacher_workspace_settings").select("legacy_imported").eq("user_id", userId).maybeSingle(),
-            client.from("teacher_classes").select("id,name,course").eq("teacher_id", userId).order("created_at"),
-            client.from("teacher_lessons").select("id,title,unit,activities").eq("teacher_id", userId).order("created_at"),
-            client.from("class_students").select("id,class_id,display_name,email,linked_user_id").eq("teacher_id", userId),
-            client.from("class_lesson_assignments").select("class_id,lesson_id").eq("teacher_id", userId)
+            client.from("teacher_workspace_settings").select("legacy_imported").eq("user_id", ownerId).maybeSingle(),
+            client.from("teacher_classes").select("id,name,course").eq("teacher_id", ownerId).order("created_at"),
+            client.from("teacher_lessons").select("id,title,unit,activities").eq("teacher_id", ownerId).order("created_at"),
+            client.from("class_students").select("id,class_id,display_name,email,linked_user_id").eq("teacher_id", ownerId),
+            client.from("class_lesson_assignments").select("class_id,lesson_id").eq("teacher_id", ownerId)
         ]);
         fail(settingsResult.error, "Не удалось загрузить настройки кабинета");
         fail(classesResult.error, "Не удалось загрузить классы");
@@ -45,8 +52,21 @@
         });
         const settings = settingsResult.data;
 
-        if (!settings?.legacy_imported) await saveSettings(client, userId, true);
-        return { data: { classes, lessons }, migratedLegacy: false };
+        if (userId === ownerId && !settings?.legacy_imported) await saveSettings(client, ownerId, true);
+        let staff = [];
+        if (permissions.manage_teachers) {
+            const { data: staffRows, error: staffError } = await client.from("teacher_workspace_members")
+                .select("id,email,permissions,created_at").eq("owner_id", ownerId).order("created_at");
+            fail(staffError, "Не удалось загрузить список преподавателей");
+            staff = staffRows;
+        }
+        return {
+            data: { classes, lessons },
+            migratedLegacy: false,
+            workspaceOwnerId: ownerId,
+            permissions,
+            staff
+        };
     }
 
     async function saveSettings(client, userId, legacyImported) {
@@ -57,25 +77,33 @@
         fail(error, "Не удалось сохранить настройки кабинета");
     }
 
-    async function saveWorkspace(client, userId, data) {
-        const classes = data.classes.map(({ id, name, course }) => ({ id, teacher_id: userId, name, course }));
-        const lessons = data.lessons.map(({ id, title, unit, activities, sections }) => ({
-            id,
-            teacher_id: userId,
-            title,
-            unit,
-            activities: Array.isArray(sections) && sections.length
-                ? { format: "sections-v1", sections }
-                : Array.isArray(activities) ? activities : [],
-            updated_at: new Date().toISOString()
-        }));
-        await upsertRows(client, "teacher_classes", classes, "Не удалось сохранить классы");
-        await syncRoster(client, userId, data.classes);
-        await upsertRows(client, "teacher_lessons", lessons, "Не удалось сохранить уроки");
-        await syncAssignments(client, userId, data.classes, data.lessons);
-        await deleteMissing(client, "teacher_classes", userId, classes.map((row) => row.id), "Не удалось удалить классы");
-        await deleteMissing(client, "teacher_lessons", userId, lessons.map((row) => row.id), "Не удалось удалить уроки");
-        await saveSettings(client, userId, true);
+    async function saveWorkspace(client, userId, data, access) {
+        const ownerId = access?.workspaceOwnerId || userId;
+        const permissions = access?.permissions || {};
+        if (permissions.manage_classes_students) {
+            const classes = data.classes.map(({ id, name, course }) => ({ id, teacher_id: ownerId, name, course }));
+            await upsertRows(client, "teacher_classes", classes, "Не удалось сохранить классы");
+            await syncRoster(client, ownerId, data.classes);
+            await deleteMissing(client, "teacher_classes", ownerId, classes.map((row) => row.id), "Не удалось удалить классы");
+        }
+        if (permissions.edit_lessons) {
+            const lessons = data.lessons.map(({ id, title, unit, activities, sections }) => ({
+                id,
+                teacher_id: ownerId,
+                title,
+                unit,
+                activities: Array.isArray(sections) && sections.length
+                    ? { format: "sections-v1", sections }
+                    : Array.isArray(activities) ? activities : [],
+                updated_at: new Date().toISOString()
+            }));
+            await upsertRows(client, "teacher_lessons", lessons, "Не удалось сохранить уроки");
+            await deleteMissing(client, "teacher_lessons", ownerId, lessons.map((row) => row.id), "Не удалось удалить уроки");
+        }
+        if (permissions.view_assign_lessons) {
+            await syncAssignments(client, ownerId, data.classes, data.lessons);
+        }
+        if (ownerId === userId) await saveSettings(client, ownerId, true);
     }
 
     async function inviteStudent(client, classId, displayName, email) {
@@ -160,5 +188,24 @@
         fail(error, operation);
     }
 
-    window.teacherWorkspaceApi = { loadWorkspace, saveWorkspace, inviteStudent };
+    async function manageTeacher(client, payload) {
+        const { data, error } = await client.functions.invoke("manage-teachers", { body: payload });
+        if (error) {
+            let message = error.message || "Не удалось изменить доступ преподавателя.";
+            if (error.context instanceof Response) {
+                const responseText = await error.context.text();
+                try {
+                    const responseBody = JSON.parse(responseText);
+                    if (responseBody?.error) message = responseBody.error;
+                } catch {
+                    if (responseText) message = responseText;
+                }
+            }
+            throw new Error(message);
+        }
+        if (data?.error) throw new Error(data.error);
+        return data;
+    }
+
+    window.teacherWorkspaceApi = { loadWorkspace, saveWorkspace, inviteStudent, manageTeacher };
 })();

@@ -134,14 +134,73 @@ Object.assign(translations.en, {
     "classes.studentsLabel": "Students in this class",
     "classes.noStudents": "No students yet"
 });
+const staffLabels = {
+    ua: {
+        nav: "Викладачі", title: "Викладачі", description: "Запрошуйте викладачів до спільного кабінету та керуйте їхніми правами.",
+        add: "＋ Додати викладача", empty: "Поки немає інших викладачів", emptyHint: "Додайте колегу та оберіть, що він зможе робити.",
+        inviteTitle: "Додати викладача", editTitle: "Права доступу викладача", email: "Email викладача", role: "Роль", teacher: "Викладач",
+        passwordTitle: "Створіть пароль", passwordHint: "Запрошення прийнято. Створіть пароль для входу до кабінету.", password: "Пароль (не менше 8 символів)", setPassword: "Зберегти пароль",
+        permissions: "Права доступу", viewClasses: "Перегляд класів і учнів", manageClasses: "Керування класами й учнями",
+        viewLessons: "Перегляд і призначення уроків", editLessons: "Створення та редагування уроків",
+        manageTeachers: "Запрошення й керування викладачами", cancel: "Скасувати", invite: "Надіслати запрошення",
+        save: "Зберегти права", edit: "Змінити права", remove: "Забрати доступ", removeConfirm: "Забрати доступ до шкільного кабінету у {email}?",
+        memberRole: "Викладач", noPermission: "Виберіть хоча б одне право.",
+        added: "Викладача додано до кабінету. Якщо в нього ще немає акаунта, надіслано лист-запрошення.", updated: "Права доступу оновлено.",
+        removed: "Доступ викладача відкликано.", error: "Не вдалося змінити доступ:"
+    },
+    ru: {
+        nav: "Учителя", title: "Учителя", description: "Приглашайте учителей в общий кабинет и настраивайте их права.",
+        add: "＋ Добавить учителя", empty: "Пока нет других учителей", emptyHint: "Добавьте коллегу и выберите, что ему разрешено.",
+        inviteTitle: "Добавить учителя", editTitle: "Права доступа учителя", email: "Email учителя", role: "Роль", teacher: "Учитель",
+        passwordTitle: "Создайте пароль", passwordHint: "Приглашение принято. Создайте пароль для входа в кабинет.", password: "Пароль (не менее 8 символов)", setPassword: "Сохранить пароль",
+        permissions: "Права доступа", viewClasses: "Просмотр классов и учеников", manageClasses: "Управление классами и учениками",
+        viewLessons: "Просмотр и назначение уроков", editLessons: "Создание и редактирование уроков",
+        manageTeachers: "Приглашение и управление учителями", cancel: "Отмена", invite: "Отправить приглашение",
+        save: "Сохранить права", edit: "Изменить права", remove: "Отозвать доступ", removeConfirm: "Отозвать доступ к кабинету у {email}?",
+        memberRole: "Учитель", noPermission: "Выберите хотя бы одно право.",
+        added: "Учитель добавлен в кабинет. Если у него ещё нет аккаунта, отправлено приглашение.", updated: "Права доступа обновлены.",
+        removed: "Доступ учителя отозван.", error: "Не удалось изменить доступ:"
+    },
+    en: {
+        nav: "Teachers", title: "Teachers", description: "Invite teachers to the shared workspace and manage their permissions.",
+        add: "＋ Add teacher", empty: "No other teachers yet", emptyHint: "Invite a colleague and choose what they can do.",
+        inviteTitle: "Add teacher", editTitle: "Teacher permissions", email: "Teacher email", role: "Role", teacher: "Teacher",
+        passwordTitle: "Create a password", passwordHint: "Invitation accepted. Create a password to access your workspace.", password: "Password (at least 8 characters)", setPassword: "Save password",
+        permissions: "Access permissions", viewClasses: "View classes and students", manageClasses: "Manage classes and students",
+        viewLessons: "View and assign lessons", editLessons: "Create and edit lessons",
+        manageTeachers: "Invite and manage teachers", cancel: "Cancel", invite: "Send invitation",
+        save: "Save permissions", edit: "Edit permissions", remove: "Remove access", removeConfirm: "Remove {email}'s access to this workspace?",
+        memberRole: "Teacher", noPermission: "Select at least one permission.",
+        added: "Teacher added to the workspace. An invitation email was sent if they did not already have an account.", updated: "Permissions updated.",
+        removed: "Teacher access removed.", error: "Could not update access:"
+    }
+};
+const permissionLabels = [
+    ["view_classes_students", "viewClasses"],
+    ["manage_classes_students", "manageClasses"],
+    ["view_assign_lessons", "viewLessons"],
+    ["edit_lessons", "editLessons"],
+    ["manage_teachers", "manageTeachers"]
+];
+const ownerPermissions = Object.fromEntries(permissionLabels.map(([key]) => [key, true]));
 let currentLanguage = ["ua", "ru", "en"].includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
 let currentUser = null;
+let workspaceAccess = { workspaceOwnerId: null, permissions: ownerPermissions, staff: [] };
 let workspaceSaveQueue = Promise.resolve();
 let openPopover = "";
 
 function t(key, values = {}) {
     const text = translations[currentLanguage][key] || translations.ru[key] || key;
     return text.replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ""));
+}
+
+function staffText(key, values = {}) {
+    const text = staffLabels[currentLanguage][key] || staffLabels.ru[key];
+    return text.replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ""));
+}
+
+function hasPermission(permission) {
+    return currentUser ? workspaceAccess.permissions?.[permission] === true : permission !== "manage_teachers";
 }
 
 const activityTypes = [
@@ -189,6 +248,8 @@ let draftSections = [];
 let activeLessonSectionId = "";
 let lessonWorkspaceMode = "";
 let workspaceLessonId = "";
+let activeSelectDropdown = null;
+let selectDropdownSequence = 0;
 let toastTimer;
 let refreshModal = null;
 
@@ -227,7 +288,7 @@ function persist() {
             const snapshot = structuredClone(data);
             const userId = currentUser.id;
             workspaceSaveQueue = workspaceSaveQueue
-                .then(() => window.teacherWorkspaceApi.saveWorkspace(window.supabaseClient, userId, snapshot))
+                .then(() => window.teacherWorkspaceApi.saveWorkspace(window.supabaseClient, userId, snapshot, workspaceAccess))
                 .catch((error) => {
                     console.error("Не удалось синхронизировать кабинет с Supabase.", error);
                     showToast(`${t("toast.databaseSaveError")} ${error.message}`);
@@ -283,18 +344,32 @@ async function loadCurrentUser() {
         if (sessionError) throw sessionError;
         if (!session) {
             updateUserIdentity(null);
+            workspaceAccess = { workspaceOwnerId: null, permissions: ownerPermissions, staff: [] };
+            translateStaticUI();
+            render();
             return;
         }
         const { data: { user }, error } = await window.supabaseClient.auth.getUser();
         if (error) throw error;
         updateUserIdentity(user);
+        workspaceAccess = { workspaceOwnerId: null, permissions: {}, staff: [] };
+        translateStaticUI();
+        render();
         try {
             const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, user.id);
             data = workspace.data;
+            workspaceAccess = {
+                workspaceOwnerId: workspace.workspaceOwnerId,
+                permissions: workspace.permissions,
+                staff: workspace.staff
+            };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            translateStaticUI();
             render();
             const storageNote = document.querySelector(".storage-note");
             if (storageNote) storageNote.textContent = t("welcome.database");
+            if (new URLSearchParams(location.hash.slice(1)).get("type") === "invite"
+                || new URLSearchParams(location.search).get("type") === "invite") openTeacherPasswordForm();
         } catch (workspaceError) {
             console.error("Could not load the teacher workspace from Supabase.", workspaceError);
             showToast(`${t("toast.databaseLoadError")} ${workspaceError.message}`);
@@ -302,6 +377,9 @@ async function loadCurrentUser() {
     } catch (error) {
         console.error("Could not load the signed-in user profile.", error);
         updateUserIdentity(null);
+        workspaceAccess = { workspaceOwnerId: null, permissions: ownerPermissions, staff: [] };
+        translateStaticUI();
+        render();
         showToast(t("profile.loadError"));
     }
 }
@@ -482,13 +560,17 @@ function formatCourse(course) {
 }
 
 function setView(view) {
+    if (view === "staff" && !hasPermission("manage_teachers")) return;
+    if (view === "classes" && !hasPermission("view_classes_students") && !hasPermission("manage_classes_students")) return;
+    if (view === "students" && !hasPermission("view_classes_students") && !hasPermission("manage_classes_students")) return;
+    if (view === "lessons" && !hasPermission("view_assign_lessons") && !hasPermission("edit_lessons")) return;
     lessonWorkspaceMode = "";
     workspaceLessonId = "";
     editingLessonId = null;
     draftSections = [];
     activeLessonSectionId = "";
     activeView = view;
-    document.getElementById("breadcrumb").textContent = t(`page.${view}`);
+    document.getElementById("breadcrumb").textContent = view === "staff" ? staffText("title") : t(`page.${view}`);
     document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
     document.getElementById("sidebar").classList.remove("open");
     render();
@@ -499,9 +581,127 @@ function render() {
         renderLessonWorkspace();
         return;
     }
-    const renderers = { overview: renderOverview, classes: renderClasses, lessons: renderLessons, students: renderStudents };
+    const renderers = { overview: renderOverview, classes: renderClasses, lessons: renderLessons, students: renderStudents, staff: renderStaff };
     pageContent.innerHTML = renderers[activeView]();
     bindPageActions();
+    enhanceSelects(pageContent);
+}
+
+function enhanceSelects(root) {
+    root.querySelectorAll("select:not(.teacher-select-native)").forEach((select) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "teacher-select";
+        const id = `teacher-select-${++selectDropdownSequence}`;
+        const trigger = document.createElement("button");
+        trigger.type = "button";
+        trigger.className = "select-trigger";
+        trigger.setAttribute("aria-haspopup", "listbox");
+        trigger.setAttribute("aria-expanded", "false");
+        trigger.setAttribute("aria-controls", `${id}-options`);
+        const associatedLabel = select.labels?.[0]?.textContent.trim();
+        const accessibleName = select.getAttribute("aria-label") || associatedLabel;
+        if (accessibleName) trigger.setAttribute("aria-label", accessibleName);
+        const label = document.createElement("span");
+        label.className = "select-trigger-label";
+        const chevron = document.createElement("span");
+        chevron.className = "select-chevron";
+        chevron.setAttribute("aria-hidden", "true");
+        chevron.textContent = "⌄";
+        trigger.append(label, chevron);
+
+        const listbox = document.createElement("div");
+        listbox.className = "select-options";
+        listbox.id = `${id}-options`;
+        listbox.setAttribute("role", "listbox");
+        if (accessibleName) listbox.setAttribute("aria-label", accessibleName);
+
+        const syncSelection = () => {
+            const selectedOption = select.options[select.selectedIndex];
+            label.textContent = selectedOption?.textContent || "";
+            listbox.querySelectorAll('[role="option"]').forEach((option, index) => {
+                const isSelected = index === select.selectedIndex;
+                option.setAttribute("aria-selected", String(isSelected));
+                option.classList.toggle("selected", isSelected);
+            });
+        };
+
+        Array.from(select.options).forEach((option, index) => {
+            const item = document.createElement("button");
+            item.type = "button";
+            item.className = "select-option";
+            item.tabIndex = -1;
+            item.setAttribute("role", "option");
+            item.setAttribute("aria-selected", String(index === select.selectedIndex));
+            item.textContent = option.textContent;
+            item.disabled = option.disabled;
+            item.addEventListener("click", () => {
+                select.selectedIndex = index;
+                syncSelection();
+                closeSelectDropdown();
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+                trigger.focus();
+            });
+            listbox.append(item);
+        });
+
+        const openListbox = () => {
+            if (activeSelectDropdown === wrapper) {
+                closeSelectDropdown();
+                return;
+            }
+            closeSelectDropdown();
+            activeSelectDropdown = wrapper;
+            wrapper.classList.add("open");
+            trigger.setAttribute("aria-expanded", "true");
+            const spaceBelow = window.innerHeight - wrapper.getBoundingClientRect().bottom;
+            const spaceAbove = wrapper.getBoundingClientRect().top;
+            listbox.classList.toggle("opens-up", spaceBelow < Math.min(listbox.scrollHeight, 240) && spaceAbove > spaceBelow);
+            listbox.querySelector('[aria-selected="true"]:not(:disabled), [role="option"]:not(:disabled)')?.focus();
+        };
+
+        trigger.addEventListener("click", openListbox);
+        trigger.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                if (activeSelectDropdown !== wrapper) openListbox();
+                else listbox.querySelector('[aria-selected="true"]:not(:disabled), [role="option"]:not(:disabled)')?.focus();
+            }
+        });
+        listbox.addEventListener("keydown", (event) => {
+            const enabledOptions = Array.from(listbox.querySelectorAll('[role="option"]:not(:disabled)'));
+            const currentIndex = enabledOptions.indexOf(document.activeElement);
+            let nextIndex = currentIndex;
+            if (event.key === "ArrowDown") nextIndex = Math.min(currentIndex + 1, enabledOptions.length - 1);
+            else if (event.key === "ArrowUp") nextIndex = Math.max(currentIndex - 1, 0);
+            else if (event.key === "Home") nextIndex = 0;
+            else if (event.key === "End") nextIndex = enabledOptions.length - 1;
+            else if (event.key === "Escape") {
+                event.preventDefault();
+                closeSelectDropdown();
+                trigger.focus();
+                return;
+            } else if (event.key === "Tab") {
+                closeSelectDropdown();
+                return;
+            } else return;
+            event.preventDefault();
+            enabledOptions[nextIndex]?.focus();
+        });
+
+        select.classList.add("teacher-select-native");
+        select.tabIndex = -1;
+        select.setAttribute("aria-hidden", "true");
+        select.parentNode.insertBefore(wrapper, select);
+        wrapper.append(trigger, listbox, select);
+        syncSelection();
+    });
+}
+
+function closeSelectDropdown() {
+    if (!activeSelectDropdown) return;
+    activeSelectDropdown.classList.remove("open");
+    activeSelectDropdown.querySelector(".select-trigger").setAttribute("aria-expanded", "false");
+    activeSelectDropdown = null;
 }
 
 function lessonSectionText(key) {
@@ -547,11 +747,17 @@ function setLanguage(language) {
     render();
     if (!modalBackdrop.hidden && refreshModal) {
         const getFieldKey = (element, index) => element.name || element.id || (element.dataset.field ? `${element.closest(".builder-block")?.dataset.blockIndex}:${element.dataset.field}` : `field-${index}`);
-        const values = new Map([...modalCard.querySelectorAll("input, textarea, select")].map((element, index) => [getFieldKey(element, index), element.value]));
+        const values = new Map([...modalCard.querySelectorAll("input, textarea, select")].map((element, index) => [
+            getFieldKey(element, index),
+            { value: element.value, checked: "checked" in element ? element.checked : undefined }
+        ]));
         refreshModal();
         modalCard.querySelectorAll("input, textarea, select").forEach((element, index) => {
-            const value = values.get(getFieldKey(element, index));
-            if (value !== undefined) element.value = value;
+            const saved = values.get(getFieldKey(element, index));
+            if (saved) {
+                element.value = saved.value;
+                if (saved.checked !== undefined) element.checked = saved.checked;
+            }
         });
     }
 }
@@ -567,7 +773,13 @@ function translateStaticUI() {
         button.classList.toggle("active", button.dataset.lang === currentLanguage);
         button.setAttribute("aria-pressed", button.dataset.lang === currentLanguage ? "true" : "false");
     });
-    document.getElementById("breadcrumb").textContent = t(`page.${activeView}`);
+    document.getElementById("breadcrumb").textContent = activeView === "staff" ? staffText("title") : t(`page.${activeView}`);
+    const staffNav = document.querySelector(".staff-nav-item");
+    staffNav.hidden = !hasPermission("manage_teachers");
+    staffNav.querySelector("[data-staff-nav]").textContent = staffText("nav");
+    document.querySelector('[data-view="classes"]').hidden = !hasPermission("view_classes_students") && !hasPermission("manage_classes_students");
+    document.querySelector('[data-view="students"]').hidden = !hasPermission("view_classes_students") && !hasPermission("manage_classes_students");
+    document.querySelector('[data-view="lessons"]').hidden = !hasPermission("view_assign_lessons") && !hasPermission("edit_lessons");
     document.getElementById("menuToggle").setAttribute("aria-label", t("menu.open"));
     document.title = `SlovaSofi · ${t("pageTitle")}`;
 }
@@ -581,7 +793,7 @@ function renderOverview() {
     const profileName = [firstName, profileMetadata.last_name || profileMetadata.lastName].filter(Boolean).join(" ") || profileMetadata.full_name || profileMetadata.name || currentUser?.email || t("profile.signedOut");
     const initials = [firstName, profileMetadata.last_name || profileMetadata.lastName].filter(Boolean).map((part) => part[0]).join("").toLocaleUpperCase() || initialsFor(profileName);
     return `<section class="profile-hero"><div class="profile-identity"><span class="profile-avatar">${escapeHtml(initials)}</span><div><span class="eyebrow">✦ ${t("welcome.badge")}</span><h1 id="welcomeHeading">${t("welcome.title", { name: firstName || profileName })}</h1><p>${escapeHtml(currentUser?.email || t("profile.notSignedIn"))}</p></div></div><div class="profile-role">${t("teacher.role")}</div></section>
-        <div class="profile-welcome"><div><h2>${t("profile.dashboardTitle")}</h2><p>${t("profile.dashboardHint")}</p><span class="storage-note">${t("welcome.storage")}</span></div><button class="button" data-action="new-lesson">${t("action.createLesson")}</button></div>
+        <div class="profile-welcome"><div><h2>${t("profile.dashboardTitle")}</h2><p>${t("profile.dashboardHint")}</p><span class="storage-note">${t("welcome.storage")}</span></div>${hasPermission("edit_lessons") ? `<button class="button" data-action="new-lesson">${t("action.createLesson")}</button>` : ""}</div>
         <div class="stats-grid profile-stats">
             <article class="stat-card"><span class="stat-icon">▣</span><span>${t("stat.classes")}</span><strong>${data.classes.length}</strong></article>
             <article class="stat-card"><span class="stat-icon blue">♧</span><span>${t("stat.students")}</span><strong>${studentCount}</strong></article>
@@ -598,24 +810,27 @@ function renderOverview() {
 }
 
 function renderClasses() {
+    const canManageClasses = hasPermission("manage_classes_students");
     const filtered = data.classes.filter((item) => `${item.name} ${item.course}`.toLowerCase().includes(searchQuery.toLowerCase()));
     const metadata = currentUser?.user_metadata || {};
     const teacherName = [metadata.first_name || metadata.firstName, metadata.last_name || metadata.lastName].filter(Boolean).join(" ")
         || metadata.full_name || metadata.name || currentUser?.email || t("profile.signedOut");
     return `<div class="section-heading"><div><h1>${t("classes.title")}</h1><p>${t("classes.description")}</p></div></div>
-        <div class="toolbar"><button class="button secondary" data-action="new-class">${t("classes.create")}</button><input type="search" data-search placeholder="${t("classes.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("classes.search")}"></div>
+        <div class="toolbar">${canManageClasses ? `<button class="button secondary" data-action="new-class">${t("classes.create")}</button>` : ""}<input type="search" data-search placeholder="${t("classes.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("classes.search")}"></div>
         <div class="card-grid class-grid">${filtered.length ? filtered.map((item, index) => `<article class="class-card class-card-enhanced class-tone-${index % 4}">
-            <div class="card-actions"><button class="mini-action" data-action="edit-class" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editClass")}">✎</button><button class="mini-action" data-action="delete-class" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}">×</button></div>
+            ${canManageClasses ? `<div class="card-actions"><button class="mini-action" data-action="edit-class" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editClass")}">✎</button><button class="mini-action" data-action="delete-class" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}">×</button></div>` : ""}
             <div class="class-card-top"><span class="class-card-avatar">${escapeHtml(item.name.slice(0, 2).toUpperCase())}</span><span class="class-course-pill">${escapeHtml(formatCourse(item.course))}</span></div><h3>${escapeHtml(item.name)}</h3>
             <div class="class-teacher-line"><span class="class-person-icon" aria-hidden="true">♙</span><span><small>${t("classes.teacherLabel")}</small><strong>${escapeHtml(teacherName)}</strong></span></div>
             <div class="class-roster"><div class="class-roster-heading"><strong>${t("classes.studentsLabel")}</strong><span>${item.students.length}</span></div>
                 ${item.students.length ? `<ul class="class-roster-list">${item.students.map((student) => `<li><span class="class-student-avatar">${escapeHtml(student.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toLocaleUpperCase())}</span><span>${escapeHtml(student)}</span></li>`).join("")}</ul>` : `<p class="class-roster-empty">${t("classes.noStudents")}</p>`}
             </div>
-            <div class="class-card-meta"><button class="text-link" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${t("classes.lessons")}</button></div>
-            <button class="button secondary small class-invite-button" data-action="invite-student" data-id="${escapeHtml(item.id)}">${t("classes.inviteStudent")}</button></article>`).join("") : emptyMessage(t("classes.notFound"), t("classes.notFoundHint"))}</div>`;
+            <div class="class-card-meta">${hasPermission("view_assign_lessons") || hasPermission("edit_lessons") ? `<button class="text-link" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${t("classes.lessons")}</button>` : ""}</div>
+            ${canManageClasses ? `<button class="button secondary small class-invite-button" data-action="invite-student" data-id="${escapeHtml(item.id)}">${t("classes.inviteStudent")}</button>` : ""}</article>`).join("") : emptyMessage(t("classes.notFound"), t("classes.notFoundHint"))}</div>`;
 }
 
 function renderLessons() {
+    const canEditLessons = hasPermission("edit_lessons");
+    const canAssignLessons = hasPermission("view_assign_lessons");
     const filtered = data.lessons.filter((item) => (!activeClassFilter || lessonClassIds(item).includes(activeClassFilter))
         && `${item.title} ${item.unit} ${lessonClassNames(item)}`.toLowerCase().includes(searchQuery.toLowerCase()));
     const classSelect = `<option value="">${t("lessons.allClasses")}</option>${data.classes.map((item) => `<option value="${escapeHtml(item.id)}" ${activeClassFilter === item.id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}`;
@@ -623,11 +838,11 @@ function renderLessons() {
     const sectionHeading = selectedLessonUnit
         ? `<div class="lesson-breadcrumb"><button class="text-link" type="button" data-action="back-to-units">${t("lessons.title")}</button><span aria-hidden="true">›</span><strong>${selectedLessonUnit}</strong></div>`
         : "";
-    return `${sectionHeading}<div class="section-heading"><div><h1>${selectedLessonUnit || t("lessons.title")}</h1><p>${selectedLessonUnit ? lessonText("levelDescription", { level: selectedLessonUnit }) : lessonText("description")}</p></div><button class="button" data-action="new-lesson">${t("lessons.add")}</button></div>
+    return `${sectionHeading}<div class="section-heading"><div><h1>${selectedLessonUnit || t("lessons.title")}</h1><p>${selectedLessonUnit ? lessonText("levelDescription", { level: selectedLessonUnit }) : lessonText("description")}</p></div>${canEditLessons ? `<button class="button" data-action="new-lesson">${t("lessons.add")}</button>` : ""}</div>
         <div class="toolbar"><select data-class-filter aria-label="${t("lessons.allClasses")}">${classSelect}</select><input type="search" data-search placeholder="${t("lessons.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("lessons.search")}"></div>
         ${selectedLessonUnit ? `<section class="course-hero course-hero-${selectedLessonUnit.toLowerCase()}"><div class="course-hero-art" aria-hidden="true"><span>${selectedLessonUnit}</span></div><div class="course-hero-copy"><span class="course-hero-kicker">${lessonText("courseLabel")}</span><h2>${selectedLessonUnit}</h2><p>${lessonText("levelDescription", { level: selectedLessonUnit })}</p><span class="course-hero-count">${countLabel(selectedLevelLessons.length, "lesson")}</span></div></section>
             <div class="course-lessons-heading"><h2>${lessonText("levelLessons")}</h2><span>${selectedLevelLessons.length}</span></div>
-            <div class="course-lesson-list">${selectedLevelLessons.length ? selectedLevelLessons.map((item) => `<article class="course-lesson-row">${lessonIcon(item)}<div class="lesson-main"><button class="lesson-preview-link" data-action="preview-lesson" data-id="${escapeHtml(item.id)}">${escapeHtml(item.title)}</button><small>${escapeHtml(lessonClassNames(item)) || lessonText("unassigned")} · ${countLabel(lessonActivities(item).length, "activity")}</small></div><div class="course-lesson-actions"><button class="mini-action course-action-preview" data-action="preview-lesson" data-id="${escapeHtml(item.id)}" aria-label="${previewText("open")}" title="${previewText("open")}">↗</button><button class="mini-action" data-action="edit-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editLesson")}" title="${t("modal.editLesson")}">✎</button><button class="mini-action" data-action="assign-lesson" data-id="${escapeHtml(item.id)}" aria-label="${assignmentText("add")}" title="${assignmentText("add")}">⌁</button><button class="mini-action" data-action="delete-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}" title="${t("action.delete")}">×</button></div></article>`).join("") : emptyMessage(data.lessons.length ? lessonText("noSearch") : t("lessons.notFound"), data.lessons.length ? "" : t("lessons.notFoundHint"))}</div>`
+            <div class="course-lesson-list">${selectedLevelLessons.length ? selectedLevelLessons.map((item) => `<article class="course-lesson-row">${lessonIcon(item)}<div class="lesson-main"><button class="lesson-preview-link" data-action="preview-lesson" data-id="${escapeHtml(item.id)}">${escapeHtml(item.title)}</button><small>${escapeHtml(lessonClassNames(item)) || lessonText("unassigned")} · ${countLabel(lessonActivities(item).length, "activity")}</small></div><div class="course-lesson-actions"><button class="mini-action course-action-preview" data-action="preview-lesson" data-id="${escapeHtml(item.id)}" aria-label="${previewText("open")}" title="${previewText("open")}">↗</button>${canEditLessons ? `<button class="mini-action" data-action="edit-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editLesson")}" title="${t("modal.editLesson")}">✎</button>` : ""}${canAssignLessons ? `<button class="mini-action" data-action="assign-lesson" data-id="${escapeHtml(item.id)}" aria-label="${assignmentText("add")}" title="${assignmentText("add")}">⌁</button>` : ""}${canEditLessons ? `<button class="mini-action" data-action="delete-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}" title="${t("action.delete")}">×</button>` : ""}</div></article>`).join("") : emptyMessage(data.lessons.length ? lessonText("noSearch") : t("lessons.notFound"), data.lessons.length ? "" : t("lessons.notFoundHint"))}</div>`
             : `<div class="unit-sections">${LESSON_UNITS.map((unit) => {
                 const unitLessons = filtered.filter((item) => (item.unit || inferLessonUnit(item)) === unit);
                 return `<button type="button" class="unit-card unit-card-link unit-card-${unit.toLowerCase()}" data-unit-open="${unit}"><span class="unit-card-mark">${unit}</span><span class="unit-card-copy"><strong>${unit}</strong><small>${unitLessons.length ? countLabel(unitLessons.length, "lesson") : lessonText("unitEmpty")}</small></span><span class="unit-card-chevron" aria-hidden="true">→</span></button>`;
@@ -635,11 +850,123 @@ function renderLessons() {
 }
 
 function renderStudents() {
+    const canManageClasses = hasPermission("manage_classes_students");
     const students = data.classes.flatMap((item) => item.students.map((name, index) => ({ name, className: item.name, id: `${item.id}-${index}` })));
     const filtered = students.filter((student) => `${student.name} ${student.className}`.toLowerCase().includes(searchQuery.toLowerCase()));
-    return `<div class="section-heading"><div><h1>${t("students.title")}</h1><p>${t("students.description")}</p></div><button class="button secondary" data-view-link="classes">${t("students.manage")}</button></div>
+    return `<div class="section-heading"><div><h1>${t("students.title")}</h1><p>${t("students.description")}</p></div>${canManageClasses ? `<button class="button secondary" data-view-link="classes">${t("students.manage")}</button>` : ""}</div>
         <div class="toolbar"><span class="hint" style="color:#d7e9dd">${t("students.total", { count: students.length })}</span><input type="search" data-search placeholder="${t("students.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("students.search")}"></div>
         <div class="student-list">${filtered.length ? filtered.map((student) => `<div class="student-row"><span class="avatar">${escapeHtml(student.name.split(" ").map((part) => part[0]).join("").slice(0, 2))}</span><div><strong>${escapeHtml(student.name)}</strong><small>${t("students.role")}</small></div><span class="class-label">${escapeHtml(student.className)}</span></div>`).join("") : emptyMessage(t("students.notFound"), t("students.notFoundHint"))}</div>`;
+}
+
+function renderStaff() {
+    const members = workspaceAccess.staff || [];
+    return `<div class="section-heading"><div><h1>${staffText("title")}</h1><p>${staffText("description")}</p></div><button class="button" data-action="add-teacher">${staffText("add")}</button></div>
+        <div class="staff-grid">
+            ${members.length ? members.map((member) => `<article class="staff-card"><span class="avatar">${escapeHtml(initialsFor(member.email))}</span><div class="staff-card-main"><strong>${escapeHtml(member.email)}</strong><small>${staffText("memberRole")}</small><span class="staff-permissions">${permissionLabels.filter(([key]) => member.permissions?.[key]).map(([, label]) => staffText(label)).join(" · ")}</span></div>
+                <div class="staff-card-actions"><button type="button" class="button secondary small" data-action="edit-teacher" data-id="${escapeHtml(member.id)}">${staffText("edit")}</button><button type="button" class="mini-action" data-action="remove-teacher" data-id="${escapeHtml(member.id)}" aria-label="${staffText("remove")}" title="${staffText("remove")}">×</button></div></article>`).join("") : emptyMessage(staffText("empty"), staffText("emptyHint"))}
+        </div>`;
+}
+
+function openTeacherForm(member = null) {
+    const initialPermissions = member?.permissions || {};
+    const isEditing = Boolean(member);
+    const permissionInputs = permissionLabels.map(([key, label]) => `<label class="staff-permission-choice"><input type="checkbox" name="permission_${key}" data-permission-key="${key}" ${initialPermissions[key] ? "checked" : ""}><span>${staffText(label)}</span></label>`).join("");
+    openModal(`${modalHeader(staffText(isEditing ? "editTitle" : "inviteTitle"))}
+        <form id="teacherInviteForm">
+            <div class="form-field"><label for="teacherInviteEmail">${staffText("email")}</label><input id="teacherInviteEmail" name="email" type="email" required maxlength="254" autocomplete="email" value="${escapeHtml(member?.email || "")}" ${isEditing ? "readonly" : ""}></div>
+            <div class="form-field"><span class="staff-field-label">${staffText("role")}</span><div class="staff-role-value">${staffText("teacher")}</div></div>
+            <fieldset class="staff-permission-field"><legend>${staffText("permissions")}</legend>${permissionInputs}</fieldset>
+            <div class="modal-actions"><button type="button" class="button secondary" data-close>${staffText("cancel")}</button><button class="button" type="submit">${staffText(isEditing ? "save" : "invite")}</button></div>
+        </form>`);
+    refreshModal = () => openTeacherForm(member);
+    modalCard.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", closeModal));
+    modalCard.querySelector("#teacherInviteForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const permissions = Object.fromEntries(permissionLabels.map(([key]) => [
+            key,
+            form.querySelector(`[data-permission-key="${key}"]`).checked
+        ]));
+        if (!Object.values(permissions).some(Boolean)) {
+            showToast(staffText("noPermission"));
+            return;
+        }
+        const submitButton = form.querySelector('[type="submit"]');
+        submitButton.disabled = true;
+        try {
+            await window.teacherWorkspaceApi.manageTeacher(window.supabaseClient, {
+                action: isEditing ? "update" : "invite",
+                ...(isEditing ? { memberId: member.id } : { email: String(new FormData(form).get("email")).trim().toLowerCase() }),
+                permissions
+            });
+            const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, currentUser.id);
+            data = workspace.data;
+            workspaceAccess = {
+                workspaceOwnerId: workspace.workspaceOwnerId,
+                permissions: workspace.permissions,
+                staff: workspace.staff
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            closeModal();
+            translateStaticUI();
+            render();
+            showToast(staffText(isEditing ? "updated" : "added"));
+        } catch (error) {
+            console.error("Could not update teacher workspace access.", error);
+            showToast(`${staffText("error")} ${error.message}`);
+            submitButton.disabled = false;
+        }
+    });
+}
+
+function openTeacherPasswordForm() {
+    openModal(`${modalHeader(staffText("passwordTitle"))}
+        <form id="teacherPasswordForm">
+            <p class="assignment-hint">${staffText("passwordHint")}</p>
+            <div class="form-field"><label for="teacherPassword">${staffText("password")}</label><input id="teacherPassword" type="password" minlength="8" autocomplete="new-password" required></div>
+            <div class="modal-actions"><button class="button" type="submit">${staffText("setPassword")}</button></div>
+        </form>`);
+    modalCard.querySelector("#teacherPasswordForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = event.currentTarget.querySelector('[type="submit"]');
+        button.disabled = true;
+        const { error } = await window.supabaseClient.auth.updateUser({
+            password: modalCard.querySelector("#teacherPassword").value
+        });
+        if (error) {
+            console.error("Could not set the invited teacher's password.", error);
+            showToast(`${staffText("error")} ${error.message}`);
+            button.disabled = false;
+            return;
+        }
+        const cleanUrl = new URL(location.href);
+        cleanUrl.searchParams.delete("type");
+        cleanUrl.hash = "";
+        history.replaceState(null, "", `${cleanUrl.pathname}${cleanUrl.search}`);
+        closeModal();
+        showToast(staffText("updated"));
+    });
+}
+
+async function removeTeacher(memberId) {
+    const member = workspaceAccess.staff.find((item) => item.id === memberId);
+    if (!member || !window.confirm(staffText("removeConfirm", { email: member.email }))) return;
+    try {
+        await window.teacherWorkspaceApi.manageTeacher(window.supabaseClient, { action: "remove", memberId });
+        const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, currentUser.id);
+        data = workspace.data;
+        workspaceAccess = {
+            workspaceOwnerId: workspace.workspaceOwnerId,
+            permissions: workspace.permissions,
+            staff: workspace.staff
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        render();
+        showToast(staffText("removed"));
+    } catch (error) {
+        console.error("Could not remove teacher workspace access.", error);
+        showToast(`${staffText("error")} ${error.message}`);
+    }
 }
 
 function lessonIcon(lesson) {
@@ -652,9 +979,9 @@ function lessonRow(lesson) {
 }
 
 const previewLabels = {
-    ua: { open: "Відкрити урок", practice: "Спробуйте виконати завдання. Результати тут не зберігаються.", check: "Перевірити", correct: "Правильно!", incorrect: "Спробуйте ще раз.", noAnswer: "Для цього завдання ще не вказано правильну відповідь.", typeAnswer: "Введіть відповідь", choose: "Виберіть відповідь", drop: "Перетягніть або натисніть слова сюди", bank: "Слова", up: "Вище", down: "Нижче", flip: "Перевернути картку", empty: "У цьому уроці поки немає блоків.", imageError: "Не вдалося завантажити зображення.", mediaError: "Перевірте посилання на медіафайл.", readOnly: "Навчальний матеріал", true: "Так", false: "Ні" },
-    ru: { open: "Открыть урок", practice: "Попробуйте выполнить задания. Результаты здесь не сохраняются.", check: "Проверить", correct: "Верно!", incorrect: "Попробуйте ещё раз.", noAnswer: "Для этого задания ещё не указан правильный ответ.", typeAnswer: "Введите ответ", choose: "Выберите ответ", drop: "Перетащите или нажмите слова сюда", bank: "Слова", up: "Выше", down: "Ниже", flip: "Перевернуть карточку", empty: "В этом уроке пока нет блоков.", imageError: "Не удалось загрузить изображение.", mediaError: "Проверьте ссылку на медиафайл.", readOnly: "Учебный материал", true: "Да", false: "Нет" },
-    en: { open: "Open lesson", practice: "Try the activities. Your results are not saved here.", check: "Check answer", correct: "Correct!", incorrect: "Try again.", noAnswer: "No correct answer has been set for this activity.", typeAnswer: "Type your answer", choose: "Choose an answer", drop: "Drag or click words here", bank: "Words", up: "Move up", down: "Move down", flip: "Flip card", empty: "This lesson has no activities yet.", imageError: "The image could not be loaded.", mediaError: "Check the media link.", readOnly: "Learning material", true: "True", false: "False" }
+    ua: { open: "Відкрити урок", practice: "Спробуйте виконати завдання. Результати тут не зберігаються.", check: "Перевірити", correct: "Правильно!", incorrect: "Спробуйте ще раз.", noAnswer: "Для цього завдання ще не вказано правильну відповідь.", typeAnswer: "Введіть відповідь", choose: "Виберіть відповідь", drop: "Перетягніть або натисніть слова сюди", bank: "Слова", answer: "Ваше речення", up: "Вище", down: "Нижче", flip: "Перевернути картку", empty: "У цьому уроці поки немає блоків.", imageError: "Не вдалося завантажити зображення.", mediaError: "Перевірте посилання на медіафайл.", readOnly: "Навчальний матеріал", true: "Так", false: "Ні" },
+    ru: { open: "Открыть урок", practice: "Попробуйте выполнить задания. Результаты здесь не сохраняются.", check: "Проверить", correct: "Верно!", incorrect: "Попробуйте ещё раз.", noAnswer: "Для этого задания ещё не указан правильный ответ.", typeAnswer: "Введите ответ", choose: "Выберите ответ", drop: "Перетащите или нажмите слова сюда", bank: "Слова", answer: "Ваш ответ", up: "Выше", down: "Ниже", flip: "Перевернуть карточку", empty: "В этом уроке пока нет блоков.", imageError: "Не удалось загрузить изображение.", mediaError: "Проверьте ссылку на медиафайл.", readOnly: "Учебный материал", true: "Да", false: "Нет" },
+    en: { open: "Open lesson", practice: "Try the activities. Your results are not saved here.", check: "Check answer", correct: "Correct!", incorrect: "Try again.", noAnswer: "No correct answer has been set for this activity.", typeAnswer: "Type your answer", choose: "Choose an answer", drop: "Drag or click words here", bank: "Words", answer: "Your answer", up: "Move up", down: "Move down", flip: "Flip card", empty: "This lesson has no activities yet.", imageError: "The image could not be loaded.", mediaError: "Check the media link.", readOnly: "Learning material", true: "True", false: "False" }
 };
 
 function previewText(key) {
@@ -684,6 +1011,9 @@ function renderPreviewActivity(activity, index) {
     const type = activity.type;
     const prompt = escapeHtml(activity.prompt || t(activityTypes.find((item) => item.id === type)?.nameKey || "activity.task"));
     const content = String(activity.content || "");
+    const contentMatchesPrompt = Boolean(activity.prompt?.trim())
+        && content.trim().replace(/\s+/g, " ").toLocaleLowerCase() === activity.prompt.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+    const displayContent = contentMatchesPrompt ? "" : content;
     const answer = String(activity.answer || "").trim();
     const lines = previewLines(content);
     let body = "";
@@ -693,7 +1023,7 @@ function renderPreviewActivity(activity, index) {
         const expected = answer ? previewTokens(answer) : content.trim().split(/\s+/).filter(Boolean);
         const tokens = expected.map((word, wordIndex) => ({ word, wordIndex }));
         if (tokens.length > 1) tokens.push(tokens.shift());
-        body = `<p class="preview-instruction">${prompt}</p><div class="preview-drag-layout"><div><strong>${previewText("bank")}</strong><div class="preview-word-bank" data-word-bank>${tokens.map(({ word, wordIndex }) => `<button type="button" class="preview-word" draggable="true" data-word-index="${wordIndex}">${escapeHtml(word)}</button>`).join("")}</div></div><div><strong>${previewText("drop")}</strong><div class="preview-dropzone" data-dropzone tabindex="0"><span class="preview-drop-hint">${previewText("drop")}</span></div></div></div>`;
+        body = `<div class="preview-drag-layout"><div><strong>${previewText("bank")}</strong><div class="preview-word-bank" data-word-bank>${tokens.map(({ word, wordIndex }) => `<button type="button" class="preview-word" draggable="true" data-word-index="${wordIndex}">${escapeHtml(word)}</button>`).join("")}</div></div><div><strong>${previewText("answer")}</strong><div class="preview-dropzone" data-dropzone tabindex="0"><span class="preview-drop-hint">${previewText("drop")}</span></div></div></div>`;
         if (!expected.length) checkable = false;
     } else if (type === "fill-blank") {
         let blankIndex = 0;
@@ -701,46 +1031,47 @@ function renderPreviewActivity(activity, index) {
         body = `<p class="preview-instruction">${parts.map((part, partIndex) => `${escapeHtml(part)}${partIndex < parts.length - 1 ? `<input class="preview-inline-input" data-answer-index="${blankIndex++}" aria-label="${previewText("typeAnswer")}" autocomplete="off">` : ""}`).join("")}</p>`;
     } else if (type === "multiple-choice" || type === "one-of-many" || type === "true-false") {
         const options = type === "true-false" ? [previewText("true"), previewText("false")] : lines;
-        body = `<p class="preview-instruction">${prompt}${content ? `<br>${escapeHtml(content)}` : ""}</p><div class="preview-options">${options.map((option, optionIndex) => `<label class="preview-option"><input type="radio" name="preview-${index}" value="${optionIndex}"><span>${escapeHtml(option)}</span></label>`).join("")}</div>`;
+        const statement = type === "true-false" && displayContent ? `<p class="preview-instruction">${escapeHtml(displayContent)}</p>` : "";
+        body = `${statement}<div class="preview-options">${options.map((option, optionIndex) => `<label class="preview-option"><input type="radio" name="preview-${index}" value="${optionIndex}"><span>${escapeHtml(option)}</span></label>`).join("")}</div>`;
         if (!answer) checkable = false;
     } else if (type === "order-items" || type === "sentence-order") {
         const items = lines.map((line, itemIndex) => ({ text: line.replace(/^\d+[.)]\s*/, ""), itemIndex }));
         if (items.length > 1) items.reverse();
-        body = `<p class="preview-instruction">${prompt}</p><ol class="preview-order-list" data-order-list>${items.map(({ text, itemIndex }) => `<li class="preview-order-item" draggable="true" data-order-index="${itemIndex}"><span>${escapeHtml(text)}</span><span class="preview-order-actions"><button type="button" data-move="up" aria-label="${previewText("up")}">↑</button><button type="button" data-move="down" aria-label="${previewText("down")}">↓</button></span></li>`).join("")}</ol>`;
+        body = `<ol class="preview-order-list" data-order-list>${items.map(({ text, itemIndex }) => `<li class="preview-order-item" draggable="true" data-order-index="${itemIndex}"><span>${escapeHtml(text)}</span><span class="preview-order-actions"><button type="button" data-move="up" aria-label="${previewText("up")}">↑</button><button type="button" data-move="down" aria-label="${previewText("down")}">↓</button></span></li>`).join("")}</ol>`;
     } else if (type === "columns") {
         const pairs = lines.map((line) => line.split(":").map((part) => part.trim())).filter((pair) => pair.length >= 2 && pair[0] && pair[1]);
         const categories = [...new Set(pairs.map(([category]) => category))];
-        body = `<p class="preview-instruction">${prompt}</p>${pairs.length ? `<div class="preview-match-list">${pairs.map(([, item], itemIndex) => `<label class="preview-match-row"><span>${escapeHtml(item)}</span><select data-column-index="${itemIndex}" aria-label="${previewText("choose")}"><option value="">${previewText("choose")}</option>${categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("")}</select></label>`).join("")}</div>` : `<p class="preview-material">${escapeHtml(content)}</p>`}`;
+        body = `${pairs.length ? `<div class="preview-match-list">${pairs.map(([, item], itemIndex) => `<label class="preview-match-row"><span>${escapeHtml(item)}</span><select data-column-index="${itemIndex}" aria-label="${previewText("choose")}"><option value="">${previewText("choose")}</option>${categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("")}</select></label>`).join("")}</div>` : displayContent ? `<p class="preview-material">${escapeHtml(displayContent)}</p>` : ""}`;
         if (!pairs.length) checkable = false;
     } else if (type === "match") {
         const pairs = lines.map((line) => line.split("=").map((part) => part.trim())).filter((pair) => pair.length >= 2 && pair[0] && pair[1]);
-        body = `<p class="preview-instruction">${prompt}</p>${pairs.length ? `<div class="preview-match-list">${pairs.map(([left], pairIndex) => `<label class="preview-match-row"><span>${escapeHtml(left)}</span><select data-match-index="${pairIndex}" aria-label="${previewText("choose")}"><option value="">${previewText("choose")}</option>${pairs.map(([, right], rightIndex) => `<option value="${rightIndex}">${escapeHtml(right)}</option>`).join("")}</select></label>`).join("")}</div>` : `<p class="preview-material">${escapeHtml(content)}</p>`}`;
+        body = `${pairs.length ? `<div class="preview-match-list">${pairs.map(([left], pairIndex) => `<label class="preview-match-row"><span>${escapeHtml(left)}</span><select data-match-index="${pairIndex}" aria-label="${previewText("choose")}"><option value="">${previewText("choose")}</option>${pairs.map(([, right], rightIndex) => `<option value="${rightIndex}">${escapeHtml(right)}</option>`).join("")}</select></label>`).join("")}</div>` : displayContent ? `<p class="preview-material">${escapeHtml(displayContent)}</p>` : ""}`;
         if (!pairs.length) checkable = false;
     } else if (type === "open-answer") {
-        body = `<p class="preview-instruction">${prompt}${content ? `<br>${escapeHtml(content)}` : ""}</p><textarea class="preview-text-answer" data-open-answer placeholder="${previewText("typeAnswer")}"></textarea>`;
+        body = `${displayContent ? `<p class="preview-material">${escapeHtml(displayContent)}</p>` : ""}<textarea class="preview-text-answer" data-open-answer placeholder="${previewText("typeAnswer")}"></textarea>`;
         if (!answer) checkable = false;
     } else if (type === "flashcards") {
-        body = `<p class="preview-instruction">${prompt}</p><div class="preview-flashcards">${lines.map((line) => { const [front, ...back] = line.split(":"); return `<button type="button" class="preview-flashcard" data-front="${escapeHtml(front.trim())}" data-back="${escapeHtml(back.join(":").trim())}"><strong>${escapeHtml(front.trim())}</strong><small>${previewText("flip")}</small></button>`; }).join("") || `<p class="preview-material">${escapeHtml(content)}</p>`}</div>`;
+        body = `<div class="preview-flashcards">${lines.map((line) => { const [front, ...back] = line.split(":"); return `<button type="button" class="preview-flashcard" data-front="${escapeHtml(front.trim())}" data-back="${escapeHtml(back.join(":").trim())}"><strong>${escapeHtml(front.trim())}</strong><small>${previewText("flip")}</small></button>`; }).join("") || `<p class="preview-material">${escapeHtml(displayContent)}</p>`}</div>`;
         checkable = false;
     } else if (type === "image") {
         const markdownImage = content.match(/!\[([^\]]*)\]\(([^)]+)\)/);
         const source = previewMediaUrl(markdownImage?.[2] || content);
-        body = `<p class="preview-instruction">${prompt}</p>${source ? `<img class="preview-image" src="${escapeHtml(source)}" alt="${escapeHtml(markdownImage?.[1] || activity.prompt || "")}" data-preview-image>` : `<p class="preview-material">${escapeHtml(content || previewText("imageError"))}</p>`}`;
+        body = `${source ? `<img class="preview-image" src="${escapeHtml(source)}" alt="${escapeHtml(markdownImage?.[1] || activity.prompt || "")}" data-preview-image>` : `<p class="preview-material">${escapeHtml(displayContent || previewText("imageError"))}</p>`}`;
         checkable = false;
     } else if (type === "audio" || type === "video") {
         const source = previewMediaUrl(content);
-        body = `<p class="preview-instruction">${prompt}</p>${source ? `<${type} class="preview-media" controls preload="metadata" data-preview-media><source src="${escapeHtml(source)}"></${type}>` : `<p class="preview-material">${escapeHtml(content || previewText("mediaError"))}</p>`}`;
+        body = `${source ? `<${type} class="preview-media" controls preload="metadata" data-preview-media><source src="${escapeHtml(source)}"></${type}>` : `<p class="preview-material">${escapeHtml(displayContent || previewText("mediaError"))}</p>`}`;
         checkable = false;
     } else if (type === "table") {
         let blankIndex = 0;
         const rows = lines.map((line) => line.split(/\t|\s*\|\s*/).map((cell) => cell.trim()));
-        body = `<p class="preview-instruction">${prompt}</p><div class="preview-table-wrap"><table class="preview-table"><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell.split("___").map((part, partIndex, parts) => `${escapeHtml(part)}${partIndex < parts.length - 1 ? `<input class="preview-inline-input" data-table-answer-index="${blankIndex++}" aria-label="${previewText("typeAnswer")}" autocomplete="off">` : ""}`).join("")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+        body = `<div class="preview-table-wrap"><table class="preview-table"><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell.split("___").map((part, partIndex, parts) => `${escapeHtml(part)}${partIndex < parts.length - 1 ? `<input class="preview-inline-input" data-table-answer-index="${blankIndex++}" aria-label="${previewText("typeAnswer")}" autocomplete="off">` : ""}`).join("")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
         checkable = blankIndex > 0;
     } else if (type === "text") {
-        body = `<p class="preview-instruction">${prompt}</p><div class="preview-material">${escapeHtml(content).replace(/\n/g, "<br>")}</div>`;
+        body = displayContent ? `<div class="preview-material">${escapeHtml(displayContent).replace(/\n/g, "<br>")}</div>` : "";
         checkable = false;
     } else {
-        body = `<p class="preview-instruction">${prompt}</p><div class="preview-material">${escapeHtml(content).replace(/\n/g, "<br>")}</div>`;
+        body = displayContent ? `<div class="preview-material">${escapeHtml(displayContent).replace(/\n/g, "<br>")}</div>` : "";
         checkable = false;
     }
 
@@ -920,6 +1251,12 @@ function handleAction(action, id) {
     if (action === "preview-lesson") openLessonPreview(id);
     if (action === "assign-lesson") openLessonAssignment(id);
     if (action === "delete-lesson") deleteLesson(id);
+    if (action === "add-teacher" && hasPermission("manage_teachers")) openTeacherForm();
+    if (action === "edit-teacher" && hasPermission("manage_teachers")) {
+        const member = workspaceAccess.staff.find((item) => item.id === id);
+        if (member) openTeacherForm(member);
+    }
+    if (action === "remove-teacher" && hasPermission("manage_teachers")) removeTeacher(id);
 }
 
 function openModal(content, wide = false) {
@@ -941,6 +1278,7 @@ function modalHeader(title) {
 }
 
 function openClassEditor(item) {
+    if (!hasPermission("manage_classes_students")) return;
     const selectedStudents = item?.students.join(", ") || "";
     openModal(`${modalHeader(item ? t("modal.editClass") : t("modal.newClass"))}
         <form id="classForm">
@@ -967,7 +1305,7 @@ function openClassEditor(item) {
 }
 
 function openStudentInvite(group) {
-    if (!group) return;
+    if (!group || !hasPermission("manage_classes_students")) return;
     openModal(`${modalHeader(t("studentInvite.title"))}
         <form id="studentInviteForm">
             <div class="form-field"><label for="studentInviteName">${t("studentInvite.name")}</label><input id="studentInviteName" name="displayName" required maxlength="120" autocomplete="name"></div>
@@ -992,6 +1330,11 @@ function openStudentInvite(group) {
             const invitation = await window.teacherWorkspaceApi.inviteStudent(window.supabaseClient, group.id, displayName, email);
             const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, currentUser.id);
             data = workspace.data;
+            workspaceAccess = {
+                workspaceOwnerId: workspace.workspaceOwnerId,
+                permissions: workspace.permissions,
+                staff: workspace.staff
+            };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
             closeModal();
             render();
@@ -1005,6 +1348,7 @@ function openStudentInvite(group) {
 }
 
 function deleteClass(id) {
+    if (!hasPermission("manage_classes_students")) return;
     const item = data.classes.find((current) => current.id === id);
     if (!item || !window.confirm(t("confirm.deleteClass", { name: item.name }))) return;
     data.classes = data.classes.filter((current) => current.id !== id);
@@ -1015,6 +1359,7 @@ function deleteClass(id) {
 }
 
 function openLessonEditor(item) {
+    if (!hasPermission("edit_lessons")) return;
     activeView = "lessons";
     document.getElementById("breadcrumb").textContent = t("page.lessons");
     document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === "lessons"));
@@ -1047,7 +1392,7 @@ function renderLessonWorkspace() {
         : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map(renderPreviewActivity).join("") : emptyMessage(lessonSectionText("empty"), "")}</div>`;
     const actionBar = isEditing
         ? `<button type="button" class="button secondary" data-workspace-cancel>${t("action.cancel")}</button><button class="button" type="submit">${editingLessonId ? lessonSectionText("save") : lessonSectionText("create")}</button>`
-        : `<button type="button" class="button secondary" data-edit-workspace>${lessonSectionText("edit")}</button>`;
+        : hasPermission("edit_lessons") ? `<button type="button" class="button secondary" data-edit-workspace>${lessonSectionText("edit")}</button>` : "";
     pageContent.innerHTML = `<section class="lesson-workspace"><form id="lessonForm" class="lesson-workspace-form">
         <header class="lesson-workspace-hero">
             <div class="lesson-workspace-heading"><button type="button" class="text-link" data-workspace-back>← ${lessonSectionText("back")}</button>
@@ -1119,6 +1464,7 @@ function renderLessonWorkspace() {
         currentSection.activities.push(structuredClone(currentSection.activities[currentSection.activities.length - 1]));
         render();
     });
+    enhanceSelects(pageContent);
     bindActivityBlockActions();
     if (!isEditing) bindLessonPreviewActions(pageContent);
 }
@@ -1217,6 +1563,7 @@ function openActivityPicker() {
 
 function saveLesson(event) {
     event.preventDefault();
+    if (!hasPermission("edit_lessons")) return;
     const form = new FormData(event.currentTarget);
     const title = String(form.get("title")).trim();
     const unit = String(form.get("unit"));
@@ -1246,6 +1593,7 @@ function saveLesson(event) {
 }
 
 function openLessonAssignment(id) {
+    if (!hasPermission("view_assign_lessons")) return;
     const lesson = data.lessons.find((item) => item.id === id);
     if (!lesson) return;
     openModal(`${modalHeader(assignmentText("dialog"))}
@@ -1272,6 +1620,7 @@ function openLessonAssignment(id) {
 }
 
 function deleteLesson(id) {
+    if (!hasPermission("edit_lessons")) return;
     const lesson = data.lessons.find((item) => item.id === id);
     if (!lesson || !window.confirm(t("confirm.deleteLesson", { name: lesson.title }))) return;
     data.lessons = data.lessons.filter((item) => item.id !== id);
@@ -1291,6 +1640,7 @@ document.querySelectorAll(".language-button").forEach((button) => button.addEven
 document.getElementById("notificationButton").addEventListener("click", (event) => showNotifications(event.currentTarget));
 document.querySelectorAll(".profile-trigger").forEach((button) => button.addEventListener("click", () => showUserMenu(button)));
 document.addEventListener("click", (event) => {
+    if (activeSelectDropdown && !activeSelectDropdown.contains(event.target)) closeSelectDropdown();
     if (openPopover && !event.target.closest(".popover-root, .popover-trigger, .profile-trigger")) closePopover();
 });
 modalBackdrop.addEventListener("click", (event) => {

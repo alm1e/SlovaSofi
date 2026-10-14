@@ -6,9 +6,11 @@
 - `teacher_classes` и `class_students` — классы и списки учеников;
 - `teacher_lessons` — уроки с блоками заданий;
 - `class_lesson_assignments` — назначения уроков классам;
-- `teacher_materials` — legacy-таблица старой библиотеки; интерфейс её больше не использует, существующие записи не удаляются;
 - `student_lesson_progress` — ответы и прогресс для каждой пары «ученик + урок»;
 - `teacher_workspace_settings` — отметка о переносе данных браузера.
+
+Старая таблица `teacher_materials`, больше не используемая интерфейсом, удалена
+миграцией [`20261017_remove_legacy_teacher_materials.sql`](./supabase/migrations/20261017_remove_legacy_teacher_materials.sql).
 
 ## Применить схему
 

@@ -90,7 +90,26 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .toolbar .button.secondary { border-color: #a9c8b4; background: transparent; color: white; }
 .toolbar input, .toolbar select { width: min(260px, 40vw); height: 36px; border: 1px solid #a9c8b4; border-radius: 8px; padding: 0 11px; outline: none; background: #ffffff18; color: white; }
 .toolbar input::placeholder { color: #d7e9dd; }
-.toolbar select option { color: var(--ink); }
+.teacher-select { position: relative; width: 100%; min-width: 0; }
+.teacher-select-native { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden !important; clip: rect(0,0,0,0) !important; clip-path: inset(50%) !important; white-space: nowrap !important; }
+.select-trigger { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 42px; border: 1px solid #d9e4d9; border-radius: 10px; padding: 9px 12px; background: #fff; color: var(--ink); text-align: left; transition: border-color .16s ease, box-shadow .16s ease, background .16s ease; }
+.select-trigger:hover { border-color: #aec9b1; background: #fcfefb; }
+.select-trigger:focus-visible { outline: none; border-color: #6b9d78; box-shadow: 0 0 0 3px #34724d1c; }
+.select-trigger-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.select-chevron { flex: 0 0 auto; color: #728578; font-size: 17px; line-height: 1; transition: transform .16s ease; }
+.teacher-select.open .select-chevron { transform: rotate(180deg); }
+.select-options { position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; display: none; width: max(100%, 190px); max-height: min(260px, 45vh); overflow: auto; border: 1px solid #dce7dc; border-radius: 12px; padding: 5px; background: #fff; box-shadow: 0 12px 30px #213b2b24; }
+.select-options.opens-up { top: auto; bottom: calc(100% + 6px); }
+.teacher-select.open .select-options { display: grid; }
+.select-option { width: 100%; min-height: 37px; border: 0; border-radius: 8px; padding: 8px 10px; background: transparent; color: #3e5142; text-align: left; font-size: 14px; }
+.select-option:hover, .select-option:focus-visible { outline: none; background: #f0f6ef; color: #285c3a; }
+.select-option.selected, .select-option[aria-selected="true"] { background: #e8f1e9; color: #285c3a; font-weight: 700; }
+.select-option:disabled { color: #9aa79b; cursor: default; }
+.toolbar .teacher-select { width: min(260px, 40vw); flex: 0 1 260px; }
+.toolbar .select-trigger { min-height: 36px; border-color: #a9c8b4; padding: 0 11px; background: #ffffff18; color: white; }
+.toolbar .select-trigger:hover, .toolbar .teacher-select.open .select-trigger { background: #ffffff28; }
+.toolbar .select-chevron { color: #d7e9dd; }
+.toolbar .select-options { width: max(100%, 220px); }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap: 14px; }
 .class-card { position: relative; min-height: 180px; padding: 17px; background: #fff0cc; }
 .class-card:nth-child(4n+2) { background: #e6edff; }
@@ -248,7 +267,7 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .preview-order-actions button { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 7px; background: #f6f9f6; color: var(--ink); font-size: 18px; }
 .preview-match-list { display: grid; gap: 8px; }
 .preview-match-row { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 12px; font-size: 15px; }
-.preview-match-row select { min-width: 0; min-height: 42px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: #fff; color: var(--ink); font: inherit; }
+.preview-match-row .select-trigger { min-height: 42px; border-radius: 8px; padding: 7px 10px; font-size: 15px; }
 .preview-text-answer { width: 100%; min-height: 90px; border: 1px solid var(--line); border-radius: 9px; padding: 11px; color: var(--ink); font: inherit; resize: vertical; }
 .preview-flashcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
 .preview-flashcard { display: grid; align-content: center; gap: 16px; min-height: 115px; border: 1px solid #c7d9cb; border-radius: 12px; padding: 15px; background: #f1f7f2; color: var(--ink); text-align: center; cursor: pointer; }
@@ -267,6 +286,22 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .student-row strong { display: block; font-size: 12px; }
 .student-row small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
 .student-row .class-label { color: var(--purple); font-size: 11px; }
+.staff-grid { display: grid; gap: 12px; margin-top: 18px; }
+.staff-card { display: flex; align-items: center; gap: 13px; border: 1px solid var(--line); border-radius: 14px; padding: 15px; background: white; box-shadow: 0 4px 14px #23452e0a; }
+.staff-card > .avatar { flex: 0 0 auto; width: 44px; height: 44px; }
+.staff-card-main { min-width: 0; flex: 1; }
+.staff-card strong, .staff-card small, .staff-permissions { display: block; overflow-wrap: anywhere; }
+.staff-card strong { font-size: 15px; }
+.staff-card small { margin-top: 4px; color: var(--muted); font-size: 12px; }
+.staff-permissions { margin-top: 8px; color: #55705d; font-size: 12px; line-height: 1.5; }
+.staff-card-actions { display: flex; align-items: center; gap: 8px; }
+.staff-permission-field { display: grid; gap: 8px; margin: 0; border: 0; padding: 0; }
+.staff-permission-field legend { margin-bottom: 8px; color: #536455; font-size: 13px; font-weight: 700; }
+.staff-field-label { color: #536455; font-size: 12px; font-weight: 600; }
+.staff-role-value { display: flex; align-items: center; min-height: 42px; border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; background: #f7faf7; color: var(--ink); }
+.staff-permission-choice { display: flex; align-items: center; gap: 10px; min-height: 42px; border: 1px solid var(--line); border-radius: 9px; padding: 8px 11px; color: var(--ink); font-size: 14px; cursor: pointer; }
+.staff-permission-choice:focus-within { border-color: #6b9d78; background: #f2f8f4; }
+.staff-permission-choice input { width: 17px; height: 17px; margin: 0; accent-color: #2b6446; }
 .empty-state { padding: 42px 20px; border: 1px dashed #cfddcf; border-radius: 13px; color: var(--muted); text-align: center; font-size: 13px; }
 .empty-state strong { display: block; margin-bottom: 8px; color: var(--ink); font-size: 15px; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; overflow: auto; padding: 20px; background: #1b302588; }
@@ -364,6 +399,7 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .platform { font-size: 16px; }
 .brand small { font-size: 10px; }
 .nav-item { font-size: 16px; }
+.nav-item[hidden] { display: none; }
 .teacher-mini { font-size: 14px; }
 .teacher-mini small, .home-link { font-size: 14px; }
 .breadcrumbs { font-size: 15px; }
@@ -447,6 +483,8 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
     .unit-card-content .lesson-count { margin-left: 0; }
     .unit-card-content .row-actions { width: 100%; margin-left: 0; }
     .modal-card { padding: 18px; }
+    .staff-card { align-items: flex-start; flex-wrap: wrap; }
+    .staff-card-actions { width: 100%; justify-content: flex-end; }
 }
 .lesson-workspace-form { display: grid; gap: 18px; }
 .lesson-workspace-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; overflow: hidden; border: 1px solid #d7e6d8; border-radius: 18px; padding: 22px 26px; background: linear-gradient(115deg,#477553,#74a17c); box-shadow: 0 10px 26px #25443217; color: #fff; }
@@ -457,6 +495,7 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .lesson-workspace-fields .form-field { margin: 0; }
 .lesson-workspace-fields label { color: #eff7ef; }
 .lesson-workspace-fields input, .lesson-workspace-fields select { border-color: #ffffff70; background: #ffffffed; }
+.lesson-workspace-fields .select-trigger { border-color: #ffffff70; background: #ffffffed; }
 .lesson-workspace-unit { display: grid; place-items: center; flex: 0 0 auto; min-width: 72px; min-height: 72px; border: 1px solid #ffffff60; border-radius: 20px; background: #ffffff20; color: #fff; font-size: 20px; font-weight: 800; }
 .lesson-workspace-layout { display: grid; grid-template-columns: minmax(0,1fr) 250px; align-items: start; gap: 15px; }
 .lesson-workspace-main { min-width: 0; }

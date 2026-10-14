@@ -38,6 +38,13 @@
     const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
     })[character]);
+    const activityCount = (activities) => {
+        if (Array.isArray(activities)) return activities.length;
+        if (activities?.format === "sections-v1" && Array.isArray(activities.sections)) {
+            return activities.sections.reduce((count, section) => count + (Array.isArray(section.activities) ? section.activities.length : 0), 0);
+        }
+        return 0;
+    };
 
     function showError(prefix, error) {
         console.error(prefix, error);
@@ -76,7 +83,7 @@
             const section = document.createElement("section");
             section.className = "student-class";
             section.innerHTML = `<h2>${escapeHtml(text.class)}: ${escapeHtml(group.name)}</h2>${
-                lessons.length ? lessons.map((lesson) => `<article class="student-lesson"><strong>${escapeHtml(lesson.title)}</strong><p>${escapeHtml(lesson.unit)} · ${(lesson.activities || []).length} ${escapeHtml(text.activities)}</p></article>`).join("") : `<p>${escapeHtml(text.noLessons)}</p>`
+                lessons.length ? lessons.map((lesson) => `<article class="student-lesson"><strong>${escapeHtml(lesson.title)}</strong><p>${escapeHtml(lesson.unit)} · ${activityCount(lesson.activities)} ${escapeHtml(text.activities)}</p></article>`).join("") : `<p>${escapeHtml(text.noLessons)}</p>`
             }`;
             card.append(section);
         });
