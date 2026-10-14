@@ -16,8 +16,8 @@ const translations = {
         "picker.title": "Виберіть інтерактивне завдання", "picker.all": "Усі", "picker.tests": "Тести", "picker.media": "Медіа", "picker.other": "Інше", "picker.search": "Пошук блоку…", "picker.back": "← До уроку",
         "activity.task": "Завдання", "activity.drag": "Перетягнути слова", "activity.dragDesc": "Складіть речення зі слів у правильному порядку.", "activity.blank": "Заповнити пропуск", "activity.blankDesc": "Впишіть відповідне слово у пропуск.", "activity.choice": "Вибрати варіант", "activity.choiceDesc": "Виберіть одну правильну відповідь.", "activity.order": "Правильний порядок", "activity.orderDesc": "Розташуйте елементи у правильному порядку.", "activity.sentences": "Порядок речень", "activity.sentencesDesc": "Складіть зв’язний текст із речень.", "activity.dropdown": "Один із варіантів", "activity.dropdownDesc": "Заповніть пропуск, вибравши слово зі списку.", "activity.trueFalse": "True або False", "activity.trueFalseDesc": "Визначте, чи є твердження правильним.", "activity.table": "Заповнити таблицю", "activity.tableDesc": "Внесіть відповіді до таблиці.", "activity.match": "Поєднати елементи", "activity.matchDesc": "Поєднайте слова з їхніми значеннями.", "activity.columns": "Розподілити за колонками", "activity.columnsDesc": "Розкладіть картки за категоріями.", "activity.open": "Відкрита відповідь", "activity.openDesc": "Додайте запитання з відповіддю своїми словами.", "activity.cards": "Картки", "activity.cardsDesc": "Створіть картки зі словом і перекладом.", "activity.text": "Заголовок і текст", "activity.textDesc": "Додайте пояснення або інструкцію.", "activity.video": "Відео", "activity.videoDesc": "Вставте посилання на відео.", "activity.audio": "Аудіо", "activity.audioDesc": "Додайте аудіо або посилання на запис.", "activity.image": "Зображення", "activity.imageDesc": "Додайте зображення до уроку.",
         "material.name": "Назва", "material.example": "Наприклад, Слова на тему «Їжа»", "material.type": "Тип матеріалу", "material.description": "Опис", "material.shortDescription": "Короткий опис", "material.url": "Посилання (необов’язково)", "material.add": "Додати матеріал", "material.noDescription": "Без опису",
-        "toast.classCreated": "Клас створено.", "toast.classUpdated": "Клас оновлено.", "toast.classDeleted": "Клас видалено.", "toast.lessonCreated": "Урок створено.", "toast.lessonUpdated": "Урок оновлено.", "toast.lessonDeleted": "Урок видалено.", "toast.materialAdded": "Матеріал додано до бібліотеки.", "toast.materialDeleted": "Матеріал видалено.", "toast.createClassFirst": "Спочатку створіть клас, щоб призначити йому урок.", "toast.titleAndClass": "Вкажіть назву уроку та виберіть клас.", "toast.httpUrl": "Посилання має починатися з http:// або https://.", "toast.storageError": "Не вдалося зберегти зміни у браузері. Перевірте доступ до локального сховища.",
-        "confirm.deleteClass": "Видалити клас «{name}»? Уроки залишаться у списку без класу.", "confirm.deleteLesson": "Видалити урок «{name}»?", "confirm.deleteMaterial": "Видалити матеріал «{name}»?", "course.slovakA1": "Словацька · A1", "course.slovakB1": "Словацька · B1", "material.vocabulary": "Словник", "material.document": "Документ", "material.audio": "Аудіо", "material.video": "Відео", "material.link": "Посилання"
+        "toast.classCreated": "Клас створено.", "toast.classUpdated": "Клас оновлено.", "toast.classDeleted": "Клас видалено.", "toast.lessonCreated": "Урок створено.", "toast.lessonUpdated": "Урок оновлено.", "toast.lessonDeleted": "Урок видалено.", "toast.activityDeleted": "Завдання видалено.", "toast.activityOrderSaved": "Порядок завдань збережено.", "toast.materialAdded": "Матеріал додано до бібліотеки.", "toast.materialDeleted": "Матеріал видалено.", "toast.createClassFirst": "Спочатку створіть клас, щоб призначити йому урок.", "toast.titleAndClass": "Вкажіть назву уроку та виберіть клас.", "toast.httpUrl": "Посилання має починатися з http:// або https://.", "toast.storageError": "Не вдалося зберегти зміни у браузері. Перевірте доступ до локального сховища.",
+        "confirm.deleteClass": "Видалити клас «{name}»? Уроки залишаться у списку без класу.", "confirm.deleteLesson": "Видалити урок «{name}»?", "confirm.deleteActivity": "Видалити це завдання?", "confirm.deleteMaterial": "Видалити матеріал «{name}»?", "course.slovakA1": "Словацька · A1", "course.slovakB1": "Словацька · B1", "material.vocabulary": "Словник", "material.document": "Документ", "material.audio": "Аудіо", "material.video": "Відео", "material.link": "Посилання"
     },
     ru: {
         "nav.overview": "Обзор", "nav.classes": "Классы", "nav.lessons": "Уроки", "nav.materials": "Материалы", "nav.students": "Ученики", "nav.home": "← На главную", "nav.label": "Основная навигация", "brand.home": "SlovaSofi — на главную", "language.label": "Язык", "menu.open": "Открыть меню", "header.notifications": "Уведомления", "modal.close": "Закрыть", "teacher.role": "Преподаватель", "school.profile": "Профиль школы", "profile.open": "Профиль пользователя: {name}", "profile.title": "Профиль пользователя", "profile.signedOut": "Гость", "profile.notSignedIn": "Вы не вошли в учётную запись", "profile.logout": "Выйти из профиля", "profile.login": "Войти", "profile.logoutError": "Не удалось выйти из профиля. Попробуйте ещё раз.", "profile.loadError": "Не удалось загрузить профиль пользователя.", "school.title": "Профиль школы", "school.purpose": "Профиль школы — это общее пространство SlovaSofi. Здесь находятся классы, уроки и учебные материалы школы.", "school.workspace": "Учебное пространство", "school.workspaceDetail": "Общие классы, уроки и материалы", "notifications.title": "Уведомления", "notifications.empty": "Пока нет уведомлений", "notifications.description": "Здесь будут появляться обновления о классах, уроках и учениках.", "class.noClass": "Без класса",
@@ -34,8 +34,8 @@ const translations = {
         "picker.title": "Выберите интерактивное задание", "picker.all": "Все", "picker.tests": "Тесты", "picker.media": "Медиа", "picker.other": "Другое", "picker.search": "Поиск блока…", "picker.back": "← К уроку",
         "activity.task": "Задание", "activity.drag": "Перетянуть слова", "activity.dragDesc": "Соберите предложение из слов в правильном порядке.", "activity.blank": "Заполнить пропуск", "activity.blankDesc": "Впишите подходящее слово в пропуск.", "activity.choice": "Выбрать вариант", "activity.choiceDesc": "Выберите один правильный ответ.", "activity.order": "Правильный порядок", "activity.orderDesc": "Расставьте элементы по порядку.", "activity.sentences": "Порядок предложений", "activity.sentencesDesc": "Соберите связный текст из предложений.", "activity.dropdown": "Один из вариантов", "activity.dropdownDesc": "Заполните пропуск, выбрав слово из списка.", "activity.trueFalse": "True или False", "activity.trueFalseDesc": "Оцените утверждение как верное или ложное.", "activity.table": "Заполнить таблицу", "activity.tableDesc": "Внесите ответы в таблицу.", "activity.match": "Соединить элементы", "activity.matchDesc": "Соедините слова и их значения.", "activity.columns": "Распределить по колонкам", "activity.columnsDesc": "Разложите карточки по категориям.", "activity.open": "Открытый ответ", "activity.openDesc": "Добавьте вопрос с ответом своими словами.", "activity.cards": "Флип-карточки", "activity.cardsDesc": "Создайте карточки со словом и переводом.", "activity.text": "Заголовок и текст", "activity.textDesc": "Добавьте пояснение или инструкцию.", "activity.video": "Видео", "activity.videoDesc": "Вставьте ссылку на видео.", "activity.audio": "Аудио", "activity.audioDesc": "Добавьте аудио или ссылку на запись.", "activity.image": "Картинка", "activity.imageDesc": "Добавьте изображение в урок.",
         "material.name": "Название", "material.example": "Например, Слова по теме «Еда»", "material.type": "Тип материала", "material.description": "Описание", "material.shortDescription": "Краткое описание", "material.url": "Ссылка (необязательно)", "material.add": "Добавить материал", "material.noDescription": "Без описания",
-        "toast.classCreated": "Класс создан.", "toast.classUpdated": "Класс обновлён.", "toast.classDeleted": "Класс удалён.", "toast.lessonCreated": "Урок создан.", "toast.lessonUpdated": "Урок обновлён.", "toast.lessonDeleted": "Урок удалён.", "toast.materialAdded": "Материал добавлен в библиотеку.", "toast.materialDeleted": "Материал удалён.", "toast.createClassFirst": "Сначала создайте класс, чтобы назначить ему урок.", "toast.titleAndClass": "Укажите название урока и выберите класс.", "toast.httpUrl": "Ссылка должна начинаться с http:// или https://.", "toast.storageError": "Не удалось сохранить изменения в браузере. Проверьте доступ к локальному хранилищу.",
-        "confirm.deleteClass": "Удалить класс «{name}»? Уроки останутся в списке без класса.", "confirm.deleteLesson": "Удалить урок «{name}»?", "confirm.deleteMaterial": "Удалить материал «{name}»?", "course.slovakA1": "Словацкий · A1", "course.slovakB1": "Словацкий · B1", "material.vocabulary": "Словарь", "material.document": "Документ", "material.audio": "Аудио", "material.video": "Видео", "material.link": "Ссылка"
+        "toast.classCreated": "Класс создан.", "toast.classUpdated": "Класс обновлён.", "toast.classDeleted": "Класс удалён.", "toast.lessonCreated": "Урок создан.", "toast.lessonUpdated": "Урок обновлён.", "toast.lessonDeleted": "Урок удалён.", "toast.activityDeleted": "Задание удалено.", "toast.activityOrderSaved": "Порядок заданий сохранён.", "toast.materialAdded": "Материал добавлен в библиотеку.", "toast.materialDeleted": "Материал удалён.", "toast.createClassFirst": "Сначала создайте класс, чтобы назначить ему урок.", "toast.titleAndClass": "Укажите название урока и выберите класс.", "toast.httpUrl": "Ссылка должна начинаться с http:// или https://.", "toast.storageError": "Не удалось сохранить изменения в браузере. Проверьте доступ к локальному хранилищу.",
+        "confirm.deleteClass": "Удалить класс «{name}»? Уроки останутся в списке без класса.", "confirm.deleteLesson": "Удалить урок «{name}»?", "confirm.deleteActivity": "Удалить это задание?", "confirm.deleteMaterial": "Удалить материал «{name}»?", "course.slovakA1": "Словацкий · A1", "course.slovakB1": "Словацкий · B1", "material.vocabulary": "Словарь", "material.document": "Документ", "material.audio": "Аудио", "material.video": "Видео", "material.link": "Ссылка"
     },
     en: {
         "nav.overview": "Overview", "nav.classes": "Classes", "nav.lessons": "Lessons", "nav.materials": "Materials", "nav.students": "Students", "nav.home": "← Home", "nav.label": "Main navigation", "brand.home": "SlovaSofi — home", "language.label": "Language", "menu.open": "Open menu", "header.notifications": "Notifications", "modal.close": "Close", "teacher.role": "Teacher", "school.profile": "School profile", "profile.open": "User profile: {name}", "profile.title": "User profile", "profile.signedOut": "Guest", "profile.notSignedIn": "You are not signed in", "profile.logout": "Sign out", "profile.login": "Sign in", "profile.logoutError": "Could not sign out. Please try again.", "profile.loadError": "Could not load the user profile.", "school.title": "School profile", "school.purpose": "The school profile is SlovaSofi’s shared workspace. It brings the school’s classes, lessons, and learning materials together.", "school.workspace": "Learning workspace", "school.workspaceDetail": "Shared classes, lessons, and materials", "notifications.title": "Notifications", "notifications.empty": "No notifications yet", "notifications.description": "Updates about classes, lessons, and students will appear here.", "class.noClass": "No class",
@@ -52,8 +52,8 @@ const translations = {
         "picker.title": "Choose an interactive activity", "picker.all": "All", "picker.tests": "Quizzes", "picker.media": "Media", "picker.other": "Other", "picker.search": "Search activities…", "picker.back": "← Back to lesson",
         "activity.task": "Activity", "activity.drag": "Drag the words", "activity.dragDesc": "Build a sentence by arranging words in the correct order.", "activity.blank": "Fill in the blank", "activity.blankDesc": "Enter a suitable word in the blank.", "activity.choice": "Choose an answer", "activity.choiceDesc": "Select one correct answer.", "activity.order": "Put in order", "activity.orderDesc": "Arrange the items in the correct order.", "activity.sentences": "Order the sentences", "activity.sentencesDesc": "Build a coherent text from sentences.", "activity.dropdown": "Choose from options", "activity.dropdownDesc": "Fill in the blank by choosing a word from the list.", "activity.trueFalse": "True or False", "activity.trueFalseDesc": "Decide whether the statement is true or false.", "activity.table": "Complete the table", "activity.tableDesc": "Enter answers into a table.", "activity.match": "Match the items", "activity.matchDesc": "Match words with their meanings.", "activity.columns": "Sort into columns", "activity.columnsDesc": "Sort cards into categories.", "activity.open": "Open answer", "activity.openDesc": "Add a question for a free-form answer.", "activity.cards": "Flashcards", "activity.cardsDesc": "Create cards with a word and its translation.", "activity.text": "Heading and text", "activity.textDesc": "Add an explanation or instruction.", "activity.video": "Video", "activity.videoDesc": "Insert a video link.", "activity.audio": "Audio", "activity.audioDesc": "Add audio or a recording link.", "activity.image": "Image", "activity.imageDesc": "Add an image to the lesson.",
         "material.name": "Name", "material.example": "For example, Food vocabulary", "material.type": "Material type", "material.description": "Description", "material.shortDescription": "Short description", "material.url": "Link (optional)", "material.add": "Add material", "material.noDescription": "No description",
-        "toast.classCreated": "Class created.", "toast.classUpdated": "Class updated.", "toast.classDeleted": "Class deleted.", "toast.lessonCreated": "Lesson created.", "toast.lessonUpdated": "Lesson updated.", "toast.lessonDeleted": "Lesson deleted.", "toast.materialAdded": "Material added to the library.", "toast.materialDeleted": "Material deleted.", "toast.createClassFirst": "Create a class first to assign it a lesson.", "toast.titleAndClass": "Enter a lesson name and choose a class.", "toast.httpUrl": "The link must start with http:// or https://.", "toast.storageError": "Could not save changes in this browser. Check local storage access.",
-        "confirm.deleteClass": "Delete class “{name}”? Its lessons will remain unassigned.", "confirm.deleteLesson": "Delete lesson “{name}”?", "confirm.deleteMaterial": "Delete material “{name}”?", "course.slovakA1": "Slovak · A1", "course.slovakB1": "Slovak · B1", "material.vocabulary": "Vocabulary", "material.document": "Document", "material.audio": "Audio", "material.video": "Video", "material.link": "Link"
+        "toast.classCreated": "Class created.", "toast.classUpdated": "Class updated.", "toast.classDeleted": "Class deleted.", "toast.lessonCreated": "Lesson created.", "toast.lessonUpdated": "Lesson updated.", "toast.lessonDeleted": "Lesson deleted.", "toast.activityDeleted": "Activity deleted.", "toast.activityOrderSaved": "Activity order saved.", "toast.materialAdded": "Material added to the library.", "toast.materialDeleted": "Material deleted.", "toast.createClassFirst": "Create a class first to assign it a lesson.", "toast.titleAndClass": "Enter a lesson name and choose a class.", "toast.httpUrl": "The link must start with http:// or https://.", "toast.storageError": "Could not save changes in this browser. Check local storage access.",
+        "confirm.deleteClass": "Delete class “{name}”? Its lessons will remain unassigned.", "confirm.deleteLesson": "Delete lesson “{name}”?", "confirm.deleteActivity": "Delete this activity?", "confirm.deleteMaterial": "Delete material “{name}”?", "course.slovakA1": "Slovak · A1", "course.slovakB1": "Slovak · B1", "material.vocabulary": "Vocabulary", "material.document": "Document", "material.audio": "Audio", "material.video": "Video", "material.link": "Link"
     }
 };
 Object.assign(translations.ua, {
@@ -186,7 +186,7 @@ const ownerPermissions = Object.fromEntries(permissionLabels.map(([key]) => [key
 let currentLanguage = ["ua", "ru", "en"].includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
 let currentUser = null;
 let workspaceAccess = { workspaceOwnerId: null, permissions: ownerPermissions, staff: [] };
-let workspaceSaveQueue = Promise.resolve();
+let workspaceSaveQueue = Promise.resolve(true);
 let openPopover = "";
 
 function t(key, values = {}) {
@@ -295,9 +295,11 @@ function persist(deletedLessonIds = []) {
             const userId = currentUser.id;
             workspaceSaveQueue = workspaceSaveQueue
                 .then(() => window.teacherWorkspaceApi.saveWorkspace(window.supabaseClient, userId, snapshot, workspaceAccess, deletedLessonIds))
+                .then(() => true)
                 .catch((error) => {
                     console.error("Не удалось синхронизировать кабинет с Supabase.", error);
                     showToast(`${t("toast.databaseSaveError")} ${error.message}`);
+                    return false;
                 });
         }
         return true;
@@ -306,6 +308,10 @@ function persist(deletedLessonIds = []) {
         showToast(t("toast.storageError"));
         return false;
     }
+}
+
+async function waitForWorkspaceSave() {
+    return !currentUser || await workspaceSaveQueue;
 }
 
 function escapeHtml(value = "") {
@@ -718,8 +724,8 @@ function closeSelectDropdown() {
 function lessonSectionText(key) {
     const labels = {
         ua: { intro: "Вступ", newSection: "Новий розділ", addSection: "＋ Додати розділ", section: "Розділи уроку", rename: "Назва розділу", remove: "Видалити", previous: "← Назад", next: "Далі →", moveUp: "Перемістити вище", moveDown: "Перемістити нижче", moveBlock: "Перетягніть, щоб перемістити блок", addElement: "＋ Додати новий елемент", copyElement: "▣ Копіювати елемент", edit: "Редагувати", done: "Готово", back: "До уроків", save: "Зберегти урок", create: "Створити урок", empty: "У цьому розділі ще немає елементів.", confirmRemove: "Видалити розділ разом з його елементами?" },
-        ru: { intro: "Введение", newSection: "Новый раздел", addSection: "＋ Добавить раздел", section: "Разделы урока", rename: "Название раздела", remove: "Удалить", previous: "← Назад", next: "Далее →", moveUp: "Переместить выше", moveDown: "Переместить ниже", moveBlock: "Перетащите, чтобы переместить блок", addElement: "＋ Добавить новый элемент", copyElement: "▣ Копировать элемент", edit: "Редактировать", done: "Готово", back: "К урокам", save: "Сохранить урок", create: "Создать урок", empty: "В этом разделе пока нет элементов.", confirmRemove: "Удалить раздел вместе с его элементами?" },
-        en: { intro: "Introduction", newSection: "New section", addSection: "＋ Add section", section: "Lesson sections", rename: "Section name", remove: "Delete", previous: "← Back", next: "Next →", moveUp: "Move up", moveDown: "Move down", moveBlock: "Drag to move this block", addElement: "＋ Add new item", copyElement: "▣ Duplicate item", edit: "Edit", done: "Done", back: "Back to lessons", save: "Save lesson", create: "Create lesson", empty: "This section has no items yet.", confirmRemove: "Delete this section and its items?" }
+        ru: { intro: "Введение", newSection: "Новый раздел", addSection: "＋ Добавить раздел", section: "Разделы урока", rename: "Название раздела", remove: "Удалить", previous: "← Назад", next: "Далее →", moveUp: "Переместить выше", moveDown: "Переместить ниже", moveBlock: "Перетащите, чтобы переместить задание", addElement: "＋ Добавить новый элемент", copyElement: "▣ Копировать элемент", edit: "Редактировать", done: "Готово", back: "К урокам", save: "Сохранить урок", create: "Создать урок", empty: "В этом разделе пока нет элементов.", confirmRemove: "Удалить раздел вместе с его элементами?" },
+        en: { intro: "Introduction", newSection: "New section", addSection: "＋ Add section", section: "Lesson sections", rename: "Section name", remove: "Delete", previous: "← Back", next: "Next →", moveUp: "Move up", moveDown: "Move down", moveBlock: "Drag to move this activity", addElement: "＋ Add new item", copyElement: "▣ Duplicate item", edit: "Edit", done: "Done", back: "Back to lessons", save: "Save lesson", create: "Create lesson", empty: "This section has no items yet.", confirmRemove: "Delete this section and its items?" }
     };
     return labels[currentLanguage][key];
 }
@@ -1088,7 +1094,7 @@ function renderPreviewActivity(activity, index, canEdit = false) {
         checkable = false;
     }
 
-    return `<article class="preview-activity" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}"><header class="preview-activity-header"><h3>${index + 1}. ${prompt}</h3>${canEdit ? `<button class="button secondary small preview-edit-activity" type="button" data-edit-preview-block="${index}">✎ ${lessonSectionText("edit")}</button>` : ""}</header>${body}${checkable ? `<button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button><p class="preview-result" data-preview-result aria-live="polite"></p>` : ""}</article>`;
+    return `<article class="preview-activity ${canEdit ? "preview-activity-editable" : ""}" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}"><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}<h3>${index + 1}. ${prompt}</h3>${canEdit ? `<div class="preview-activity-actions"><button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${body}${checkable ? `<button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button><p class="preview-result" data-preview-result aria-live="polite"></p>` : ""}</article>`;
 }
 
 function openLessonPreview(id) {
@@ -1103,7 +1109,121 @@ function openLessonPreview(id) {
     render();
 }
 
-function bindLessonPreviewActions(container = pageContent) {
+function bindSortableActivityCards(container, cardSelector, handleSelector, indexAttribute, onReorder) {
+    activityBlockDragController?.abort();
+    const controller = new AbortController();
+    activityBlockDragController = controller;
+    const { signal } = controller;
+    let dragStart = null;
+    let draggedCard = null;
+
+    container.querySelectorAll(handleSelector).forEach((handle) => handle.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0) return;
+        const card = handle.closest(cardSelector);
+        if (!card) return;
+        dragStart = {
+            pointerId: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+            card,
+            order: [...container.querySelectorAll(cardSelector)].map((item) => Number(item.dataset[indexAttribute]))
+        };
+        handle.setPointerCapture(event.pointerId);
+    }, { signal }));
+
+    document.addEventListener("pointermove", (event) => {
+        if (!dragStart || dragStart.pointerId !== event.pointerId) return;
+        if (!draggedCard && Math.hypot(event.clientX - dragStart.x, event.clientY - dragStart.y) > 5) {
+            draggedCard = dragStart.card;
+            draggedCard.classList.add("is-dragging");
+        }
+        if (!draggedCard) return;
+        event.preventDefault();
+        const cards = [...container.querySelectorAll(cardSelector)];
+        const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(cardSelector);
+        if (target && target !== draggedCard && container.contains(target)) {
+            const bounds = target.getBoundingClientRect();
+            animateActivityCardMove(container, cardSelector, draggedCard, target, event.clientY > bounds.top + bounds.height / 2);
+            cards.forEach((card) => card.classList.toggle("is-drop-target", card === target));
+        } else {
+            const bounds = container.getBoundingClientRect();
+            if (event.clientY >= bounds.top && event.clientY <= bounds.bottom && cards.length) {
+                const last = cards[cards.length - 1];
+                if (event.clientY > last.getBoundingClientRect().bottom && last !== draggedCard) {
+                    animateActivityCardMove(container, cardSelector, draggedCard, last, true);
+                    last.classList.add("is-drop-target");
+                }
+            }
+        }
+    }, { signal });
+
+    const finishDrag = (event, cancelled = false) => {
+        if (!dragStart || dragStart.pointerId !== event.pointerId) return;
+        const finalOrder = [...container.querySelectorAll(cardSelector)].map((item) => Number(item.dataset[indexAttribute]));
+        const changed = finalOrder.some((index, position) => index !== dragStart.order[position]);
+        const shouldRender = Boolean(draggedCard);
+        dragStart = null;
+        draggedCard = null;
+        if (changed && !cancelled) onReorder(finalOrder);
+        else if (shouldRender) render();
+    };
+    document.addEventListener("pointerup", (event) => finishDrag(event), { signal });
+    document.addEventListener("pointercancel", (event) => finishDrag(event, true), { signal });
+}
+
+function animateActivityCardMove(container, cardSelector, movingCard, targetCard, insertAfter) {
+    const cards = [...container.querySelectorAll(cardSelector)];
+    const previousPositions = new Map(cards.map((card) => [card, card.getBoundingClientRect()]));
+    container.insertBefore(movingCard, insertAfter ? targetCard.nextSibling : targetCard);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    for (const card of cards) {
+        const previous = previousPositions.get(card);
+        const next = card.getBoundingClientRect();
+        const deltaX = previous.left - next.left;
+        const deltaY = previous.top - next.top;
+        if (deltaX || deltaY) {
+            card.animate(
+                [{ transform: `translate(${deltaX}px, ${deltaY}px)` }, { transform: "translate(0, 0)" }],
+                { duration: 190, easing: "cubic-bezier(.2,.75,.25,1)" }
+            );
+        }
+    }
+}
+
+async function savePreviewActivities(lesson, sectionId, activities, successMessage) {
+    if (!hasPermission("edit_lessons")) return;
+    const previousSections = lesson.sections;
+    const previousActivities = lesson.activities;
+    const sections = normalizeLessonSections(lesson).map((section) => ({
+        ...section,
+        activities: section.id === sectionId ? activities : [...section.activities]
+    }));
+    lesson.sections = sections;
+    lesson.activities = sections.flatMap((section) => section.activities);
+    if (!persist()) {
+        lesson.sections = previousSections;
+        lesson.activities = previousActivities;
+        return;
+    }
+    if (!await waitForWorkspaceSave()) return;
+    render();
+    showToast(successMessage);
+}
+
+function bindLessonPreviewActions(container = pageContent, lesson = null, section = null) {
+    if (lesson && section && hasPermission("edit_lessons")) {
+        container.querySelectorAll("[data-delete-preview-block]").forEach((button) => button.addEventListener("click", () => {
+            if (!hasPermission("edit_lessons") || !window.confirm(t("confirm.deleteActivity"))) return;
+            const activities = [...section.activities];
+            activities.splice(Number(button.dataset.deletePreviewBlock), 1);
+            savePreviewActivities(lesson, section.id, activities, t("toast.activityDeleted"));
+        }));
+        const activityList = container.querySelector(".lesson-preview-list");
+        if (activityList) bindSortableActivityCards(activityList, ".preview-activity", ".preview-activity-drag", "previewActivity", (order) => {
+            const activities = order.map((index) => section.activities[index]);
+            savePreviewActivities(lesson, section.id, activities, t("toast.activityOrderSaved"));
+        });
+    }
     container.querySelectorAll("[data-check-activity]").forEach((button) => button.addEventListener("click", () => {
         const card = button.closest("[data-preview-activity]");
         const result = card.querySelector("[data-preview-result]");
@@ -1416,7 +1536,7 @@ function renderLessonWorkspace() {
         : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map((activity, index) => renderPreviewActivity(activity, index, hasPermission("edit_lessons"))).join("") : emptyMessage(lessonSectionText("empty"), "")}</div>`;
     const actionBar = isEditing
         ? `<button type="button" class="button secondary" data-workspace-cancel>${t("action.cancel")}</button><button class="button" type="submit">${editingLessonId ? lessonSectionText("save") : lessonSectionText("create")}</button>`
-        : hasPermission("edit_lessons") ? `<button type="button" class="button secondary" data-edit-workspace>${lessonSectionText("edit")}</button>` : "";
+        : "";
     pageContent.innerHTML = `<section class="lesson-workspace"><form id="lessonForm" class="lesson-workspace-form">
         <header class="lesson-workspace-hero">
             <div class="lesson-workspace-heading"><button type="button" class="text-link" data-workspace-back>← ${lessonSectionText("back")}</button>
@@ -1435,11 +1555,10 @@ function renderLessonWorkspace() {
                 ${isEditing ? `<button type="button" class="button secondary lesson-add-section" data-add-section>${lessonSectionText("addSection")}</button>` : ""}
             </aside>
         </div>
-        <div class="lesson-workspace-actions">${actionBar}</div>
+        ${actionBar ? `<div class="lesson-workspace-actions">${actionBar}</div>` : ""}
     </form></section>`;
     pageContent.querySelector("[data-workspace-back]").addEventListener("click", exitLessonWorkspace);
     pageContent.querySelector("[data-workspace-cancel]")?.addEventListener("click", exitLessonWorkspace);
-    pageContent.querySelector("[data-edit-workspace]")?.addEventListener("click", () => openLessonEditor(lesson));
     pageContent.querySelectorAll("[data-edit-preview-block]").forEach((button) => button.addEventListener("click", () => {
         openLessonEditor(lesson, section.id, Number(button.dataset.editPreviewBlock));
     }));
@@ -1494,8 +1613,8 @@ function renderLessonWorkspace() {
         render();
     });
     enhanceSelects(pageContent);
-    bindActivityBlockActions();
-    if (!isEditing) bindLessonPreviewActions(pageContent);
+    if (isEditing) bindActivityBlockActions();
+    else bindLessonPreviewActions(pageContent, lesson, section);
 }
 
 function exitLessonWorkspace() {
@@ -1554,17 +1673,10 @@ function answerPlaceholder(type) {
 }
 
 function bindActivityBlockActions() {
-    activityBlockDragController?.abort();
-    activityBlockDragController = null;
     const currentSection = activeDraftSection();
     if (!currentSection) return;
     const activities = currentSection.activities;
     const blocksContainer = pageContent.querySelector("#activityBlocks");
-    activityBlockDragController = new AbortController();
-    const { signal } = activityBlockDragController;
-    let draggedBlock = null;
-    let dragStart = null;
-    let isDragging = false;
 
     pageContent.querySelectorAll("[data-remove-block]").forEach((button) => button.addEventListener("click", () => {
         activities.splice(Number(button.dataset.removeBlock), 1);
@@ -1589,44 +1701,11 @@ function bindActivityBlockActions() {
         }));
     });
 
-    blocksContainer?.querySelectorAll(".builder-block-drag").forEach((handle) => {
-        handle.addEventListener("pointerdown", (event) => {
-            if (event.button !== 0) return;
-            dragStart = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, block: handle.closest(".builder-block") };
-            handle.setPointerCapture(event.pointerId);
-        }, { signal });
+    if (blocksContainer) bindSortableActivityCards(blocksContainer, ".builder-block", ".builder-block-drag", "blockIndex", (order) => {
+        const reordered = order.map((index) => activities[index]);
+        activities.splice(0, activities.length, ...reordered);
+        render();
     });
-    document.addEventListener("pointermove", (event) => {
-        if (!dragStart || dragStart.pointerId !== event.pointerId) return;
-        if (!isDragging && Math.hypot(event.clientX - dragStart.x, event.clientY - dragStart.y) > 5) {
-            draggedBlock = dragStart.block;
-            isDragging = true;
-            draggedBlock.classList.add("is-dragging");
-        }
-        if (!isDragging) return;
-        const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".builder-block");
-        if (!target || target === draggedBlock || !blocksContainer.contains(target)) return;
-        const bounds = target.getBoundingClientRect();
-        const insertAfter = event.clientY > bounds.top + bounds.height / 2;
-        blocksContainer.insertBefore(draggedBlock, insertAfter ? target.nextSibling : target);
-        blocksContainer.querySelectorAll(".builder-block").forEach((block) => block.classList.toggle("is-drop-target", block === target));
-    }, { signal });
-    const finishDrag = (event, cancelled = false) => {
-        if (!dragStart || dragStart.pointerId !== event.pointerId) return;
-        if (isDragging && !cancelled) {
-            const order = [...blocksContainer.querySelectorAll(".builder-block")]
-                .map((item) => Number(item.dataset.blockIndex));
-            const reordered = order.map((index) => activities[index]);
-            activities.splice(0, activities.length, ...reordered);
-        }
-        const shouldRender = isDragging;
-        dragStart = null;
-        draggedBlock = null;
-        isDragging = false;
-        if (shouldRender) render();
-    };
-    document.addEventListener("pointerup", (event) => finishDrag(event), { signal });
-    document.addEventListener("pointercancel", (event) => finishDrag(event, true), { signal });
 }
 
 function openActivityPicker() {
@@ -1666,10 +1745,11 @@ function openActivityPicker() {
     });
 }
 
-function saveLesson(event) {
+async function saveLesson(event) {
     event.preventDefault();
     if (!hasPermission("edit_lessons")) return;
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const title = String(form.get("title")).trim();
     const unit = String(form.get("unit"));
     if (!title || !LESSON_UNITS.includes(unit)) {
@@ -1685,6 +1765,14 @@ function saveLesson(event) {
         : [...data.lessons, lesson];
     if (!persist()) {
         data.lessons = previousLessons;
+        return;
+    }
+    const submitButton = formElement.querySelector('[type="submit"]');
+    if (submitButton) submitButton.disabled = true;
+    if (!await waitForWorkspaceSave()) {
+        data.lessons = previousLessons;
+        persist();
+        if (submitButton?.isConnected) submitButton.disabled = false;
         return;
     }
     lessonWorkspaceMode = "";
