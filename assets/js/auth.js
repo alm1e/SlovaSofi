@@ -42,6 +42,9 @@ loginForm?.addEventListener("submit", async (event) => {
 });
 
 document.getElementById("forgotPasswordButton")?.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
     const message = document.getElementById("authMessage");
     const button = event.currentTarget;
     const emailInput = document.getElementById("email");
@@ -50,20 +53,23 @@ document.getElementById("forgotPasswordButton")?.addEventListener("click", async
         ua: {
             email: "Введіть коректну електронну пошту.",
             connection: "Не вдалося підключитися до Supabase. Спробуйте ще раз.",
-            error: "Не вдалося надіслати лист для відновлення пароля. Спробуйте ще раз.",
-            sent: "Якщо акаунт із цією адресою існує, на пошту надіслано посилання для зміни пароля."
+            error: "Не вдалося надіслати лист для відновлення пароля. Перевірте, чи адреса пошти правильна, або спробуйте пізніше.",
+            sent: "Якщо акаунт із цією адресою існує, на пошту надіслано посилання для зміни пароля. Перевірте теку Спам, якщо не бачите листа.",
+            info: "ℹ️ Посилання дійсне 24 години. Якщо посилання не приходить, переконайтеся, що введена правильна адреса пошти."
         },
         ru: {
             email: "Введите корректный адрес электронной почты.",
             connection: "Не удалось подключиться к Supabase. Попробуйте ещё раз.",
-            error: "Не удалось отправить письмо для восстановления пароля. Попробуйте ещё раз.",
-            sent: "Если аккаунт с этим адресом существует, на почту отправлена ссылка для смены пароля."
+            error: "Не удалось отправить письмо для восстановления пароля. Проверьте, правильно ли введён адрес почты, или попробуйте позже.",
+            sent: "Если аккаунт с этим адресом существует, на почту отправлена ссылка для смены пароля. Проверьте папку Спам, если не видите письма.",
+            info: "ℹ️ Ссылка действительна 24 часа. Если письмо не приходит, убедитесь, что введён правильный адрес почты."
         },
         en: {
             email: "Enter a valid email address.",
             connection: "Could not connect to Supabase. Please try again.",
-            error: "Could not send the password reset email. Please try again.",
-            sent: "If an account exists for this address, a password reset link has been sent."
+            error: "Could not send the password reset email. Check that the email address is correct, or try again later.",
+            sent: "If an account exists for this address, a password reset link has been sent to your email. Check your spam folder if you don't see it.",
+            info: "ℹ️ The reset link is valid for 24 hours. If you don't receive an email, make sure you entered the correct address."
         }
     };
     const copy = messages[language] || messages.ua;
@@ -85,11 +91,11 @@ document.getElementById("forgotPasswordButton")?.addEventListener("click", async
         const { error } = await window.supabaseClient.auth.resetPasswordForEmail(emailInput.value.trim(), { redirectTo });
         if (error) {
             console.error("Could not request password recovery.", error);
-            message.textContent = copy.error;
+            message.innerHTML = `<div class="mb-2">${copy.error}</div><div style="font-size: 0.9rem; margin-top: 8px; padding: 8px; background: rgba(220,53,69,0.1); border-radius: 6px;">${copy.info}</div>`;
             message.className = "mb-3 text-danger";
             return;
         }
-        message.textContent = copy.sent;
+        message.innerHTML = `<div class="mb-2">${copy.sent}</div><div style="font-size: 0.9rem; margin-top: 8px; padding: 8px; background: rgba(40,167,69,0.1); border-radius: 6px;">${copy.info}</div>`;
         message.className = "mb-3 text-success";
     } catch (error) {
         console.error("Could not request password recovery.", error);

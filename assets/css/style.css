@@ -430,36 +430,37 @@ html {
 .auth-forgot-password {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     margin: 0 0 8px auto;
     border: 0;
-    border-radius: 6px;
-    padding: 3px 7px;
-    background: transparent;
-    color: var(--primary-green);
-    font-size: 0.82rem;
-    font-weight: 600;
-    line-height: 1.35;
+    border-radius: 8px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f6 100%);
+    color: #1b5e20;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1.4;
     cursor: pointer;
-    transition: background-color .18s ease, color .18s ease;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    white-space: nowrap;
 }
 
 .auth-forgot-password::before {
-    content: "?";
-    display: inline-grid;
-    width: 16px;
-    height: 16px;
-    place-items: center;
-    border: 1px solid currentColor;
-    border-radius: 50%;
-    font-size: 0.68rem;
-    line-height: 1;
+    content: "🔑";
+    display: inline-block;
+    font-size: 0.95rem;
 }
 
 .auth-forgot-password:hover {
-    background: #edf5ef;
-    color: #234f37;
-    text-decoration: underline;
+    background: linear-gradient(135deg, #c8e6c9 0%, #e0f2f1 100%);
+    color: #0d3818;
+    box-shadow: 0 2px 8px rgba(43, 100, 70, 0.2);
+    transform: translateY(-1px);
+}
+
+.auth-forgot-password:active {
+    transform: translateY(0);
 }
 
 .auth-forgot-password:focus-visible {
