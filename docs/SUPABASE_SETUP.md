@@ -10,13 +10,13 @@
 - `teacher_workspace_settings` — отметка о переносе данных браузера.
 
 Старая таблица `teacher_materials`, больше не используемая интерфейсом, удалена
-миграцией [`20261017_remove_legacy_teacher_materials.sql`](./supabase/migrations/20261017_remove_legacy_teacher_materials.sql).
+миграцией [`20261017_remove_legacy_teacher_materials.sql`](../supabase/migrations/20261017_remove_legacy_teacher_materials.sql).
 
 ## Применить схему
 
 1. Откройте Supabase Dashboard → проект → **SQL Editor** → **New query**.
 2. Скопируйте и выполните содержимое
-   [`supabase/migrations/20261014_teacher_workspace.sql`](./supabase/migrations/20261014_teacher_workspace.sql).
+   [`supabase/migrations/20261014_teacher_workspace.sql`](../supabase/migrations/20261014_teacher_workspace.sql).
 3. Откройте SlovaSofi через HTTP/HTTPS (например, Live Server), войдите в
    аккаунт преподавателя и перейдите в кабинет. Страница не должна открываться
    через `file://`.
@@ -33,7 +33,7 @@
 ## Приглашение учеников
 
 1. После основной миграции выполните в SQL Editor
-   [`supabase/migrations/20261015_student_invites.sql`](./supabase/migrations/20261015_student_invites.sql).
+   [`supabase/migrations/20261015_student_invites.sql`](../supabase/migrations/20261015_student_invites.sql).
    Она добавляет email ученика и политики, позволяющие ему видеть только свой класс.
 2. В Supabase → **Authentication → URL Configuration** добавьте полный адрес
    страницы приглашения в **Redirect URLs**, например
