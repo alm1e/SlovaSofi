@@ -14,7 +14,7 @@ The role and class-isolation migration makes `akhumanoid@gmail.com` the platform
 
 Set the `APP_URL` function secret to the deployed site's origin (for example, `https://example.com`). The Edge Functions also require the standard `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` secrets. The service-role key must remain server-side and must never be added to the browser application.
 
-The student-directory migration backfills existing linked students. Apply it before deploying the updated `invite-student` function; new invitations will then be available to add to another class without sending another email. The `student-lessons` function serves lesson and homework activities and stores student answer drafts and submitted progress.
+The student-directory migration backfills existing linked students. Apply it before deploying the updated `invite-student` function; new invitations will then be available to add to another class without sending another email. The `student-lessons` function serves lesson and homework activities and stores student answer drafts and submitted progress. The live-lesson view subscribes to `student_lesson_progress`; the Realtime migration adds that table to Supabase's publication while existing row-level security keeps each teacher's visible progress limited to their classes.
 
 Add the deployed `teacher.html` and `student.html` URLs to Supabase Auth's allowed redirect URLs so invitation links can return to the correct dashboard.
 

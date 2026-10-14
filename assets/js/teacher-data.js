@@ -180,6 +180,29 @@
         return invokeStudentFunction(client, { action: "add-existing", classId, studentUserId });
     }
 
+    async function loadLessonProgress(client, classId, lessonId) {
+        const { data, error } = await client.from("student_lesson_progress")
+            .select("student_id,class_id,lesson_id,answers,completed_at,updated_at")
+            .eq("class_id", classId)
+            .eq("lesson_id", lessonId);
+        fail(error, "Не удалось загрузить ответы учеников");
+        if (!Array.isArray(data)) {
+            throw new Error("Не удалось загрузить ответы учеников: база данных вернула неожиданный формат.");
+        }
+        return data;
+    }
+
+    function subscribeLessonProgress(client, lessonId, onChange, onStatus) {
+        return client.channel(`teacher-live-progress:${lessonId}:${crypto.randomUUID()}`)
+            .on("postgres_changes", {
+                event: "*",
+                schema: "public",
+                table: "student_lesson_progress",
+                filter: `lesson_id=eq.${lessonId}`
+            }, onChange)
+            .subscribe(onStatus);
+    }
+
     async function upsertRows(client, table, rows, operation) {
         if (!rows.length) return;
         const { error } = await client.from(table).upsert(rows, { onConflict: "id" });
@@ -276,6 +299,8 @@
         inviteStudent,
         listExistingStudents,
         addExistingStudent,
+        loadLessonProgress,
+        subscribeLessonProgress,
         manageTeacher
     };
 })();

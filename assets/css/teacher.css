@@ -147,6 +147,7 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .panel { border-color: #e6eee8; border-radius: 17px; box-shadow: 0 7px 22px #25443208; }
 .class-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px; }
 .class-card-enhanced { min-height: 300px; overflow: hidden; border: 1px solid #ffffffb0; border-radius: 19px; padding: 20px; box-shadow: 0 10px 26px #2544320d; transition: transform .2s ease, box-shadow .2s ease; }
+.class-card-enhanced[data-open-class-id] { cursor: pointer; }
 .class-card-enhanced:hover { transform: translateY(-4px); box-shadow: 0 17px 32px #25443218; }
 .class-card-enhanced::after { position: absolute; right: -32px; bottom: -61px; width: 150px; height: 150px; border: 1px solid #ffffff80; border-radius: 50%; content: ""; pointer-events: none; }
 .class-card-enhanced.class-tone-0, .class-card-enhanced.class-tone-1, .class-card-enhanced.class-tone-2, .class-card-enhanced.class-tone-3 { background: linear-gradient(140deg, #e9f2e9, #f5f8f2); }
@@ -154,6 +155,8 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .class-card-avatar { display: grid; place-items: center; width: 47px; height: 47px; border: 2px solid #ffffffc9; border-radius: 15px; background: #ffffffa6; color: #2b6446; font-size: 16px; font-weight: 800; }
 .class-course-pill { min-width: 0; max-width: calc(100% - 55px); overflow: hidden; border: 1px solid #ffffffb0; border-radius: 20px; padding: 6px 10px; background: #ffffff8c; color: #45674f; font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .class-card-enhanced h3 { margin: 18px 0 15px; color: #254432; font-size: 19px; }
+.class-card-title { border: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.class-card-title:focus-visible { outline: 2px solid #477553; outline-offset: 4px; }
 .class-card-meta { justify-content: space-between; border-top: 1px solid #25443217; padding-top: 12px; color: #566b5b; font-size: 13px; }
 .class-card-meta .text-link { font-size: 13px; }
 .class-student-count b { color: #254432; font-size: 16px; }
@@ -544,6 +547,7 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .lesson-workspace-section .lesson-preview-list { gap: 13px; }
 .lesson-sections-panel { position: sticky; top: 18px; border: 1px solid #d6e2f1; border-radius: 17px; padding: 16px; background: #edf3fb; box-shadow: 0 7px 20px #2544320c; }
 .lesson-sections-panel h2 { margin: 0 0 12px; font-size: 15px; }
+.homework-sections-heading { margin: 20px 0 12px; border-top: 1px solid #d7e2ef; padding-top: 16px; color: #3f536c; font-size: 14px; }
 .lesson-sections-list { display: grid; gap: 5px; max-height: 55vh; overflow-y: auto; }
 .lesson-section-row { display: flex; align-items: center; gap: 4px; min-width: 0; border-radius: 10px; padding: 3px; }
 .lesson-section-row.active { background: #fff; box-shadow: 0 2px 8px #253c5710; }
@@ -565,6 +569,28 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .lesson-workspace-tabs button { border: 1px solid #dfe8df; border-radius: 20px; padding: 8px 14px; background: #fff; color: #718174; font-size: 13px; }
 .lesson-workspace-tabs button.active { border-color: var(--purple); background: var(--purple-light); color: var(--purple); font-weight: 700; }
 .lesson-workspace-tabs button:disabled { opacity: .55; cursor: default; }
+.lesson-editor-draft-notice { margin: 0; border: 1px solid #f0d59a; border-radius: 12px; padding: 11px 14px; background: #fff8e9; color: #7a5b20; font-size: 13px; }
+.live-monitor-bar { display: grid; grid-template-columns: minmax(0,1fr) minmax(180px,auto); align-items: center; gap: 10px 18px; border: 1px solid #dce8dc; border-radius: 14px; padding: 13px 16px; background: #f7faf7; }
+.live-monitor-heading { min-width: 0; }
+.live-monitor-heading strong, .live-class-picker span { color: #425b48; font-size: 13px; }
+.live-monitor-heading p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+.live-class-picker { display: grid; gap: 5px; min-width: 170px; }
+.live-class-picker > strong { color: #2f4f37; font-size: 13px; }
+.live-class-picker select { min-height: 36px; border: 1px solid #d7e3d8; border-radius: 9px; padding: 7px 10px; background: #fff; color: var(--ink); }
+.live-monitor-status { grid-column: 1 / -1; margin: 0; color: #69796d; font-size: 12px; }
+.live-monitor-status.is-ready { color: #2d7544; }
+.live-monitor-status.is-error { color: #a33e35; }
+.live-monitor-status.is-connecting { color: #896e35; }
+.live-answers-panel { border: 1px solid #dce8dc; border-radius: 12px; padding: 13px; background: #f8fbf8; }
+.live-answers-panel h4 { margin: 0 0 9px; color: #47664d; font-size: 13px; }
+.live-answer-list { display: grid; gap: 7px; }
+.live-answer-row { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 4px 10px; border: 1px solid #e5ede5; border-radius: 9px; padding: 9px 10px; background: #fff; }
+.live-answer-row > strong { overflow-wrap: anywhere; color: #34483a; font-size: 12px; }
+.live-answer-status { align-self: start; border-radius: 20px; padding: 3px 7px; color: #536c57; font-size: 10px; white-space: nowrap; }
+.live-answer-status.is-draft { background: #fff3d9; color: #816426; }
+.live-answer-status.is-submitted { background: #e6f3e8; color: #2d7544; }
+.live-answer-response { grid-column: 1 / -1; margin: 0; overflow-wrap: anywhere; border-radius: 7px; padding: 7px 8px; background: #f6f8f6; color: #48564a; font-size: 12px; white-space: pre-wrap; }
+.live-answer-empty { margin: 0; color: var(--muted); font-size: 12px; }
 .homework-copy-source { margin-bottom: 20px; border: 1px solid #e0e9e0; border-radius: 13px; padding: 14px; background: #f8fbf8; }
 .homework-copy-source .form-field { max-width: 500px; }
 .homework-copy-source > .hint { margin: 8px 0 12px; }
@@ -583,6 +609,9 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 }
 @media (max-width: 600px) {
     .lesson-workspace-hero { padding: 18px; }
+    .live-monitor-bar { grid-template-columns: 1fr; }
+    .live-monitor-status { grid-column: auto; }
+    .live-class-picker { min-width: 0; }
     .lesson-workspace-fields { grid-template-columns: 1fr; gap: 9px; }
     .lesson-workspace-layout { grid-template-columns: 1fr; }
     .lesson-sections-panel { position: static; order: -1; }
