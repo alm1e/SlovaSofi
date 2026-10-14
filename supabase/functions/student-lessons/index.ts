@@ -15,7 +15,7 @@ const interactiveTypes = new Set([
 
 type JsonRecord = Record<string, unknown>;
 type Activity = { type: string; prompt: string; content: string; answer: string };
-type ProgressAnswer = { response: unknown; correct: boolean | null; submitted_at: string };
+type ProgressAnswer = { response: unknown; correct: boolean | null; submitted_at: string; draft?: boolean };
 
 function jsonResponse(status: number, body: unknown, origin: string) {
     return new Response(JSON.stringify(body), {
@@ -51,10 +51,10 @@ function shuffle<T>(items: T[]): T[] {
 
 function flattenActivities(activities: unknown): Activity[] {
     const value = record(activities);
-    const sections = value.format === "sections-v1" && Array.isArray(value.sections)
-        ? value.sections
+    const sectionGroups = value.format === "sections-v1" && Array.isArray(value.sections)
+        ? [...value.sections, ...(Array.isArray(value.homeworkSections) ? value.homeworkSections : [])]
         : [{ activities: Array.isArray(activities) ? activities : [] }];
-    return sections.flatMap((section) => {
+    return sectionGroups.flatMap((section) => {
         const sectionRecord = record(section);
         if (!Array.isArray(sectionRecord.activities)) return [];
         return sectionRecord.activities.flatMap((rawActivity) => {
@@ -76,8 +76,14 @@ function sectionsWithSafeActivities(activities: unknown) {
     const sections = value.format === "sections-v1" && Array.isArray(value.sections)
         ? value.sections
         : [{ title: "Lesson", activities: Array.isArray(activities) ? activities : [] }];
+    const homeworkSections = value.format === "sections-v1" && Array.isArray(value.homeworkSections)
+        ? value.homeworkSections
+        : [];
     let activityIndex = 0;
-    return sections.map((rawSection) => {
+    return [
+        ...sections.map((rawSection) => ({ section: rawSection, homework: false })),
+        ...homeworkSections.map((rawSection) => ({ section: rawSection, homework: true }))
+    ].map(({ section: rawSection, homework }) => {
         const section = record(rawSection);
         const safeActivities = (Array.isArray(section.activities) ? section.activities : []).flatMap((rawActivity) => {
             const activity = record(rawActivity);
@@ -91,7 +97,7 @@ function sectionsWithSafeActivities(activities: unknown) {
             });
             return [{ ...safe, index: activityIndex++ }];
         });
-        return { title: stringValue(section.title) || "Lesson", activities: safeActivities };
+        return { title: stringValue(section.title) || "Lesson", homework, activities: safeActivities };
     }).filter((section) => section.activities.length);
 }
 
@@ -221,6 +227,13 @@ function isCorrect(activity: Activity, response: unknown): boolean {
     return false;
 }
 
+function isGradable(activity: Activity): boolean {
+    if (["open-answer", "flashcards", "text", "image", "audio", "video"].includes(activity.type)) return false;
+    if (activity.answer.trim()) return true;
+    return ["order-items", "sentence-order", "match", "columns"].includes(activity.type)
+        && lines(activity.content).length > 0;
+}
+
 function publicProgress(value: unknown): Record<string, ProgressAnswer> {
     const answers = record(value);
     const result: Record<string, ProgressAnswer> = {};
@@ -230,7 +243,8 @@ function publicProgress(value: unknown): Record<string, ProgressAnswer> {
         result[key] = {
             response: entry.response,
             correct: entry.correct as boolean | null,
-            submitted_at: stringValue(entry.submitted_at)
+            submitted_at: stringValue(entry.submitted_at),
+            draft: entry.draft === true
         };
     }
     return result;
@@ -260,7 +274,7 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(400, { error: "The request must contain valid JSON." }, allowedOrigin);
     }
     const action = stringValue(payload.action);
-    if (!["list", "load", "submit"].includes(action)) return jsonResponse(400, { error: "Choose a valid lesson action." }, allowedOrigin);
+    if (!["list", "load", "submit", "save-draft"].includes(action)) return jsonResponse(400, { error: "Choose a valid lesson action." }, allowedOrigin);
     const lessonId = stringValue(payload.lessonId);
     if (action !== "list" && !uuidPattern.test(lessonId)) return jsonResponse(400, { error: "Choose a valid assigned lesson." }, allowedOrigin);
 
@@ -385,11 +399,50 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(400, { error: "Choose a valid activity." }, allowedOrigin);
     }
     const activity = allActivities[Number(activityIndex)];
-    if (activity.type === "open-answer") {
-        const response = stringValue(payload.response).trim();
-        if (!response || response.length > 10000) return jsonResponse(400, { error: "Enter an answer of up to 10,000 characters." }, allowedOrigin);
+    const response = payload.response;
+    const canAnswer = new Set([
+        "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
+        "sentence-order", "true-false", "table", "match", "columns", "open-answer"
+    ]);
+    if (action === "save-draft") {
+        if (!canAnswer.has(activity.type)) return jsonResponse(400, { error: "This activity does not accept a saved answer." }, allowedOrigin);
+        if (!(typeof response === "string" || Array.isArray(response))
+            || (typeof response === "string" && response.length > 10000)
+            || (Array.isArray(response) && (response.length > 100 || response.some((item) => typeof item !== "string" || item.length > 500)))) {
+            return jsonResponse(400, { error: "The saved answer has an invalid format." }, allowedOrigin);
+        }
         const answers = publicProgress(progress?.answers);
-        answers[`a${activityIndex}`] = { response, correct: null, submitted_at: new Date().toISOString() };
+        answers[`a${activityIndex}`] = {
+            response,
+            correct: null,
+            submitted_at: new Date().toISOString(),
+            draft: true
+        };
+        const gradedIndexes = allActivities
+            .map((item, index) => ({ item, index }))
+            .filter(({ item }) => isGradable(item))
+            .map(({ index }) => `a${index}`);
+        const completed = gradedIndexes.length > 0 && gradedIndexes.every((key) => answers[key]?.correct === true);
+        const completedAt = completed ? progress?.completed_at || new Date().toISOString() : null;
+        const { error } = await admin.from("student_lesson_progress").upsert({
+            student_id: assignment.memberId,
+            class_id: assignment.classId,
+            lesson_id: lessonId,
+            answers,
+            completed_at: completedAt,
+            updated_at: new Date().toISOString()
+        }, { onConflict: "student_id,lesson_id" });
+        if (error) {
+            console.error("Could not save the student's answer draft.", error);
+            return jsonResponse(500, { error: "Could not save your draft. Please try again." }, allowedOrigin);
+        }
+        return jsonResponse(200, { answers, completed }, allowedOrigin);
+    }
+    if (activity.type === "open-answer") {
+        const writtenResponse = stringValue(response).trim();
+        if (!writtenResponse || writtenResponse.length > 10000) return jsonResponse(400, { error: "Enter an answer of up to 10,000 characters." }, allowedOrigin);
+        const answers = publicProgress(progress?.answers);
+        answers[`a${activityIndex}`] = { response: writtenResponse, correct: null, submitted_at: new Date().toISOString() };
         const { error } = await admin.from("student_lesson_progress").upsert({
             student_id: assignment.memberId,
             class_id: assignment.classId,
@@ -405,7 +458,6 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(200, { correct: null, reviewRequired: true, answers, completed: Boolean(progress?.completed_at) }, allowedOrigin);
     }
 
-    const response = payload.response;
     if (!(typeof response === "string" || Array.isArray(response))
         || (typeof response === "string" && response.length > 10000)
         || (Array.isArray(response) && (response.length > 100 || response.some((item) => typeof item !== "string" || item.length > 500)))) {
@@ -416,11 +468,7 @@ Deno.serve(async (request: Request) => {
     answers[`a${activityIndex}`] = { response, correct, submitted_at: new Date().toISOString() };
     const gradedIndexes = allActivities
         .map((item, index) => ({ item, index }))
-        .filter(({ item }) => {
-            if (["open-answer", "flashcards", "text", "image", "audio", "video"].includes(item.type)) return false;
-            if (item.answer.trim()) return true;
-            return ["order-items", "sentence-order", "match", "columns"].includes(item.type) && lines(item.content).length > 0;
-        })
+        .filter(({ item }) => isGradable(item))
         .map(({ index }) => `a${index}`);
     const completed = gradedIndexes.length > 0 && gradedIndexes.every((key) => answers[key]?.correct === true);
     const { error: saveError } = await admin.from("student_lesson_progress").upsert({

@@ -15,8 +15,9 @@
             saveError: "Не вдалося зберегти пароль:", loadError: "Не вдалося завантажити кабінет:",
             logoutError: "Не вдалося вийти з профілю. Спробуйте ще раз.", imageAlt: "Зображення до завдання",
             checkAnswer: "Перевірити відповідь", correct: "Правильно!", incorrect: "Поки неправильно. Спробуйте ще раз.",
-            submitted: "Відповідь збережено. Викладач зможе її перевірити.", saved: "Прогрес збережено.",
-            completed: "Урок завершено!", choose: "Виберіть відповідь", true: "Так", false: "Ні",
+            submitted: "Відповідь збережено. Викладач зможе її перевірити.", saved: "Прогрес збережено.", draftSaveError: "Не вдалося зберегти чернетку:",
+            completed: "Урок завершено!", homework: "Домашня робота", progress: "відповідей", progressSaved: "Чернетку збережено.",
+            choose: "Виберіть відповідь", true: "Так", false: "Ні",
             addWords: "Перетягуйте слова або натискайте на них, щоб скласти відповідь", yourAnswer: "Ваша відповідь", emptyAnswer: "Спочатку введіть відповідь.",
             moveUp: "Вище", moveDown: "Нижче", flip: "Показати переклад", loading: "Завантаження уроку…"
         },
@@ -35,8 +36,9 @@
             saveError: "Не удалось сохранить пароль:", loadError: "Не удалось загрузить кабинет:",
             logoutError: "Не удалось выйти из профиля. Попробуйте ещё раз.", imageAlt: "Изображение к заданию",
             checkAnswer: "Проверить ответ", correct: "Правильно!", incorrect: "Пока неверно. Попробуйте ещё раз.",
-            submitted: "Ответ сохранён. Преподаватель сможет его проверить.", saved: "Прогресс сохранён.",
-            completed: "Урок завершён!", choose: "Выберите ответ", true: "Да", false: "Нет",
+            submitted: "Ответ сохранён. Преподаватель сможет его проверить.", saved: "Прогресс сохранён.", draftSaveError: "Не удалось сохранить черновик:",
+            completed: "Урок завершён!", homework: "Домашняя работа", progress: "ответов", progressSaved: "Черновик сохранён.",
+            choose: "Выберите ответ", true: "Да", false: "Нет",
             addWords: "Перетаскивайте слова или нажимайте на них, чтобы составить ответ", yourAnswer: "Ваш ответ", emptyAnswer: "Сначала введите ответ.",
             moveUp: "Выше", moveDown: "Ниже", flip: "Показать перевод", loading: "Загрузка урока…"
         },
@@ -55,8 +57,9 @@
             saveError: "Could not save the password:", loadError: "Could not load the dashboard:",
             logoutError: "Could not sign out. Please try again.", imageAlt: "Activity image",
             checkAnswer: "Check answer", correct: "Correct!", incorrect: "Not quite. Try again.",
-            submitted: "Answer saved. Your teacher can review it.", saved: "Progress saved.",
-            completed: "Lesson completed!", choose: "Choose an answer", true: "True", false: "False",
+            submitted: "Answer saved. Your teacher can review it.", saved: "Progress saved.", draftSaveError: "Could not save the draft:",
+            completed: "Lesson completed!", homework: "Homework", progress: "answered", progressSaved: "Draft saved.",
+            choose: "Choose an answer", true: "True", false: "False",
             addWords: "Drag or click words to build your answer", yourAnswer: "Your answer", emptyAnswer: "Enter an answer first.",
             moveUp: "Move up", moveDown: "Move down", flip: "Show translation", loading: "Loading lesson…"
         }
@@ -76,6 +79,9 @@
     let selectedLessonId = "";
     let openedLesson = null;
     let draggedWordButton = null;
+    let draftSaveTimers = new Map();
+    let pendingDrafts = new Map();
+    let draftSaveQueue = Promise.resolve();
     let toastTimer;
     let dashboardStatus = "loading";
     let dashboardErrorKey = "connection";
@@ -91,6 +97,13 @@
     const lessonSections = (lesson) => Array.isArray(lesson.sections) ? lesson.sections : [];
     const activitiesFor = (lesson) => lessonSections(lesson).flatMap((section) => Array.isArray(section.activities) ? section.activities : []);
     const activityCount = (lesson) => activitiesFor(lesson).length || Number(lesson.activityCount) || 0;
+    function progressBadge(lesson) {
+        const answered = Number(lesson.answeredCount) || 0;
+        if (lesson.completed) return `<span class="student-progress-badge is-complete">${escapeHtml(text("completed"))}</span>`;
+        if (!answered) return "";
+        const total = Math.max(Number(lesson.activityCount) || activityCount(lesson), answered);
+        return `<span class="student-progress-badge">${answered}/${total} ${escapeHtml(text("progress"))}</span>`;
+    }
     function countLabel(count, type) {
         if (language === "en") {
             const labels = { class: ["class", "classes"], lesson: ["lesson", "lessons"], activity: ["activity", "activities"] };
@@ -156,7 +169,7 @@
                 <div class="class-card-top"><span class="class-card-avatar">${escapeHtml(group.name.slice(0, 2).toLocaleUpperCase())}</span><span class="class-course-pill">${escapeHtml(countLabel(group.lessons.length, "lesson"))}</span></div>
                 <h3>${escapeHtml(group.name)}</h3><p>${escapeHtml(text("class"))}</p>
                 <div class="student-class-lessons">${group.lessons.length
-                    ? group.lessons.map((lesson) => `<button class="student-lesson-link" type="button" data-open-lesson="${escapeHtml(lesson.id)}"><span class="student-lesson-icon" aria-hidden="true">▤</span><span><strong>${escapeHtml(lesson.title)}</strong><small>${escapeHtml(lesson.unit || "")} · ${escapeHtml(countLabel(activityCount(lesson), "activity"))}</small></span><span aria-hidden="true">→</span></button>`).join("")
+                    ? group.lessons.map((lesson) => `<button class="student-lesson-link" type="button" data-open-lesson="${escapeHtml(lesson.id)}"><span class="student-lesson-icon" aria-hidden="true">▤</span><span><strong>${escapeHtml(lesson.title)}</strong><small>${escapeHtml(lesson.unit || "")} · ${escapeHtml(countLabel(activityCount(lesson), "activity"))}</small>${progressBadge(lesson)}</span><span aria-hidden="true">→</span></button>`).join("")
                     : `<p class="student-muted">${escapeHtml(text("noLessons"))}</p>`}</div>
             </article>`).join("")}</div>`
             : `<div class="panel student-empty"><span class="student-empty-icon">▣</span><h2>${escapeHtml(text("noClasses"))}</h2></div>`;
@@ -169,7 +182,7 @@
             classNames: classes.filter((group) => group.lessons.some((item) => item.id === lesson.id)).map((group) => group.name)
         }));
         const content = allLessons.length
-            ? `<div class="panel student-lessons-panel"><div class="student-lessons-list">${allLessons.map((lesson) => `<article class="lesson-row student-lesson-row"><span class="lesson-symbol">▤</span><div class="lesson-main"><strong>${escapeHtml(lesson.title)}</strong><small>${escapeHtml(lesson.classNames.join(", "))}${lesson.unit ? ` · ${escapeHtml(lesson.unit)}` : ""}</small></div><span class="lesson-count">${escapeHtml(countLabel(activityCount(lesson), "activity"))}</span><button class="button secondary small" type="button" data-open-lesson="${escapeHtml(lesson.id)}">${escapeHtml(text("openLesson"))}</button></article>`).join("")}</div></div>`
+            ? `<div class="panel student-lessons-panel"><div class="student-lessons-list">${allLessons.map((lesson) => `<article class="lesson-row student-lesson-row"><span class="lesson-symbol">▤</span><div class="lesson-main"><strong>${escapeHtml(lesson.title)}</strong><small>${escapeHtml(lesson.classNames.join(", "))}${lesson.unit ? ` · ${escapeHtml(lesson.unit)}` : ""}</small>${progressBadge(lesson)}</div><span class="lesson-count">${escapeHtml(countLabel(activityCount(lesson), "activity"))}</span><button class="button secondary small" type="button" data-open-lesson="${escapeHtml(lesson.id)}">${escapeHtml(text("openLesson"))}</button></article>`).join("")}</div></div>`
             : `<div class="panel student-empty"><span class="student-empty-icon">▤</span><h2>${escapeHtml(text("noAssignedLessons"))}</h2></div>`;
         return `<div class="section-heading"><div><h1>${escapeHtml(text("lessons"))}</h1><p>${escapeHtml(text("lessonsHint"))}</p></div></div>${content}`;
     }
@@ -248,9 +261,10 @@
         } else {
             body = activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         }
-        const feedback = saved?.correct === true ? text("correct")
-            : saved?.correct === false ? text("incorrect")
-                : saved?.correct === null ? text("submitted") : "";
+        const feedback = saved?.draft ? text("progressSaved")
+            : saved?.correct === true ? text("correct")
+                : saved?.correct === false ? text("incorrect")
+                    : saved?.correct === null ? text("submitted") : "";
         const submitButton = activity.gradable || activity.reviewRequired
             ? `<div class="student-activity-actions">${controls}<button class="button small" type="button" data-submit-answer>${escapeHtml(text("checkAnswer"))}</button></div><p class="student-answer-feedback ${saved?.correct === true ? "is-correct" : saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml(feedback)}</p>`
             : activity.type === "flashcards" ? "" : "";
@@ -261,7 +275,7 @@
         const sections = lessonSections(lesson);
         return `<button class="text-link student-back-link" type="button" data-back-to-lessons>← ${escapeHtml(text("back"))}</button>
             <section class="student-lesson-hero"><span class="eyebrow">${escapeHtml(lesson.className || "")}</span><h1>${escapeHtml(lesson.title)}</h1><p>${escapeHtml(lesson.unit || "")} · ${escapeHtml(countLabel(activityCount(lesson), "activity"))}${lesson.completed ? ` · ${escapeHtml(text("completed"))}` : ""}</p></section>
-            <div class="student-section-list">${sections.map((section) => `<section class="panel student-section"><h2>${escapeHtml(section.title || text("section"))}</h2><div class="student-activity-list">${(Array.isArray(section.activities) ? section.activities : []).map((activity) => renderActivity(activity)).join("") || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</div></section>`).join("")}</div>`;
+            <div class="student-section-list">${sections.map((section) => `<section class="panel student-section ${section.homework ? "student-homework-section" : ""}"><h2>${section.homework ? `${escapeHtml(text("homework"))} · ` : ""}${escapeHtml(section.title || text("section"))}</h2><div class="student-activity-list">${(Array.isArray(section.activities) ? section.activities : []).map((activity) => renderActivity(activity)).join("") || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</div></section>`).join("")}</div>`;
     }
 
     async function invokeLessonApi(payload) {
@@ -308,8 +322,99 @@
         if (kind === "order") return [...element.querySelectorAll("[data-order-item]")].map((item) => item.dataset.orderItem);
         if (kind === "matches") return [...element.querySelectorAll("[data-match-answer]")].map((select) => select.value);
         if (kind === "table") return [...element.querySelectorAll("[data-table-answer]")].map((input) => input.value.trim());
-        if (kind === "open") return element.querySelector("[data-open-answer]")?.value.trim() || "";
+        if (kind === "open") return element.querySelector("[data-open-answer]")?.value || "";
         return "";
+    }
+
+    function updateLessonProgress(lessonId, answers, completed) {
+        const answeredCount = Object.keys(answers || {}).length;
+        if (openedLesson?.id === lessonId) {
+            openedLesson.progress = answers;
+            openedLesson.completed = completed;
+        }
+        lessons.filter((lesson) => lesson.id === lessonId).forEach((lesson) => {
+            lesson.answeredCount = answeredCount;
+            lesson.completed = completed;
+        });
+        classes.flatMap((group) => group.lessons).filter((lesson) => lesson.id === lessonId).forEach((lesson) => {
+            lesson.answeredCount = answeredCount;
+            lesson.completed = completed;
+        });
+    }
+
+    function setDraftFeedback(lessonId, activityIndex, message, isError = false) {
+        if (openedLesson?.id !== lessonId || selectedLessonId !== lessonId) return;
+        const activity = pageContent.querySelector(`.student-activity[data-activity-index="${activityIndex}"]`);
+        const feedback = activity?.querySelector("[data-answer-feedback]");
+        if (!feedback) return;
+        feedback.textContent = message;
+        feedback.className = `student-answer-feedback${isError ? " is-incorrect" : ""}`;
+    }
+
+    function queueDraftSave(lessonId, activityIndex, response) {
+        const snapshot = structuredClone(response);
+        const save = draftSaveQueue.catch((error) => {
+            console.warn("Continuing the progress-save queue after an earlier draft failed.", error);
+        }).then(async () => {
+            const result = await invokeLessonApi({
+                action: "save-draft",
+                lessonId,
+                activityIndex,
+                response: snapshot
+            });
+            updateLessonProgress(lessonId, result.answers, result.completed);
+            if (JSON.stringify(pendingDrafts.get(activityIndex)) === JSON.stringify(snapshot)) {
+                pendingDrafts.delete(activityIndex);
+            }
+            setDraftFeedback(lessonId, activityIndex, text("progressSaved"));
+        }).catch((error) => {
+            console.error("Could not save the student answer draft.", error);
+            setDraftFeedback(lessonId, activityIndex, error.message || text("loadError"), true);
+            throw error;
+        });
+        draftSaveQueue = save;
+        return save;
+    }
+
+    function scheduleDraftSave(element) {
+        if (!openedLesson || !user || !element?.querySelector("[data-answer-kind]")) return;
+        const lessonId = openedLesson.id;
+        const activityIndex = Number(element.dataset.activityIndex);
+        if (!Number.isInteger(activityIndex) || activityIndex < 0) return;
+        const response = responseForActivity(element);
+        pendingDrafts.set(activityIndex, structuredClone(response));
+        clearTimeout(draftSaveTimers.get(activityIndex));
+        draftSaveTimers.set(activityIndex, setTimeout(() => {
+            draftSaveTimers.delete(activityIndex);
+            const pendingResponse = pendingDrafts.get(activityIndex);
+            if (pendingResponse !== undefined) {
+                queueDraftSave(lessonId, activityIndex, pendingResponse).catch((error) => {
+                    console.warn("The answer draft remains pending until the next save attempt.", error);
+                });
+            }
+        }, 500));
+    }
+
+    async function flushDraftSaves() {
+        if (!openedLesson || !user) return;
+        const lessonId = openedLesson.id;
+        while (draftSaveTimers.size || pendingDrafts.size) {
+            draftSaveTimers.forEach((timer) => clearTimeout(timer));
+            draftSaveTimers.clear();
+            const pending = [...pendingDrafts.entries()].map(([activityIndex, response]) => [activityIndex, structuredClone(response)]);
+            if (!pending.length) break;
+            await Promise.all(pending.map(([activityIndex, response]) => queueDraftSave(lessonId, activityIndex, response)));
+        }
+        await draftSaveQueue;
+    }
+
+    function lockLessonControls() {
+        const controls = [...pageContent.querySelectorAll('.student-activity input:not([type="hidden"]), .student-activity select, .student-activity textarea, .student-activity [data-word-token], .student-activity [data-remove-word], .student-activity [data-move-item], .student-activity [data-submit-answer]')];
+        const previousStates = controls.map((control) => control.disabled);
+        controls.forEach((control) => { control.disabled = true; });
+        return () => controls.forEach((control, index) => {
+            if (control.isConnected) control.disabled = previousStates[index];
+        });
     }
 
     function moveWordButton(button, destination) {
@@ -329,33 +434,36 @@
     }
 
     async function submitActivity(element) {
-        const button = element.querySelector("[data-submit-answer]");
         const index = Number(element.dataset.activityIndex);
         const feedback = element.querySelector("[data-answer-feedback]");
-        const response = responseForActivity(element);
-        const isEmpty = Array.isArray(response) ? response.some((part) => !part) || !response.length : !response;
-        if (isEmpty) {
-            feedback.textContent = text("emptyAnswer");
-            feedback.className = "student-answer-feedback is-incorrect";
-            return;
-        }
-        button.disabled = true;
+        const lessonId = openedLesson.id;
+        const unlockControls = lockLessonControls();
+        clearTimeout(draftSaveTimers.get(index));
+        draftSaveTimers.delete(index);
         feedback.textContent = text("loading");
         feedback.className = "student-answer-feedback";
         try {
-            const result = await invokeLessonApi({
+            await flushDraftSaves();
+            const response = responseForActivity(element);
+            const isEmpty = Array.isArray(response) ? response.some((part) => !part.trim()) || !response.length : !response.trim();
+            if (isEmpty) {
+                feedback.textContent = text("emptyAnswer");
+                feedback.className = "student-answer-feedback is-incorrect";
+                unlockControls();
+                return;
+            }
+            const submission = draftSaveQueue.catch((error) => {
+                console.warn("Submitting after a failed draft request; pending answers will be retried before leaving.", error);
+            }).then(() => invokeLessonApi({
                 action: "submit",
-                lessonId: openedLesson.id,
+                lessonId,
                 activityIndex: index,
                 response
-            });
-            openedLesson.progress = result.answers;
-            openedLesson.completed = result.completed;
-            const classLesson = classes.flatMap((group) => group.lessons).find((lesson) => lesson.id === openedLesson.id);
-            if (classLesson) {
-                classLesson.completed = result.completed;
-                classLesson.answeredCount = Object.keys(result.answers || {}).length;
-            }
+            }));
+            draftSaveQueue = submission;
+            const result = await submission;
+            pendingDrafts.delete(index);
+            updateLessonProgress(lessonId, result.answers, result.completed);
             feedback.textContent = result.reviewRequired ? text("submitted")
                 : result.correct ? text("correct") : text("incorrect");
             feedback.className = `student-answer-feedback ${result.reviewRequired ? "" : result.correct ? "is-correct" : "is-incorrect"}`;
@@ -365,7 +473,7 @@
             console.error("Could not submit the student answer.", error);
             feedback.textContent = error.message;
             feedback.className = "student-answer-feedback is-incorrect";
-            button.disabled = false;
+            unlockControls();
         }
     }
 
@@ -418,11 +526,22 @@
         pageContent.querySelectorAll("[data-open-lesson]").forEach((button) => {
             button.addEventListener("click", () => openStudentLesson(button.dataset.openLesson));
         });
-        pageContent.querySelector("[data-back-to-lessons]")?.addEventListener("click", () => {
-            selectedLessonId = "";
-            openedLesson = null;
-            activeView = "lessons";
-            render();
+        pageContent.querySelector("[data-back-to-lessons]")?.addEventListener("click", async (event) => {
+            const button = event.currentTarget;
+            const unlockControls = lockLessonControls();
+            button.disabled = true;
+            try {
+                await flushDraftSaves();
+                selectedLessonId = "";
+                openedLesson = null;
+                activeView = "lessons";
+                render();
+            } catch (error) {
+                console.error("Could not save student progress before leaving the lesson.", error);
+                showToast(`${text("draftSaveError")} ${error.message}`, true);
+                button.disabled = false;
+                unlockControls();
+            }
         });
         pageContent.querySelectorAll("[data-submit-answer]").forEach((button) => {
             button.addEventListener("click", () => submitActivity(button.closest("[data-activity-index]")));
@@ -437,6 +556,7 @@
                     row.querySelector('[data-move-item="-1"]').disabled = index === 0;
                     row.querySelector('[data-move-item="1"]').disabled = index === rows.length - 1;
                 });
+                scheduleDraftSave(item.closest("[data-activity-index]"));
             });
         });
         pageContent.querySelectorAll("[data-front][data-back]").forEach((button) => {
@@ -451,7 +571,17 @@
     pageContent.addEventListener("click", (event) => {
         const button = event.target.closest("[data-word-token], [data-remove-word]");
         if (!button) return;
+        const activity = button.closest("[data-activity-index]");
         moveWordButton(button, button.dataset.wordToken ? "answer" : "bank");
+        scheduleDraftSave(activity);
+    });
+    pageContent.addEventListener("input", (event) => {
+        const activity = event.target.closest("[data-activity-index]");
+        if (activity) scheduleDraftSave(activity);
+    });
+    pageContent.addEventListener("change", (event) => {
+        const activity = event.target.closest("[data-activity-index]");
+        if (activity) scheduleDraftSave(activity);
     });
     pageContent.addEventListener("dragstart", (event) => {
         draggedWordButton = event.target.closest("[data-word-token], [data-remove-word]");
@@ -468,7 +598,11 @@
         if (destinationZone.closest("[data-activity-index]") !== draggedWordButton.closest("[data-activity-index]")) return;
         const movingToAnswer = destinationZone.hasAttribute("data-word-answer");
         const fromBank = Boolean(draggedWordButton.dataset.wordToken);
-        if (movingToAnswer === fromBank) moveWordButton(draggedWordButton, movingToAnswer ? "answer" : "bank");
+        const activity = draggedWordButton.closest("[data-activity-index]");
+        if (movingToAnswer === fromBank) {
+            moveWordButton(draggedWordButton, movingToAnswer ? "answer" : "bank");
+            scheduleDraftSave(activity);
+        }
         draggedWordButton = null;
     });
 
@@ -554,9 +688,11 @@
     async function signOut() {
         if (signingOut) return;
         signingOut = true;
+        const unlockControls = lockLessonControls();
         const logoutButton = document.querySelector("[data-popover-action='logout']");
         if (logoutButton) logoutButton.disabled = true;
         try {
+            await flushDraftSaves();
             const { error } = await window.supabaseClient.auth.signOut();
             if (error) throw error;
             try {
@@ -568,8 +704,9 @@
         } catch (error) {
             signingOut = false;
             if (logoutButton) logoutButton.disabled = false;
-            console.error("Could not sign out of the current account.", error);
-            showToast(text("logoutError"), true);
+            unlockControls();
+            console.error("Could not save progress or sign out of the current account.", error);
+            showToast(error.message ? `${text("logoutError")} ${error.message}` : text("logoutError"), true);
         }
     }
 
@@ -614,7 +751,21 @@
         await loadDashboard(client, session.user);
     }
 
-    document.querySelectorAll(".nav-item").forEach((button) => button.addEventListener("click", () => {
+    document.querySelectorAll(".nav-item").forEach((button) => button.addEventListener("click", async () => {
+        if (openedLesson && selectedLessonId) {
+            const unlockControls = lockLessonControls();
+            button.disabled = true;
+            try {
+                await flushDraftSaves();
+            } catch (error) {
+                console.error("Could not save student progress before changing sections.", error);
+                showToast(`${text("draftSaveError")} ${error.message}`, true);
+                button.disabled = false;
+                unlockControls();
+                return;
+            }
+            button.disabled = false;
+        }
         activeView = button.dataset.view;
         selectedLessonId = "";
         openedLesson = null;

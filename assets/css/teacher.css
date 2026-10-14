@@ -555,6 +555,21 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .lesson-workspace-spacer { flex: 1; }
 .lesson-workspace-footer .button:disabled { opacity: .45; cursor: default; transform: none; }
 .lesson-workspace-actions { display: flex; justify-content: flex-end; gap: 9px; }
+.lesson-workspace-tabs { display: flex; gap: 7px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.lesson-workspace-tabs button { border: 1px solid #dfe8df; border-radius: 20px; padding: 8px 14px; background: #fff; color: #718174; font-size: 13px; }
+.lesson-workspace-tabs button.active { border-color: var(--purple); background: var(--purple-light); color: var(--purple); font-weight: 700; }
+.homework-copy-source { margin-bottom: 20px; border: 1px solid #e0e9e0; border-radius: 13px; padding: 14px; background: #f8fbf8; }
+.homework-copy-source .form-field { max-width: 500px; }
+.homework-copy-source > .hint { margin: 8px 0 12px; }
+.homework-source-activities { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.homework-source-activity { display: grid; grid-template-columns: minmax(0,1fr) auto; align-content: start; gap: 4px 8px; min-width: 0; border: 1px solid #dce8dc; border-radius: 10px; padding: 10px 11px; background: #fff; color: #455b49; text-align: left; cursor: grab; }
+.homework-source-activity:hover { border-color: #a6c3a8; background: #f4f9f3; }
+.homework-source-activity.is-dragging { opacity: .5; }
+.homework-source-activity > span:first-child { grid-column: 1; color: #7b8b7d; font-size: 11px; }
+.homework-source-activity strong { grid-column: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.homework-source-copy-icon { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--purple); font-size: 19px; }
+.homework-copy-drop-zone { display: grid; place-items: center; min-height: 74px; margin-top: 16px; border: 1px dashed #a8c2aa; border-radius: 12px; padding: 13px; background: #f7faf7; color: #708375; font-size: 13px; text-align: center; transition: border-color .16s ease, background .16s ease, color .16s ease; }
+.homework-copy-drop-zone.is-drop-target { border-color: var(--purple); background: var(--purple-light); color: var(--purple); }
 @media (max-width: 800px) {
     .lesson-workspace-layout { grid-template-columns: minmax(0,1fr) 210px; }
     .lesson-sections-panel { padding: 12px; }
@@ -571,4 +586,5 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
     .lesson-workspace-footer { flex-wrap: wrap; }
     .lesson-workspace-spacer { flex-basis: 100%; }
     .lesson-workspace-footer .button { flex: 1; }
+    .homework-source-activities { grid-template-columns: 1fr; }
 }

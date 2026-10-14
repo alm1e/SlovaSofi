@@ -55,14 +55,19 @@
             assignmentsByLesson.set(lessonId, ids);
         });
         const lessons = lessonsResult.data.map((lesson) => {
-            const sections = lesson.activities?.format === "sections-v1" && Array.isArray(lesson.activities.sections)
+            const isSectionFormat = lesson.activities?.format === "sections-v1";
+            const sections = isSectionFormat && Array.isArray(lesson.activities.sections)
                 ? lesson.activities.sections
+                : [];
+            const homeworkSections = isSectionFormat && Array.isArray(lesson.activities.homeworkSections)
+                ? lesson.activities.homeworkSections
                 : [];
             return {
                 ...lesson,
                 teacherId: lesson.teacher_id,
                 classIds: assignmentsByLesson.get(lesson.id) || [],
                 sections,
+                homeworkSections,
                 activities: sections.length
                     ? sections.flatMap((section) => Array.isArray(section.activities) ? section.activities : [])
                     : Array.isArray(lesson.activities) ? lesson.activities : []
@@ -114,13 +119,17 @@
             await deleteMissing(client, "teacher_classes", userId, classes.map((row) => row.id), "Не удалось удалить классы", access?.role === "admin");
         }
         if (permissions.edit_lessons) {
-            const lessons = data.lessons.map(({ id, title, unit, activities, sections, teacherId }) => ({
+            const lessons = data.lessons.map(({ id, title, unit, activities, sections, homeworkSections, teacherId }) => ({
                 id,
                 teacher_id: teacherId || userId,
                 title,
                 unit,
-                activities: Array.isArray(sections) && sections.length
-                    ? { format: "sections-v1", sections }
+                activities: (Array.isArray(sections) && sections.length > 0) || (Array.isArray(homeworkSections) && homeworkSections.length > 0)
+                    ? {
+                        format: "sections-v1",
+                        sections: Array.isArray(sections) ? sections : [],
+                        homeworkSections: Array.isArray(homeworkSections) ? homeworkSections : []
+                    }
                     : Array.isArray(activities) ? activities : [],
                 updated_at: new Date().toISOString()
             }));
@@ -136,12 +145,10 @@
         await saveSettings(client, userId, true);
     }
 
-    async function inviteStudent(client, classId, displayName, email) {
-        const { data, error } = await client.functions.invoke("invite-student", {
-            body: { classId, displayName, email }
-        });
+    async function invokeStudentFunction(client, body) {
+        const { data, error } = await client.functions.invoke("invite-student", { body });
         if (error) {
-            let message = error.message || "Не удалось отправить приглашение ученику.";
+            let message = error.message || "Не удалось изменить список учеников.";
             if (error.context instanceof Response) {
                 const responseText = await error.context.text();
                 try {
@@ -155,6 +162,22 @@
         }
         if (data?.error) throw new Error(data.error);
         return data;
+    }
+
+    async function inviteStudent(client, classId, displayName, email) {
+        return invokeStudentFunction(client, { action: "invite", classId, displayName, email });
+    }
+
+    async function listExistingStudents(client) {
+        const result = await invokeStudentFunction(client, { action: "list-existing" });
+        if (!result || !Array.isArray(result.students)) {
+            throw new Error("The existing-student list response is invalid.");
+        }
+        return result.students;
+    }
+
+    async function addExistingStudent(client, classId, studentUserId) {
+        return invokeStudentFunction(client, { action: "add-existing", classId, studentUserId });
     }
 
     async function upsertRows(client, table, rows, operation) {
@@ -247,5 +270,12 @@
         return data;
     }
 
-    window.teacherWorkspaceApi = { loadWorkspace, saveWorkspace, inviteStudent, manageTeacher };
+    window.teacherWorkspaceApi = {
+        loadWorkspace,
+        saveWorkspace,
+        inviteStudent,
+        listExistingStudents,
+        addExistingStudent,
+        manageTeacher
+    };
 })();

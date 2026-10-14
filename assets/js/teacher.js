@@ -59,32 +59,62 @@ const translations = {
 Object.assign(translations.ua, {
     "classes.inviteStudent": "＋ Запросити учня",
     "studentInvite.title": "Запросити учня до класу",
+    "studentInvite.newMode": "Новий учень",
+    "studentInvite.existingMode": "Із бази учнів",
     "studentInvite.name": "Ім’я учня",
     "studentInvite.email": "Email учня",
     "studentInvite.hint": "Учень отримає лист, щоб створити пароль і приєднатися до класу.",
+    "studentInvite.selectExisting": "Виберіть учня",
+    "studentInvite.loadingExisting": "Завантаження списку учнів…",
+    "studentInvite.noExisting": "У базі поки немає учнів, яких можна додати.",
+    "studentInvite.existingHint": "Запрошення повторно надсилати не потрібно.",
     "studentInvite.send": "Надіслати запрошення",
+    "studentInvite.addExisting": "Додати до класу",
     "toast.studentInvited": "Запрошення надіслано.",
-    "toast.studentInviteError": "Не вдалося надіслати запрошення:"
+    "toast.studentInviteError": "Не вдалося надіслати запрошення:",
+    "toast.studentAdded": "Учня додано до класу.",
+    "toast.studentAddError": "Не вдалося додати учня:",
+    "toast.studentListError": "Не вдалося завантажити список учнів:"
 });
 Object.assign(translations.ru, {
     "classes.inviteStudent": "＋ Пригласить ученика",
     "studentInvite.title": "Пригласить ученика в класс",
+    "studentInvite.newMode": "Новый ученик",
+    "studentInvite.existingMode": "Из базы учеников",
     "studentInvite.name": "Имя ученика",
     "studentInvite.email": "Email ученика",
     "studentInvite.hint": "Ученик получит письмо, чтобы создать пароль и вступить в класс.",
+    "studentInvite.selectExisting": "Выберите ученика",
+    "studentInvite.loadingExisting": "Загрузка списка учеников…",
+    "studentInvite.noExisting": "В базе пока нет учеников, которых можно добавить.",
+    "studentInvite.existingHint": "Повторно отправлять приглашение не нужно.",
     "studentInvite.send": "Отправить приглашение",
+    "studentInvite.addExisting": "Добавить в класс",
     "toast.studentInvited": "Приглашение отправлено.",
-    "toast.studentInviteError": "Не удалось отправить приглашение:"
+    "toast.studentInviteError": "Не удалось отправить приглашение:",
+    "toast.studentAdded": "Ученик добавлен в класс.",
+    "toast.studentAddError": "Не удалось добавить ученика:",
+    "toast.studentListError": "Не удалось загрузить список учеников:"
 });
 Object.assign(translations.en, {
     "classes.inviteStudent": "＋ Invite student",
     "studentInvite.title": "Invite a student to class",
+    "studentInvite.newMode": "New student",
+    "studentInvite.existingMode": "From student directory",
     "studentInvite.name": "Student name",
     "studentInvite.email": "Student email",
     "studentInvite.hint": "The student will receive an email to set a password and join the class.",
+    "studentInvite.selectExisting": "Choose a student",
+    "studentInvite.loadingExisting": "Loading students…",
+    "studentInvite.noExisting": "There are no existing students available to add.",
+    "studentInvite.existingHint": "No new invitation will be sent.",
     "studentInvite.send": "Send invitation",
+    "studentInvite.addExisting": "Add to class",
     "toast.studentInvited": "Invitation sent.",
-    "toast.studentInviteError": "Could not send invitation:"
+    "toast.studentInviteError": "Could not send invitation:",
+    "toast.studentAdded": "Student added to the class.",
+    "toast.studentAddError": "Could not add the student:",
+    "toast.studentListError": "Could not load the student list:"
 });
 Object.assign(translations.ua, {
     "welcome.database": "✓ Дані синхронізуються з Supabase",
@@ -245,9 +275,13 @@ let activitySearch = "";
 let editingLessonId = null;
 let lessonFormDraft = { title: "", unit: "A1" };
 let draftSections = [];
+let draftHomeworkSections = [];
 let expandedActivityBlocks = new WeakSet();
 let activityBlockDragController = null;
 let activeLessonSectionId = "";
+let activeHomeworkSectionId = "";
+let lessonWorkspaceTab = "lesson";
+let homeworkSourceLessonId = "__current__";
 let lessonWorkspaceMode = "";
 let workspaceLessonId = "";
 let activeSelectDropdown = null;
@@ -274,6 +308,7 @@ function loadData() {
             classIds: lessonClassIds(lesson),
             unit: LESSON_UNITS.includes(lesson.unit) ? lesson.unit : inferLessonUnit(lesson, parsed.classes),
             sections: normalizeLessonSections(lesson),
+            homeworkSections: normalizeHomeworkSections(lesson),
             activities: lessonActivities(lesson)
         }));
         return parsed;
@@ -748,9 +783,9 @@ function closeSelectDropdown() {
 
 function lessonSectionText(key) {
     const labels = {
-        ua: { intro: "Вступ", newSection: "Новий розділ", addSection: "＋ Додати розділ", section: "Розділи уроку", rename: "Назва розділу", remove: "Видалити", previous: "← Назад", next: "Далі →", moveUp: "Перемістити вище", moveDown: "Перемістити нижче", moveBlock: "Перетягніть, щоб перемістити блок", addElement: "＋ Додати новий елемент", copyElement: "▣ Копіювати елемент", edit: "Редагувати", done: "Готово", back: "До уроків", save: "Зберегти урок", create: "Створити урок", empty: "У цьому розділі ще немає елементів.", confirmRemove: "Видалити розділ разом з його елементами?" },
-        ru: { intro: "Введение", newSection: "Новый раздел", addSection: "＋ Добавить раздел", section: "Разделы урока", rename: "Название раздела", remove: "Удалить", previous: "← Назад", next: "Далее →", moveUp: "Переместить выше", moveDown: "Переместить ниже", moveBlock: "Перетащите, чтобы переместить задание", addElement: "＋ Добавить новый элемент", copyElement: "▣ Копировать элемент", edit: "Редактировать", done: "Готово", back: "К урокам", save: "Сохранить урок", create: "Создать урок", empty: "В этом разделе пока нет элементов.", confirmRemove: "Удалить раздел вместе с его элементами?" },
-        en: { intro: "Introduction", newSection: "New section", addSection: "＋ Add section", section: "Lesson sections", rename: "Section name", remove: "Delete", previous: "← Back", next: "Next →", moveUp: "Move up", moveDown: "Move down", moveBlock: "Drag to move this activity", addElement: "＋ Add new item", copyElement: "▣ Duplicate item", edit: "Edit", done: "Done", back: "Back to lessons", save: "Save lesson", create: "Create lesson", empty: "This section has no items yet.", confirmRemove: "Delete this section and its items?" }
+        ua: { intro: "Вступ", newSection: "Новий розділ", addSection: "＋ Додати розділ", section: "Розділи уроку", rename: "Назва розділу", remove: "Видалити", previous: "← Назад", next: "Далі →", moveUp: "Перемістити вище", moveDown: "Перемістити нижче", moveBlock: "Перетягніть, щоб перемістити блок", addElement: "＋ Додати новий елемент", copyElement: "▣ Копіювати елемент", edit: "Редагувати", done: "Готово", back: "До уроків", save: "Зберегти урок", create: "Створити урок", empty: "У цьому розділі ще немає елементів.", confirmRemove: "Видалити розділ разом з його елементами?", lessonTab: "Урок", homework: "Домашня робота", homeworkSections: "Розділи домашньої роботи", homeworkActivities: "Завдання домашньої роботи", currentLesson: "Поточний урок", copyFromLesson: "Копіювати завдання з уроку", dragCopyHint: "Перетягніть або натисніть завдання, щоб скопіювати його сюди.", dropCopyHint: "Перетягніть завдання сюди", noSourceActivities: "У цьому уроці поки немає завдань для копіювання." },
+        ru: { intro: "Введение", newSection: "Новый раздел", addSection: "＋ Добавить раздел", section: "Разделы урока", rename: "Название раздела", remove: "Удалить", previous: "← Назад", next: "Далее →", moveUp: "Переместить выше", moveDown: "Переместить ниже", moveBlock: "Перетащите, чтобы переместить задание", addElement: "＋ Добавить новый элемент", copyElement: "▣ Копировать элемент", edit: "Редактировать", done: "Готово", back: "К урокам", save: "Сохранить урок", create: "Создать урок", empty: "В этом разделе пока нет элементов.", confirmRemove: "Удалить раздел вместе с его элементами?", lessonTab: "Урок", homework: "Домашняя работа", homeworkSections: "Разделы домашней работы", homeworkActivities: "Задания домашней работы", currentLesson: "Текущий урок", copyFromLesson: "Копировать задания из урока", dragCopyHint: "Перетащите или нажмите задание, чтобы скопировать его сюда.", dropCopyHint: "Перетащите задание сюда", noSourceActivities: "В этом уроке пока нет заданий для копирования." },
+        en: { intro: "Introduction", newSection: "New section", addSection: "＋ Add section", section: "Lesson sections", rename: "Section name", remove: "Delete", previous: "← Back", next: "Next →", moveUp: "Move up", moveDown: "Move down", moveBlock: "Drag to move this activity", addElement: "＋ Add new item", copyElement: "▣ Duplicate item", edit: "Edit", done: "Done", back: "Back to lessons", save: "Save lesson", create: "Create lesson", empty: "This section has no items yet.", confirmRemove: "Delete this section and its items?", lessonTab: "Lesson", homework: "Homework", homeworkSections: "Homework sections", homeworkActivities: "Homework activities", currentLesson: "Current lesson", copyFromLesson: "Copy activities from a lesson", dragCopyHint: "Drag or click an activity to copy it here.", dropCopyHint: "Drop an activity here", noSourceActivities: "This lesson has no activities to copy yet." }
     };
     return labels[currentLanguage][key];
 }
@@ -767,14 +802,39 @@ function normalizeLessonSections(lesson) {
     return [{ id: "section-intro", title: lessonSectionText("intro"), activities }];
 }
 
+function normalizeHomeworkSections(lesson) {
+    if (!Array.isArray(lesson.homeworkSections)) return [];
+    return lesson.homeworkSections.map((section, index) => ({
+        id: String(section.id || `homework-section-${index + 1}`),
+        title: String(section.title || `${lessonSectionText("homework")} ${index + 1}`),
+        activities: Array.isArray(section.activities) ? section.activities : []
+    }));
+}
+
 function lessonActivities(lesson) {
     if (Array.isArray(lesson.activities)) return lesson.activities;
-    if (Array.isArray(lesson.sections)) return lesson.sections.flatMap((section) => Array.isArray(section.activities) ? section.activities : []);
+    if (Array.isArray(lesson.sections)) {
+        return lesson.sections.flatMap((section) => Array.isArray(section.activities) ? section.activities : []);
+    }
     return [];
 }
 
+function activeDraftSections() {
+    return lessonWorkspaceTab === "homework" ? draftHomeworkSections : draftSections;
+}
+
+function activeWorkspaceSectionId() {
+    return lessonWorkspaceTab === "homework" ? activeHomeworkSectionId : activeLessonSectionId;
+}
+
+function setActiveWorkspaceSectionId(sectionId) {
+    if (lessonWorkspaceTab === "homework") activeHomeworkSectionId = sectionId;
+    else activeLessonSectionId = sectionId;
+}
+
 function activeDraftSection() {
-    return draftSections.find((section) => section.id === activeLessonSectionId) || draftSections[0];
+    const sections = activeDraftSections();
+    return sections.find((section) => section.id === activeWorkspaceSectionId()) || sections[0];
 }
 
 function setLanguage(language) {
@@ -1466,26 +1526,71 @@ function openStudentInvite(group) {
     if (!group || !hasPermission("manage_classes_students")) return;
     openModal(`${modalHeader(t("studentInvite.title"))}
         <form id="studentInviteForm">
-            <div class="form-field"><label for="studentInviteName">${t("studentInvite.name")}</label><input id="studentInviteName" name="displayName" required maxlength="120" autocomplete="name"></div>
-            <div class="form-field"><label for="studentInviteEmail">${t("studentInvite.email")}</label><input id="studentInviteEmail" name="email" type="email" required maxlength="254" autocomplete="email"></div>
-            <p class="assignment-hint">${escapeHtml(group.name)} · ${t("studentInvite.hint")}</p>
+            <div class="block-tabs" role="tablist" aria-label="${t("studentInvite.title")}">
+                <button class="block-tab active" type="button" role="tab" aria-selected="true" data-student-mode="new">${t("studentInvite.newMode")}</button>
+                <button class="block-tab" type="button" role="tab" aria-selected="false" data-student-mode="existing">${t("studentInvite.existingMode")}</button>
+            </div>
+            <div data-student-fields="new">
+                <div class="form-field"><label for="studentInviteName">${t("studentInvite.name")}</label><input id="studentInviteName" name="displayName" required maxlength="120" autocomplete="name"></div>
+                <div class="form-field"><label for="studentInviteEmail">${t("studentInvite.email")}</label><input id="studentInviteEmail" name="email" type="email" required maxlength="254" autocomplete="email"></div>
+                <p class="assignment-hint">${t("studentInvite.hint")}</p>
+            </div>
+            <div data-student-fields="existing" hidden>
+                <div class="form-field"><label for="existingStudentSelect">${t("studentInvite.selectExisting")}</label>
+                    <select id="existingStudentSelect" name="studentUserId" disabled><option value="">${t("studentInvite.loadingExisting")}</option></select>
+                </div>
+                <p class="assignment-hint">${t("studentInvite.existingHint")}</p>
+                <p class="hint" data-existing-student-status>${t("studentInvite.loadingExisting")}</p>
+            </div>
+            <p class="assignment-hint">${escapeHtml(group.name)}</p>
             <div class="modal-actions"><button type="button" class="button secondary" data-close>${t("action.cancel")}</button><button class="button" type="submit">${t("studentInvite.send")}</button></div>
         </form>`);
     refreshModal = () => openStudentInvite(group);
     modalCard.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", closeModal));
-    modalCard.querySelector("#studentInviteForm").addEventListener("submit", async (event) => {
+    const formElement = modalCard.querySelector("#studentInviteForm");
+    const nameInput = formElement.querySelector("#studentInviteName");
+    const emailInput = formElement.querySelector("#studentInviteEmail");
+    const existingSelect = formElement.querySelector("#existingStudentSelect");
+    const existingStatus = formElement.querySelector("[data-existing-student-status]");
+    const submitButton = formElement.querySelector('[type="submit"]');
+    let mode = "new";
+    formElement.querySelectorAll("[data-student-mode]").forEach((button) => button.addEventListener("click", () => {
+        mode = button.dataset.studentMode;
+        formElement.querySelectorAll("[data-student-mode]").forEach((tab) => {
+            const selected = tab.dataset.studentMode === mode;
+            tab.classList.toggle("active", selected);
+            tab.setAttribute("aria-selected", String(selected));
+        });
+        formElement.querySelectorAll("[data-student-fields]").forEach((fields) => {
+            fields.hidden = fields.dataset.studentFields !== mode;
+        });
+        nameInput.required = mode === "new";
+        emailInput.required = mode === "new";
+        existingSelect.required = mode === "existing" && !existingSelect.disabled;
+        submitButton.textContent = t(mode === "new" ? "studentInvite.send" : "studentInvite.addExisting");
+        submitButton.disabled = mode === "existing" && existingSelect.disabled;
+    }));
+    formElement.addEventListener("submit", async (event) => {
         event.preventDefault();
+        if (mode === "existing" && !existingSelect.value) {
+            showToast(t("studentInvite.noExisting"));
+            return;
+        }
         const form = new FormData(event.currentTarget);
         const displayName = String(form.get("displayName")).trim();
         const email = String(form.get("email")).trim().toLowerCase();
-        const submitButton = event.currentTarget.querySelector('[type="submit"]');
+        const studentUserId = String(form.get("studentUserId") || "");
         if (!currentUser || !window.teacherWorkspaceApi) {
             showToast(t("profile.login"));
             return;
         }
         submitButton.disabled = true;
         try {
-            const invitation = await window.teacherWorkspaceApi.inviteStudent(window.supabaseClient, group.id, displayName, email);
+            if (mode === "existing") {
+                await window.teacherWorkspaceApi.addExistingStudent(window.supabaseClient, group.id, studentUserId);
+            } else {
+                await window.teacherWorkspaceApi.inviteStudent(window.supabaseClient, group.id, displayName, email);
+            }
             const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, currentUser.id);
             data = workspace.data;
             workspaceAccess = {
@@ -1495,14 +1600,36 @@ function openStudentInvite(group) {
                 staff: workspace.staff
             };
             localStorage.setItem(storageKey(currentUser.id), JSON.stringify(data));
+            localStorage.setItem(`${storageKey(currentUser.id)}:access`, JSON.stringify(workspaceAccess));
             closeModal();
             render();
-            showToast(t("toast.studentInvited"));
+            showToast(t(mode === "existing" ? "toast.studentAdded" : "toast.studentInvited"));
         } catch (error) {
-            console.error("Could not invite a student to the selected class.", error);
-            showToast(`${t("toast.studentInviteError")} ${error.message}`);
+            console.error("Could not update students in the selected class.", error);
+            showToast(`${t(mode === "existing" ? "toast.studentAddError" : "toast.studentInviteError")} ${error.message}`);
             submitButton.disabled = false;
         }
+    });
+    if (!currentUser || !window.teacherWorkspaceApi) {
+        existingStatus.textContent = t("profile.login");
+        return;
+    }
+    window.teacherWorkspaceApi.listExistingStudents(window.supabaseClient).then((students) => {
+        const currentMemberships = group.studentRecords || [];
+        const currentStudentIds = new Set(currentMemberships.map((student) => student.linked_user_id).filter(Boolean));
+        const currentEmails = new Set(currentMemberships.map((student) => student.email?.toLowerCase()).filter(Boolean));
+        const available = students.filter((student) => !currentStudentIds.has(student.id) && !currentEmails.has(student.email.toLowerCase()));
+        existingSelect.innerHTML = `<option value="">${t("studentInvite.selectExisting")}</option>${available.map((student) => `<option value="${escapeHtml(student.id)}">${escapeHtml(student.displayName)} · ${escapeHtml(student.email)}</option>`).join("")}`;
+        existingSelect.disabled = !available.length;
+        existingStatus.textContent = available.length ? "" : t("studentInvite.noExisting");
+        existingSelect.required = mode === "existing" && Boolean(available.length);
+        if (mode === "existing") submitButton.disabled = !available.length;
+    }).catch((error) => {
+        console.error("Could not load the existing student directory.", error);
+        existingSelect.innerHTML = `<option value="">${t("studentInvite.noExisting")}</option>`;
+        existingSelect.disabled = true;
+        existingStatus.textContent = `${t("toast.studentListError")} ${error.message}`;
+        if (mode === "existing") submitButton.disabled = true;
     });
 }
 
@@ -1527,8 +1654,15 @@ function openLessonEditor(item, sectionId = "", activityIndex = -1) {
     lessonWorkspaceMode = "edit";
     lessonFormDraft = { title: item?.title || "", unit: item?.unit || selectedLessonUnit || inferLessonUnit(item || { title: "", classIds: [] }) };
     draftSections = item ? structuredClone(normalizeLessonSections(item)) : [{ id: crypto.randomUUID(), title: lessonSectionText("intro"), activities: [] }];
+    const homeworkSections = item ? normalizeHomeworkSections(item) : [];
+    draftHomeworkSections = homeworkSections.length
+        ? structuredClone(homeworkSections)
+        : [{ id: crypto.randomUUID(), title: lessonSectionText("homework"), activities: [] }];
     expandedActivityBlocks = new WeakSet();
     activeLessonSectionId = draftSections.some((section) => section.id === sectionId) ? sectionId : draftSections[0].id;
+    activeHomeworkSectionId = draftHomeworkSections[0].id;
+    lessonWorkspaceTab = "lesson";
+    homeworkSourceLessonId = "__current__";
     if (activityIndex >= 0) {
         const activity = draftSections.find((section) => section.id === activeLessonSectionId)?.activities[activityIndex];
         if (activity) expandedActivityBlocks.add(activity);
@@ -1541,6 +1675,57 @@ function openLessonEditor(item, sectionId = "", activityIndex = -1) {
     }
 }
 
+function homeworkSourceActivities() {
+    if (homeworkSourceLessonId === "__current__") {
+        return draftSections.flatMap((section) => section.activities);
+    }
+    const sourceLesson = data.lessons.find((item) => item.id === homeworkSourceLessonId);
+    return sourceLesson ? normalizeLessonSections(sourceLesson).flatMap((section) => section.activities) : [];
+}
+
+function copyHomeworkActivity(index) {
+    const activity = homeworkSourceActivities()[index];
+    const section = activeDraftSection();
+    if (!activity || !section || lessonWorkspaceTab !== "homework") return;
+    const copy = structuredClone(activity);
+    if (copy.id) copy.id = crypto.randomUUID();
+    section.activities.push(copy);
+    expandedActivityBlocks.add(copy);
+    render();
+}
+
+function bindHomeworkCopySource() {
+    const sourceSelect = pageContent.querySelector("#homeworkSourceLesson");
+    sourceSelect?.addEventListener("change", () => {
+        homeworkSourceLessonId = sourceSelect.value;
+        render();
+    });
+    pageContent.querySelectorAll("[data-homework-copy]").forEach((button) => {
+        button.addEventListener("click", () => copyHomeworkActivity(Number(button.dataset.homeworkCopy)));
+        button.addEventListener("dragstart", (event) => {
+            event.dataTransfer.effectAllowed = "copy";
+            event.dataTransfer.setData("text/plain", button.dataset.homeworkCopy);
+            button.classList.add("is-dragging");
+        });
+        button.addEventListener("dragend", () => button.classList.remove("is-dragging"));
+    });
+    const dropZone = pageContent.querySelector("#homeworkCopyDropZone");
+    dropZone?.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+        dropZone.classList.add("is-drop-target");
+    });
+    dropZone?.addEventListener("dragleave", (event) => {
+        if (!dropZone.contains(event.relatedTarget)) dropZone.classList.remove("is-drop-target");
+    });
+    dropZone?.addEventListener("drop", (event) => {
+        event.preventDefault();
+        dropZone.classList.remove("is-drop-target");
+        const index = Number(event.dataTransfer.getData("text/plain"));
+        if (Number.isInteger(index) && index >= 0) copyHomeworkActivity(index);
+    });
+}
+
 function renderLessonWorkspace() {
     const isEditing = lessonWorkspaceMode === "edit";
     const lesson = data.lessons.find((item) => item.id === workspaceLessonId);
@@ -1548,17 +1733,36 @@ function renderLessonWorkspace() {
         exitLessonWorkspace();
         return;
     }
-    const sections = isEditing ? draftSections : normalizeLessonSections(lesson);
-    if (!sections.some((section) => section.id === activeLessonSectionId)) activeLessonSectionId = sections[0].id;
-    const section = sections.find((item) => item.id === activeLessonSectionId);
+    const isHomework = isEditing && lessonWorkspaceTab === "homework";
+    const sections = isEditing ? activeDraftSections() : normalizeLessonSections(lesson);
+    const activeSectionId = isEditing ? activeWorkspaceSectionId() : activeLessonSectionId;
+    if (!sections.some((item) => item.id === activeSectionId)) {
+        if (isEditing) setActiveWorkspaceSectionId(sections[0].id);
+        else activeLessonSectionId = sections[0].id;
+    }
+    const section = sections.find((item) => item.id === (isEditing ? activeWorkspaceSectionId() : activeLessonSectionId));
     const title = isEditing ? lessonFormDraft.title : lesson.title;
     const unit = isEditing ? lessonFormDraft.unit : lesson.unit || inferLessonUnit(lesson);
-    const sectionMenu = sections.map((item, index) => `<div class="lesson-section-row ${item.id === activeLessonSectionId ? "active" : ""}">
+    const sectionTitle = isHomework ? lessonSectionText("homeworkSections") : lessonSectionText("section");
+    const sectionMenu = sections.map((item, index) => `<div class="lesson-section-row ${item.id === section.id ? "active" : ""}">
         <button type="button" class="lesson-section-select" data-select-section="${escapeHtml(item.id)}"><span class="lesson-section-number">${index + 1}</span><span class="lesson-section-label" data-section-label="${escapeHtml(item.id)}">${escapeHtml(item.title)}</span></button>
-        ${isEditing ? `<div class="lesson-section-tools"><button type="button" data-move-section="${index - 1}" ${index === 0 ? "disabled" : ""} aria-label="${lessonSectionText("previous")}">↑</button><button type="button" data-move-section="${index + 1}" ${index === sections.length - 1 ? "disabled" : ""} aria-label="${lessonSectionText("next")}">↓</button><button type="button" data-delete-section="${escapeHtml(item.id)}" ${sections.length === 1 ? "disabled" : ""} aria-label="${lessonSectionText("remove")}">×</button></div>` : ""}</div>`).join("");
+        ${isEditing ? `<div class="lesson-section-tools"><button type="button" data-move-section-from="${escapeHtml(item.id)}" data-move-section="${index - 1}" ${index === 0 ? "disabled" : ""} aria-label="${lessonSectionText("previous")}">↑</button><button type="button" data-move-section-from="${escapeHtml(item.id)}" data-move-section="${index + 1}" ${index === sections.length - 1 ? "disabled" : ""} aria-label="${lessonSectionText("next")}">↓</button><button type="button" data-delete-section="${escapeHtml(item.id)}" ${sections.length === 1 ? "disabled" : ""} aria-label="${lessonSectionText("remove")}">×</button></div>` : ""}</div>`).join("");
     const sectionBody = isEditing
-        ? `<div class="form-field section-name-field"><label for="sectionTitle">${lessonSectionText("rename")}</label><input id="sectionTitle" data-section-title="${escapeHtml(section.id)}" maxlength="80" value="${escapeHtml(section.title)}"></div><div class="builder-heading"><h3>${t("lesson.activities")}</h3><button type="button" class="button secondary small" data-action="choose-activity">${t("activity.addBlock")}</button></div><div id="activityBlocks">${renderActivityBlocks(section.activities)}</div>`
+        ? `<div class="form-field section-name-field"><label for="sectionTitle">${lessonSectionText("rename")}</label><input id="sectionTitle" data-section-title="${escapeHtml(section.id)}" maxlength="80" value="${escapeHtml(section.title)}"></div><div class="builder-heading"><h3>${isHomework ? lessonSectionText("homeworkActivities") : t("lesson.activities")}</h3><button type="button" class="button secondary small" data-action="choose-activity">${t("activity.addBlock")}</button></div><div id="activityBlocks">${renderActivityBlocks(section.activities)}</div>`
         : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map((activity, index) => renderPreviewActivity(activity, index, hasPermission("edit_lessons"))).join("") : emptyMessage(lessonSectionText("empty"), "")}</div>`;
+    const sourceOptions = [`<option value="__current__" ${homeworkSourceLessonId === "__current__" ? "selected" : ""}>${lessonSectionText("currentLesson")} · ${escapeHtml(lessonFormDraft.title.trim() || lessonSectionText("newSection"))}</option>`,
+        ...data.lessons.filter((item) => item.id !== workspaceLessonId).map((item) => `<option value="${escapeHtml(item.id)}" ${homeworkSourceLessonId === item.id ? "selected" : ""}>${escapeHtml(item.title)}</option>`)].join("");
+    const sourceActivities = isHomework ? homeworkSourceActivities() : [];
+    const sourcePanel = isHomework ? `<div class="homework-copy-source">
+        <div class="form-field"><label for="homeworkSourceLesson">${lessonSectionText("copyFromLesson")}</label><select id="homeworkSourceLesson">${sourceOptions}</select></div>
+        <p class="hint">${lessonSectionText("dragCopyHint")}</p>
+        <div class="homework-source-activities">${sourceActivities.length ? sourceActivities.map((activity, index) => {
+            const type = activityTypes.find((item) => item.id === activity.type);
+            const summary = String(activity.prompt || activity.content || "").trim().replace(/\s+/g, " ");
+            return `<button type="button" class="homework-source-activity" draggable="true" data-homework-copy="${index}"><span>${escapeHtml(type ? t(type.nameKey) : t("activity.task"))}</span><strong>${escapeHtml(summary || lessonSectionText("newSection"))}</strong><span class="homework-source-copy-icon">＋</span></button>`;
+        }).join("") : `<p class="hint">${lessonSectionText("noSourceActivities")}</p>`}</div>
+    </div>` : "";
+    const dropZone = isHomework ? `<div id="homeworkCopyDropZone" class="homework-copy-drop-zone" tabindex="0">${lessonSectionText("dropCopyHint")}</div>` : "";
     const actionBar = isEditing
         ? `<button type="button" class="button secondary" data-workspace-cancel>${t("action.cancel")}</button><button class="button" type="submit">${editingLessonId ? lessonSectionText("save") : lessonSectionText("create")}</button>`
         : "";
@@ -1569,14 +1773,15 @@ function renderLessonWorkspace() {
             </div>
             ${isEditing ? "" : `<span class="lesson-workspace-unit">${escapeHtml(unit)}</span>`}
         </header>
+        ${isEditing ? `<nav class="lesson-workspace-tabs" role="tablist" aria-label="${lessonSectionText("lessonTab")}"><button type="button" class="${!isHomework ? "active" : ""}" role="tab" aria-selected="${!isHomework}" data-workspace-tab="lesson">${lessonSectionText("lessonTab")}</button><button type="button" class="${isHomework ? "active" : ""}" role="tab" aria-selected="${isHomework}" data-workspace-tab="homework">${lessonSectionText("homework")}</button></nav>` : ""}
         <div class="lesson-workspace-layout">
             <main class="lesson-workspace-main"><section class="lesson-workspace-section">
-                ${isEditing ? sectionBody : `<h2>${escapeHtml(section.title)}</h2>${sectionBody}`}
+                ${isEditing ? `${sourcePanel}${sectionBody}${dropZone}` : `<h2>${escapeHtml(section.title)}</h2>${sectionBody}`}
             </section>
                 <div class="lesson-workspace-footer"><button type="button" class="button secondary small" data-section-step="-1" ${sections.indexOf(section) === 0 ? "disabled" : ""}>${lessonSectionText("previous")}</button><span>${sections.indexOf(section) + 1} / ${sections.length}</span><button type="button" class="button secondary small" data-section-step="1" ${sections.indexOf(section) === sections.length - 1 ? "disabled" : ""}>${lessonSectionText("next")}</button>
                 ${isEditing ? `<span class="lesson-workspace-spacer"></span><button type="button" class="button secondary small" data-action="choose-activity">${lessonSectionText("addElement")}</button><button type="button" class="button secondary small" data-copy-activity ${section.activities.length ? "" : "disabled"}>${lessonSectionText("copyElement")}</button>` : ""}</div>
             </main>
-            <aside class="lesson-sections-panel"><h2>${lessonSectionText("section")}</h2><nav class="lesson-sections-list" aria-label="${lessonSectionText("section")}">${sectionMenu}</nav>
+            <aside class="lesson-sections-panel"><h2>${sectionTitle}</h2><nav class="lesson-sections-list" aria-label="${sectionTitle}">${sectionMenu}</nav>
                 ${isEditing ? `<button type="button" class="button secondary lesson-add-section" data-add-section>${lessonSectionText("addSection")}</button>` : ""}
             </aside>
         </div>
@@ -1590,40 +1795,45 @@ function renderLessonWorkspace() {
     if (isEditing) pageContent.querySelector("#lessonForm").addEventListener("submit", saveLesson);
     pageContent.querySelector("#lessonTitle")?.addEventListener("input", (event) => { lessonFormDraft.title = event.target.value; });
     pageContent.querySelector("#lessonUnit")?.addEventListener("change", (event) => { lessonFormDraft.unit = event.target.value; });
+    pageContent.querySelectorAll("[data-workspace-tab]").forEach((button) => button.addEventListener("click", () => {
+        lessonWorkspaceTab = button.dataset.workspaceTab;
+        render();
+    }));
     pageContent.querySelectorAll('[data-action="choose-activity"]').forEach((button) => button.addEventListener("click", openActivityPicker));
     pageContent.querySelectorAll("[data-select-section]").forEach((button) => button.addEventListener("click", () => {
-        activeLessonSectionId = button.dataset.selectSection;
+        setActiveWorkspaceSectionId(button.dataset.selectSection);
         render();
     }));
     pageContent.querySelector("[data-add-section]")?.addEventListener("click", () => {
         const section = { id: crypto.randomUUID(), title: lessonSectionText("newSection"), activities: [] };
-        draftSections.push(section);
-        activeLessonSectionId = section.id;
+        activeDraftSections().push(section);
+        setActiveWorkspaceSectionId(section.id);
         render();
     });
     pageContent.querySelectorAll("[data-move-section]").forEach((button) => button.addEventListener("click", () => {
-        const from = sections.indexOf(section);
+        const from = sections.findIndex((item) => item.id === button.dataset.moveSectionFrom);
         const to = Number(button.dataset.moveSection);
-        if (to < 0 || to >= draftSections.length) return;
-        [draftSections[from], draftSections[to]] = [draftSections[to], draftSections[from]];
+        if (from < 0 || to < 0 || to >= sections.length) return;
+        [sections[from], sections[to]] = [sections[to], sections[from]];
         render();
     }));
     pageContent.querySelectorAll("[data-delete-section]").forEach((button) => button.addEventListener("click", () => {
-        if (draftSections.length < 2) return;
-        const index = draftSections.findIndex((item) => item.id === button.dataset.deleteSection);
-        draftSections.splice(index, 1);
-        activeLessonSectionId = draftSections[Math.max(0, index - 1)].id;
+        if (sections.length < 2) return;
+        const index = sections.findIndex((item) => item.id === button.dataset.deleteSection);
+        if (index < 0) return;
+        sections.splice(index, 1);
+        if (section.id === button.dataset.deleteSection) setActiveWorkspaceSectionId(sections[Math.max(0, index - 1)].id);
         render();
     }));
     pageContent.querySelectorAll("[data-section-step]").forEach((button) => button.addEventListener("click", () => {
         const next = sections.indexOf(section) + Number(button.dataset.sectionStep);
         if (sections[next]) {
-            activeLessonSectionId = sections[next].id;
+            setActiveWorkspaceSectionId(sections[next].id);
             render();
         }
     }));
     pageContent.querySelector("[data-section-title]")?.addEventListener("input", (event) => {
-        const currentSection = draftSections.find((item) => item.id === event.target.dataset.sectionTitle);
+        const currentSection = sections.find((item) => item.id === event.target.dataset.sectionTitle);
         if (!currentSection) return;
         currentSection.title = event.target.value;
         const label = pageContent.querySelector(`[data-section-label="${CSS.escape(currentSection.id)}"]`);
@@ -1638,6 +1848,7 @@ function renderLessonWorkspace() {
         render();
     });
     enhanceSelects(pageContent);
+    if (isHomework) bindHomeworkCopySource();
     if (isEditing) bindActivityBlockActions();
     else bindLessonPreviewActions(pageContent, lesson, section);
 }
@@ -1647,7 +1858,10 @@ function exitLessonWorkspace() {
     workspaceLessonId = "";
     editingLessonId = null;
     draftSections = [];
+    draftHomeworkSections = [];
     activeLessonSectionId = "";
+    activeHomeworkSectionId = "";
+    lessonWorkspaceTab = "lesson";
     lessonFormDraft = { title: "", unit: "A1" };
     render();
 }
@@ -1782,7 +1996,7 @@ async function saveLesson(event) {
         return;
     }
     const existingLesson = data.lessons.find((current) => current.id === editingLessonId);
-    const lesson = { id: editingLessonId || crypto.randomUUID(), teacherId: existingLesson?.teacherId || currentUser?.id, title, unit, classIds: existingLesson ? lessonClassIds(existingLesson) : [], sections: structuredClone(draftSections), activities: draftSections.flatMap((section) => section.activities) };
+    const lesson = { id: editingLessonId || crypto.randomUUID(), teacherId: existingLesson?.teacherId || currentUser?.id, title, unit, classIds: existingLesson ? lessonClassIds(existingLesson) : [], sections: structuredClone(draftSections), homeworkSections: structuredClone(draftHomeworkSections), activities: draftSections.flatMap((section) => section.activities) };
     const previousLessons = data.lessons;
     const wasEditing = Boolean(editingLessonId);
     data.lessons = editingLessonId
@@ -1804,7 +2018,10 @@ async function saveLesson(event) {
     workspaceLessonId = "";
     editingLessonId = null;
     draftSections = [];
+    draftHomeworkSections = [];
     activeLessonSectionId = "";
+    activeHomeworkSectionId = "";
+    lessonWorkspaceTab = "lesson";
     lessonFormDraft = { title: "", unit: "A1" };
     render();
     showToast(wasEditing ? t("toast.lessonUpdated") : t("toast.lessonCreated"));
