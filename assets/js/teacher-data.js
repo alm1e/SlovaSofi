@@ -72,8 +72,14 @@
 
         if (!settingsResult.data?.legacy_imported) await saveSettings(client, userId, true);
         let staff = [];
+        let staffLoadError = "";
         if (permissions.manage_teachers) {
-            staff = (await manageTeacher(client, { action: "list" })).staff;
+            try {
+                staff = (await manageTeacher(client, { action: "list" })).staff;
+            } catch (error) {
+                console.error("Could not load teacher accounts; the rest of the dashboard is still available.", error);
+                staffLoadError = error.message || "Не удалось загрузить список преподавателей.";
+            }
         }
         return {
             data: { classes, lessons },
@@ -81,7 +87,8 @@
             workspaceOwnerId: userId,
             role: context.role,
             permissions,
-            staff
+            staff,
+            staffLoadError
         };
     }
 

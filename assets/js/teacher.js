@@ -89,16 +89,19 @@ Object.assign(translations.en, {
 Object.assign(translations.ua, {
     "welcome.database": "✓ Дані синхронізуються з Supabase",
     "toast.databaseLoadError": "Не вдалося завантажити дані з бази:",
+    "toast.staffLoadError": "Не вдалося завантажити список викладачів:",
     "toast.databaseSaveError": "Не вдалося зберегти дані в базі:"
 });
 Object.assign(translations.ru, {
     "welcome.database": "✓ Данные синхронизируются с Supabase",
     "toast.databaseLoadError": "Не удалось загрузить данные из базы:",
+    "toast.staffLoadError": "Не удалось загрузить список преподавателей:",
     "toast.databaseSaveError": "Не удалось сохранить данные в базе:"
 });
 Object.assign(translations.en, {
     "welcome.database": "✓ Data syncs with Supabase",
     "toast.databaseLoadError": "Could not load data from the database:",
+    "toast.staffLoadError": "Could not load the teacher list:",
     "toast.databaseSaveError": "Could not save data to the database:"
 });
 Object.assign(translations.ua, {
@@ -136,11 +139,11 @@ Object.assign(translations.en, {
 });
 const staffLabels = {
     ua: {
-        nav: "Викладачі", title: "Викладачі", description: "Запрошуйте викладачів і надавайте право редагувати спільні уроки.",
+        nav: "Викладачі", title: "Викладачі", description: "Викладачі керують своїми класами й учнями. Редагування спільних уроків можна надати окремо.",
         add: "＋ Додати викладача", empty: "Поки немає інших викладачів", emptyHint: "Додайте колегу та оберіть, що він зможе робити.",
         inviteTitle: "Додати викладача", editTitle: "Права доступу викладача", email: "Email викладача", role: "Роль", teacher: "Викладач",
         passwordTitle: "Створіть пароль", passwordHint: "Запрошення прийнято. Створіть пароль для входу до кабінету.", password: "Пароль (не менше 8 символів)", setPassword: "Зберегти пароль",
-        permissions: "Доступ до уроків", viewClasses: "Перегляд класів і учнів", manageClasses: "Керування класами й учнями",
+        permissions: "Додаткове право", viewClasses: "Перегляд класів і учнів", manageClasses: "Керування класами й учнями",
         viewLessons: "Перегляд і призначення уроків", editLessons: "Редагування спільних уроків",
         manageTeachers: "Запрошення й керування викладачами", cancel: "Скасувати", invite: "Надіслати запрошення",
         save: "Зберегти права", edit: "Змінити права", remove: "Зняти право редактора", removeConfirm: "Зняти право редагувати уроки у {email}?",
@@ -149,11 +152,11 @@ const staffLabels = {
         removed: "Доступ викладача відкликано.", error: "Не вдалося змінити доступ:"
     },
     ru: {
-        nav: "Учителя", title: "Учителя", description: "Приглашайте учителей и выдавайте право редактировать общие уроки.",
+        nav: "Учителя", title: "Учителя", description: "Учителя управляют своими классами и учениками. Право редактировать общие уроки можно выдать отдельно.",
         add: "＋ Добавить учителя", empty: "Пока нет других учителей", emptyHint: "Добавьте коллегу и выберите, что ему разрешено.",
         inviteTitle: "Добавить учителя", editTitle: "Права доступа учителя", email: "Email учителя", role: "Роль", teacher: "Учитель",
         passwordTitle: "Создайте пароль", passwordHint: "Приглашение принято. Создайте пароль для входа в кабинет.", password: "Пароль (не менее 8 символов)", setPassword: "Сохранить пароль",
-        permissions: "Доступ к урокам", viewClasses: "Просмотр классов и учеников", manageClasses: "Управление классами и учениками",
+        permissions: "Дополнительное право", viewClasses: "Просмотр классов и учеников", manageClasses: "Управление классами и учениками",
         viewLessons: "Просмотр и назначение уроков", editLessons: "Редактирование общих уроков",
         manageTeachers: "Приглашение и управление учителями", cancel: "Отмена", invite: "Отправить приглашение",
         save: "Сохранить права", edit: "Изменить права", remove: "Снять права редактора", removeConfirm: "Снять право редактировать уроки у {email}?",
@@ -162,11 +165,11 @@ const staffLabels = {
         removed: "Доступ учителя отозван.", error: "Не удалось изменить доступ:"
     },
     en: {
-        nav: "Teachers", title: "Teachers", description: "Invite teachers and grant permission to edit shared lessons.",
+        nav: "Teachers", title: "Teachers", description: "Teachers manage their own classes and students. Permission to edit shared lessons is optional.",
         add: "＋ Add teacher", empty: "No other teachers yet", emptyHint: "Invite a colleague and choose what they can do.",
         inviteTitle: "Add teacher", editTitle: "Teacher permissions", email: "Teacher email", role: "Role", teacher: "Teacher",
         passwordTitle: "Create a password", passwordHint: "Invitation accepted. Create a password to access your workspace.", password: "Password (at least 8 characters)", setPassword: "Save password",
-        permissions: "Lesson access", viewClasses: "View classes and students", manageClasses: "Manage classes and students",
+        permissions: "Optional permission", viewClasses: "View classes and students", manageClasses: "Manage classes and students",
         viewLessons: "View and assign lessons", editLessons: "Edit shared lessons",
         manageTeachers: "Invite and manage teachers", cancel: "Cancel", invite: "Send invitation",
         save: "Save access", edit: "Edit access", remove: "Remove editor access", removeConfirm: "Remove lesson-editing access for {email}?",
@@ -372,6 +375,7 @@ async function loadCurrentUser() {
             render();
             const storageNote = document.querySelector(".storage-note");
             if (storageNote) storageNote.textContent = t("welcome.database");
+            if (workspace.staffLoadError) showToast(`${t("toast.staffLoadError")} ${workspace.staffLoadError}`);
             if (new URLSearchParams(location.hash.slice(1)).get("type") === "invite"
                 || new URLSearchParams(location.search).get("type") === "invite") openTeacherPasswordForm();
         } catch (workspaceError) {
@@ -896,10 +900,6 @@ function openTeacherForm(member = null) {
             key,
             form.querySelector(`[data-permission-key="${key}"]`).checked
         ]));
-        if (!Object.values(permissions).some(Boolean)) {
-            showToast(staffText("noPermission"));
-            return;
-        }
         const submitButton = form.querySelector('[type="submit"]');
         submitButton.disabled = true;
         try {
