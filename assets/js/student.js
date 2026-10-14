@@ -449,6 +449,88 @@
         render();
     }
 
+    function showUserMenu(button) {
+        if (!user) {
+            renderAuthState(text("needInvite"), "", `<a class="button" href="login.html">${escapeHtml(text("login"))}</a>`);
+            return;
+        }
+        const metadata = user?.user_metadata || {};
+        const name = [metadata.first_name || metadata.firstName, metadata.last_name || metadata.lastName].filter(Boolean).join(" ")
+            || metadata.full_name || metadata.name || user?.email || text("login");
+        const identity = user?.email
+            ? `<div class="popover-email">${escapeHtml(user.email)}</div>`
+            : `<div class="popover-email">${text("login")}</div>`;
+        const action = `<button class="popover-action danger" type="button" data-popover-action="logout"><span aria-hidden="true">↪</span>${text("logout")}</button>`;
+        openPopoverAt(button, `<div class="popover-user"><span class="avatar">${escapeHtml(initialsFor(name))}</span><div><strong>${escapeHtml(name)}</strong><small>${text("profileRole")}</small></div></div>${identity}<div class="popover-divider"></div>${action}`, "profile");
+    }
+
+    function initialsFor(name) {
+        return String(name).split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toLocaleUpperCase() || "—";
+    }
+
+    function openPopoverAt(button, content, type = "default") {
+        const popoverRoot = document.getElementById("popoverRoot");
+        if (!popoverRoot) return;
+        closePopover();
+        const popover = document.createElement("div");
+        popover.className = `popover popover-${type}`;
+        popover.innerHTML = content;
+        popoverRoot.appendChild(popover);
+        button.setAttribute("aria-expanded", "true");
+        const rect = button.getBoundingClientRect();
+        const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        popover.style.position = "absolute";
+        popover.style.top = (rect.bottom + scrollTop + 8) + "px";
+        popover.style.left = Math.max(8, Math.min(rect.left + scrollLeft - popover.offsetWidth + rect.width, window.innerWidth - popover.offsetWidth - 8)) + "px";
+        popover.querySelectorAll("[data-popover-action]").forEach((actionButton) => {
+            actionButton.addEventListener("click", async () => {
+                if (actionButton.dataset.popoverAction === "logout") {
+                    closePopover();
+                    await signOut();
+                }
+            });
+        });
+        document.addEventListener("click", closePopoverOnClick);
+        openPopover = popover;
+        openPopoverButton = button;
+    }
+
+    function closePopover() {
+        if (openPopover) openPopover.remove();
+        openPopover = null;
+        if (openPopoverButton) openPopoverButton.setAttribute("aria-expanded", "false");
+        openPopoverButton = null;
+        document.removeEventListener("click", closePopoverOnClick);
+    }
+
+    function closePopoverOnClick(event) {
+        const popoverRoot = document.getElementById("popoverRoot");
+        if (!popoverRoot || !event.target.closest(".popover-root, [data-popover-action], .profile-trigger")) {
+            closePopover();
+        }
+    }
+
+    async function signOut() {
+        if (!window.supabaseClient) {
+            console.error("Supabase is not configured; cannot sign out.");
+            showToast(text("logoutError"));
+            return;
+        }
+        try {
+            const { error } = await window.supabaseClient.auth.signOut();
+            if (error) throw error;
+            user = null;
+            window.location.assign("login.html");
+        } catch (error) {
+            console.error("Could not sign out of the current account.", error);
+            showToast(text("logoutError"));
+        }
+    }
+
+    let openPopover = null;
+    let openPopoverButton = null;
+
     async function start() {
         const client = window.supabaseClient;
         const inviteFlow = new URLSearchParams(location.hash.slice(1)).get("type") === "invite"
@@ -503,28 +585,9 @@
     }));
     document.getElementById("studentMenuToggle").addEventListener("click", () => sidebar.classList.toggle("open"));
     
-    // Add logout functionality to profile/avatar click
-    document.querySelector(".student-identity")?.addEventListener("click", async () => {
-        if (!window.confirm(text("logout") + "?")) return;
-        const { error } = await window.supabaseClient.auth.signOut();
-        if (error) {
-            console.error("Could not sign out the student.", error);
-            showToast(text("logoutError"), true);
-            return;
-        }
-        location.assign("login.html");
-    });
+    // Profile menu for student (like teacher)
+    document.querySelectorAll(".profile-trigger").forEach((button) => button.addEventListener("click", () => showUserMenu(button)));
     
-    // Also bind the dedicated logout button
-    document.getElementById("studentLogout").addEventListener("click", async () => {
-        const { error } = await window.supabaseClient.auth.signOut();
-        if (error) {
-            console.error("Could not sign out the student.", error);
-            showToast(text("logoutError"), true);
-            return;
-        }
-        location.assign("login.html");
-    });
     start().catch((error) => {
         console.error("Could not start the student dashboard.", error);
         showError(text("loadError"), error);

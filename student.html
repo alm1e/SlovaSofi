@@ -25,11 +25,11 @@
             </button>
         </nav>
         <div class="sidebar-bottom">
-            <div class="teacher-mini student-identity">
+            <button class="teacher-mini profile-trigger" id="studentProfileButton" type="button" aria-haspopup="true" aria-expanded="false">
                 <span class="avatar student-avatar">…</span>
                 <span class="user-summary"><b class="student-name">Загрузка…</b><small data-i18n="profile.role">Ученик</small></span>
-            </div>
-            <button class="student-logout" id="studentLogout" type="button" data-i18n="profile.logout">Выйти из профиля</button>
+                <span class="profile-chevron" aria-hidden="true">⌄</span>
+            </button>
             <a class="home-link" href="index.html" data-i18n="nav.home">← На главную</a>
         </div>
     </aside>
@@ -44,15 +44,16 @@
                     <button class="language-button" type="button" data-lang="ru" aria-label="Русский">RU</button>
                     <button class="language-button" type="button" data-lang="en" aria-label="English">EN</button>
                 </div>
-                <span class="student-profile-avatar" aria-label="Профиль ученика">
+                <button class="profile-avatar-trigger profile-trigger" id="studentProfileTopButton" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Профиль ученика">
                     <span class="avatar top-avatar student-avatar">…</span>
-                </span>
+                </button>
             </div>
         </header>
         <section class="page-content" id="studentPageContent"></section>
     </main>
 
     <div class="toast" id="studentToast" role="status" aria-live="polite"></div>
+    <div class="popover-root" id="popoverRoot"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase-config.js"></script>
     <script src="assets/js/student.js"></script>
