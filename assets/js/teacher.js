@@ -352,8 +352,18 @@ async function loadCurrentUser() {
         return;
     }
     try {
-        const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+        // Get session and user in parallel
+        const [sessionResult, userResult] = await Promise.all([
+            window.supabaseClient.auth.getSession(),
+            window.supabaseClient.auth.getUser()
+        ]);
+        
+        const { data: { session }, error: sessionError } = sessionResult;
+        const { data: { user }, error: userError } = userResult;
+        
         if (sessionError) throw sessionError;
+        if (userError) throw userError;
+        
         if (!session) {
             updateUserIdentity(null);
             data = loadData();
@@ -362,13 +372,25 @@ async function loadCurrentUser() {
             render();
             return;
         }
-        const { data: { user }, error } = await window.supabaseClient.auth.getUser();
-        if (error) throw error;
+        
         updateUserIdentity(user);
-        data = { classes: [], lessons: [] };
+        
+        // Load from cache first (instant UI)
+        const cachedData = (() => {
+            try {
+                const cached = localStorage.getItem(storageKey(user.id));
+                return cached ? JSON.parse(cached) : { classes: [], lessons: [] };
+            } catch {
+                return { classes: [], lessons: [] };
+            }
+        })();
+        
+        data = cachedData;
         workspaceAccess = { workspaceOwnerId: null, permissions: {}, staff: [] };
         translateStaticUI();
         render();
+        
+        // Load workspace in background (don't block UI)
         try {
             const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, user.id);
             data = workspace.data;
@@ -1846,4 +1868,6 @@ document.addEventListener("keydown", (event) => {
 
 translateStaticUI();
 render();
-loadCurrentUser();
+loadCurrentUser().catch((error) => {
+    console.error("Failed to load current user:", error);
+});

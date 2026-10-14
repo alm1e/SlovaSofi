@@ -1,6 +1,7 @@
 .student-platform .sidebar[hidden],
 .student-platform .topbar[hidden] { display: none; }
-.student-platform .student-identity { cursor: default; }
+.student-platform .student-identity { cursor: pointer; padding: 13px 5px 18px; transition: background-color 0.2s ease; border-radius: 10px; }
+.student-platform .student-identity:hover { background: rgba(75, 135, 95, 0.1); }
 .student-platform .student-identity .student-name { display: block; max-width: 175px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .student-platform .student-logout { width: 100%; margin-top: 14px; border: 0; padding: 5px; background: transparent; color: var(--muted); text-align: left; font-size: 13px; }
 .student-platform .student-logout:hover { color: #a33e35; }

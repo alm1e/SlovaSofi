@@ -502,6 +502,20 @@
         render();
     }));
     document.getElementById("studentMenuToggle").addEventListener("click", () => sidebar.classList.toggle("open"));
+    
+    // Add logout functionality to profile/avatar click
+    document.querySelector(".student-identity")?.addEventListener("click", async () => {
+        if (!window.confirm(text("logout") + "?")) return;
+        const { error } = await window.supabaseClient.auth.signOut();
+        if (error) {
+            console.error("Could not sign out the student.", error);
+            showToast(text("logoutError"), true);
+            return;
+        }
+        location.assign("login.html");
+    });
+    
+    // Also bind the dedicated logout button
     document.getElementById("studentLogout").addEventListener("click", async () => {
         const { error } = await window.supabaseClient.auth.signOut();
         if (error) {
