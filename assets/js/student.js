@@ -61,6 +61,12 @@
             moveUp: "Move up", moveDown: "Move down", flip: "Show translation", loading: "Loading lesson…"
         }
     };
+    const recoveryCopy = {
+        ua: { retry: "Спробувати знову", unavailable: "Сервіс уроків тимчасово недоступний. Спробуйте ще раз пізніше.", connection: "Не вдалося з’єднатися із сервісом уроків. Перевірте інтернет і спробуйте знову.", profile: "Профіль учня", dashboardLoading: "Завантаження кабінету…" },
+        ru: { retry: "Попробовать снова", unavailable: "Сервис уроков временно недоступен. Попробуйте ещё раз позже.", connection: "Не удалось связаться с сервисом уроков. Проверьте интернет и попробуйте снова.", profile: "Профиль ученика", dashboardLoading: "Загрузка кабинета…" },
+        en: { retry: "Try again", unavailable: "The lesson service is temporarily unavailable. Please try again later.", connection: "Could not connect to the lesson service. Check your connection and try again.", profile: "Student profile", dashboardLoading: "Loading dashboard…" }
+    };
+    Object.keys(recoveryCopy).forEach((lang) => Object.assign(copy[lang], recoveryCopy[lang]));
     const languageChoices = ["ua", "ru", "en"];
     let language = languageChoices.includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
     let user = null;
@@ -71,6 +77,11 @@
     let openedLesson = null;
     let draggedWordButton = null;
     let toastTimer;
+    let dashboardStatus = "loading";
+    let dashboardErrorKey = "connection";
+    let dashboardRequest = null;
+    let signingOut = false;
+    let profileTrigger = null;
     const sidebar = document.getElementById("studentSidebar");
     const pageContent = document.getElementById("studentPageContent");
     const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -107,7 +118,9 @@
 
     function showError(prefix, error) {
         console.error(prefix, error);
-        pageContent.innerHTML = `<div class="student-message-card"><span class="eyebrow">SlovaSofi</span><h1>${escapeHtml(text("loadError").replace(/:$/, ""))}</h1><p class="student-error">${escapeHtml(error.message || error)}</p></div>`;
+        dashboardStatus = "error";
+        dashboardErrorKey = error.dashboardErrorKey || "connection";
+        render();
     }
 
     function updateIdentity() {
@@ -117,6 +130,11 @@
         const initials = fullName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toLocaleUpperCase();
         document.querySelectorAll(".student-name").forEach((element) => { element.textContent = fullName; });
         document.querySelectorAll(".student-avatar").forEach((element) => { element.textContent = initials; });
+        document.querySelectorAll(".profile-trigger").forEach((button) => {
+            button.setAttribute("aria-label", `${text("profile")}: ${fullName}`);
+        });
+        document.querySelectorAll('[data-i18n="profile.role"]').forEach((element) => { element.textContent = text("profileRole"); });
+        document.querySelectorAll('[data-i18n="nav.home"]').forEach((element) => { element.textContent = text("home"); });
         document.querySelectorAll("[data-lang]").forEach((button) => {
             button.classList.toggle("active", button.dataset.lang === language);
             button.setAttribute("aria-pressed", button.dataset.lang === language ? "true" : "false");
@@ -247,8 +265,23 @@
     }
 
     async function invokeLessonApi(payload) {
-        const { data, error } = await window.supabaseClient.functions.invoke("student-lessons", { body: payload });
+        // Retry only reads: a failed submission may already have reached the server.
+        let data, error;
+        const attempts = ["list", "load"].includes(payload.action) ? 3 : 1;
+        for (let attempt = 0; attempt < attempts; attempt += 1) {
+            ({ data, error } = await window.supabaseClient.functions.invoke("student-lessons", { body: payload }));
+            const status = error?.context instanceof Response ? error.context.status : 0;
+            const transient = error?.name === "FunctionsFetchError" || status >= 500;
+            if (!error || !transient || attempt === attempts - 1) break;
+            await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+        }
         if (error) {
+            const status = error.context instanceof Response ? error.context.status : 0;
+            if (error.name === "FunctionsFetchError" || status === 404 || status >= 500) {
+                const failure = new Error(text(status === 404 || status >= 500 ? "unavailable" : "connection"));
+                failure.dashboardErrorKey = status === 404 || status >= 500 ? "unavailable" : "connection";
+                throw failure;
+            }
             let message = error.message || text("loadError");
             if (error.context instanceof Response) {
                 const responseText = await error.context.text();
@@ -369,6 +402,16 @@
         document.getElementById("studentBreadcrumb").textContent = selectedLessonId
             ? text("lessons")
             : text(keys[activeView]);
+        if (dashboardStatus !== "ready") {
+            pageContent.innerHTML = dashboardStatus === "loading"
+                ? `<div class="student-message-card" role="status"><p>${escapeHtml(text("dashboardLoading"))}</p></div>`
+                : `<div class="student-message-card" role="alert"><span class="eyebrow">SlovaSofi</span><h1>${escapeHtml(text("loadError").replace(/:$/, ""))}</h1><p class="student-error">${escapeHtml(text(dashboardErrorKey))}</p><button class="button" type="button" data-retry-dashboard>${escapeHtml(text("retry"))}</button></div>`;
+            pageContent.querySelector("[data-retry-dashboard]")?.addEventListener("click", () => {
+                if (user) loadDashboard(window.supabaseClient, user);
+                else start().catch((error) => showError(text("loadError"), error));
+            });
+            return;
+        }
         pageContent.innerHTML = `${renderWelcome()}${openedLesson && openedLesson.id === selectedLessonId
             ? renderLessonDetail(openedLesson)
             : activeView === "classes" ? renderClasses() : renderLessons()}`;
@@ -437,23 +480,30 @@
     }
 
     async function loadDashboard(client, signedInUser) {
+        if (dashboardRequest) return dashboardRequest;
         user = signedInUser;
-        const cacheKey = `slovasofi-student:${user.id}`;
         sidebar.hidden = false;
         document.querySelector(".main-area .topbar").hidden = false;
         pageContent.classList.remove("student-auth-content");
-        try {
-            const cached = JSON.parse(localStorage.getItem(cacheKey));
-            if (cached) { classes = cached.classes || []; lessons = cached.lessons || []; }
-        } catch { /* ignore broken cache */ }
+        dashboardStatus = "loading";
         render();
-        const result = await invokeLessonApi({ action: "list" });
-        classes = result.classes || [];
-        lessons = result.lessons || [];
-        localStorage.setItem(cacheKey, JSON.stringify({ classes, lessons }));
-        if (!lessons.some((lesson) => lesson.id === selectedLessonId)) selectedLessonId = "";
-        if (!lessons.some((lesson) => lesson.id === openedLesson?.id)) openedLesson = null;
-        render();
+        dashboardRequest = (async () => {
+            try {
+                const result = await invokeLessonApi({ action: "list" });
+                if (signingOut) return;
+                classes = result.classes || [];
+                lessons = result.lessons || [];
+                dashboardStatus = "ready";
+                if (!lessons.some((lesson) => lesson.id === selectedLessonId)) selectedLessonId = "";
+                if (!lessons.some((lesson) => lesson.id === openedLesson?.id)) openedLesson = null;
+                render();
+            } catch (error) {
+                if (!signingOut) showError(text("loadError"), error);
+            } finally {
+                dashboardRequest = null;
+            }
+        })();
+        return dashboardRequest;
     }
 
     function showUserMenu(button) {
@@ -469,10 +519,11 @@
         return String(name).split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toLocaleUpperCase() || "—";
     }
 
-    function closePopover() {
+    function closePopover(restoreFocus = false) {
         document.getElementById("popoverRoot").innerHTML = "";
         document.querySelectorAll(".profile-trigger").forEach((button) => button.setAttribute("aria-expanded", "false"));
         openPopover = "";
+        if (restoreFocus) profileTrigger?.focus();
     }
 
     function openPopoverAt(button, content, kind) {
@@ -481,8 +532,9 @@
             return;
         }
         closePopover();
+        profileTrigger = button;
         const root = document.getElementById("popoverRoot");
-        root.innerHTML = `<section class="popover-panel" role="dialog" aria-label="${escapeHtml(text("profileRole"))}">${content}</section>`;
+        root.innerHTML = `<section class="popover-panel" role="dialog" aria-label="${escapeHtml(text("profile"))}">${content}</section>`;
         const panel = root.firstElementChild;
         button.setAttribute("aria-expanded", "true");
         openPopover = kind;
@@ -496,15 +548,26 @@
         panel.style.left = `${left}px`;
         panel.style.top = `${top}px`;
         panel.querySelector("[data-popover-action='logout']")?.addEventListener("click", signOut);
+        panel.querySelector("button")?.focus();
     }
 
     async function signOut() {
+        if (signingOut) return;
+        signingOut = true;
+        const logoutButton = document.querySelector("[data-popover-action='logout']");
+        if (logoutButton) logoutButton.disabled = true;
         try {
             const { error } = await window.supabaseClient.auth.signOut();
             if (error) throw error;
+            try {
+                if (user) localStorage.removeItem(`slovasofi-student:${user.id}`);
+            } catch { /* Storage restrictions must not block a successful sign-out. */ }
             user = null;
+            closePopover();
             window.location.assign("login.html");
         } catch (error) {
+            signingOut = false;
+            if (logoutButton) logoutButton.disabled = false;
             console.error("Could not sign out of the current account.", error);
             showToast(text("logoutError"), true);
         }
@@ -561,6 +624,7 @@
     document.querySelectorAll(".language-button").forEach((button) => button.addEventListener("click", () => {
         if (!languageChoices.includes(button.dataset.lang)) return;
         language = button.dataset.lang;
+        closePopover();
         localStorage.setItem("siteLanguage", language);
         render();
     }));
@@ -572,8 +636,9 @@
         if (openPopover && !event.target.closest(".popover-root, .profile-trigger")) closePopover();
     });
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && openPopover) closePopover();
+        if (event.key === "Escape" && openPopover) closePopover(true);
     });
+    window.addEventListener("resize", () => closePopover());
     
     start().catch((error) => {
         console.error("Could not start the student dashboard.", error);
