@@ -44,6 +44,36 @@
 .student-platform .student-activity-main { min-width: 0; flex: 1; }
 .student-platform .student-activity-main h3 { margin: 4px 0 10px; font-size: 15px; }
 .student-platform .student-activity-content { color: #435448; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.student-platform .student-activity-actions { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.student-platform .student-activity-actions .button:disabled { cursor: wait; opacity: .6; }
+.student-platform .student-answer-feedback { min-height: 20px; margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+.student-platform .student-answer-feedback.is-correct { color: #287247; font-weight: 700; }
+.student-platform .student-answer-feedback.is-incorrect { color: #a33e35; }
+.student-platform .student-word-bank, .student-platform .student-answer-zone, .student-platform .student-flashcard-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.student-platform .student-word-bank { margin: 10px 0; }
+.student-platform .student-answer-zone { min-height: 48px; border: 1px dashed #b5cbb8; border-radius: 10px; padding: 8px; background: #f7faf7; }
+.student-platform .student-word-token { border: 1px solid #d7e6d8; border-radius: 8px; padding: 7px 11px; background: #fff; color: var(--ink); cursor: pointer; }
+.student-platform .student-word-token:hover { border-color: #77a181; background: #f0f7f1; }
+.student-platform .student-word-token.selected { background: #e7f1e8; }
+.student-platform .student-inline-answer { display: inline-block; width: min(160px, 38vw); min-height: 34px; margin: 3px 5px; border: 1px solid #cbd9ce; border-radius: 7px; padding: 5px 8px; }
+.student-platform .student-answer-options { display: grid; gap: 8px; margin-top: 12px; }
+.student-platform .student-answer-option { display: flex; align-items: flex-start; gap: 9px; width: fit-content; max-width: 100%; border: 1px solid #e2ebe3; border-radius: 9px; padding: 9px 12px; cursor: pointer; }
+.student-platform .student-answer-option input { margin-top: 4px; accent-color: #477553; }
+.student-platform .student-order-list { display: grid; gap: 8px; margin: 12px 0 0; padding-left: 30px; }
+.student-platform .student-order-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; border: 1px solid #e2ebe3; border-radius: 9px; padding: 7px 9px; }
+.student-platform .student-order-list li > span:first-child { overflow-wrap: anywhere; }
+.student-platform .student-order-list li > span:last-child { display: flex; flex: 0 0 auto; gap: 4px; }
+.student-platform .student-order-list button { width: 30px; height: 30px; border: 1px solid #d7e6d8; border-radius: 7px; background: #fff; color: var(--ink); }
+.student-platform .student-order-list button:disabled { opacity: .4; }
+.student-platform .student-match-list { display: grid; gap: 8px; margin-top: 12px; }
+.student-platform .student-match-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(120px,220px); align-items: center; gap: 12px; }
+.student-platform .student-match-row select { min-width: 0; min-height: 38px; border: 1px solid #d4e0d5; border-radius: 8px; padding: 6px 8px; background: #fff; }
+.student-platform .student-table-wrap { overflow-x: auto; margin-top: 12px; }
+.student-platform .student-answer-table { width: 100%; border-collapse: collapse; }
+.student-platform .student-answer-table td { min-width: 80px; border: 1px solid #dfe8df; padding: 8px; }
+.student-platform .student-open-answer { display: block; width: min(100%,620px); min-height: 120px; margin-top: 12px; border: 1px solid #d4e0d5; border-radius: 9px; padding: 10px; resize: vertical; }
+.student-platform .student-flashcard { display: grid; gap: 10px; min-width: 140px; min-height: 90px; border: 1px solid #d7e6d8; border-radius: 12px; padding: 14px; background: #f7faf7; color: var(--ink); text-align: left; }
+.student-platform .student-flashcard small { color: var(--muted); }
 .student-platform .student-activity-image { display: block; max-width: 100%; max-height: 440px; border-radius: 10px; object-fit: contain; }
 .student-platform .student-activity-media { display: block; width: min(100%,640px); }
 .student-platform .student-auth-content { display: grid; min-height: 100vh; place-items: center; padding: 28px; }
@@ -65,6 +95,8 @@
     .student-platform .student-stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
     .student-platform .student-lesson-row { align-items: flex-start; flex-wrap: wrap; }
     .student-platform .student-lesson-row .button { margin-left: 49px; }
+    .student-platform .student-match-row { grid-template-columns: 1fr; gap: 6px; }
+    .student-platform .student-activity { padding: 12px; }
 }
 @media (max-width: 420px) {
     .student-platform .student-hero { padding: 19px; }

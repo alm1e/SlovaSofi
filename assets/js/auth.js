@@ -41,6 +41,65 @@ loginForm?.addEventListener("submit", async (event) => {
     }
 });
 
+document.getElementById("forgotPasswordButton")?.addEventListener("click", async (event) => {
+    const message = document.getElementById("authMessage");
+    const button = event.currentTarget;
+    const emailInput = document.getElementById("email");
+    const language = localStorage.getItem("siteLanguage") || "ua";
+    const messages = {
+        ua: {
+            email: "Введіть коректну електронну пошту.",
+            connection: "Не вдалося підключитися до Supabase. Спробуйте ще раз.",
+            error: "Не вдалося надіслати лист для відновлення пароля. Спробуйте ще раз.",
+            sent: "Якщо акаунт із цією адресою існує, на пошту надіслано посилання для зміни пароля."
+        },
+        ru: {
+            email: "Введите корректный адрес электронной почты.",
+            connection: "Не удалось подключиться к Supabase. Попробуйте ещё раз.",
+            error: "Не удалось отправить письмо для восстановления пароля. Попробуйте ещё раз.",
+            sent: "Если аккаунт с этим адресом существует, на почту отправлена ссылка для смены пароля."
+        },
+        en: {
+            email: "Enter a valid email address.",
+            connection: "Could not connect to Supabase. Please try again.",
+            error: "Could not send the password reset email. Please try again.",
+            sent: "If an account exists for this address, a password reset link has been sent."
+        }
+    };
+    const copy = messages[language] || messages.ua;
+    if (!emailInput.value.trim() || !emailInput.checkValidity()) {
+        message.textContent = copy.email;
+        message.className = "mb-3 text-danger";
+        emailInput.focus();
+        return;
+    }
+    if (!window.supabaseClient) {
+        message.textContent = copy.connection;
+        message.className = "mb-3 text-danger";
+        return;
+    }
+    button.disabled = true;
+    message.textContent = "";
+    try {
+        const redirectTo = new URL("reset-password.html", window.location.href).href;
+        const { error } = await window.supabaseClient.auth.resetPasswordForEmail(emailInput.value.trim(), { redirectTo });
+        if (error) {
+            console.error("Could not request password recovery.", error);
+            message.textContent = copy.error;
+            message.className = "mb-3 text-danger";
+            return;
+        }
+        message.textContent = copy.sent;
+        message.className = "mb-3 text-success";
+    } catch (error) {
+        console.error("Could not request password recovery.", error);
+        message.textContent = copy.connection;
+        message.className = "mb-3 text-danger";
+    } finally {
+        button.disabled = false;
+    }
+});
+
 const registerForm = document.getElementById("registerForm");
 
 registerForm?.addEventListener("submit", async (event) => {

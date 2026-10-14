@@ -345,10 +345,18 @@ body {
     background-color: #ffffff;
     color: #4CAF50;
     display: flex;
+    align-items: center;
     justify-content: center;
+    border-radius: 50%;
+    font-size: 21px;
+    text-decoration: none;
+    transition: transform .2s ease, background-color .2s ease, color .2s ease;
 }
-.social-icon::hover{
-
+.social-icon:hover,
+.social-icon:focus-visible {
+    background-color: #e8f4eb;
+    color: #2b6446;
+    transform: translateY(-2px);
 }
 @media (max-width: 768px) {
     .teacher-card {
@@ -406,6 +414,17 @@ html {
 .auth-card .form-control {
     min-height: 48px;
     border-radius: 10px;
+}
+
+.auth-forgot-password {
+    display: block;
+    margin: 7px 0 0 auto;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--primary-green);
+    font-size: 0.88rem;
+    text-decoration: underline;
 }
 
 .auth-note {
