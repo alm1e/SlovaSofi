@@ -37,13 +37,15 @@
                            placeholder="Введіть електронну пошту" autocomplete="email" required>
                 </div>
 
-                <div class="mb-3">
-                    <label for="password" class="form-label" data-key="password_label">Пароль</label>
+                <div class="mb-3 auth-password-field">
+                    <div class="auth-password-heading">
+                        <label for="password" class="form-label" data-key="password_label">Пароль</label>
+                        <button type="button" class="auth-forgot-password" id="forgotPasswordButton" data-key="forgot_password">
+                            Забули пароль?
+                        </button>
+                    </div>
                     <input type="password" class="form-control" id="password" name="password"
                            placeholder="Введіть пароль" autocomplete="current-password" required>
-                    <button type="button" class="auth-forgot-password" id="forgotPasswordButton" data-key="forgot_password">
-                        Забули пароль?
-                    </button>
                 </div>
 
                 <div id="authMessage" class="mb-3" role="status" aria-live="polite"></div>

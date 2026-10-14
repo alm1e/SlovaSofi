@@ -411,20 +411,60 @@ html {
     font-weight: 600;
 }
 
+.auth-password-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.auth-password-heading .form-label {
+    margin-bottom: 8px;
+}
+
 .auth-card .form-control {
     min-height: 48px;
     border-radius: 10px;
 }
 
 .auth-forgot-password {
-    display: block;
-    margin: 7px 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0 0 8px auto;
     border: 0;
-    padding: 0;
+    border-radius: 6px;
+    padding: 3px 7px;
     background: transparent;
     color: var(--primary-green);
-    font-size: 0.88rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.35;
+    cursor: pointer;
+    transition: background-color .18s ease, color .18s ease;
+}
+
+.auth-forgot-password::before {
+    content: "?";
+    display: inline-grid;
+    width: 16px;
+    height: 16px;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: 0.68rem;
+    line-height: 1;
+}
+
+.auth-forgot-password:hover {
+    background: #edf5ef;
+    color: #234f37;
     text-decoration: underline;
+}
+
+.auth-forgot-password:focus-visible {
+    outline: 3px solid #4d8a6338;
+    outline-offset: 2px;
 }
 
 .auth-note {

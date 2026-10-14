@@ -245,6 +245,7 @@ let activitySearch = "";
 let editingLessonId = null;
 let lessonFormDraft = { title: "", unit: "A1" };
 let draftSections = [];
+let expandedActivityBlocks = new WeakSet();
 let activeLessonSectionId = "";
 let lessonWorkspaceMode = "";
 let workspaceLessonId = "";
@@ -715,9 +716,9 @@ function closeSelectDropdown() {
 
 function lessonSectionText(key) {
     const labels = {
-        ua: { intro: "Вступ", newSection: "Новий розділ", addSection: "＋ Додати розділ", section: "Розділи уроку", rename: "Назва розділу", remove: "Видалити розділ", previous: "← Назад", next: "Далі →", addElement: "＋ Додати новий елемент", copyElement: "▣ Копіювати елемент", edit: "Редагувати", back: "До уроків", save: "Зберегти урок", create: "Створити урок", empty: "У цьому розділі ще немає елементів.", confirmRemove: "Видалити розділ разом з його елементами?" },
-        ru: { intro: "Введение", newSection: "Новый раздел", addSection: "＋ Добавить раздел", section: "Разделы урока", rename: "Название раздела", remove: "Удалить раздел", previous: "← Назад", next: "Далее →", addElement: "＋ Добавить новый элемент", copyElement: "▣ Копировать элемент", edit: "Редактировать", back: "К урокам", save: "Сохранить урок", create: "Создать урок", empty: "В этом разделе пока нет элементов.", confirmRemove: "Удалить раздел вместе с его элементами?" },
-        en: { intro: "Introduction", newSection: "New section", addSection: "＋ Add section", section: "Lesson sections", rename: "Section name", remove: "Delete section", previous: "← Back", next: "Next →", addElement: "＋ Add new item", copyElement: "▣ Duplicate item", edit: "Edit lesson", back: "Back to lessons", save: "Save lesson", create: "Create lesson", empty: "This section has no items yet.", confirmRemove: "Delete this section and its items?" }
+        ua: { intro: "Вступ", newSection: "Новий розділ", addSection: "＋ Додати розділ", section: "Розділи уроку", rename: "Назва розділу", remove: "Видалити", previous: "← Назад", next: "Далі →", moveUp: "Перемістити вище", moveDown: "Перемістити нижче", addElement: "＋ Додати новий елемент", copyElement: "▣ Копіювати елемент", edit: "Редагувати", done: "Готово", back: "До уроків", save: "Зберегти урок", create: "Створити урок", empty: "У цьому розділі ще немає елементів.", confirmRemove: "Видалити розділ разом з його елементами?" },
+        ru: { intro: "Введение", newSection: "Новый раздел", addSection: "＋ Добавить раздел", section: "Разделы урока", rename: "Название раздела", remove: "Удалить", previous: "← Назад", next: "Далее →", moveUp: "Переместить выше", moveDown: "Переместить ниже", addElement: "＋ Добавить новый элемент", copyElement: "▣ Копировать элемент", edit: "Редактировать", done: "Готово", back: "К урокам", save: "Сохранить урок", create: "Создать урок", empty: "В этом разделе пока нет элементов.", confirmRemove: "Удалить раздел вместе с его элементами?" },
+        en: { intro: "Introduction", newSection: "New section", addSection: "＋ Add section", section: "Lesson sections", rename: "Section name", remove: "Delete", previous: "← Back", next: "Next →", moveUp: "Move up", moveDown: "Move down", addElement: "＋ Add new item", copyElement: "▣ Duplicate item", edit: "Edit", done: "Done", back: "Back to lessons", save: "Save lesson", create: "Create lesson", empty: "This section has no items yet.", confirmRemove: "Delete this section and its items?" }
     };
     return labels[currentLanguage][key];
 }
@@ -1018,7 +1019,7 @@ function previewMediaUrl(value) {
     }
 }
 
-function renderPreviewActivity(activity, index) {
+function renderPreviewActivity(activity, index, canEdit = false) {
     const type = activity.type;
     const prompt = escapeHtml(activity.prompt || t(activityTypes.find((item) => item.id === type)?.nameKey || "activity.task"));
     const content = String(activity.content || "");
@@ -1086,7 +1087,7 @@ function renderPreviewActivity(activity, index) {
         checkable = false;
     }
 
-    return `<article class="preview-activity" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}"><h3>${index + 1}. ${prompt}</h3>${body}${checkable ? `<button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button><p class="preview-result" data-preview-result aria-live="polite"></p>` : ""}</article>`;
+    return `<article class="preview-activity" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}"><header class="preview-activity-header"><h3>${index + 1}. ${prompt}</h3>${canEdit ? `<button class="button secondary small preview-edit-activity" type="button" data-edit-preview-block="${index}">✎ ${lessonSectionText("edit")}</button>` : ""}</header>${body}${checkable ? `<button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button><p class="preview-result" data-preview-result aria-live="polite"></p>` : ""}</article>`;
 }
 
 function openLessonPreview(id) {
@@ -1370,7 +1371,7 @@ function deleteClass(id) {
     showToast(t("toast.classDeleted"));
 }
 
-function openLessonEditor(item) {
+function openLessonEditor(item, sectionId = "", activityIndex = -1) {
     if (!hasPermission("edit_lessons")) return;
     activeView = "lessons";
     document.getElementById("breadcrumb").textContent = t("page.lessons");
@@ -1380,8 +1381,18 @@ function openLessonEditor(item) {
     lessonWorkspaceMode = "edit";
     lessonFormDraft = { title: item?.title || "", unit: item?.unit || selectedLessonUnit || inferLessonUnit(item || { title: "", classIds: [] }) };
     draftSections = item ? structuredClone(normalizeLessonSections(item)) : [{ id: crypto.randomUUID(), title: lessonSectionText("intro"), activities: [] }];
-    activeLessonSectionId = draftSections[0].id;
+    expandedActivityBlocks = new WeakSet();
+    activeLessonSectionId = draftSections.some((section) => section.id === sectionId) ? sectionId : draftSections[0].id;
+    if (activityIndex >= 0) {
+        const activity = draftSections.find((section) => section.id === activeLessonSectionId)?.activities[activityIndex];
+        if (activity) expandedActivityBlocks.add(activity);
+    }
     render();
+    if (activityIndex >= 0) {
+        const activityBlock = pageContent.querySelector(`.builder-block[data-block-index="${activityIndex}"]`);
+        activityBlock?.scrollIntoView({ behavior: "smooth", block: "center" });
+        activityBlock?.querySelector("[data-field]")?.focus({ preventScroll: true });
+    }
 }
 
 function renderLessonWorkspace() {
@@ -1401,7 +1412,7 @@ function renderLessonWorkspace() {
         ${isEditing ? `<div class="lesson-section-tools"><button type="button" data-move-section="${index - 1}" ${index === 0 ? "disabled" : ""} aria-label="${lessonSectionText("previous")}">↑</button><button type="button" data-move-section="${index + 1}" ${index === sections.length - 1 ? "disabled" : ""} aria-label="${lessonSectionText("next")}">↓</button><button type="button" data-delete-section="${escapeHtml(item.id)}" ${sections.length === 1 ? "disabled" : ""} aria-label="${lessonSectionText("remove")}">×</button></div>` : ""}</div>`).join("");
     const sectionBody = isEditing
         ? `<div class="form-field section-name-field"><label for="sectionTitle">${lessonSectionText("rename")}</label><input id="sectionTitle" data-section-title="${escapeHtml(section.id)}" maxlength="80" value="${escapeHtml(section.title)}"></div><div class="builder-heading"><h3>${t("lesson.activities")}</h3><button type="button" class="button secondary small" data-action="choose-activity">${t("activity.addBlock")}</button></div><div id="activityBlocks">${renderActivityBlocks(section.activities)}</div>`
-        : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map(renderPreviewActivity).join("") : emptyMessage(lessonSectionText("empty"), "")}</div>`;
+        : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map((activity, index) => renderPreviewActivity(activity, index, hasPermission("edit_lessons"))).join("") : emptyMessage(lessonSectionText("empty"), "")}</div>`;
     const actionBar = isEditing
         ? `<button type="button" class="button secondary" data-workspace-cancel>${t("action.cancel")}</button><button class="button" type="submit">${editingLessonId ? lessonSectionText("save") : lessonSectionText("create")}</button>`
         : hasPermission("edit_lessons") ? `<button type="button" class="button secondary" data-edit-workspace>${lessonSectionText("edit")}</button>` : "";
@@ -1428,6 +1439,9 @@ function renderLessonWorkspace() {
     pageContent.querySelector("[data-workspace-back]").addEventListener("click", exitLessonWorkspace);
     pageContent.querySelector("[data-workspace-cancel]")?.addEventListener("click", exitLessonWorkspace);
     pageContent.querySelector("[data-edit-workspace]")?.addEventListener("click", () => openLessonEditor(lesson));
+    pageContent.querySelectorAll("[data-edit-preview-block]").forEach((button) => button.addEventListener("click", () => {
+        openLessonEditor(lesson, section.id, Number(button.dataset.editPreviewBlock));
+    }));
     if (isEditing) pageContent.querySelector("#lessonForm").addEventListener("submit", saveLesson);
     pageContent.querySelector("#lessonTitle")?.addEventListener("input", (event) => { lessonFormDraft.title = event.target.value; });
     pageContent.querySelector("#lessonUnit")?.addEventListener("change", (event) => { lessonFormDraft.unit = event.target.value; });
@@ -1473,7 +1487,9 @@ function renderLessonWorkspace() {
     pageContent.querySelector("[data-copy-activity]")?.addEventListener("click", () => {
         const currentSection = activeDraftSection();
         if (!currentSection?.activities.length) return;
-        currentSection.activities.push(structuredClone(currentSection.activities[currentSection.activities.length - 1]));
+        const copy = structuredClone(currentSection.activities[currentSection.activities.length - 1]);
+        currentSection.activities.push(copy);
+        expandedActivityBlocks.add(copy);
         render();
     });
     enhanceSelects(pageContent);
@@ -1495,11 +1511,23 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
     if (!activities.length) return `<div class="empty-state"><strong>${t("lesson.firstActivity")}</strong>${t("lesson.firstActivityHint")}</div>`;
     return activities.map((block, index) => {
         const type = activityTypes.find((item) => item.id === block.type);
-        return `<article class="builder-block" data-block-index="${index}">
-            <div class="builder-block-header"><strong>${index + 1}. ${escapeHtml(type ? t(type.nameKey) : t("activity.task"))}</strong><button type="button" class="mini-action" data-remove-block="${index}" aria-label="${t("action.delete")}">×</button></div>
-            <div class="form-field"><label>${t("field.instruction")}</label><input data-field="prompt" value="${escapeHtml(block.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
-            <div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(block.type))}</span></label><textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea></div>
-            ${block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
+        const isExpanded = expandedActivityBlocks.has(block);
+        const summary = String(block.prompt || block.content || "").trim().replace(/\s+/g, " ");
+        return `<article class="builder-block ${isExpanded ? "is-expanded" : ""}" data-block-index="${index}">
+            <header class="builder-block-header">
+                <div class="builder-block-title"><strong>${index + 1}. ${escapeHtml(type ? t(type.nameKey) : t("activity.task"))}</strong>${summary ? `<span class="builder-block-summary">${escapeHtml(summary)}</span>` : ""}</div>
+                <div class="builder-block-actions">
+                    <button type="button" class="mini-action" data-move-block="${index - 1}" ${index === 0 ? "disabled" : ""} aria-label="${lessonSectionText("moveUp")}" title="${lessonSectionText("moveUp")}">↑</button>
+                    <button type="button" class="mini-action" data-move-block="${index + 1}" ${index === activities.length - 1 ? "disabled" : ""} aria-label="${lessonSectionText("moveDown")}" title="${lessonSectionText("moveDown")}">↓</button>
+                    <button type="button" class="mini-action builder-block-edit" data-toggle-block="${index}" aria-expanded="${isExpanded}" aria-label="${isExpanded ? lessonSectionText("done") : lessonSectionText("edit")}" title="${isExpanded ? lessonSectionText("done") : lessonSectionText("edit")}">${isExpanded ? "✓" : "✎"}</button>
+                    <button type="button" class="mini-action builder-block-delete" data-remove-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button>
+                </div>
+            </header>
+            <div class="builder-block-fields" ${isExpanded ? "" : "hidden"}>
+                <div class="form-field"><label>${t("field.instruction")}</label><input data-field="prompt" value="${escapeHtml(block.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
+                <div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(block.type))}</span></label><textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea></div>
+                ${block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
+            </div>
         </article>`;
     }).join("");
 }
@@ -1529,6 +1557,27 @@ function bindActivityBlockActions() {
     pageContent.querySelectorAll("[data-remove-block]").forEach((button) => button.addEventListener("click", () => {
         activeDraftSection().activities.splice(Number(button.dataset.removeBlock), 1);
         render();
+    }));
+    pageContent.querySelectorAll("[data-move-block]").forEach((button) => button.addEventListener("click", () => {
+        const activities = activeDraftSection().activities;
+        const from = Number(button.closest(".builder-block").dataset.blockIndex);
+        const to = Number(button.dataset.moveBlock);
+        if (to < 0 || to >= activities.length) return;
+        [activities[from], activities[to]] = [activities[to], activities[from]];
+        render();
+        pageContent.querySelector(`.builder-block[data-block-index="${to}"]`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }));
+    pageContent.querySelectorAll("[data-toggle-block]").forEach((button) => button.addEventListener("click", () => {
+        const block = activeDraftSection().activities[Number(button.dataset.toggleBlock)];
+        if (!block) return;
+        if (expandedActivityBlocks.has(block)) expandedActivityBlocks.delete(block);
+        else expandedActivityBlocks.add(block);
+        render();
+        if (expandedActivityBlocks.has(block)) {
+            const blockElement = pageContent.querySelector(`.builder-block[data-block-index="${Number(button.dataset.toggleBlock)}"]`);
+            blockElement?.scrollIntoView({ behavior: "smooth", block: "center" });
+            blockElement?.querySelector("[data-field]")?.focus({ preventScroll: true });
+        }
     }));
     pageContent.querySelectorAll(".builder-block").forEach((blockElement) => {
         blockElement.querySelectorAll("[data-field]").forEach((input) => input.addEventListener("input", () => {
@@ -1561,7 +1610,9 @@ function openActivityPicker() {
     });
     modalCard.querySelectorAll("[data-add-activity]").forEach((button) => button.addEventListener("click", () => {
         const type = activityTypes.find((entry) => entry.id === button.dataset.addActivity);
-        activeDraftSection().activities.push({ type: type.id, prompt: t(type.nameKey), content: "", answer: "" });
+        const activity = { type: type.id, prompt: t(type.nameKey), content: "", answer: "" };
+        activeDraftSection().activities.push(activity);
+        expandedActivityBlocks.add(activity);
         activitySearch = "";
         closeModal();
         render();
