@@ -246,6 +246,7 @@ let editingLessonId = null;
 let lessonFormDraft = { title: "", unit: "A1" };
 let draftSections = [];
 let expandedActivityBlocks = new WeakSet();
+let activityBlockDragController = null;
 let activeLessonSectionId = "";
 let lessonWorkspaceMode = "";
 let workspaceLessonId = "";
@@ -716,9 +717,9 @@ function closeSelectDropdown() {
 
 function lessonSectionText(key) {
     const labels = {
-        ua: { intro: "Вступ", newSection: "Новий розділ", addSection: "＋ Додати розділ", section: "Розділи уроку", rename: "Назва розділу", remove: "Видалити", previous: "← Назад", next: "Далі →", moveUp: "Перемістити вище", moveDown: "Перемістити нижче", addElement: "＋ Додати новий елемент", copyElement: "▣ Копіювати елемент", edit: "Редагувати", done: "Готово", back: "До уроків", save: "Зберегти урок", create: "Створити урок", empty: "У цьому розділі ще немає елементів.", confirmRemove: "Видалити розділ разом з його елементами?" },
-        ru: { intro: "Введение", newSection: "Новый раздел", addSection: "＋ Добавить раздел", section: "Разделы урока", rename: "Название раздела", remove: "Удалить", previous: "← Назад", next: "Далее →", moveUp: "Переместить выше", moveDown: "Переместить ниже", addElement: "＋ Добавить новый элемент", copyElement: "▣ Копировать элемент", edit: "Редактировать", done: "Готово", back: "К урокам", save: "Сохранить урок", create: "Создать урок", empty: "В этом разделе пока нет элементов.", confirmRemove: "Удалить раздел вместе с его элементами?" },
-        en: { intro: "Introduction", newSection: "New section", addSection: "＋ Add section", section: "Lesson sections", rename: "Section name", remove: "Delete", previous: "← Back", next: "Next →", moveUp: "Move up", moveDown: "Move down", addElement: "＋ Add new item", copyElement: "▣ Duplicate item", edit: "Edit", done: "Done", back: "Back to lessons", save: "Save lesson", create: "Create lesson", empty: "This section has no items yet.", confirmRemove: "Delete this section and its items?" }
+        ua: { intro: "Вступ", newSection: "Новий розділ", addSection: "＋ Додати розділ", section: "Розділи уроку", rename: "Назва розділу", remove: "Видалити", previous: "← Назад", next: "Далі →", moveUp: "Перемістити вище", moveDown: "Перемістити нижче", moveBlock: "Перетягніть, щоб перемістити блок", addElement: "＋ Додати новий елемент", copyElement: "▣ Копіювати елемент", edit: "Редагувати", done: "Готово", back: "До уроків", save: "Зберегти урок", create: "Створити урок", empty: "У цьому розділі ще немає елементів.", confirmRemove: "Видалити розділ разом з його елементами?" },
+        ru: { intro: "Введение", newSection: "Новый раздел", addSection: "＋ Добавить раздел", section: "Разделы урока", rename: "Название раздела", remove: "Удалить", previous: "← Назад", next: "Далее →", moveUp: "Переместить выше", moveDown: "Переместить ниже", moveBlock: "Перетащите, чтобы переместить блок", addElement: "＋ Добавить новый элемент", copyElement: "▣ Копировать элемент", edit: "Редактировать", done: "Готово", back: "К урокам", save: "Сохранить урок", create: "Создать урок", empty: "В этом разделе пока нет элементов.", confirmRemove: "Удалить раздел вместе с его элементами?" },
+        en: { intro: "Introduction", newSection: "New section", addSection: "＋ Add section", section: "Lesson sections", rename: "Section name", remove: "Delete", previous: "← Back", next: "Next →", moveUp: "Move up", moveDown: "Move down", moveBlock: "Drag to move this block", addElement: "＋ Add new item", copyElement: "▣ Duplicate item", edit: "Edit", done: "Done", back: "Back to lessons", save: "Save lesson", create: "Create lesson", empty: "This section has no items yet.", confirmRemove: "Delete this section and its items?" }
     };
     return labels[currentLanguage][key];
 }
@@ -1515,10 +1516,9 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
         const summary = String(block.prompt || block.content || "").trim().replace(/\s+/g, " ");
         return `<article class="builder-block ${isExpanded ? "is-expanded" : ""}" data-block-index="${index}">
             <header class="builder-block-header">
+                <button type="button" class="builder-block-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>
                 <div class="builder-block-title"><strong>${index + 1}. ${escapeHtml(type ? t(type.nameKey) : t("activity.task"))}</strong>${summary ? `<span class="builder-block-summary">${escapeHtml(summary)}</span>` : ""}</div>
                 <div class="builder-block-actions">
-                    <button type="button" class="mini-action" data-move-block="${index - 1}" ${index === 0 ? "disabled" : ""} aria-label="${lessonSectionText("moveUp")}" title="${lessonSectionText("moveUp")}">↑</button>
-                    <button type="button" class="mini-action" data-move-block="${index + 1}" ${index === activities.length - 1 ? "disabled" : ""} aria-label="${lessonSectionText("moveDown")}" title="${lessonSectionText("moveDown")}">↓</button>
                     <button type="button" class="mini-action builder-block-edit" data-toggle-block="${index}" aria-expanded="${isExpanded}" aria-label="${isExpanded ? lessonSectionText("done") : lessonSectionText("edit")}" title="${isExpanded ? lessonSectionText("done") : lessonSectionText("edit")}">${isExpanded ? "✓" : "✎"}</button>
                     <button type="button" class="mini-action builder-block-delete" data-remove-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button>
                 </div>
@@ -1554,18 +1554,21 @@ function answerPlaceholder(type) {
 }
 
 function bindActivityBlockActions() {
+    activityBlockDragController?.abort();
+    activityBlockDragController = null;
+    const currentSection = activeDraftSection();
+    if (!currentSection) return;
+    const activities = currentSection.activities;
+    const blocksContainer = pageContent.querySelector("#activityBlocks");
+    activityBlockDragController = new AbortController();
+    const { signal } = activityBlockDragController;
+    let draggedBlock = null;
+    let dragStart = null;
+    let isDragging = false;
+
     pageContent.querySelectorAll("[data-remove-block]").forEach((button) => button.addEventListener("click", () => {
-        activeDraftSection().activities.splice(Number(button.dataset.removeBlock), 1);
+        activities.splice(Number(button.dataset.removeBlock), 1);
         render();
-    }));
-    pageContent.querySelectorAll("[data-move-block]").forEach((button) => button.addEventListener("click", () => {
-        const activities = activeDraftSection().activities;
-        const from = Number(button.closest(".builder-block").dataset.blockIndex);
-        const to = Number(button.dataset.moveBlock);
-        if (to < 0 || to >= activities.length) return;
-        [activities[from], activities[to]] = [activities[to], activities[from]];
-        render();
-        pageContent.querySelector(`.builder-block[data-block-index="${to}"]`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }));
     pageContent.querySelectorAll("[data-toggle-block]").forEach((button) => button.addEventListener("click", () => {
         const block = activeDraftSection().activities[Number(button.dataset.toggleBlock)];
@@ -1585,6 +1588,45 @@ function bindActivityBlockActions() {
             block[input.dataset.field] = input.value;
         }));
     });
+
+    blocksContainer?.querySelectorAll(".builder-block-drag").forEach((handle) => {
+        handle.addEventListener("pointerdown", (event) => {
+            if (event.button !== 0) return;
+            dragStart = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, block: handle.closest(".builder-block") };
+            handle.setPointerCapture(event.pointerId);
+        }, { signal });
+    });
+    document.addEventListener("pointermove", (event) => {
+        if (!dragStart || dragStart.pointerId !== event.pointerId) return;
+        if (!isDragging && Math.hypot(event.clientX - dragStart.x, event.clientY - dragStart.y) > 5) {
+            draggedBlock = dragStart.block;
+            isDragging = true;
+            draggedBlock.classList.add("is-dragging");
+        }
+        if (!isDragging) return;
+        const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".builder-block");
+        if (!target || target === draggedBlock || !blocksContainer.contains(target)) return;
+        const bounds = target.getBoundingClientRect();
+        const insertAfter = event.clientY > bounds.top + bounds.height / 2;
+        blocksContainer.insertBefore(draggedBlock, insertAfter ? target.nextSibling : target);
+        blocksContainer.querySelectorAll(".builder-block").forEach((block) => block.classList.toggle("is-drop-target", block === target));
+    }, { signal });
+    const finishDrag = (event, cancelled = false) => {
+        if (!dragStart || dragStart.pointerId !== event.pointerId) return;
+        if (isDragging && !cancelled) {
+            const order = [...blocksContainer.querySelectorAll(".builder-block")]
+                .map((item) => Number(item.dataset.blockIndex));
+            const reordered = order.map((index) => activities[index]);
+            activities.splice(0, activities.length, ...reordered);
+        }
+        const shouldRender = isDragging;
+        dragStart = null;
+        draggedBlock = null;
+        isDragging = false;
+        if (shouldRender) render();
+    };
+    document.addEventListener("pointerup", (event) => finishDrag(event), { signal });
+    document.addEventListener("pointercancel", (event) => finishDrag(event, true), { signal });
 }
 
 function openActivityPicker() {

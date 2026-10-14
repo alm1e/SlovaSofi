@@ -327,18 +327,24 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .builder-block { margin: 0 0 14px; border: 1px solid var(--line); border-radius: 12px; padding: 15px; background: #f8faf7; }
 .builder-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 21px 0 12px; }
 .builder-heading h3 { margin: 0; font-size: 14px; }
-.builder-block-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.builder-block-title { display: grid; gap: 4px; min-width: 0; }
+.builder-block-header { display: flex; align-items: flex-start; gap: 10px; }
+.builder-block-title { display: grid; flex: 1 1 auto; gap: 4px; min-width: 0; }
 .builder-block-header strong { font-size: 13px; }
 .builder-block-summary { display: -webkit-box; overflow: hidden; color: var(--muted); font-size: 12px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
 .builder-block-actions { display: flex; flex: 0 0 auto; gap: 4px; }
-.builder-block-actions .mini-action { background: #edf3ed; color: #58705d; font-size: 15px; }
+.builder-block-actions .mini-action { width: 26px; height: 26px; background: #edf3ed; color: #58705d; font-size: 14px; }
 .builder-block-actions .mini-action:hover:not(:disabled) { background: #dfece1; color: #2b6446; }
 .builder-block-actions .mini-action:disabled { opacity: .35; cursor: default; }
 .builder-block-actions .builder-block-delete:hover { background: #fae9e7; color: #a33e35; }
+.builder-block-drag { display: grid; flex: 0 0 22px; place-items: center; width: 22px; height: 26px; margin: 0; border: 0; border-radius: 5px; padding: 0; background: transparent; color: #8a9a8d; cursor: grab; touch-action: none; }
+.builder-block-drag:hover { background: #edf3ed; color: #456a4e; }
+.builder-block-drag:active { cursor: grabbing; }
+.builder-block-drag:focus-visible, .builder-block-actions .mini-action:focus-visible { outline: 2px solid #6b9d78; outline-offset: 2px; }
 .builder-block-fields { margin-top: 14px; border-top: 1px solid #e7eee7; padding-top: 14px; }
 .builder-block-fields[hidden] { display: none; }
 .builder-block.is-expanded { background: #fff; border-color: #cbdccc; box-shadow: 0 4px 14px #2544320a; }
+.builder-block.is-dragging { opacity: .55; }
+.builder-block.is-drop-target { border-color: #6b9d78; box-shadow: 0 0 0 2px #6b9d7820; }
 .builder-block .form-field { margin-bottom: 10px; }
 .builder-block .form-field:last-child { margin-bottom: 0; }
 .class-assignment-field { min-width: 0; border: 0; padding: 0; }
