@@ -438,85 +438,67 @@
 
     async function loadDashboard(client, signedInUser) {
         user = signedInUser;
-        const result = await invokeLessonApi({ action: "list" });
-        classes = result.classes || [];
-        lessons = result.lessons || [];
-        if (!lessons.some((lesson) => lesson.id === selectedLessonId)) selectedLessonId = "";
-        if (!lessons.some((lesson) => lesson.id === openedLesson?.id)) openedLesson = null;
+        const cacheKey = `slovasofi-student:${user.id}`;
         sidebar.hidden = false;
         document.querySelector(".main-area .topbar").hidden = false;
         pageContent.classList.remove("student-auth-content");
+        try {
+            const cached = JSON.parse(localStorage.getItem(cacheKey));
+            if (cached) { classes = cached.classes || []; lessons = cached.lessons || []; }
+        } catch { /* ignore broken cache */ }
+        render();
+        const result = await invokeLessonApi({ action: "list" });
+        classes = result.classes || [];
+        lessons = result.lessons || [];
+        localStorage.setItem(cacheKey, JSON.stringify({ classes, lessons }));
+        if (!lessons.some((lesson) => lesson.id === selectedLessonId)) selectedLessonId = "";
+        if (!lessons.some((lesson) => lesson.id === openedLesson?.id)) openedLesson = null;
         render();
     }
 
     function showUserMenu(button) {
-        if (!user) {
-            renderAuthState(text("needInvite"), "", `<a class="button" href="login.html">${escapeHtml(text("login"))}</a>`);
-            return;
-        }
         const metadata = user?.user_metadata || {};
         const name = [metadata.first_name || metadata.firstName, metadata.last_name || metadata.lastName].filter(Boolean).join(" ")
-            || metadata.full_name || metadata.name || user?.email || text("login");
-        const identity = user?.email
-            ? `<div class="popover-email">${escapeHtml(user.email)}</div>`
-            : `<div class="popover-email">${text("login")}</div>`;
-        const action = `<button class="popover-action danger" type="button" data-popover-action="logout"><span aria-hidden="true">↪</span>${text("logout")}</button>`;
-        openPopoverAt(button, `<div class="popover-user"><span class="avatar">${escapeHtml(initialsFor(name))}</span><div><strong>${escapeHtml(name)}</strong><small>${text("profileRole")}</small></div></div>${identity}<div class="popover-divider"></div>${action}`, "profile");
+            || metadata.full_name || metadata.name || user?.email || text("profileRole");
+        const identity = `<div class="popover-email">${escapeHtml(user?.email || "")}</div>`;
+        const action = `<button class="popover-action danger" type="button" data-popover-action="logout"><span aria-hidden="true">↪</span>${escapeHtml(text("logout"))}</button>`;
+        openPopoverAt(button, `<div class="popover-user"><span class="avatar">${escapeHtml(initialsFor(name))}</span><div><strong>${escapeHtml(name)}</strong><small>${escapeHtml(text("profileRole"))}</small></div></div>${identity}<div class="popover-divider"></div>${action}`, "profile");
     }
 
     function initialsFor(name) {
         return String(name).split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toLocaleUpperCase() || "—";
     }
 
-    function openPopoverAt(button, content, type = "default") {
-        const popoverRoot = document.getElementById("popoverRoot");
-        if (!popoverRoot) return;
-        closePopover();
-        const popover = document.createElement("div");
-        popover.className = `popover popover-${type}`;
-        popover.innerHTML = content;
-        popoverRoot.appendChild(popover);
-        button.setAttribute("aria-expanded", "true");
-        const rect = button.getBoundingClientRect();
-        const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
-        const scrollTop = window.scrollY || document.documentElement.scrollTop;
-        popover.style.position = "absolute";
-        popover.style.top = (rect.bottom + scrollTop + 8) + "px";
-        popover.style.left = Math.max(8, Math.min(rect.left + scrollLeft - popover.offsetWidth + rect.width, window.innerWidth - popover.offsetWidth - 8)) + "px";
-        popover.querySelectorAll("[data-popover-action]").forEach((actionButton) => {
-            actionButton.addEventListener("click", async () => {
-                if (actionButton.dataset.popoverAction === "logout") {
-                    closePopover();
-                    await signOut();
-                }
-            });
-        });
-        document.addEventListener("click", closePopoverOnClick);
-        openPopover = popover;
-        openPopoverButton = button;
-    }
-
     function closePopover() {
-        if (openPopover) openPopover.remove();
-        openPopover = null;
-        if (openPopoverButton) openPopoverButton.setAttribute("aria-expanded", "false");
-        openPopoverButton = null;
-        document.removeEventListener("click", closePopoverOnClick);
+        document.getElementById("popoverRoot").innerHTML = "";
+        document.querySelectorAll(".profile-trigger").forEach((button) => button.setAttribute("aria-expanded", "false"));
+        openPopover = "";
     }
 
-    function closePopoverOnClick(event) {
-        const popoverRoot = document.getElementById("popoverRoot");
-        if (!popoverRoot || !event.target.closest(".popover-root, [data-popover-action], .profile-trigger")) {
+    function openPopoverAt(button, content, kind) {
+        if (openPopover === kind && button.getAttribute("aria-expanded") === "true") {
             closePopover();
+            return;
         }
+        closePopover();
+        const root = document.getElementById("popoverRoot");
+        root.innerHTML = `<section class="popover-panel" role="dialog" aria-label="${escapeHtml(text("profileRole"))}">${content}</section>`;
+        const panel = root.firstElementChild;
+        button.setAttribute("aria-expanded", "true");
+        openPopover = kind;
+        const bounds = button.getBoundingClientRect();
+        const margin = 12;
+        const panelBounds = panel.getBoundingClientRect();
+        const left = Math.max(margin, Math.min(bounds.right - panelBounds.width, window.innerWidth - panelBounds.width - margin));
+        let top = bounds.bottom + 9;
+        if (top + panelBounds.height > window.innerHeight - margin) top = bounds.top - panelBounds.height - 9;
+        top = Math.max(margin, Math.min(top, window.innerHeight - panelBounds.height - margin));
+        panel.style.left = `${left}px`;
+        panel.style.top = `${top}px`;
+        panel.querySelector("[data-popover-action='logout']")?.addEventListener("click", signOut);
     }
 
     async function signOut() {
-        if (!window.supabaseClient) {
-            console.error("Supabase is not configured; cannot sign out.");
-            showToast(text("logoutError"));
-            return;
-        }
         try {
             const { error } = await window.supabaseClient.auth.signOut();
             if (error) throw error;
@@ -524,12 +506,11 @@
             window.location.assign("login.html");
         } catch (error) {
             console.error("Could not sign out of the current account.", error);
-            showToast(text("logoutError"));
+            showToast(text("logoutError"), true);
         }
     }
 
-    let openPopover = null;
-    let openPopoverButton = null;
+    let openPopover = "";
 
     async function start() {
         const client = window.supabaseClient;
@@ -587,6 +568,12 @@
     
     // Profile menu for student (like teacher)
     document.querySelectorAll(".profile-trigger").forEach((button) => button.addEventListener("click", () => showUserMenu(button)));
+    document.addEventListener("click", (event) => {
+        if (openPopover && !event.target.closest(".popover-root, .profile-trigger")) closePopover();
+    });
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && openPopover) closePopover();
+    });
     
     start().catch((error) => {
         console.error("Could not start the student dashboard.", error);

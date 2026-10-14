@@ -353,16 +353,10 @@ async function loadCurrentUser() {
     }
     try {
         // Get session and user in parallel
-        const [sessionResult, userResult] = await Promise.all([
-            window.supabaseClient.auth.getSession(),
-            window.supabaseClient.auth.getUser()
-        ]);
-        
-        const { data: { session }, error: sessionError } = sessionResult;
-        const { data: { user }, error: userError } = userResult;
-        
+        // getSession reads local storage, so the UI does not wait for a network round trip
+        const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
         if (sessionError) throw sessionError;
-        if (userError) throw userError;
+        const user = session?.user;
         
         if (!session) {
             updateUserIdentity(null);
@@ -385,8 +379,16 @@ async function loadCurrentUser() {
             }
         })();
         
+        const cachedAccess = (() => {
+            try { return JSON.parse(localStorage.getItem(`${storageKey(user.id)}:access`)); } catch { return null; }
+        })();
+
         data = cachedData;
-        workspaceAccess = { workspaceOwnerId: null, permissions: {}, staff: [] };
+        workspaceAccess = cachedAccess || {
+            workspaceOwnerId: null,
+            permissions: { view_classes_students: true, view_assign_lessons: true },
+            staff: []
+        };
         translateStaticUI();
         render();
         
@@ -401,6 +403,7 @@ async function loadCurrentUser() {
                 staff: workspace.staff
             };
             localStorage.setItem(storageKey(user.id), JSON.stringify(data));
+            localStorage.setItem(`${storageKey(user.id)}:access`, JSON.stringify(workspaceAccess));
             translateStaticUI();
             render();
             const storageNote = document.querySelector(".storage-note");

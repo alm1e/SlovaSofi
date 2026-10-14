@@ -1,11 +1,6 @@
 .student-platform .sidebar[hidden],
 .student-platform .topbar[hidden] { display: none; }
-.student-platform .student-identity { cursor: pointer; padding: 13px 5px 18px; transition: background-color 0.2s ease; border-radius: 10px; }
-.student-platform .student-identity:hover { background: rgba(75, 135, 95, 0.1); }
-.student-platform .student-identity .student-name { display: block; max-width: 175px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.student-platform .student-logout { width: 100%; margin-top: 14px; border: 0; padding: 5px; background: transparent; color: var(--muted); text-align: left; font-size: 13px; }
-.student-platform .student-logout:hover { color: #a33e35; }
-.student-platform .student-profile-avatar { display: grid; place-items: center; border: 0; padding: 0; background: transparent; }
+.student-platform .teacher-mini .student-name { display: block; overflow: hidden; max-width: 145px; text-overflow: ellipsis; white-space: nowrap; }
 .student-platform .student-hero { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 20px; overflow: hidden; margin-bottom: 20px; border: 1px solid #dcebe0; border-radius: 22px; padding: 27px 32px; background: radial-gradient(circle at 91% 15%, #c5e7cd 0, transparent 31%), linear-gradient(115deg,#f4faf5,#e8f4eb); box-shadow: 0 12px 34px #2544320c; }
 .student-platform .student-hero-copy { position: relative; z-index: 1; }
 .student-platform .student-hero h1 { margin: 0 0 6px; }
