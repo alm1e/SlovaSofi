@@ -16,7 +16,7 @@ const translations = {
         "picker.title": "Виберіть інтерактивне завдання", "picker.all": "Усі", "picker.tests": "Тести", "picker.media": "Медіа", "picker.other": "Інше", "picker.search": "Пошук блоку…", "picker.back": "← До уроку",
         "activity.task": "Завдання", "activity.drag": "Перетягнути слова", "activity.dragDesc": "Складіть речення зі слів у правильному порядку.", "activity.blank": "Заповнити пропуск", "activity.blankDesc": "Впишіть відповідне слово у пропуск.", "activity.choice": "Вибрати варіант", "activity.choiceDesc": "Виберіть одну правильну відповідь.", "activity.order": "Правильний порядок", "activity.orderDesc": "Розташуйте елементи у правильному порядку.", "activity.sentences": "Порядок речень", "activity.sentencesDesc": "Складіть зв’язний текст із речень.", "activity.dropdown": "Один із варіантів", "activity.dropdownDesc": "Заповніть пропуск, вибравши слово зі списку.", "activity.trueFalse": "True або False", "activity.trueFalseDesc": "Визначте, чи є твердження правильним.", "activity.table": "Заповнити таблицю", "activity.tableDesc": "Внесіть відповіді до таблиці.", "activity.match": "Поєднати елементи", "activity.matchDesc": "Поєднайте слова з їхніми значеннями.", "activity.columns": "Розподілити за колонками", "activity.columnsDesc": "Розкладіть картки за категоріями.", "activity.open": "Відкрита відповідь", "activity.openDesc": "Додайте запитання з відповіддю своїми словами.", "activity.cards": "Картки", "activity.cardsDesc": "Створіть картки зі словом і перекладом.", "activity.text": "Заголовок і текст", "activity.textDesc": "Додайте пояснення або інструкцію.", "activity.video": "Відео", "activity.videoDesc": "Вставте посилання на відео.", "activity.audio": "Аудіо", "activity.audioDesc": "Додайте аудіо або посилання на запис.", "activity.image": "Зображення", "activity.imageDesc": "Додайте зображення до уроку.",
         "material.name": "Назва", "material.example": "Наприклад, Слова на тему «Їжа»", "material.type": "Тип матеріалу", "material.description": "Опис", "material.shortDescription": "Короткий опис", "material.url": "Посилання (необов’язково)", "material.add": "Додати матеріал", "material.noDescription": "Без опису",
-        "toast.classCreated": "Клас створено.", "toast.classUpdated": "Клас оновлено.", "toast.classDeleted": "Клас видалено.", "toast.lessonCreated": "Урок створено.", "toast.lessonUpdated": "Урок оновлено.", "toast.lessonDeleted": "Урок видалено.", "toast.activityDeleted": "Завдання видалено.", "toast.activityOrderSaved": "Порядок завдань збережено.", "toast.materialAdded": "Матеріал додано до бібліотеки.", "toast.materialDeleted": "Матеріал видалено.", "toast.createClassFirst": "Спочатку створіть клас, щоб призначити йому урок.", "toast.titleAndClass": "Вкажіть назву уроку та виберіть клас.", "toast.httpUrl": "Посилання має починатися з http:// або https://.", "toast.storageError": "Не вдалося зберегти зміни у браузері. Перевірте доступ до локального сховища.",
+        "toast.classCreated": "Клас створено.", "toast.classUpdated": "Клас оновлено.", "toast.classDeleted": "Клас видалено.", "toast.lessonCreated": "Урок створено.", "toast.lessonUpdated": "Урок оновлено.", "toast.lessonDeleted": "Урок видалено.", "toast.activityUpdated": "Завдання збережено.", "toast.activityDeleted": "Завдання видалено.", "toast.activityOrderSaved": "Порядок завдань збережено.", "toast.materialAdded": "Матеріал додано до бібліотеки.", "toast.materialDeleted": "Матеріал видалено.", "toast.createClassFirst": "Спочатку створіть клас, щоб призначити йому урок.", "toast.titleAndClass": "Вкажіть назву уроку та виберіть клас.", "toast.httpUrl": "Посилання має починатися з http:// або https://.", "toast.storageError": "Не вдалося зберегти зміни у браузері. Перевірте доступ до локального сховища.",
         "confirm.deleteClass": "Видалити клас «{name}»? Уроки залишаться у списку без класу.", "confirm.deleteLesson": "Видалити урок «{name}»?", "confirm.deleteActivity": "Видалити це завдання?", "confirm.deleteMaterial": "Видалити матеріал «{name}»?", "course.slovakA1": "Словацька · A1", "course.slovakB1": "Словацька · B1", "material.vocabulary": "Словник", "material.document": "Документ", "material.audio": "Аудіо", "material.video": "Відео", "material.link": "Посилання"
     },
     ru: {
@@ -34,7 +34,7 @@ const translations = {
         "picker.title": "Выберите интерактивное задание", "picker.all": "Все", "picker.tests": "Тесты", "picker.media": "Медиа", "picker.other": "Другое", "picker.search": "Поиск блока…", "picker.back": "← К уроку",
         "activity.task": "Задание", "activity.drag": "Перетянуть слова", "activity.dragDesc": "Соберите предложение из слов в правильном порядке.", "activity.blank": "Заполнить пропуск", "activity.blankDesc": "Впишите подходящее слово в пропуск.", "activity.choice": "Выбрать вариант", "activity.choiceDesc": "Выберите один правильный ответ.", "activity.order": "Правильный порядок", "activity.orderDesc": "Расставьте элементы по порядку.", "activity.sentences": "Порядок предложений", "activity.sentencesDesc": "Соберите связный текст из предложений.", "activity.dropdown": "Один из вариантов", "activity.dropdownDesc": "Заполните пропуск, выбрав слово из списка.", "activity.trueFalse": "True или False", "activity.trueFalseDesc": "Оцените утверждение как верное или ложное.", "activity.table": "Заполнить таблицу", "activity.tableDesc": "Внесите ответы в таблицу.", "activity.match": "Соединить элементы", "activity.matchDesc": "Соедините слова и их значения.", "activity.columns": "Распределить по колонкам", "activity.columnsDesc": "Разложите карточки по категориям.", "activity.open": "Открытый ответ", "activity.openDesc": "Добавьте вопрос с ответом своими словами.", "activity.cards": "Флип-карточки", "activity.cardsDesc": "Создайте карточки со словом и переводом.", "activity.text": "Заголовок и текст", "activity.textDesc": "Добавьте пояснение или инструкцию.", "activity.video": "Видео", "activity.videoDesc": "Вставьте ссылку на видео.", "activity.audio": "Аудио", "activity.audioDesc": "Добавьте аудио или ссылку на запись.", "activity.image": "Картинка", "activity.imageDesc": "Добавьте изображение в урок.",
         "material.name": "Название", "material.example": "Например, Слова по теме «Еда»", "material.type": "Тип материала", "material.description": "Описание", "material.shortDescription": "Краткое описание", "material.url": "Ссылка (необязательно)", "material.add": "Добавить материал", "material.noDescription": "Без описания",
-        "toast.classCreated": "Класс создан.", "toast.classUpdated": "Класс обновлён.", "toast.classDeleted": "Класс удалён.", "toast.lessonCreated": "Урок создан.", "toast.lessonUpdated": "Урок обновлён.", "toast.lessonDeleted": "Урок удалён.", "toast.activityDeleted": "Задание удалено.", "toast.activityOrderSaved": "Порядок заданий сохранён.", "toast.materialAdded": "Материал добавлен в библиотеку.", "toast.materialDeleted": "Материал удалён.", "toast.createClassFirst": "Сначала создайте класс, чтобы назначить ему урок.", "toast.titleAndClass": "Укажите название урока и выберите класс.", "toast.httpUrl": "Ссылка должна начинаться с http:// или https://.", "toast.storageError": "Не удалось сохранить изменения в браузере. Проверьте доступ к локальному хранилищу.",
+        "toast.classCreated": "Класс создан.", "toast.classUpdated": "Класс обновлён.", "toast.classDeleted": "Класс удалён.", "toast.lessonCreated": "Урок создан.", "toast.lessonUpdated": "Урок обновлён.", "toast.lessonDeleted": "Урок удалён.", "toast.activityUpdated": "Задание сохранено.", "toast.activityDeleted": "Задание удалено.", "toast.activityOrderSaved": "Порядок заданий сохранён.", "toast.materialAdded": "Материал добавлен в библиотеку.", "toast.materialDeleted": "Материал удалён.", "toast.createClassFirst": "Сначала создайте класс, чтобы назначить ему урок.", "toast.titleAndClass": "Укажите название урока и выберите класс.", "toast.httpUrl": "Ссылка должна начинаться с http:// или https://.", "toast.storageError": "Не удалось сохранить изменения в браузере. Проверьте доступ к локальному хранилищу.",
         "confirm.deleteClass": "Удалить класс «{name}»? Уроки останутся в списке без класса.", "confirm.deleteLesson": "Удалить урок «{name}»?", "confirm.deleteActivity": "Удалить это задание?", "confirm.deleteMaterial": "Удалить материал «{name}»?", "course.slovakA1": "Словацкий · A1", "course.slovakB1": "Словацкий · B1", "material.vocabulary": "Словарь", "material.document": "Документ", "material.audio": "Аудио", "material.video": "Видео", "material.link": "Ссылка"
     },
     en: {
@@ -52,7 +52,7 @@ const translations = {
         "picker.title": "Choose an interactive activity", "picker.all": "All", "picker.tests": "Quizzes", "picker.media": "Media", "picker.other": "Other", "picker.search": "Search activities…", "picker.back": "← Back to lesson",
         "activity.task": "Activity", "activity.drag": "Drag the words", "activity.dragDesc": "Build a sentence by arranging words in the correct order.", "activity.blank": "Fill in the blank", "activity.blankDesc": "Enter a suitable word in the blank.", "activity.choice": "Choose an answer", "activity.choiceDesc": "Select one correct answer.", "activity.order": "Put in order", "activity.orderDesc": "Arrange the items in the correct order.", "activity.sentences": "Order the sentences", "activity.sentencesDesc": "Build a coherent text from sentences.", "activity.dropdown": "Choose from options", "activity.dropdownDesc": "Fill in the blank by choosing a word from the list.", "activity.trueFalse": "True or False", "activity.trueFalseDesc": "Decide whether the statement is true or false.", "activity.table": "Complete the table", "activity.tableDesc": "Enter answers into a table.", "activity.match": "Match the items", "activity.matchDesc": "Match words with their meanings.", "activity.columns": "Sort into columns", "activity.columnsDesc": "Sort cards into categories.", "activity.open": "Open answer", "activity.openDesc": "Add a question for a free-form answer.", "activity.cards": "Flashcards", "activity.cardsDesc": "Create cards with a word and its translation.", "activity.text": "Heading and text", "activity.textDesc": "Add an explanation or instruction.", "activity.video": "Video", "activity.videoDesc": "Insert a video link.", "activity.audio": "Audio", "activity.audioDesc": "Add audio or a recording link.", "activity.image": "Image", "activity.imageDesc": "Add an image to the lesson.",
         "material.name": "Name", "material.example": "For example, Food vocabulary", "material.type": "Material type", "material.description": "Description", "material.shortDescription": "Short description", "material.url": "Link (optional)", "material.add": "Add material", "material.noDescription": "No description",
-        "toast.classCreated": "Class created.", "toast.classUpdated": "Class updated.", "toast.classDeleted": "Class deleted.", "toast.lessonCreated": "Lesson created.", "toast.lessonUpdated": "Lesson updated.", "toast.lessonDeleted": "Lesson deleted.", "toast.activityDeleted": "Activity deleted.", "toast.activityOrderSaved": "Activity order saved.", "toast.materialAdded": "Material added to the library.", "toast.materialDeleted": "Material deleted.", "toast.createClassFirst": "Create a class first to assign it a lesson.", "toast.titleAndClass": "Enter a lesson name and choose a class.", "toast.httpUrl": "The link must start with http:// or https://.", "toast.storageError": "Could not save changes in this browser. Check local storage access.",
+        "toast.classCreated": "Class created.", "toast.classUpdated": "Class updated.", "toast.classDeleted": "Class deleted.", "toast.lessonCreated": "Lesson created.", "toast.lessonUpdated": "Lesson updated.", "toast.lessonDeleted": "Lesson deleted.", "toast.activityUpdated": "Activity saved.", "toast.activityDeleted": "Activity deleted.", "toast.activityOrderSaved": "Activity order saved.", "toast.materialAdded": "Material added to the library.", "toast.materialDeleted": "Material deleted.", "toast.createClassFirst": "Create a class first to assign it a lesson.", "toast.titleAndClass": "Enter a lesson name and choose a class.", "toast.httpUrl": "The link must start with http:// or https://.", "toast.storageError": "Could not save changes in this browser. Check local storage access.",
         "confirm.deleteClass": "Delete class “{name}”? Its lessons will remain unassigned.", "confirm.deleteLesson": "Delete lesson “{name}”?", "confirm.deleteActivity": "Delete this activity?", "confirm.deleteMaterial": "Delete material “{name}”?", "course.slovakA1": "Slovak · A1", "course.slovakB1": "Slovak · B1", "material.vocabulary": "Vocabulary", "material.document": "Document", "material.audio": "Audio", "material.video": "Video", "material.link": "Link"
     }
 };
@@ -66,8 +66,10 @@ Object.assign(translations.ua, {
     "studentInvite.hint": "Учень отримає лист, щоб створити пароль і приєднатися до класу.",
     "studentInvite.selectExisting": "Виберіть учня",
     "studentInvite.loadingExisting": "Завантаження списку учнів…",
-    "studentInvite.noExisting": "У базі поки немає учнів, яких можна додати.",
-    "studentInvite.existingHint": "Запрошення повторно надсилати не потрібно.",
+    "studentInvite.noExisting": "У цьому кабінеті поки немає учнів, яких можна додати.",
+    "studentInvite.noneAvailable": "Усі учні з бази вже є в цьому класі.",
+    "studentInvite.targetClass": "Клас: {name}",
+    "studentInvite.existingHint": "Тут відображаються учні, уже пов’язані з вашим кабінетом. Повторне запрошення не надсилається.",
     "studentInvite.send": "Надіслати запрошення",
     "studentInvite.addExisting": "Додати до класу",
     "toast.studentInvited": "Запрошення надіслано.",
@@ -86,8 +88,10 @@ Object.assign(translations.ru, {
     "studentInvite.hint": "Ученик получит письмо, чтобы создать пароль и вступить в класс.",
     "studentInvite.selectExisting": "Выберите ученика",
     "studentInvite.loadingExisting": "Загрузка списка учеников…",
-    "studentInvite.noExisting": "В базе пока нет учеников, которых можно добавить.",
-    "studentInvite.existingHint": "Повторно отправлять приглашение не нужно.",
+    "studentInvite.noExisting": "В этом кабинете пока нет учеников, которых можно добавить.",
+    "studentInvite.noneAvailable": "Все ученики из базы уже добавлены в этот класс.",
+    "studentInvite.targetClass": "Класс: {name}",
+    "studentInvite.existingHint": "Здесь отображаются ученики, уже связанные с вашим кабинетом. Повторное приглашение не отправляется.",
     "studentInvite.send": "Отправить приглашение",
     "studentInvite.addExisting": "Добавить в класс",
     "toast.studentInvited": "Приглашение отправлено.",
@@ -106,8 +110,10 @@ Object.assign(translations.en, {
     "studentInvite.hint": "The student will receive an email to set a password and join the class.",
     "studentInvite.selectExisting": "Choose a student",
     "studentInvite.loadingExisting": "Loading students…",
-    "studentInvite.noExisting": "There are no existing students available to add.",
-    "studentInvite.existingHint": "No new invitation will be sent.",
+    "studentInvite.noExisting": "There are no students in this workspace that can be added.",
+    "studentInvite.noneAvailable": "All students from the directory are already in this class.",
+    "studentInvite.targetClass": "Class: {name}",
+    "studentInvite.existingHint": "Only students already linked to your workspace appear here. No new invitation will be sent.",
     "studentInvite.send": "Send invitation",
     "studentInvite.addExisting": "Add to class",
     "toast.studentInvited": "Invitation sent.",
@@ -281,6 +287,7 @@ let activityBlockDragController = null;
 let activeLessonSectionId = "";
 let activeHomeworkSectionId = "";
 let lessonWorkspaceTab = "lesson";
+let previewActivityEdit = null;
 let homeworkSourceLessonId = "__current__";
 let lessonWorkspaceMode = "";
 let workspaceLessonId = "";
@@ -645,6 +652,7 @@ function setView(view) {
     workspaceLessonId = "";
     editingLessonId = null;
     draftSections = [];
+    previewActivityEdit = null;
     activeLessonSectionId = "";
     activeView = view;
     document.getElementById("breadcrumb").textContent = view === "staff" ? staffText("title") : t(`page.${view}`);
@@ -809,6 +817,15 @@ function normalizeHomeworkSections(lesson) {
         title: String(section.title || `${lessonSectionText("homework")} ${index + 1}`),
         activities: Array.isArray(section.activities) ? section.activities : []
     }));
+}
+
+function normalizePreviewHomeworkSections(lesson) {
+    const sections = normalizeHomeworkSections(lesson);
+    return sections.length ? sections : [{
+        id: "homework-empty",
+        title: lessonSectionText("homework"),
+        activities: []
+    }];
 }
 
 function lessonActivities(lesson) {
@@ -1111,7 +1128,7 @@ function previewMediaUrl(value) {
     }
 }
 
-function renderPreviewActivity(activity, index, canEdit = false) {
+function renderPreviewActivity(activity, index, canEdit = false, quickEditing = false) {
     const type = activity.type;
     const prompt = escapeHtml(activity.prompt || t(activityTypes.find((item) => item.id === type)?.nameKey || "activity.task"));
     const content = String(activity.content || "");
@@ -1122,6 +1139,22 @@ function renderPreviewActivity(activity, index, canEdit = false) {
     const lines = previewLines(content);
     let body = "";
     let checkable = true;
+
+    if (quickEditing) {
+        const activityType = activityTypes.find((item) => item.id === type);
+        const hasAnswer = !["text", "image", "video", "audio"].includes(type);
+        return `<article class="preview-activity preview-activity-editable preview-activity-editing" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}">
+            <header class="preview-activity-header"><h3>${index + 1}. ${prompt}</h3><div class="preview-activity-actions">
+                <button class="mini-action" type="button" data-save-preview-block aria-label="${lessonSectionText("done")}" title="${lessonSectionText("done")}">✓</button>
+                <button class="mini-action preview-activity-delete" type="button" data-cancel-preview-edit aria-label="${t("action.cancel")}" title="${t("action.cancel")}">×</button>
+            </div></header>
+            <div class="preview-inline-editor">
+                <div class="form-field"><label>${t("field.instruction")}</label><input data-preview-field="prompt" value="${escapeHtml(activity.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
+                <div class="form-field"><label>${activityType?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(type))}</span></label><textarea data-preview-field="content" placeholder="${escapeHtml(contentPlaceholder(type))}">${escapeHtml(activity.content || "")}</textarea></div>
+                ${hasAnswer ? `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(type))}</span></label><input data-preview-field="answer" value="${escapeHtml(activity.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(type))}"></div>` : ""}
+            </div>
+        </article>`;
+    }
 
     if (type === "drag-words") {
         const expected = answer ? previewTokens(answer) : content.trim().split(/\s+/).filter(Boolean);
@@ -1190,7 +1223,10 @@ function openLessonPreview(id) {
     document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === "lessons"));
     lessonWorkspaceMode = "preview";
     workspaceLessonId = id;
+    lessonWorkspaceTab = "lesson";
+    previewActivityEdit = null;
     activeLessonSectionId = normalizeLessonSections(lesson)[0].id;
+    activeHomeworkSectionId = normalizePreviewHomeworkSections(lesson)[0].id;
     render();
 }
 
@@ -1275,38 +1311,82 @@ function animateActivityCardMove(container, cardSelector, movingCard, targetCard
     }
 }
 
-async function savePreviewActivities(lesson, sectionId, activities, successMessage) {
+async function savePreviewActivities(lesson, sectionId, activities, successMessage, isHomework = false) {
     if (!hasPermission("edit_lessons")) return;
-    const previousSections = lesson.sections;
+    const sectionProperty = isHomework ? "homeworkSections" : "sections";
+    const previousSections = lesson[sectionProperty];
     const previousActivities = lesson.activities;
-    const sections = normalizeLessonSections(lesson).map((section) => ({
+    const originalSections = isHomework ? normalizeHomeworkSections(lesson) : normalizeLessonSections(lesson);
+    const sections = originalSections.map((section) => ({
         ...section,
         activities: section.id === sectionId ? activities : [...section.activities]
     }));
-    lesson.sections = sections;
-    lesson.activities = sections.flatMap((section) => section.activities);
+    lesson[sectionProperty] = sections;
+    if (!isHomework) lesson.activities = sections.flatMap((section) => section.activities);
     if (!persist()) {
-        lesson.sections = previousSections;
+        lesson[sectionProperty] = previousSections;
         lesson.activities = previousActivities;
-        return;
+        return false;
     }
-    if (!await waitForWorkspaceSave()) return;
+    if (!await waitForWorkspaceSave()) {
+        lesson[sectionProperty] = previousSections;
+        lesson.activities = previousActivities;
+        persist();
+        return false;
+    }
+    previewActivityEdit = null;
     render();
     showToast(successMessage);
+    return true;
 }
 
-function bindLessonPreviewActions(container = pageContent, lesson = null, section = null) {
+function bindLessonPreviewActions(container = pageContent, lesson = null, section = null, isHomework = false) {
     if (lesson && section && hasPermission("edit_lessons")) {
+        container.querySelectorAll("[data-edit-preview-block]").forEach((button) => button.addEventListener("click", () => {
+            const activityIndex = Number(button.dataset.editPreviewBlock);
+            const activity = section.activities[activityIndex];
+            if (!activity) return;
+            previewActivityEdit = {
+                lessonId: lesson.id,
+                sectionId: section.id,
+                activityIndex,
+                isHomework,
+                draft: structuredClone(activity)
+            };
+            render();
+            pageContent.querySelector('[data-preview-field="prompt"]')?.focus();
+        }));
+        container.querySelectorAll("[data-preview-field]").forEach((input) => input.addEventListener("input", () => {
+            if (previewActivityEdit?.lessonId === lesson.id
+                && previewActivityEdit.sectionId === section.id
+                && previewActivityEdit.isHomework === isHomework) {
+                previewActivityEdit.draft[input.dataset.previewField] = input.value;
+            }
+        }));
+        container.querySelectorAll("[data-cancel-preview-edit]").forEach((button) => button.addEventListener("click", () => {
+            previewActivityEdit = null;
+            render();
+        }));
+        container.querySelectorAll("[data-save-preview-block]").forEach((button) => button.addEventListener("click", async () => {
+            const edit = previewActivityEdit;
+            if (!edit || edit.lessonId !== lesson.id || edit.sectionId !== section.id || edit.isHomework !== isHomework) return;
+            const activities = section.activities.map((activity, index) =>
+                index === edit.activityIndex ? structuredClone(edit.draft) : activity
+            );
+            button.disabled = true;
+            const saved = await savePreviewActivities(lesson, section.id, activities, t("toast.activityUpdated"), isHomework);
+            if (!saved && button.isConnected) button.disabled = false;
+        }));
         container.querySelectorAll("[data-delete-preview-block]").forEach((button) => button.addEventListener("click", () => {
             if (!hasPermission("edit_lessons") || !window.confirm(t("confirm.deleteActivity"))) return;
             const activities = [...section.activities];
             activities.splice(Number(button.dataset.deletePreviewBlock), 1);
-            savePreviewActivities(lesson, section.id, activities, t("toast.activityDeleted"));
+            savePreviewActivities(lesson, section.id, activities, t("toast.activityDeleted"), isHomework);
         }));
         const activityList = container.querySelector(".lesson-preview-list");
         if (activityList) bindSortableActivityCards(activityList, ".preview-activity", ".preview-activity-drag", "previewActivity", (order) => {
             const activities = order.map((index) => section.activities[index]);
-            savePreviewActivities(lesson, section.id, activities, t("toast.activityOrderSaved"));
+            savePreviewActivities(lesson, section.id, activities, t("toast.activityOrderSaved"), isHomework);
         });
     }
     container.querySelectorAll("[data-check-activity]").forEach((button) => button.addEventListener("click", () => {
@@ -1542,7 +1622,7 @@ function openStudentInvite(group) {
                 <p class="assignment-hint">${t("studentInvite.existingHint")}</p>
                 <p class="hint" data-existing-student-status>${t("studentInvite.loadingExisting")}</p>
             </div>
-            <p class="assignment-hint">${escapeHtml(group.name)}</p>
+            <p class="assignment-hint">${t("studentInvite.targetClass", { name: escapeHtml(group.name) })}</p>
             <div class="modal-actions"><button type="button" class="button secondary" data-close>${t("action.cancel")}</button><button class="button" type="submit">${t("studentInvite.send")}</button></div>
         </form>`);
     refreshModal = () => openStudentInvite(group);
@@ -1617,11 +1697,17 @@ function openStudentInvite(group) {
     window.teacherWorkspaceApi.listExistingStudents(window.supabaseClient).then((students) => {
         const currentMemberships = group.studentRecords || [];
         const currentStudentIds = new Set(currentMemberships.map((student) => student.linked_user_id).filter(Boolean));
-        const currentEmails = new Set(currentMemberships.map((student) => student.email?.toLowerCase()).filter(Boolean));
-        const available = students.filter((student) => !currentStudentIds.has(student.id) && !currentEmails.has(student.email.toLowerCase()));
+        const currentLinkedEmails = new Set(currentMemberships
+            .filter((student) => student.linked_user_id)
+            .map((student) => student.email?.trim().toLowerCase())
+            .filter(Boolean));
+        const available = students.filter((student) => {
+            const email = String(student.email || "").trim().toLowerCase();
+            return !currentStudentIds.has(student.id) && !currentLinkedEmails.has(email);
+        });
         existingSelect.innerHTML = `<option value="">${t("studentInvite.selectExisting")}</option>${available.map((student) => `<option value="${escapeHtml(student.id)}">${escapeHtml(student.displayName)} · ${escapeHtml(student.email)}</option>`).join("")}`;
         existingSelect.disabled = !available.length;
-        existingStatus.textContent = available.length ? "" : t("studentInvite.noExisting");
+        existingStatus.textContent = available.length ? "" : students.length ? t("studentInvite.noneAvailable") : t("studentInvite.noExisting");
         existingSelect.required = mode === "existing" && Boolean(available.length);
         if (mode === "existing") submitButton.disabled = !available.length;
     }).catch((error) => {
@@ -1644,7 +1730,7 @@ function deleteClass(id) {
     showToast(t("toast.classDeleted"));
 }
 
-function openLessonEditor(item, sectionId = "", activityIndex = -1) {
+function openLessonEditor(item, sectionId = "", activityIndex = -1, tab = "lesson") {
     if (!hasPermission("edit_lessons")) return;
     activeView = "lessons";
     document.getElementById("breadcrumb").textContent = t("page.lessons");
@@ -1652,6 +1738,7 @@ function openLessonEditor(item, sectionId = "", activityIndex = -1) {
     editingLessonId = item?.id || null;
     workspaceLessonId = item?.id || "";
     lessonWorkspaceMode = "edit";
+    previewActivityEdit = null;
     lessonFormDraft = { title: item?.title || "", unit: item?.unit || selectedLessonUnit || inferLessonUnit(item || { title: "", classIds: [] }) };
     draftSections = item ? structuredClone(normalizeLessonSections(item)) : [{ id: crypto.randomUUID(), title: lessonSectionText("intro"), activities: [] }];
     const homeworkSections = item ? normalizeHomeworkSections(item) : [];
@@ -1661,7 +1748,7 @@ function openLessonEditor(item, sectionId = "", activityIndex = -1) {
     expandedActivityBlocks = new WeakSet();
     activeLessonSectionId = draftSections.some((section) => section.id === sectionId) ? sectionId : draftSections[0].id;
     activeHomeworkSectionId = draftHomeworkSections[0].id;
-    lessonWorkspaceTab = "lesson";
+    lessonWorkspaceTab = tab === "homework" ? "homework" : "lesson";
     homeworkSourceLessonId = "__current__";
     if (activityIndex >= 0) {
         const activity = draftSections.find((section) => section.id === activeLessonSectionId)?.activities[activityIndex];
@@ -1733,27 +1820,41 @@ function renderLessonWorkspace() {
         exitLessonWorkspace();
         return;
     }
-    const isHomework = isEditing && lessonWorkspaceTab === "homework";
-    const sections = isEditing ? activeDraftSections() : normalizeLessonSections(lesson);
-    const activeSectionId = isEditing ? activeWorkspaceSectionId() : activeLessonSectionId;
+    const isHomework = lessonWorkspaceTab === "homework";
+    const sections = isEditing
+        ? activeDraftSections()
+        : isHomework ? normalizePreviewHomeworkSections(lesson) : normalizeLessonSections(lesson);
+    const activeSectionId = isEditing
+        ? activeWorkspaceSectionId()
+        : isHomework ? activeHomeworkSectionId : activeLessonSectionId;
     if (!sections.some((item) => item.id === activeSectionId)) {
         if (isEditing) setActiveWorkspaceSectionId(sections[0].id);
+        else if (isHomework) activeHomeworkSectionId = sections[0].id;
         else activeLessonSectionId = sections[0].id;
     }
-    const section = sections.find((item) => item.id === (isEditing ? activeWorkspaceSectionId() : activeLessonSectionId));
+    const selectedSectionId = isEditing
+        ? activeWorkspaceSectionId()
+        : isHomework ? activeHomeworkSectionId : activeLessonSectionId;
+    const section = sections.find((item) => item.id === selectedSectionId);
+    const quickEditActive = !isEditing && previewActivityEdit?.lessonId === lesson.id
+        && previewActivityEdit.sectionId === section.id && previewActivityEdit.isHomework === isHomework;
     const title = isEditing ? lessonFormDraft.title : lesson.title;
     const unit = isEditing ? lessonFormDraft.unit : lesson.unit || inferLessonUnit(lesson);
     const sectionTitle = isHomework ? lessonSectionText("homeworkSections") : lessonSectionText("section");
     const sectionMenu = sections.map((item, index) => `<div class="lesson-section-row ${item.id === section.id ? "active" : ""}">
-        <button type="button" class="lesson-section-select" data-select-section="${escapeHtml(item.id)}"><span class="lesson-section-number">${index + 1}</span><span class="lesson-section-label" data-section-label="${escapeHtml(item.id)}">${escapeHtml(item.title)}</span></button>
+        <button type="button" class="lesson-section-select" data-select-section="${escapeHtml(item.id)}" ${quickEditActive ? "disabled" : ""}><span class="lesson-section-number">${index + 1}</span><span class="lesson-section-label" data-section-label="${escapeHtml(item.id)}">${escapeHtml(item.title)}</span></button>
         ${isEditing ? `<div class="lesson-section-tools"><button type="button" data-move-section-from="${escapeHtml(item.id)}" data-move-section="${index - 1}" ${index === 0 ? "disabled" : ""} aria-label="${lessonSectionText("previous")}">↑</button><button type="button" data-move-section-from="${escapeHtml(item.id)}" data-move-section="${index + 1}" ${index === sections.length - 1 ? "disabled" : ""} aria-label="${lessonSectionText("next")}">↓</button><button type="button" data-delete-section="${escapeHtml(item.id)}" ${sections.length === 1 ? "disabled" : ""} aria-label="${lessonSectionText("remove")}">×</button></div>` : ""}</div>`).join("");
     const sectionBody = isEditing
         ? `<div class="form-field section-name-field"><label for="sectionTitle">${lessonSectionText("rename")}</label><input id="sectionTitle" data-section-title="${escapeHtml(section.id)}" maxlength="80" value="${escapeHtml(section.title)}"></div><div class="builder-heading"><h3>${isHomework ? lessonSectionText("homeworkActivities") : t("lesson.activities")}</h3><button type="button" class="button secondary small" data-action="choose-activity">${t("activity.addBlock")}</button></div><div id="activityBlocks">${renderActivityBlocks(section.activities)}</div>`
-        : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map((activity, index) => renderPreviewActivity(activity, index, hasPermission("edit_lessons"))).join("") : emptyMessage(lessonSectionText("empty"), "")}</div>`;
+        : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map((activity, index) => {
+            const isQuickEditingActivity = quickEditActive && previewActivityEdit.activityIndex === index;
+            const currentActivity = isQuickEditingActivity ? previewActivityEdit.draft : activity;
+            return renderPreviewActivity(currentActivity, index, hasPermission("edit_lessons") && (!quickEditActive || isQuickEditingActivity), isQuickEditingActivity);
+        }).join("") : emptyMessage(lessonSectionText("empty"), "")}</div>`;
     const sourceOptions = [`<option value="__current__" ${homeworkSourceLessonId === "__current__" ? "selected" : ""}>${lessonSectionText("currentLesson")} · ${escapeHtml(lessonFormDraft.title.trim() || lessonSectionText("newSection"))}</option>`,
         ...data.lessons.filter((item) => item.id !== workspaceLessonId).map((item) => `<option value="${escapeHtml(item.id)}" ${homeworkSourceLessonId === item.id ? "selected" : ""}>${escapeHtml(item.title)}</option>`)].join("");
-    const sourceActivities = isHomework ? homeworkSourceActivities() : [];
-    const sourcePanel = isHomework ? `<div class="homework-copy-source">
+    const sourceActivities = isEditing && isHomework ? homeworkSourceActivities() : [];
+    const sourcePanel = isEditing && isHomework ? `<div class="homework-copy-source">
         <div class="form-field"><label for="homeworkSourceLesson">${lessonSectionText("copyFromLesson")}</label><select id="homeworkSourceLesson">${sourceOptions}</select></div>
         <p class="hint">${lessonSectionText("dragCopyHint")}</p>
         <div class="homework-source-activities">${sourceActivities.length ? sourceActivities.map((activity, index) => {
@@ -1762,23 +1863,23 @@ function renderLessonWorkspace() {
             return `<button type="button" class="homework-source-activity" draggable="true" data-homework-copy="${index}"><span>${escapeHtml(type ? t(type.nameKey) : t("activity.task"))}</span><strong>${escapeHtml(summary || lessonSectionText("newSection"))}</strong><span class="homework-source-copy-icon">＋</span></button>`;
         }).join("") : `<p class="hint">${lessonSectionText("noSourceActivities")}</p>`}</div>
     </div>` : "";
-    const dropZone = isHomework ? `<div id="homeworkCopyDropZone" class="homework-copy-drop-zone" tabindex="0">${lessonSectionText("dropCopyHint")}</div>` : "";
+    const dropZone = isEditing && isHomework ? `<div id="homeworkCopyDropZone" class="homework-copy-drop-zone" tabindex="0">${lessonSectionText("dropCopyHint")}</div>` : "";
     const actionBar = isEditing
         ? `<button type="button" class="button secondary" data-workspace-cancel>${t("action.cancel")}</button><button class="button" type="submit">${editingLessonId ? lessonSectionText("save") : lessonSectionText("create")}</button>`
         : "";
     pageContent.innerHTML = `<section class="lesson-workspace"><form id="lessonForm" class="lesson-workspace-form">
         <header class="lesson-workspace-hero">
-            <div class="lesson-workspace-heading"><button type="button" class="text-link" data-workspace-back>← ${lessonSectionText("back")}</button>
+            <div class="lesson-workspace-heading"><button type="button" class="text-link" data-workspace-back ${quickEditActive ? "disabled" : ""}>← ${lessonSectionText("back")}</button>
                 ${isEditing ? `<div class="lesson-workspace-fields"><div class="form-field"><label for="lessonTitle">${t("field.lessonTitle")}</label><input id="lessonTitle" name="title" required maxlength="100" value="${escapeHtml(title)}" placeholder="${t("field.exampleLesson")}"></div><div class="form-field"><label for="lessonUnit">${lessonText("unit")}</label><select id="lessonUnit" name="unit" required><option value="">${lessonText("chooseUnit")}</option>${LESSON_UNITS.map((level) => `<option value="${level}" ${unit === level ? "selected" : ""}>${level}</option>`).join("")}</select></div></div>` : `<div><span class="course-hero-kicker">${escapeHtml(lessonClassNames(lesson)) || lessonText("unassigned")} · ${escapeHtml(unit)}</span><h1>${escapeHtml(title)}</h1></div>`}
             </div>
-            ${isEditing ? "" : `<span class="lesson-workspace-unit">${escapeHtml(unit)}</span>`}
+            ${isEditing ? "" : `<div class="lesson-workspace-preview-actions"><span class="lesson-workspace-unit">${escapeHtml(unit)}</span>${hasPermission("edit_lessons") ? `<button type="button" class="button secondary small" data-edit-workspace-lesson ${quickEditActive ? "disabled" : ""}>${t("modal.editLesson")}</button>` : ""}</div>`}
         </header>
-        ${isEditing ? `<nav class="lesson-workspace-tabs" role="tablist" aria-label="${lessonSectionText("lessonTab")}"><button type="button" class="${!isHomework ? "active" : ""}" role="tab" aria-selected="${!isHomework}" data-workspace-tab="lesson">${lessonSectionText("lessonTab")}</button><button type="button" class="${isHomework ? "active" : ""}" role="tab" aria-selected="${isHomework}" data-workspace-tab="homework">${lessonSectionText("homework")}</button></nav>` : ""}
+        <nav class="lesson-workspace-tabs" role="tablist" aria-label="${lessonSectionText("lessonTab")}"><button type="button" class="${!isHomework ? "active" : ""}" role="tab" aria-selected="${!isHomework}" data-workspace-tab="lesson" ${quickEditActive ? "disabled" : ""}>${lessonSectionText("lessonTab")}</button><button type="button" class="${isHomework ? "active" : ""}" role="tab" aria-selected="${isHomework}" data-workspace-tab="homework" ${quickEditActive ? "disabled" : ""}>${lessonSectionText("homework")}</button></nav>
         <div class="lesson-workspace-layout">
             <main class="lesson-workspace-main"><section class="lesson-workspace-section">
                 ${isEditing ? `${sourcePanel}${sectionBody}${dropZone}` : `<h2>${escapeHtml(section.title)}</h2>${sectionBody}`}
             </section>
-                <div class="lesson-workspace-footer"><button type="button" class="button secondary small" data-section-step="-1" ${sections.indexOf(section) === 0 ? "disabled" : ""}>${lessonSectionText("previous")}</button><span>${sections.indexOf(section) + 1} / ${sections.length}</span><button type="button" class="button secondary small" data-section-step="1" ${sections.indexOf(section) === sections.length - 1 ? "disabled" : ""}>${lessonSectionText("next")}</button>
+                <div class="lesson-workspace-footer"><button type="button" class="button secondary small" data-section-step="-1" ${sections.indexOf(section) === 0 || quickEditActive ? "disabled" : ""}>${lessonSectionText("previous")}</button><span>${sections.indexOf(section) + 1} / ${sections.length}</span><button type="button" class="button secondary small" data-section-step="1" ${sections.indexOf(section) === sections.length - 1 || quickEditActive ? "disabled" : ""}>${lessonSectionText("next")}</button>
                 ${isEditing ? `<span class="lesson-workspace-spacer"></span><button type="button" class="button secondary small" data-action="choose-activity">${lessonSectionText("addElement")}</button><button type="button" class="button secondary small" data-copy-activity ${section.activities.length ? "" : "disabled"}>${lessonSectionText("copyElement")}</button>` : ""}</div>
             </main>
             <aside class="lesson-sections-panel"><h2>${sectionTitle}</h2><nav class="lesson-sections-list" aria-label="${sectionTitle}">${sectionMenu}</nav>
@@ -1789,18 +1890,20 @@ function renderLessonWorkspace() {
     </form></section>`;
     pageContent.querySelector("[data-workspace-back]").addEventListener("click", exitLessonWorkspace);
     pageContent.querySelector("[data-workspace-cancel]")?.addEventListener("click", exitLessonWorkspace);
-    pageContent.querySelectorAll("[data-edit-preview-block]").forEach((button) => button.addEventListener("click", () => {
-        openLessonEditor(lesson, section.id, Number(button.dataset.editPreviewBlock));
-    }));
+    pageContent.querySelector("[data-edit-workspace-lesson]")?.addEventListener("click", () => {
+        openLessonEditor(lesson, "", -1, isHomework ? "homework" : "lesson");
+    });
     if (isEditing) pageContent.querySelector("#lessonForm").addEventListener("submit", saveLesson);
     pageContent.querySelector("#lessonTitle")?.addEventListener("input", (event) => { lessonFormDraft.title = event.target.value; });
     pageContent.querySelector("#lessonUnit")?.addEventListener("change", (event) => { lessonFormDraft.unit = event.target.value; });
     pageContent.querySelectorAll("[data-workspace-tab]").forEach((button) => button.addEventListener("click", () => {
+        if (previewActivityEdit) return;
         lessonWorkspaceTab = button.dataset.workspaceTab;
         render();
     }));
     pageContent.querySelectorAll('[data-action="choose-activity"]').forEach((button) => button.addEventListener("click", openActivityPicker));
     pageContent.querySelectorAll("[data-select-section]").forEach((button) => button.addEventListener("click", () => {
+        if (previewActivityEdit) return;
         setActiveWorkspaceSectionId(button.dataset.selectSection);
         render();
     }));
@@ -1826,6 +1929,7 @@ function renderLessonWorkspace() {
         render();
     }));
     pageContent.querySelectorAll("[data-section-step]").forEach((button) => button.addEventListener("click", () => {
+        if (previewActivityEdit) return;
         const next = sections.indexOf(section) + Number(button.dataset.sectionStep);
         if (sections[next]) {
             setActiveWorkspaceSectionId(sections[next].id);
@@ -1850,13 +1954,14 @@ function renderLessonWorkspace() {
     enhanceSelects(pageContent);
     if (isHomework) bindHomeworkCopySource();
     if (isEditing) bindActivityBlockActions();
-    else bindLessonPreviewActions(pageContent, lesson, section);
+    else bindLessonPreviewActions(pageContent, lesson, section, isHomework);
 }
 
 function exitLessonWorkspace() {
     lessonWorkspaceMode = "";
     workspaceLessonId = "";
     editingLessonId = null;
+    previewActivityEdit = null;
     draftSections = [];
     draftHomeworkSections = [];
     activeLessonSectionId = "";
