@@ -2,6 +2,7 @@ const translations = {
 'ua': {
     'nav_courses': 'Курси',
     'nav_teachers': 'Викладачі',
+    'platform': 'Платформа',
     'hero_title': 'Словацька мова легко',
     'hero_sub': 'Вивчіть словацька мову для життя та роботи в Словаччині.',
     'hero_btn': 'Переглянути ціни',
@@ -58,6 +59,7 @@ const translations = {
 'ru': {
     'nav_courses': 'Курсы',
     'nav_teachers': 'Преподаватели',
+    'platform': 'Платформа',
     'hero_title': 'Словацкий язык легко',
     'hero_sub': 'Изучите словацкий язык для жизни и работы в Словакии.',
     'hero_btn': 'Посмотреть цены',
@@ -114,6 +116,7 @@ const translations = {
 'en': {
     'nav_courses': 'Courses',
     'nav_teachers': 'Teachers',
+    'platform': 'Platform',
     'hero_title': 'Slovak Made Easy',
     'hero_sub': 'Learn Slovak for life and work in Slovakia.',
     'hero_btn': 'View Prices',
@@ -167,18 +170,21 @@ const translations = {
     'back_home': "Back to home"
     }
 };
-    function changeLanguage(lang) {
+function changeLanguage(lang) {
+    if (!translations[lang]) return;
     document.querySelectorAll('.btn-lang-item').forEach(btn => {
-        btn.classList.remove('active');
-        if(btn.innerText.toLowerCase() === lang) {
-            btn.classList.add('active');
-        }
+        btn.classList.toggle('active', btn.dataset.lang === lang);
     });
 
     document.querySelectorAll('[data-key]').forEach(element => {
         const key = element.getAttribute('data-key');
-        if(translations[lang][key]) {
+        if (translations[lang][key]) {
             element.innerText = translations[lang][key];
         }
     });
+
+    localStorage.setItem("siteLanguage", lang);
+    document.documentElement.lang = lang === "ua" ? "uk" : lang;
 }
+
+changeLanguage(localStorage.getItem("siteLanguage") || "ua");

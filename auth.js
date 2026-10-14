@@ -19,7 +19,7 @@ loginForm?.addEventListener("submit", async (event) => {
     const password = loginForm.elements.password.value;
 
     try {
-        const { error } = await window.supabaseClient.auth.signInWithPassword({
+        const { data, error } = await window.supabaseClient.auth.signInWithPassword({
             email,
             password
         });
@@ -32,6 +32,7 @@ loginForm?.addEventListener("submit", async (event) => {
 
         message.textContent = "Вход выполнен.";
         message.className = "mb-3 text-success";
+        window.location.assign(data.user?.user_metadata?.role === "student" ? "student.html" : "teacher.html");
     } catch {
         message.textContent = "Ошибка соединения. Попробуйте ещё раз.";
         message.className = "mb-3 text-danger";

@@ -1,0 +1,1306 @@
+const STORAGE_KEY = "slovasofiTeacherSpace";
+const LESSON_UNITS = ["A1", "A2", "B1", "B2"];
+const translations = {
+    ua: {
+        "nav.overview": "Огляд", "nav.classes": "Класи", "nav.lessons": "Уроки", "nav.materials": "Матеріали", "nav.students": "Учні", "nav.home": "← На головну", "nav.label": "Навігація", "brand.home": "SlovaSofi — на головну", "language.label": "Мова", "menu.open": "Відкрити меню", "header.notifications": "Сповіщення", "modal.close": "Закрити", "teacher.role": "Викладач", "school.profile": "Профіль школи", "profile.open": "Профіль користувача: {name}", "profile.title": "Профіль користувача", "profile.signedOut": "Гість", "profile.notSignedIn": "Ви не ввійшли в обліковий запис", "profile.logout": "Вийти з профілю", "profile.login": "Увійти", "profile.logoutError": "Не вдалося вийти з профілю. Спробуйте ще раз.", "profile.loadError": "Не вдалося завантажити профіль користувача.", "school.title": "Профіль школи", "school.purpose": "Профіль школи — це спільний простір SlovaSofi. Тут зберігаються класи, уроки й навчальні матеріали школи.", "school.workspace": "Навчальний простір", "school.workspaceDetail": "Спільні класи, уроки та матеріали", "notifications.title": "Сповіщення", "notifications.empty": "Поки немає сповіщень", "notifications.description": "Тут з’являтимуться оновлення про класи, уроки та учнів.", "class.noClass": "Без класу",
+        "page.overview": "Огляд", "page.classes": "Класи", "page.lessons": "Уроки", "page.materials": "Матеріали", "page.students": "Учні", "pageTitle": "Кабінет викладача", "welcome.badge": "ПАНЕЛЬ ВИКЛАДАЧА · SLOVASOFI", "welcome.title": "Добрий день, {name} 👋", "welcome.text": "Ваші заняття та матеріали в одному місці.", "welcome.storage": "✓ Демо-дані зберігаються у цьому браузері", "action.createLesson": "＋ Створити урок",
+        "stat.classes": "Створено класів", "stat.students": "Учнів у класах", "stat.lessons": "Створено уроків", "stat.materials": "Матеріали", "overview.recent": "Останні уроки", "overview.recentHint": "Ваші останні створені уроки", "overview.allLessons": "Усі уроки →", "overview.yourClasses": "Ваші класи", "overview.groups": "Групи учнів", "overview.allClasses": "Усі класи →",
+        "classes.title": "Класи", "classes.description": "Створюйте групи та призначайте їм окремі уроки.", "classes.create": "＋ Створити клас", "classes.search": "Пошук класів…", "classes.lessons": "Уроки →", "classes.notFound": "Класи не знайдено", "classes.notFoundHint": "Змініть запит або створіть новий клас.",
+        "lessons.title": "Уроки", "lessons.description": "Створюйте інтерактивні завдання та призначайте їх класам.", "lessons.add": "＋ Додати урок", "lessons.allClasses": "Усі класи", "lessons.search": "Пошук уроку…", "lessons.notFound": "Уроків поки немає", "lessons.notFoundHint": "Натисніть «Додати урок», щоб вибрати типи завдань.", "lessons.blocks": "блоків", "lessons.block": "блок", "lessons.task": "завдання", "lessons.tasks": "завдань",
+        "materials.title": "Матеріали", "materials.description": "Спільна бібліотека файлів, посилань і навчальних ресурсів.", "materials.add": "＋ Додати матеріал", "materials.total": "Усього матеріалів: {count}", "materials.search": "Пошук матеріалів…", "materials.open": "Відкрити матеріал ↗", "materials.inLibrary": "Додано до бібліотеки", "materials.notFound": "Матеріалів не знайдено", "materials.notFoundHint": "Додайте перший матеріал або змініть запит.",
+        "students.title": "Учні", "students.description": "Список учнів, розподілених за вашими класами.", "students.manage": "Керувати класами", "students.total": "Усього учнів: {count}", "students.search": "Пошук учня…", "students.role": "Учень SlovaSofi", "students.notFound": "Учнів не знайдено", "students.notFoundHint": "Додайте учнів до класів, щоб вони з’явилися тут.",
+        "empty.noClasses": "Класів поки немає", "empty.createClass": "Створіть клас, щоб призначати уроки.", "empty.search": "Нічого не знайдено", "empty.changeSearch": "Змініть пошуковий запит.",
+        "modal.editClass": "Редагувати клас", "modal.newClass": "Новий клас", "field.className": "Назва класу", "field.course": "Курс або рівень", "field.students": "Учні", "field.studentsPlaceholder": "Введіть імена через кому", "field.studentsHint": "Кожне ім’я стане окремим учнем.", "field.exampleClass": "Наприклад, Словацька A1", "field.exampleCourse": "Наприклад, Словацька · A1", "action.cancel": "Скасувати", "action.save": "Зберегти", "action.createClass": "Створити клас", "action.delete": "Видалити", "class.unnamedCourse": "Курс не вказано",
+        "modal.editLesson": "Редагувати урок", "modal.newLesson": "Новий урок", "field.lessonTitle": "Назва уроку", "field.exampleLesson": "Наприклад, Lekcia 5. Rodina", "field.chooseClass": "Виберіть клас", "lesson.activities": "Завдання уроку", "activity.addBlock": "＋ Додати блок", "lesson.firstActivity": "Додайте перше завдання", "lesson.firstActivityHint": "Виберіть тип блоку: перетягування, пропуск, порядок, відповідність тощо.", "lesson.save": "Зберегти урок", "lesson.create": "Створити урок",
+        "field.instruction": "Інструкція", "field.instructionExample": "Наприклад, складіть речення", "field.taskText": "Текст завдання", "field.mediaContent": "Посилання або вміст", "field.answer": "Правильна відповідь", "field.enterText": "Введіть текст або вставте посилання", "hint.drag": "слова у правильному порядку", "hint.blank": "використовуйте ___ для пропуску", "hint.options": "кожен варіант з нового рядка", "hint.order": "кожен елемент з нового рядка", "hint.sentences": "кожне речення з нового рядка", "hint.match": "пара у форматі слово = переклад, одна на рядок", "hint.columns": "категорія: елемент, кожен з нового рядка", "hint.table": "колонки розділіть |, порожні комірки позначте ___", "hint.select": "варіанти відповіді з нового рядка", "hint.trueFalse": "твердження для перевірки", "hint.cards": "картка: переклад, по одній на рядок", "hint.answerSlash": "слова через /", "hint.answerText": "слово або фраза", "hint.answerChoice": "точний текст правильної відповіді", "hint.answerOrder": "правильний порядок через /", "hint.optional": "необов’язково", "hint.correctChoice": "правильний варіант",
+        "picker.title": "Виберіть інтерактивне завдання", "picker.all": "Усі", "picker.tests": "Тести", "picker.media": "Медіа", "picker.other": "Інше", "picker.search": "Пошук блоку…", "picker.back": "← До уроку",
+        "activity.task": "Завдання", "activity.drag": "Перетягнути слова", "activity.dragDesc": "Складіть речення зі слів у правильному порядку.", "activity.blank": "Заповнити пропуск", "activity.blankDesc": "Впишіть відповідне слово у пропуск.", "activity.choice": "Вибрати варіант", "activity.choiceDesc": "Виберіть одну правильну відповідь.", "activity.order": "Правильний порядок", "activity.orderDesc": "Розташуйте елементи у правильному порядку.", "activity.sentences": "Порядок речень", "activity.sentencesDesc": "Складіть зв’язний текст із речень.", "activity.dropdown": "Один із варіантів", "activity.dropdownDesc": "Заповніть пропуск, вибравши слово зі списку.", "activity.trueFalse": "True або False", "activity.trueFalseDesc": "Визначте, чи є твердження правильним.", "activity.table": "Заповнити таблицю", "activity.tableDesc": "Внесіть відповіді до таблиці.", "activity.match": "Поєднати елементи", "activity.matchDesc": "Поєднайте слова з їхніми значеннями.", "activity.columns": "Розподілити за колонками", "activity.columnsDesc": "Розкладіть картки за категоріями.", "activity.open": "Відкрита відповідь", "activity.openDesc": "Додайте запитання з відповіддю своїми словами.", "activity.cards": "Картки", "activity.cardsDesc": "Створіть картки зі словом і перекладом.", "activity.text": "Заголовок і текст", "activity.textDesc": "Додайте пояснення або інструкцію.", "activity.video": "Відео", "activity.videoDesc": "Вставте посилання на відео.", "activity.audio": "Аудіо", "activity.audioDesc": "Додайте аудіо або посилання на запис.", "activity.image": "Зображення", "activity.imageDesc": "Додайте зображення до уроку.",
+        "material.name": "Назва", "material.example": "Наприклад, Слова на тему «Їжа»", "material.type": "Тип матеріалу", "material.description": "Опис", "material.shortDescription": "Короткий опис", "material.url": "Посилання (необов’язково)", "material.add": "Додати матеріал", "material.noDescription": "Без опису",
+        "toast.classCreated": "Клас створено.", "toast.classUpdated": "Клас оновлено.", "toast.classDeleted": "Клас видалено.", "toast.lessonCreated": "Урок створено.", "toast.lessonUpdated": "Урок оновлено.", "toast.lessonDeleted": "Урок видалено.", "toast.materialAdded": "Матеріал додано до бібліотеки.", "toast.materialDeleted": "Матеріал видалено.", "toast.createClassFirst": "Спочатку створіть клас, щоб призначити йому урок.", "toast.titleAndClass": "Вкажіть назву уроку та виберіть клас.", "toast.httpUrl": "Посилання має починатися з http:// або https://.", "toast.storageError": "Не вдалося зберегти зміни у браузері. Перевірте доступ до локального сховища.",
+        "confirm.deleteClass": "Видалити клас «{name}»? Уроки залишаться у списку без класу.", "confirm.deleteLesson": "Видалити урок «{name}»?", "confirm.deleteMaterial": "Видалити матеріал «{name}»?", "course.slovakA1": "Словацька · A1", "course.slovakB1": "Словацька · B1", "material.vocabulary": "Словник", "material.document": "Документ", "material.audio": "Аудіо", "material.video": "Відео", "material.link": "Посилання"
+    },
+    ru: {
+        "nav.overview": "Обзор", "nav.classes": "Классы", "nav.lessons": "Уроки", "nav.materials": "Материалы", "nav.students": "Ученики", "nav.home": "← На главную", "nav.label": "Основная навигация", "brand.home": "SlovaSofi — на главную", "language.label": "Язык", "menu.open": "Открыть меню", "header.notifications": "Уведомления", "modal.close": "Закрыть", "teacher.role": "Преподаватель", "school.profile": "Профиль школы", "profile.open": "Профиль пользователя: {name}", "profile.title": "Профиль пользователя", "profile.signedOut": "Гость", "profile.notSignedIn": "Вы не вошли в учётную запись", "profile.logout": "Выйти из профиля", "profile.login": "Войти", "profile.logoutError": "Не удалось выйти из профиля. Попробуйте ещё раз.", "profile.loadError": "Не удалось загрузить профиль пользователя.", "school.title": "Профиль школы", "school.purpose": "Профиль школы — это общее пространство SlovaSofi. Здесь находятся классы, уроки и учебные материалы школы.", "school.workspace": "Учебное пространство", "school.workspaceDetail": "Общие классы, уроки и материалы", "notifications.title": "Уведомления", "notifications.empty": "Пока нет уведомлений", "notifications.description": "Здесь будут появляться обновления о классах, уроках и учениках.", "class.noClass": "Без класса",
+        "page.overview": "Обзор", "page.classes": "Классы", "page.lessons": "Уроки", "page.materials": "Материалы", "page.students": "Ученики", "pageTitle": "Кабинет преподавателя", "welcome.badge": "ПАНЕЛЬ ПРЕПОДАВАТЕЛЯ · SLOVASOFI", "welcome.title": "Добрый день, {name} 👋", "welcome.text": "Ваши занятия и материалы в одном месте.", "welcome.storage": "✓ Демо-данные сохраняются в этом браузере", "action.createLesson": "＋ Создать урок",
+        "stat.classes": "Создано классов", "stat.students": "Учеников в классах", "stat.lessons": "Создано уроков", "stat.materials": "Материалы", "overview.recent": "Последние уроки", "overview.recentHint": "Ваши недавно созданные уроки", "overview.allLessons": "Все уроки →", "overview.yourClasses": "Ваши классы", "overview.groups": "Группы учеников", "overview.allClasses": "Все классы →",
+        "classes.title": "Классы", "classes.description": "Создавайте группы и назначайте им отдельные уроки.", "classes.create": "＋ Создать класс", "classes.search": "Поиск классов…", "classes.lessons": "Уроки →", "classes.notFound": "Классы не найдены", "classes.notFoundHint": "Измените запрос или создайте новый класс.",
+        "lessons.title": "Уроки", "lessons.description": "Собирайте интерактивные задания и назначайте их классам.", "lessons.add": "＋ Добавить урок", "lessons.allClasses": "Все классы", "lessons.search": "Поиск урока…", "lessons.notFound": "Уроков пока нет", "lessons.notFoundHint": "Нажмите «Добавить урок», чтобы выбрать типы заданий.", "lessons.blocks": "блоков", "lessons.block": "блок", "lessons.task": "задание", "lessons.tasks": "заданий",
+        "materials.title": "Материалы", "materials.description": "Общая библиотека файлов, ссылок и учебных ресурсов.", "materials.add": "＋ Добавить материал", "materials.total": "Всего материалов: {count}", "materials.search": "Поиск материалов…", "materials.open": "Открыть материал ↗", "materials.inLibrary": "Добавлен в библиотеку", "materials.notFound": "Материалы не найдены", "materials.notFoundHint": "Добавьте первый материал или измените запрос.",
+        "students.title": "Ученики", "students.description": "Список учеников, распределённых по вашим классам.", "students.manage": "Управлять классами", "students.total": "Всего учеников: {count}", "students.search": "Поиск ученика…", "students.role": "Ученик SlovaSofi", "students.notFound": "Ученики не найдены", "students.notFoundHint": "Добавьте учеников в классы, чтобы они появились здесь.",
+        "empty.noClasses": "Классов пока нет", "empty.createClass": "Создайте класс, чтобы назначать уроки.", "empty.search": "Ничего не найдено", "empty.changeSearch": "Измените поисковый запрос.",
+        "modal.editClass": "Редактировать класс", "modal.newClass": "Новый класс", "field.className": "Название класса", "field.course": "Курс или уровень", "field.students": "Ученики", "field.studentsPlaceholder": "Введите имена через запятую", "field.studentsHint": "Каждое имя станет отдельным учеником.", "field.exampleClass": "Например, Словацкий A1", "field.exampleCourse": "Например, Словацкий · A1", "action.cancel": "Отмена", "action.save": "Сохранить", "action.createClass": "Создать класс", "action.delete": "Удалить", "class.unnamedCourse": "Курс не указан",
+        "modal.editLesson": "Редактировать урок", "modal.newLesson": "Новый урок", "field.lessonTitle": "Название урока", "field.exampleLesson": "Например, Lekcia 5. Rodina", "field.chooseClass": "Выберите класс", "lesson.activities": "Задания урока", "activity.addBlock": "＋ Добавить блок", "lesson.firstActivity": "Добавьте первое задание", "lesson.firstActivityHint": "Выберите тип блока: перетягивание, пропуск, порядок, соответствия и другие.", "lesson.save": "Сохранить урок", "lesson.create": "Создать урок",
+        "field.instruction": "Инструкция", "field.instructionExample": "Например, соберите предложение", "field.taskText": "Текст задания", "field.mediaContent": "Ссылка или содержимое", "field.answer": "Правильный ответ", "field.enterText": "Введите текст или вставьте ссылку", "hint.drag": "слова в правильном порядке", "hint.blank": "используйте ___ для пропуска", "hint.options": "каждый вариант с новой строки", "hint.order": "каждый элемент с новой строки", "hint.sentences": "каждое предложение с новой строки", "hint.match": "пара в формате слово = перевод, одна на строку", "hint.columns": "категория: элемент, каждый с новой строки", "hint.table": "колонки разделяйте |, пустые ячейки отмечайте ___", "hint.select": "варианты ответа с новой строки", "hint.trueFalse": "утверждение для проверки", "hint.cards": "карточка: перевод, по одной на строку", "hint.answerSlash": "слова через /", "hint.answerText": "слово или фраза", "hint.answerChoice": "точный текст верного варианта", "hint.answerOrder": "правильный порядок через /", "hint.optional": "необязательно", "hint.correctChoice": "правильный вариант",
+        "picker.title": "Выберите интерактивное задание", "picker.all": "Все", "picker.tests": "Тесты", "picker.media": "Медиа", "picker.other": "Другое", "picker.search": "Поиск блока…", "picker.back": "← К уроку",
+        "activity.task": "Задание", "activity.drag": "Перетянуть слова", "activity.dragDesc": "Соберите предложение из слов в правильном порядке.", "activity.blank": "Заполнить пропуск", "activity.blankDesc": "Впишите подходящее слово в пропуск.", "activity.choice": "Выбрать вариант", "activity.choiceDesc": "Выберите один правильный ответ.", "activity.order": "Правильный порядок", "activity.orderDesc": "Расставьте элементы по порядку.", "activity.sentences": "Порядок предложений", "activity.sentencesDesc": "Соберите связный текст из предложений.", "activity.dropdown": "Один из вариантов", "activity.dropdownDesc": "Заполните пропуск, выбрав слово из списка.", "activity.trueFalse": "True или False", "activity.trueFalseDesc": "Оцените утверждение как верное или ложное.", "activity.table": "Заполнить таблицу", "activity.tableDesc": "Внесите ответы в таблицу.", "activity.match": "Соединить элементы", "activity.matchDesc": "Соедините слова и их значения.", "activity.columns": "Распределить по колонкам", "activity.columnsDesc": "Разложите карточки по категориям.", "activity.open": "Открытый ответ", "activity.openDesc": "Добавьте вопрос с ответом своими словами.", "activity.cards": "Флип-карточки", "activity.cardsDesc": "Создайте карточки со словом и переводом.", "activity.text": "Заголовок и текст", "activity.textDesc": "Добавьте пояснение или инструкцию.", "activity.video": "Видео", "activity.videoDesc": "Вставьте ссылку на видео.", "activity.audio": "Аудио", "activity.audioDesc": "Добавьте аудио или ссылку на запись.", "activity.image": "Картинка", "activity.imageDesc": "Добавьте изображение в урок.",
+        "material.name": "Название", "material.example": "Например, Слова по теме «Еда»", "material.type": "Тип материала", "material.description": "Описание", "material.shortDescription": "Краткое описание", "material.url": "Ссылка (необязательно)", "material.add": "Добавить материал", "material.noDescription": "Без описания",
+        "toast.classCreated": "Класс создан.", "toast.classUpdated": "Класс обновлён.", "toast.classDeleted": "Класс удалён.", "toast.lessonCreated": "Урок создан.", "toast.lessonUpdated": "Урок обновлён.", "toast.lessonDeleted": "Урок удалён.", "toast.materialAdded": "Материал добавлен в библиотеку.", "toast.materialDeleted": "Материал удалён.", "toast.createClassFirst": "Сначала создайте класс, чтобы назначить ему урок.", "toast.titleAndClass": "Укажите название урока и выберите класс.", "toast.httpUrl": "Ссылка должна начинаться с http:// или https://.", "toast.storageError": "Не удалось сохранить изменения в браузере. Проверьте доступ к локальному хранилищу.",
+        "confirm.deleteClass": "Удалить класс «{name}»? Уроки останутся в списке без класса.", "confirm.deleteLesson": "Удалить урок «{name}»?", "confirm.deleteMaterial": "Удалить материал «{name}»?", "course.slovakA1": "Словацкий · A1", "course.slovakB1": "Словацкий · B1", "material.vocabulary": "Словарь", "material.document": "Документ", "material.audio": "Аудио", "material.video": "Видео", "material.link": "Ссылка"
+    },
+    en: {
+        "nav.overview": "Overview", "nav.classes": "Classes", "nav.lessons": "Lessons", "nav.materials": "Materials", "nav.students": "Students", "nav.home": "← Home", "nav.label": "Main navigation", "brand.home": "SlovaSofi — home", "language.label": "Language", "menu.open": "Open menu", "header.notifications": "Notifications", "modal.close": "Close", "teacher.role": "Teacher", "school.profile": "School profile", "profile.open": "User profile: {name}", "profile.title": "User profile", "profile.signedOut": "Guest", "profile.notSignedIn": "You are not signed in", "profile.logout": "Sign out", "profile.login": "Sign in", "profile.logoutError": "Could not sign out. Please try again.", "profile.loadError": "Could not load the user profile.", "school.title": "School profile", "school.purpose": "The school profile is SlovaSofi’s shared workspace. It brings the school’s classes, lessons, and learning materials together.", "school.workspace": "Learning workspace", "school.workspaceDetail": "Shared classes, lessons, and materials", "notifications.title": "Notifications", "notifications.empty": "No notifications yet", "notifications.description": "Updates about classes, lessons, and students will appear here.", "class.noClass": "No class",
+        "page.overview": "Overview", "page.classes": "Classes", "page.lessons": "Lessons", "page.materials": "Materials", "page.students": "Students", "pageTitle": "Teacher dashboard", "welcome.badge": "TEACHER DASHBOARD · SLOVASOFI", "welcome.title": "Good day, {name} 👋", "welcome.text": "Your lessons and materials in one place.", "welcome.storage": "✓ Demo data is saved in this browser", "action.createLesson": "＋ Create lesson",
+        "stat.classes": "Classes created", "stat.students": "Students in classes", "stat.lessons": "Lessons created", "stat.materials": "Materials", "overview.recent": "Recent lessons", "overview.recentHint": "Lessons assigned to your classes", "overview.allLessons": "All lessons →", "overview.yourClasses": "Your classes", "overview.groups": "Student groups", "overview.allClasses": "All classes →",
+        "classes.title": "Classes", "classes.description": "Create groups and assign individual lessons to them.", "classes.create": "＋ Create class", "classes.search": "Search classes…", "classes.lessons": "Lessons →", "classes.notFound": "No classes found", "classes.notFoundHint": "Change your search or create a new class.",
+        "lessons.title": "Lessons", "lessons.description": "Build interactive activities and assign them to classes.", "lessons.add": "＋ Add lesson", "lessons.allClasses": "All classes", "lessons.search": "Search lessons…", "lessons.notFound": "No lessons yet", "lessons.notFoundHint": "Select “Add lesson” to choose activity types.", "lessons.blocks": "blocks", "lessons.block": "block", "lessons.task": "activity", "lessons.tasks": "activities",
+        "materials.title": "Materials", "materials.description": "A shared library of files, links, and learning resources.", "materials.add": "＋ Add material", "materials.total": "Total materials: {count}", "materials.search": "Search materials…", "materials.open": "Open material ↗", "materials.inLibrary": "Added to library", "materials.notFound": "No materials found", "materials.notFoundHint": "Add your first material or change the search.",
+        "students.title": "Students", "students.description": "Students organized by your classes.", "students.manage": "Manage classes", "students.total": "Total students: {count}", "students.search": "Search students…", "students.role": "SlovaSofi student", "students.notFound": "No students found", "students.notFoundHint": "Add students to classes to see them here.",
+        "empty.noClasses": "No classes yet", "empty.createClass": "Create a class to assign lessons.", "empty.search": "Nothing found", "empty.changeSearch": "Try a different search.",
+        "modal.editClass": "Edit class", "modal.newClass": "New class", "field.className": "Class name", "field.course": "Course or level", "field.students": "Students", "field.studentsPlaceholder": "Enter names separated by commas", "field.studentsHint": "Each name will be added as a student.", "field.exampleClass": "For example, Slovak A1", "field.exampleCourse": "For example, Slovak · A1", "action.cancel": "Cancel", "action.save": "Save", "action.createClass": "Create class", "action.delete": "Delete", "class.unnamedCourse": "Course not specified",
+        "modal.editLesson": "Edit lesson", "modal.newLesson": "New lesson", "field.lessonTitle": "Lesson name", "field.exampleLesson": "For example, Lekcia 5. Rodina", "field.chooseClass": "Choose a class", "lesson.activities": "Lesson activities", "activity.addBlock": "＋ Add activity", "lesson.firstActivity": "Add your first activity", "lesson.firstActivityHint": "Choose a block: drag and drop, fill in the blank, ordering, matching, and more.", "lesson.save": "Save lesson", "lesson.create": "Create lesson",
+        "field.instruction": "Instructions", "field.instructionExample": "For example, arrange the sentence", "field.taskText": "Activity text", "field.mediaContent": "Link or content", "field.answer": "Correct answer", "field.enterText": "Enter text or paste a link", "hint.drag": "words in the correct order", "hint.blank": "use ___ for the blank", "hint.options": "one option per line", "hint.order": "one item per line", "hint.sentences": "one sentence per line", "hint.match": "pair format word = translation, one per line", "hint.columns": "category: item, one per line", "hint.table": "separate columns with | and mark empty cells with ___", "hint.select": "options, one per line", "hint.trueFalse": "statement to evaluate", "hint.cards": "card: translation, one per line", "hint.answerSlash": "separate words with /", "hint.answerText": "word or phrase", "hint.answerChoice": "exact text of the correct answer", "hint.answerOrder": "correct order separated by /", "hint.optional": "optional", "hint.correctChoice": "correct option",
+        "picker.title": "Choose an interactive activity", "picker.all": "All", "picker.tests": "Quizzes", "picker.media": "Media", "picker.other": "Other", "picker.search": "Search activities…", "picker.back": "← Back to lesson",
+        "activity.task": "Activity", "activity.drag": "Drag the words", "activity.dragDesc": "Build a sentence by arranging words in the correct order.", "activity.blank": "Fill in the blank", "activity.blankDesc": "Enter a suitable word in the blank.", "activity.choice": "Choose an answer", "activity.choiceDesc": "Select one correct answer.", "activity.order": "Put in order", "activity.orderDesc": "Arrange the items in the correct order.", "activity.sentences": "Order the sentences", "activity.sentencesDesc": "Build a coherent text from sentences.", "activity.dropdown": "Choose from options", "activity.dropdownDesc": "Fill in the blank by choosing a word from the list.", "activity.trueFalse": "True or False", "activity.trueFalseDesc": "Decide whether the statement is true or false.", "activity.table": "Complete the table", "activity.tableDesc": "Enter answers into a table.", "activity.match": "Match the items", "activity.matchDesc": "Match words with their meanings.", "activity.columns": "Sort into columns", "activity.columnsDesc": "Sort cards into categories.", "activity.open": "Open answer", "activity.openDesc": "Add a question for a free-form answer.", "activity.cards": "Flashcards", "activity.cardsDesc": "Create cards with a word and its translation.", "activity.text": "Heading and text", "activity.textDesc": "Add an explanation or instruction.", "activity.video": "Video", "activity.videoDesc": "Insert a video link.", "activity.audio": "Audio", "activity.audioDesc": "Add audio or a recording link.", "activity.image": "Image", "activity.imageDesc": "Add an image to the lesson.",
+        "material.name": "Name", "material.example": "For example, Food vocabulary", "material.type": "Material type", "material.description": "Description", "material.shortDescription": "Short description", "material.url": "Link (optional)", "material.add": "Add material", "material.noDescription": "No description",
+        "toast.classCreated": "Class created.", "toast.classUpdated": "Class updated.", "toast.classDeleted": "Class deleted.", "toast.lessonCreated": "Lesson created.", "toast.lessonUpdated": "Lesson updated.", "toast.lessonDeleted": "Lesson deleted.", "toast.materialAdded": "Material added to the library.", "toast.materialDeleted": "Material deleted.", "toast.createClassFirst": "Create a class first to assign it a lesson.", "toast.titleAndClass": "Enter a lesson name and choose a class.", "toast.httpUrl": "The link must start with http:// or https://.", "toast.storageError": "Could not save changes in this browser. Check local storage access.",
+        "confirm.deleteClass": "Delete class “{name}”? Its lessons will remain unassigned.", "confirm.deleteLesson": "Delete lesson “{name}”?", "confirm.deleteMaterial": "Delete material “{name}”?", "course.slovakA1": "Slovak · A1", "course.slovakB1": "Slovak · B1", "material.vocabulary": "Vocabulary", "material.document": "Document", "material.audio": "Audio", "material.video": "Video", "material.link": "Link"
+    }
+};
+Object.assign(translations.ua, {
+    "classes.inviteStudent": "＋ Запросити учня",
+    "studentInvite.title": "Запросити учня до класу",
+    "studentInvite.name": "Ім’я учня",
+    "studentInvite.email": "Email учня",
+    "studentInvite.hint": "Учень отримає лист, щоб створити пароль і приєднатися до класу.",
+    "studentInvite.send": "Надіслати запрошення",
+    "toast.studentInvited": "Запрошення надіслано.",
+    "toast.studentInviteError": "Не вдалося надіслати запрошення:"
+});
+Object.assign(translations.ru, {
+    "classes.inviteStudent": "＋ Пригласить ученика",
+    "studentInvite.title": "Пригласить ученика в класс",
+    "studentInvite.name": "Имя ученика",
+    "studentInvite.email": "Email ученика",
+    "studentInvite.hint": "Ученик получит письмо, чтобы создать пароль и вступить в класс.",
+    "studentInvite.send": "Отправить приглашение",
+    "toast.studentInvited": "Приглашение отправлено.",
+    "toast.studentInviteError": "Не удалось отправить приглашение:"
+});
+Object.assign(translations.en, {
+    "classes.inviteStudent": "＋ Invite student",
+    "studentInvite.title": "Invite a student to class",
+    "studentInvite.name": "Student name",
+    "studentInvite.email": "Student email",
+    "studentInvite.hint": "The student will receive an email to set a password and join the class.",
+    "studentInvite.send": "Send invitation",
+    "toast.studentInvited": "Invitation sent.",
+    "toast.studentInviteError": "Could not send invitation:"
+});
+Object.assign(translations.ua, {
+    "welcome.database": "✓ Дані синхронізуються з Supabase",
+    "toast.databaseLoadError": "Не вдалося завантажити дані з бази:",
+    "toast.databaseSaveError": "Не вдалося зберегти дані в базі:"
+});
+Object.assign(translations.ru, {
+    "welcome.database": "✓ Данные синхронизируются с Supabase",
+    "toast.databaseLoadError": "Не удалось загрузить данные из базы:",
+    "toast.databaseSaveError": "Не удалось сохранить данные в базе:"
+});
+Object.assign(translations.en, {
+    "welcome.database": "✓ Data syncs with Supabase",
+    "toast.databaseLoadError": "Could not load data from the database:",
+    "toast.databaseSaveError": "Could not save data to the database:"
+});
+Object.assign(translations.ua, {
+    "nav.overview": "Профіль",
+    "page.overview": "Профіль",
+    "profile.dashboardTitle": "Мій профіль",
+    "profile.dashboardHint": "Персональний простір викладача SlovaSofi.",
+    "lessons.unitEmpty": "Поки без уроків",
+    "lessons.unitSubtitle": "Уроки цього рівня",
+    "classes.teacherLabel": "Викладач класу",
+    "classes.studentsLabel": "Учні в класі",
+    "classes.noStudents": "Учнів поки немає"
+});
+Object.assign(translations.ru, {
+    "nav.overview": "Профиль",
+    "page.overview": "Профиль",
+    "profile.dashboardTitle": "Мой профиль",
+    "profile.dashboardHint": "Личное пространство преподавателя SlovaSofi.",
+    "lessons.unitEmpty": "Пока без уроков",
+    "lessons.unitSubtitle": "Уроки этого уровня",
+    "classes.teacherLabel": "Преподаватель класса",
+    "classes.studentsLabel": "Ученики в классе",
+    "classes.noStudents": "Пока нет учеников"
+});
+Object.assign(translations.en, {
+    "nav.overview": "Profile",
+    "page.overview": "Profile",
+    "profile.dashboardTitle": "My profile",
+    "profile.dashboardHint": "Your personal SlovaSofi teacher space.",
+    "lessons.unitEmpty": "No lessons yet",
+    "lessons.unitSubtitle": "Lessons for this level",
+    "classes.teacherLabel": "Class teacher",
+    "classes.studentsLabel": "Students in this class",
+    "classes.noStudents": "No students yet"
+});
+let currentLanguage = ["ua", "ru", "en"].includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
+let currentUser = null;
+let workspaceSaveQueue = Promise.resolve();
+let openPopover = "";
+
+function t(key, values = {}) {
+    const text = translations[currentLanguage][key] || translations.ru[key] || key;
+    return text.replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ""));
+}
+
+const activityTypes = [
+    { id: "drag-words", nameKey: "activity.drag", descKey: "activity.dragDesc", icon: "↔", category: "tests" },
+    { id: "fill-blank", nameKey: "activity.blank", descKey: "activity.blankDesc", icon: "▱", category: "tests" },
+    { id: "multiple-choice", nameKey: "activity.choice", descKey: "activity.choiceDesc", icon: "☑", category: "tests" },
+    { id: "order-items", nameKey: "activity.order", descKey: "activity.orderDesc", icon: "≡", category: "tests" },
+    { id: "sentence-order", nameKey: "activity.sentences", descKey: "activity.sentencesDesc", icon: "☷", category: "tests" },
+    { id: "one-of-many", nameKey: "activity.dropdown", descKey: "activity.dropdownDesc", icon: "⌄", category: "tests" },
+    { id: "true-false", nameKey: "activity.trueFalse", descKey: "activity.trueFalseDesc", icon: "✓", category: "tests" },
+    { id: "table", nameKey: "activity.table", descKey: "activity.tableDesc", icon: "▦", category: "tests" },
+    { id: "match", nameKey: "activity.match", descKey: "activity.matchDesc", icon: "⟷", category: "tests" },
+    { id: "columns", nameKey: "activity.columns", descKey: "activity.columnsDesc", icon: "▥", category: "tests" },
+    { id: "open-answer", nameKey: "activity.open", descKey: "activity.openDesc", icon: "✎", category: "tests" },
+    { id: "flashcards", nameKey: "activity.cards", descKey: "activity.cardsDesc", icon: "▤", category: "tests" },
+    { id: "text", nameKey: "activity.text", descKey: "activity.textDesc", icon: "T", category: "other" },
+    { id: "video", nameKey: "activity.video", descKey: "activity.videoDesc", icon: "▶", category: "media" },
+    { id: "audio", nameKey: "activity.audio", descKey: "activity.audioDesc", icon: "♫", category: "media" },
+    { id: "image", nameKey: "activity.image", descKey: "activity.imageDesc", icon: "▧", category: "media" }
+];
+
+const initialData = {
+    classes: [
+        { id: "class-a1", name: "Slovenčina A1 Deti", course: "Slovenčina · A1", students: ["Виктория К.", "Анастасия М."] },
+        { id: "class-a2", name: "Slovenčina A1", course: "Slovenčina · A1", students: ["Вероника Т."] },
+        { id: "class-b1", name: "Slovenčina B1 Deti", course: "Slovenčina · B1", students: ["Ирина П.", "Анна С."] }
+    ],
+    lessons: [
+        { id: "lesson-1", title: "Lekcia 3. Či, ktorý, aký", unit: "A1", classIds: ["class-a1"], activities: [{ type: "drag-words", prompt: "Zostavte vetu", content: "Kde bývaš dnes?", answer: "Kde / bývaš / dnes?" }] },
+        { id: "lesson-2", title: "Lekcia 4. Nábytok", unit: "A1", classIds: ["class-a1"], activities: [{ type: "match", prompt: "Spojte slovo a preklad", content: "stolička = стул\nstôl = стол", answer: "" }] },
+        { id: "lesson-3", title: "Počasie a ročné obdobia", unit: "B1", classIds: ["class-b1"], activities: [{ type: "fill-blank", prompt: "Doplňte vhodné slovo", content: "V zime často ___ .", answer: "sneží" }] }
+    ],
+};
+
+let data = loadData();
+let activeView = "overview";
+let selectedLessonUnit = "";
+let activeClassFilter = "";
+let searchQuery = "";
+let selectedActivityCategory = "all";
+let activitySearch = "";
+let editingLessonId = null;
+let lessonFormDraft = { title: "", unit: "A1" };
+let draftSections = [];
+let activeLessonSectionId = "";
+let lessonWorkspaceMode = "";
+let workspaceLessonId = "";
+let toastTimer;
+let refreshModal = null;
+
+const pageContent = document.getElementById("pageContent");
+const modalBackdrop = document.getElementById("modalBackdrop");
+const modalCard = document.getElementById("modalCard");
+
+function loadData() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return structuredClone(initialData);
+        const parsed = JSON.parse(saved);
+        if (!parsed || !Array.isArray(parsed.classes) || !Array.isArray(parsed.lessons)) {
+            throw new Error("Сохранённые данные кабинета имеют неверный формат.");
+        }
+        delete parsed.materials;
+        parsed.classes = parsed.classes.map((item) => item.id === "class-a2" && item.name === "Словацкий A1" ? { ...item, name: "Slovenčina A1" } : item);
+        parsed.lessons = parsed.lessons.map((lesson) => ({
+            ...lesson,
+            classIds: lessonClassIds(lesson),
+            unit: LESSON_UNITS.includes(lesson.unit) ? lesson.unit : inferLessonUnit(lesson, parsed.classes),
+            sections: normalizeLessonSections(lesson),
+            activities: lessonActivities(lesson)
+        }));
+        return parsed;
+    } catch (error) {
+        console.error("Не удалось загрузить данные кабинета преподавателя.", error);
+        return structuredClone(initialData);
+    }
+}
+
+function persist() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        if (currentUser && window.teacherWorkspaceApi) {
+            const snapshot = structuredClone(data);
+            const userId = currentUser.id;
+            workspaceSaveQueue = workspaceSaveQueue
+                .then(() => window.teacherWorkspaceApi.saveWorkspace(window.supabaseClient, userId, snapshot))
+                .catch((error) => {
+                    console.error("Не удалось синхронизировать кабинет с Supabase.", error);
+                    showToast(`${t("toast.databaseSaveError")} ${error.message}`);
+                });
+        }
+        return true;
+    } catch (error) {
+        console.error("Не удалось сохранить данные кабинета преподавателя.", error);
+        showToast(t("toast.storageError"));
+        return false;
+    }
+}
+
+function escapeHtml(value = "") {
+    return String(value).replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[character]);
+}
+
+function showToast(message) {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.classList.add("visible");
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 3000);
+}
+
+function updateUserIdentity(user) {
+    currentUser = user;
+    const metadata = user?.user_metadata || {};
+    const firstName = metadata.first_name || metadata.firstName || "";
+    const lastName = metadata.last_name || metadata.lastName || "";
+    const displayName = [firstName, lastName].filter(Boolean).join(" ") || metadata.full_name || metadata.name || user?.email || t("profile.signedOut");
+    const initials = [firstName, lastName].filter(Boolean).map((part) => part.trim()[0]).join("").toLocaleUpperCase()
+        || displayName.split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toLocaleUpperCase()
+        || "—";
+    document.querySelectorAll(".user-name").forEach((element) => { element.textContent = displayName; });
+    document.querySelectorAll(".user-avatar").forEach((element) => { element.textContent = initials; });
+    const profileLabel = t("profile.open", { name: displayName });
+    document.querySelectorAll(".profile-trigger").forEach((element) => { element.setAttribute("aria-label", profileLabel); });
+    const welcomeHeading = document.getElementById("welcomeHeading");
+    if (welcomeHeading) welcomeHeading.textContent = t("welcome.title", { name: firstName || displayName });
+}
+
+async function loadCurrentUser() {
+    if (!window.supabaseClient) {
+        console.error("Supabase is not configured; user profile and sign out are unavailable.");
+        updateUserIdentity(null);
+        return;
+    }
+    try {
+        const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!session) {
+            updateUserIdentity(null);
+            return;
+        }
+        const { data: { user }, error } = await window.supabaseClient.auth.getUser();
+        if (error) throw error;
+        updateUserIdentity(user);
+        try {
+            const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, user.id);
+            data = workspace.data;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            render();
+            const storageNote = document.querySelector(".storage-note");
+            if (storageNote) storageNote.textContent = t("welcome.database");
+        } catch (workspaceError) {
+            console.error("Could not load the teacher workspace from Supabase.", workspaceError);
+            showToast(`${t("toast.databaseLoadError")} ${workspaceError.message}`);
+        }
+    } catch (error) {
+        console.error("Could not load the signed-in user profile.", error);
+        updateUserIdentity(null);
+        showToast(t("profile.loadError"));
+    }
+}
+
+function closePopover() {
+    document.getElementById("popoverRoot").innerHTML = "";
+    document.querySelectorAll(".popover-trigger, .profile-trigger").forEach((button) => button.setAttribute("aria-expanded", "false"));
+    openPopover = "";
+}
+
+function openPopoverAt(button, content, kind) {
+    if (openPopover === kind) {
+        closePopover();
+        return;
+    }
+    closePopover();
+    const root = document.getElementById("popoverRoot");
+    root.innerHTML = `<section class="popover-panel" role="dialog" aria-label="${escapeHtml(t(kind === "profile" ? "profile.title" : `${kind}.title`))}">${content}</section>`;
+    const panel = root.firstElementChild;
+    button.setAttribute("aria-expanded", "true");
+    openPopover = kind;
+    const bounds = button.getBoundingClientRect();
+    const margin = 12;
+    const panelBounds = panel.getBoundingClientRect();
+    const left = Math.max(margin, Math.min(bounds.right - panelBounds.width, window.innerWidth - panelBounds.width - margin));
+    let top = bounds.bottom + 9;
+    if (top + panelBounds.height > window.innerHeight - margin) top = bounds.top - panelBounds.height - 9;
+    top = Math.max(margin, Math.min(top, window.innerHeight - panelBounds.height - margin));
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+    panel.querySelector("[data-popover-action='logout']")?.addEventListener("click", signOut);
+    panel.querySelector("[data-popover-action='login']")?.addEventListener("click", () => { window.location.assign("login.html"); });
+}
+
+function showUserMenu(button) {
+    const metadata = currentUser?.user_metadata || {};
+    const name = [metadata.first_name || metadata.firstName, metadata.last_name || metadata.lastName].filter(Boolean).join(" ")
+        || metadata.full_name || metadata.name || currentUser?.email || t("profile.signedOut");
+    const identity = currentUser?.email
+        ? `<div class="popover-email">${escapeHtml(currentUser.email)}</div>`
+        : `<div class="popover-email">${t("profile.notSignedIn")}</div>`;
+    const action = currentUser
+        ? `<button class="popover-action danger" type="button" data-popover-action="logout"><span aria-hidden="true">↪</span>${t("profile.logout")}</button>`
+        : `<button class="popover-action" type="button" data-popover-action="login"><span aria-hidden="true">→</span>${t("profile.login")}</button>`;
+    openPopoverAt(button, `<div class="popover-user"><span class="avatar">${escapeHtml(initialsFor(name))}</span><div><strong>${escapeHtml(name)}</strong><small>${t("teacher.role")}</small></div></div>${identity}<div class="popover-divider"></div>${action}`, "profile");
+}
+
+function initialsFor(name) {
+    return String(name).split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toLocaleUpperCase() || "—";
+}
+
+async function signOut() {
+    if (!window.supabaseClient) {
+        console.error("Supabase is not configured; cannot sign out.");
+        showToast(t("profile.logoutError"));
+        return;
+    }
+    try {
+        const { error } = await window.supabaseClient.auth.signOut();
+        if (error) throw error;
+        currentUser = null;
+        closePopover();
+        window.location.assign("login.html");
+    } catch (error) {
+        console.error("Could not sign out of the current account.", error);
+        showToast(t("profile.logoutError"));
+    }
+}
+
+function showNotifications(button) {
+    openPopoverAt(button, `<div class="popover-heading"><span class="notification-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span><div><strong>${t("header.notifications")}</strong><small>${t("notifications.empty")}</small></div></div><p class="popover-copy">${t("notifications.description")}</p>`, "notifications");
+}
+
+function className(classId) {
+    return data.classes.find((item) => item.id === classId)?.name || t("class.noClass");
+}
+
+function lessonClassIds(lesson) {
+    if (Array.isArray(lesson.classIds)) return lesson.classIds;
+    return lesson.classId ? [lesson.classId] : [];
+}
+
+function lessonClassNames(lesson) {
+    return lessonClassIds(lesson).map(className).join(", ") || t("class.noClass");
+}
+
+function inferLessonUnit(lesson, classes = data.classes) {
+    const assignedClasses = lessonClassIds(lesson).map((id) => classes.find((item) => item.id === id)).filter(Boolean);
+    const source = [...assignedClasses.map((item) => `${item.name} ${item.course}`), lesson.title || ""].join(" ");
+    return source.match(/\b(A1|A2|B1|B2)\b/i)?.[1].toUpperCase() || "A1";
+}
+
+function lessonText(key, values = {}) {
+    const labels = {
+        ua: {
+            description: "Створюйте уроки, розкладайте їх за рівнями, а потім призначайте класам.",
+            unit: "Рівень уроку",
+            unitEmpty: "Поки без уроків",
+            noUnit: "У цьому рівні поки немає уроків.",
+            levelDescription: "Навчальна програма та уроки рівня {level}.",
+            courseLabel: "НАВЧАЛЬНИЙ КУРС",
+            levelLessons: "Уроки",
+            unassigned: "Не призначено класу",
+            noSearch: "За вашим запитом уроків не знайдено.",
+            chooseUnit: "Виберіть рівень",
+            classLater: "Клас можна призначити після створення уроку."
+        },
+        ru: {
+            description: "Создавайте уроки, распределяйте их по уровням, а затем назначайте классам.",
+            unit: "Уровень урока",
+            unitEmpty: "Пока без уроков",
+            noUnit: "На этом уровне пока нет уроков.",
+            levelDescription: "Учебная программа и уроки уровня {level}.",
+            courseLabel: "УЧЕБНЫЙ КУРС",
+            levelLessons: "Уроки",
+            unassigned: "Не назначен классу",
+            noSearch: "По вашему запросу уроков не найдено.",
+            chooseUnit: "Выберите уровень",
+            classLater: "Класс можно назначить после создания урока."
+        },
+        en: {
+            description: "Create lessons, organize them by level, then assign them to classes.",
+            unit: "Lesson level",
+            unitEmpty: "No lessons yet",
+            noUnit: "There are no lessons at this level yet.",
+            levelDescription: "Course content and lessons for level {level}.",
+            courseLabel: "LEARNING COURSE",
+            levelLessons: "Lessons",
+            unassigned: "Not assigned to a class",
+            noSearch: "No lessons match your search.",
+            chooseUnit: "Choose a level",
+            classLater: "You can assign a class after creating the lesson."
+        }
+    };
+    return labels[currentLanguage][key].replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ""));
+}
+
+function assignmentText(key) {
+    const labels = {
+        ua: { add: "＋ Додати до класу", dialog: "Додати урок до класів", hint: "Виберіть один або кілька класів для цього уроку.", save: "Зберегти призначення", saved: "Призначення уроку оновлено." },
+        ru: { add: "＋ Добавить в класс", dialog: "Добавить урок в классы", hint: "Выберите один или несколько классов для этого урока.", save: "Сохранить назначение", saved: "Назначение урока обновлено." },
+        en: { add: "＋ Assign to class", dialog: "Assign lesson to classes", hint: "Choose one or more classes for this lesson.", save: "Save assignment", saved: "Lesson assignment updated." }
+    };
+    return labels[currentLanguage][key];
+}
+
+function classAssignmentChoices(selectedIds) {
+    if (!data.classes.length) return emptyMessage(t("empty.noClasses"), t("empty.createClass"));
+    return data.classes.map((group) => `<label class="class-choice"><input type="checkbox" name="classIds" value="${escapeHtml(group.id)}" ${selectedIds.includes(group.id) ? "checked" : ""}><span>${escapeHtml(group.name)}</span></label>`).join("");
+}
+
+function countLabel(count, entity) {
+    const forms = {
+        ua: { student: ["учень", "учні", "учнів"], activity: ["завдання", "завдання", "завдань"], block: ["блок", "блоки", "блоків"], lesson: ["урок", "уроки", "уроків"] },
+        ru: { student: ["ученик", "ученика", "учеников"], activity: ["задание", "задания", "заданий"], block: ["блок", "блока", "блоков"], lesson: ["урок", "урока", "уроков"] },
+        en: { student: ["student", "students", "students"], activity: ["activity", "activities", "activities"], block: ["block", "blocks", "blocks"], lesson: ["lesson", "lessons", "lessons"] }
+    }[currentLanguage][entity];
+    const lastTwo = count % 100;
+    if (currentLanguage === "en") return `${count} ${forms[count === 1 ? 0 : 1]}`;
+    if (lastTwo >= 11 && lastTwo <= 14) return `${count} ${forms[2]}`;
+    const last = count % 10;
+    return `${count} ${forms[last === 1 ? 0 : last >= 2 && last <= 4 ? 1 : 2]}`;
+}
+
+function safeHttpUrl(value) {
+    if (!value) return "";
+    try {
+        const url = new URL(value);
+        return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+    } catch {
+        return "";
+    }
+}
+
+function formatCourse(course) {
+    const match = course.match(/^(?:словацкий|словацька|slovak|slovenčina)\s*[·.-]\s*(a1|b1)$/i);
+    return match ? t(`course.slovak${match[1].toUpperCase()}`) : course;
+}
+
+function setView(view) {
+    lessonWorkspaceMode = "";
+    workspaceLessonId = "";
+    editingLessonId = null;
+    draftSections = [];
+    activeLessonSectionId = "";
+    activeView = view;
+    document.getElementById("breadcrumb").textContent = t(`page.${view}`);
+    document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
+    document.getElementById("sidebar").classList.remove("open");
+    render();
+}
+
+function render() {
+    if (lessonWorkspaceMode) {
+        renderLessonWorkspace();
+        return;
+    }
+    const renderers = { overview: renderOverview, classes: renderClasses, lessons: renderLessons, students: renderStudents };
+    pageContent.innerHTML = renderers[activeView]();
+    bindPageActions();
+}
+
+function lessonSectionText(key) {
+    const labels = {
+        ua: { intro: "Вступ", newSection: "Новий розділ", addSection: "＋ Додати розділ", section: "Розділи уроку", rename: "Назва розділу", remove: "Видалити розділ", previous: "← Назад", next: "Далі →", addElement: "＋ Додати новий елемент", copyElement: "▣ Копіювати елемент", edit: "Редагувати", back: "До уроків", save: "Зберегти урок", create: "Створити урок", empty: "У цьому розділі ще немає елементів.", confirmRemove: "Видалити розділ разом з його елементами?" },
+        ru: { intro: "Введение", newSection: "Новый раздел", addSection: "＋ Добавить раздел", section: "Разделы урока", rename: "Название раздела", remove: "Удалить раздел", previous: "← Назад", next: "Далее →", addElement: "＋ Добавить новый элемент", copyElement: "▣ Копировать элемент", edit: "Редактировать", back: "К урокам", save: "Сохранить урок", create: "Создать урок", empty: "В этом разделе пока нет элементов.", confirmRemove: "Удалить раздел вместе с его элементами?" },
+        en: { intro: "Introduction", newSection: "New section", addSection: "＋ Add section", section: "Lesson sections", rename: "Section name", remove: "Delete section", previous: "← Back", next: "Next →", addElement: "＋ Add new item", copyElement: "▣ Duplicate item", edit: "Edit lesson", back: "Back to lessons", save: "Save lesson", create: "Create lesson", empty: "This section has no items yet.", confirmRemove: "Delete this section and its items?" }
+    };
+    return labels[currentLanguage][key];
+}
+
+function normalizeLessonSections(lesson) {
+    if (Array.isArray(lesson.sections) && lesson.sections.length) {
+        return lesson.sections.map((section, index) => ({
+            id: String(section.id || `section-${index + 1}`),
+            title: String(section.title || `${lessonSectionText("newSection")} ${index + 1}`),
+            activities: Array.isArray(section.activities) ? section.activities : []
+        }));
+    }
+    const activities = Array.isArray(lesson.activities) ? lesson.activities : [];
+    return [{ id: "section-intro", title: lessonSectionText("intro"), activities }];
+}
+
+function lessonActivities(lesson) {
+    if (Array.isArray(lesson.activities)) return lesson.activities;
+    if (Array.isArray(lesson.sections)) return lesson.sections.flatMap((section) => Array.isArray(section.activities) ? section.activities : []);
+    return [];
+}
+
+function activeDraftSection() {
+    return draftSections.find((section) => section.id === activeLessonSectionId) || draftSections[0];
+}
+
+function setLanguage(language) {
+    if (!translations[language]) return;
+    currentLanguage = language;
+    localStorage.setItem("siteLanguage", language);
+    closePopover();
+    updateUserIdentity(currentUser);
+    document.documentElement.lang = language === "ua" ? "uk" : language;
+    document.title = `SlovaSofi · ${t("pageTitle")}`;
+    translateStaticUI();
+    render();
+    if (!modalBackdrop.hidden && refreshModal) {
+        const getFieldKey = (element, index) => element.name || element.id || (element.dataset.field ? `${element.closest(".builder-block")?.dataset.blockIndex}:${element.dataset.field}` : `field-${index}`);
+        const values = new Map([...modalCard.querySelectorAll("input, textarea, select")].map((element, index) => [getFieldKey(element, index), element.value]));
+        refreshModal();
+        modalCard.querySelectorAll("input, textarea, select").forEach((element, index) => {
+            const value = values.get(getFieldKey(element, index));
+            if (value !== undefined) element.value = value;
+        });
+    }
+}
+
+function translateStaticUI() {
+    document.querySelectorAll("[data-i18n]").forEach((element) => {
+        element.textContent = t(element.dataset.i18n);
+    });
+    document.querySelectorAll("[data-i18n-aria]").forEach((element) => {
+        element.setAttribute("aria-label", t(element.dataset.i18nAria));
+    });
+    document.querySelectorAll(".language-button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.lang === currentLanguage);
+        button.setAttribute("aria-pressed", button.dataset.lang === currentLanguage ? "true" : "false");
+    });
+    document.getElementById("breadcrumb").textContent = t(`page.${activeView}`);
+    document.getElementById("menuToggle").setAttribute("aria-label", t("menu.open"));
+    document.title = `SlovaSofi · ${t("pageTitle")}`;
+}
+
+function renderOverview() {
+    const studentCount = data.classes.reduce((total, item) => total + item.students.length, 0);
+    const recentLessons = [...data.lessons].slice(-3).reverse();
+    const featuredClasses = data.classes.slice(0, 3);
+    const profileMetadata = currentUser?.user_metadata || {};
+    const firstName = profileMetadata.first_name || profileMetadata.firstName;
+    const profileName = [firstName, profileMetadata.last_name || profileMetadata.lastName].filter(Boolean).join(" ") || profileMetadata.full_name || profileMetadata.name || currentUser?.email || t("profile.signedOut");
+    const initials = [firstName, profileMetadata.last_name || profileMetadata.lastName].filter(Boolean).map((part) => part[0]).join("").toLocaleUpperCase() || initialsFor(profileName);
+    return `<section class="profile-hero"><div class="profile-identity"><span class="profile-avatar">${escapeHtml(initials)}</span><div><span class="eyebrow">✦ ${t("welcome.badge")}</span><h1 id="welcomeHeading">${t("welcome.title", { name: firstName || profileName })}</h1><p>${escapeHtml(currentUser?.email || t("profile.notSignedIn"))}</p></div></div><div class="profile-role">${t("teacher.role")}</div></section>
+        <div class="profile-welcome"><div><h2>${t("profile.dashboardTitle")}</h2><p>${t("profile.dashboardHint")}</p><span class="storage-note">${t("welcome.storage")}</span></div><button class="button" data-action="new-lesson">${t("action.createLesson")}</button></div>
+        <div class="stats-grid profile-stats">
+            <article class="stat-card"><span class="stat-icon">▣</span><span>${t("stat.classes")}</span><strong>${data.classes.length}</strong></article>
+            <article class="stat-card"><span class="stat-icon blue">♧</span><span>${t("stat.students")}</span><strong>${studentCount}</strong></article>
+            <article class="stat-card"><span class="stat-icon orange">▤</span><span>${t("stat.lessons")}</span><strong>${data.lessons.length}</strong></article>
+        </div>
+        <div class="overview-grid">
+            <section class="panel"><div class="panel-heading"><div><h2>${t("overview.recent")}</h2><p class="hint">${t("overview.recentHint")}</p></div><button class="text-link" data-view-link="lessons">${t("overview.allLessons")}</button></div>
+                <div class="lesson-list">${recentLessons.length ? recentLessons.map((lesson) => lessonRow(lesson)).join("") : emptyMessage(t("lessons.notFound"), t("lessons.notFoundHint"))}</div>
+            </section>
+            <section class="panel"><div class="panel-heading"><div><h2>${t("overview.yourClasses")}</h2><p class="hint">${t("overview.groups")}</p></div><button class="text-link" data-view-link="classes">${t("overview.allClasses")}</button></div>
+                <div class="class-preview">${featuredClasses.length ? featuredClasses.map((item) => `<div class="class-mini"><span class="class-dot"></span><div><strong>${escapeHtml(item.name)}</strong><small>${countLabel(item.students.length, "student")} · ${escapeHtml(formatCourse(item.course))}</small></div></div>`).join("") : emptyMessage(t("empty.noClasses"), t("empty.createClass"))}</div>
+            </section>
+        </div>`;
+}
+
+function renderClasses() {
+    const filtered = data.classes.filter((item) => `${item.name} ${item.course}`.toLowerCase().includes(searchQuery.toLowerCase()));
+    const metadata = currentUser?.user_metadata || {};
+    const teacherName = [metadata.first_name || metadata.firstName, metadata.last_name || metadata.lastName].filter(Boolean).join(" ")
+        || metadata.full_name || metadata.name || currentUser?.email || t("profile.signedOut");
+    return `<div class="section-heading"><div><h1>${t("classes.title")}</h1><p>${t("classes.description")}</p></div></div>
+        <div class="toolbar"><button class="button secondary" data-action="new-class">${t("classes.create")}</button><input type="search" data-search placeholder="${t("classes.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("classes.search")}"></div>
+        <div class="card-grid class-grid">${filtered.length ? filtered.map((item, index) => `<article class="class-card class-card-enhanced class-tone-${index % 4}">
+            <div class="card-actions"><button class="mini-action" data-action="edit-class" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editClass")}">✎</button><button class="mini-action" data-action="delete-class" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}">×</button></div>
+            <div class="class-card-top"><span class="class-card-avatar">${escapeHtml(item.name.slice(0, 2).toUpperCase())}</span><span class="class-course-pill">${escapeHtml(formatCourse(item.course))}</span></div><h3>${escapeHtml(item.name)}</h3>
+            <div class="class-teacher-line"><span class="class-person-icon" aria-hidden="true">♙</span><span><small>${t("classes.teacherLabel")}</small><strong>${escapeHtml(teacherName)}</strong></span></div>
+            <div class="class-roster"><div class="class-roster-heading"><strong>${t("classes.studentsLabel")}</strong><span>${item.students.length}</span></div>
+                ${item.students.length ? `<ul class="class-roster-list">${item.students.map((student) => `<li><span class="class-student-avatar">${escapeHtml(student.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toLocaleUpperCase())}</span><span>${escapeHtml(student)}</span></li>`).join("")}</ul>` : `<p class="class-roster-empty">${t("classes.noStudents")}</p>`}
+            </div>
+            <div class="class-card-meta"><button class="text-link" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${t("classes.lessons")}</button></div>
+            <button class="button secondary small class-invite-button" data-action="invite-student" data-id="${escapeHtml(item.id)}">${t("classes.inviteStudent")}</button></article>`).join("") : emptyMessage(t("classes.notFound"), t("classes.notFoundHint"))}</div>`;
+}
+
+function renderLessons() {
+    const filtered = data.lessons.filter((item) => (!activeClassFilter || lessonClassIds(item).includes(activeClassFilter))
+        && `${item.title} ${item.unit} ${lessonClassNames(item)}`.toLowerCase().includes(searchQuery.toLowerCase()));
+    const classSelect = `<option value="">${t("lessons.allClasses")}</option>${data.classes.map((item) => `<option value="${escapeHtml(item.id)}" ${activeClassFilter === item.id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}`;
+    const selectedLevelLessons = filtered.filter((item) => (item.unit || inferLessonUnit(item)) === selectedLessonUnit);
+    const sectionHeading = selectedLessonUnit
+        ? `<div class="lesson-breadcrumb"><button class="text-link" type="button" data-action="back-to-units">${t("lessons.title")}</button><span aria-hidden="true">›</span><strong>${selectedLessonUnit}</strong></div>`
+        : "";
+    return `${sectionHeading}<div class="section-heading"><div><h1>${selectedLessonUnit || t("lessons.title")}</h1><p>${selectedLessonUnit ? lessonText("levelDescription", { level: selectedLessonUnit }) : lessonText("description")}</p></div><button class="button" data-action="new-lesson">${t("lessons.add")}</button></div>
+        <div class="toolbar"><select data-class-filter aria-label="${t("lessons.allClasses")}">${classSelect}</select><input type="search" data-search placeholder="${t("lessons.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("lessons.search")}"></div>
+        ${selectedLessonUnit ? `<section class="course-hero course-hero-${selectedLessonUnit.toLowerCase()}"><div class="course-hero-art" aria-hidden="true"><span>${selectedLessonUnit}</span></div><div class="course-hero-copy"><span class="course-hero-kicker">${lessonText("courseLabel")}</span><h2>${selectedLessonUnit}</h2><p>${lessonText("levelDescription", { level: selectedLessonUnit })}</p><span class="course-hero-count">${countLabel(selectedLevelLessons.length, "lesson")}</span></div></section>
+            <div class="course-lessons-heading"><h2>${lessonText("levelLessons")}</h2><span>${selectedLevelLessons.length}</span></div>
+            <div class="course-lesson-list">${selectedLevelLessons.length ? selectedLevelLessons.map((item) => `<article class="course-lesson-row">${lessonIcon(item)}<div class="lesson-main"><button class="lesson-preview-link" data-action="preview-lesson" data-id="${escapeHtml(item.id)}">${escapeHtml(item.title)}</button><small>${escapeHtml(lessonClassNames(item)) || lessonText("unassigned")} · ${countLabel(lessonActivities(item).length, "activity")}</small></div><div class="course-lesson-actions"><button class="mini-action course-action-preview" data-action="preview-lesson" data-id="${escapeHtml(item.id)}" aria-label="${previewText("open")}" title="${previewText("open")}">↗</button><button class="mini-action" data-action="edit-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editLesson")}" title="${t("modal.editLesson")}">✎</button><button class="mini-action" data-action="assign-lesson" data-id="${escapeHtml(item.id)}" aria-label="${assignmentText("add")}" title="${assignmentText("add")}">⌁</button><button class="mini-action" data-action="delete-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}" title="${t("action.delete")}">×</button></div></article>`).join("") : emptyMessage(data.lessons.length ? lessonText("noSearch") : t("lessons.notFound"), data.lessons.length ? "" : t("lessons.notFoundHint"))}</div>`
+            : `<div class="unit-sections">${LESSON_UNITS.map((unit) => {
+                const unitLessons = filtered.filter((item) => (item.unit || inferLessonUnit(item)) === unit);
+                return `<button type="button" class="unit-card unit-card-link unit-card-${unit.toLowerCase()}" data-unit-open="${unit}"><span class="unit-card-mark">${unit}</span><span class="unit-card-copy"><strong>${unit}</strong><small>${unitLessons.length ? countLabel(unitLessons.length, "lesson") : lessonText("unitEmpty")}</small></span><span class="unit-card-chevron" aria-hidden="true">→</span></button>`;
+            }).join("")}</div>${filtered.length ? "" : emptyMessage(data.lessons.length ? lessonText("noSearch") : t("lessons.notFound"), data.lessons.length ? "" : t("lessons.notFoundHint"))}`}`;
+}
+
+function renderStudents() {
+    const students = data.classes.flatMap((item) => item.students.map((name, index) => ({ name, className: item.name, id: `${item.id}-${index}` })));
+    const filtered = students.filter((student) => `${student.name} ${student.className}`.toLowerCase().includes(searchQuery.toLowerCase()));
+    return `<div class="section-heading"><div><h1>${t("students.title")}</h1><p>${t("students.description")}</p></div><button class="button secondary" data-view-link="classes">${t("students.manage")}</button></div>
+        <div class="toolbar"><span class="hint" style="color:#d7e9dd">${t("students.total", { count: students.length })}</span><input type="search" data-search placeholder="${t("students.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("students.search")}"></div>
+        <div class="student-list">${filtered.length ? filtered.map((student) => `<div class="student-row"><span class="avatar">${escapeHtml(student.name.split(" ").map((part) => part[0]).join("").slice(0, 2))}</span><div><strong>${escapeHtml(student.name)}</strong><small>${t("students.role")}</small></div><span class="class-label">${escapeHtml(student.className)}</span></div>`).join("") : emptyMessage(t("students.notFound"), t("students.notFoundHint"))}</div>`;
+}
+
+function lessonIcon(lesson) {
+    const activity = activityTypes.find((item) => item.id === lessonActivities(lesson)[0]?.type);
+    return `<span class="lesson-symbol">${activity?.icon || "▤"}</span>`;
+}
+
+function lessonRow(lesson) {
+    return `<div class="lesson-row">${lessonIcon(lesson)}<div class="lesson-main"><button class="lesson-preview-link" data-action="preview-lesson" data-id="${escapeHtml(lesson.id)}">${escapeHtml(lesson.title)}</button><small>${lesson.unit || inferLessonUnit(lesson)} · ${escapeHtml(lessonClassNames(lesson))}</small></div><span class="lesson-count">${countLabel(lessonActivities(lesson).length, "activity")}</span></div>`;
+}
+
+const previewLabels = {
+    ua: { open: "Відкрити урок", practice: "Спробуйте виконати завдання. Результати тут не зберігаються.", check: "Перевірити", correct: "Правильно!", incorrect: "Спробуйте ще раз.", noAnswer: "Для цього завдання ще не вказано правильну відповідь.", typeAnswer: "Введіть відповідь", choose: "Виберіть відповідь", drop: "Перетягніть або натисніть слова сюди", bank: "Слова", up: "Вище", down: "Нижче", flip: "Перевернути картку", empty: "У цьому уроці поки немає блоків.", imageError: "Не вдалося завантажити зображення.", mediaError: "Перевірте посилання на медіафайл.", readOnly: "Навчальний матеріал", true: "Так", false: "Ні" },
+    ru: { open: "Открыть урок", practice: "Попробуйте выполнить задания. Результаты здесь не сохраняются.", check: "Проверить", correct: "Верно!", incorrect: "Попробуйте ещё раз.", noAnswer: "Для этого задания ещё не указан правильный ответ.", typeAnswer: "Введите ответ", choose: "Выберите ответ", drop: "Перетащите или нажмите слова сюда", bank: "Слова", up: "Выше", down: "Ниже", flip: "Перевернуть карточку", empty: "В этом уроке пока нет блоков.", imageError: "Не удалось загрузить изображение.", mediaError: "Проверьте ссылку на медиафайл.", readOnly: "Учебный материал", true: "Да", false: "Нет" },
+    en: { open: "Open lesson", practice: "Try the activities. Your results are not saved here.", check: "Check answer", correct: "Correct!", incorrect: "Try again.", noAnswer: "No correct answer has been set for this activity.", typeAnswer: "Type your answer", choose: "Choose an answer", drop: "Drag or click words here", bank: "Words", up: "Move up", down: "Move down", flip: "Flip card", empty: "This lesson has no activities yet.", imageError: "The image could not be loaded.", mediaError: "Check the media link.", readOnly: "Learning material", true: "True", false: "False" }
+};
+
+function previewText(key) {
+    return previewLabels[currentLanguage][key];
+}
+
+function previewTokens(value) {
+    return String(value || "").split(/\s*\/\s*|\r?\n/).map((part) => part.trim()).filter(Boolean);
+}
+
+function previewLines(value) {
+    return String(value || "").split(/\r?\n/).map((part) => part.trim()).filter(Boolean);
+}
+
+function previewMediaUrl(value) {
+    const source = String(value || "").trim();
+    if (!source) return "";
+    try {
+        const url = new URL(source, window.location.href);
+        return ["https:", "http:", "file:"].includes(url.protocol) ? url.href : "";
+    } catch {
+        return "";
+    }
+}
+
+function renderPreviewActivity(activity, index) {
+    const type = activity.type;
+    const prompt = escapeHtml(activity.prompt || t(activityTypes.find((item) => item.id === type)?.nameKey || "activity.task"));
+    const content = String(activity.content || "");
+    const answer = String(activity.answer || "").trim();
+    const lines = previewLines(content);
+    let body = "";
+    let checkable = true;
+
+    if (type === "drag-words") {
+        const expected = answer ? previewTokens(answer) : content.trim().split(/\s+/).filter(Boolean);
+        const tokens = expected.map((word, wordIndex) => ({ word, wordIndex }));
+        if (tokens.length > 1) tokens.push(tokens.shift());
+        body = `<p class="preview-instruction">${prompt}</p><div class="preview-drag-layout"><div><strong>${previewText("bank")}</strong><div class="preview-word-bank" data-word-bank>${tokens.map(({ word, wordIndex }) => `<button type="button" class="preview-word" draggable="true" data-word-index="${wordIndex}">${escapeHtml(word)}</button>`).join("")}</div></div><div><strong>${previewText("drop")}</strong><div class="preview-dropzone" data-dropzone tabindex="0"><span class="preview-drop-hint">${previewText("drop")}</span></div></div></div>`;
+        if (!expected.length) checkable = false;
+    } else if (type === "fill-blank") {
+        let blankIndex = 0;
+        const parts = content.split("___");
+        body = `<p class="preview-instruction">${parts.map((part, partIndex) => `${escapeHtml(part)}${partIndex < parts.length - 1 ? `<input class="preview-inline-input" data-answer-index="${blankIndex++}" aria-label="${previewText("typeAnswer")}" autocomplete="off">` : ""}`).join("")}</p>`;
+    } else if (type === "multiple-choice" || type === "one-of-many" || type === "true-false") {
+        const options = type === "true-false" ? [previewText("true"), previewText("false")] : lines;
+        body = `<p class="preview-instruction">${prompt}${content ? `<br>${escapeHtml(content)}` : ""}</p><div class="preview-options">${options.map((option, optionIndex) => `<label class="preview-option"><input type="radio" name="preview-${index}" value="${optionIndex}"><span>${escapeHtml(option)}</span></label>`).join("")}</div>`;
+        if (!answer) checkable = false;
+    } else if (type === "order-items" || type === "sentence-order") {
+        const items = lines.map((line, itemIndex) => ({ text: line.replace(/^\d+[.)]\s*/, ""), itemIndex }));
+        if (items.length > 1) items.reverse();
+        body = `<p class="preview-instruction">${prompt}</p><ol class="preview-order-list" data-order-list>${items.map(({ text, itemIndex }) => `<li class="preview-order-item" draggable="true" data-order-index="${itemIndex}"><span>${escapeHtml(text)}</span><span class="preview-order-actions"><button type="button" data-move="up" aria-label="${previewText("up")}">↑</button><button type="button" data-move="down" aria-label="${previewText("down")}">↓</button></span></li>`).join("")}</ol>`;
+    } else if (type === "columns") {
+        const pairs = lines.map((line) => line.split(":").map((part) => part.trim())).filter((pair) => pair.length >= 2 && pair[0] && pair[1]);
+        const categories = [...new Set(pairs.map(([category]) => category))];
+        body = `<p class="preview-instruction">${prompt}</p>${pairs.length ? `<div class="preview-match-list">${pairs.map(([, item], itemIndex) => `<label class="preview-match-row"><span>${escapeHtml(item)}</span><select data-column-index="${itemIndex}" aria-label="${previewText("choose")}"><option value="">${previewText("choose")}</option>${categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("")}</select></label>`).join("")}</div>` : `<p class="preview-material">${escapeHtml(content)}</p>`}`;
+        if (!pairs.length) checkable = false;
+    } else if (type === "match") {
+        const pairs = lines.map((line) => line.split("=").map((part) => part.trim())).filter((pair) => pair.length >= 2 && pair[0] && pair[1]);
+        body = `<p class="preview-instruction">${prompt}</p>${pairs.length ? `<div class="preview-match-list">${pairs.map(([left], pairIndex) => `<label class="preview-match-row"><span>${escapeHtml(left)}</span><select data-match-index="${pairIndex}" aria-label="${previewText("choose")}"><option value="">${previewText("choose")}</option>${pairs.map(([, right], rightIndex) => `<option value="${rightIndex}">${escapeHtml(right)}</option>`).join("")}</select></label>`).join("")}</div>` : `<p class="preview-material">${escapeHtml(content)}</p>`}`;
+        if (!pairs.length) checkable = false;
+    } else if (type === "open-answer") {
+        body = `<p class="preview-instruction">${prompt}${content ? `<br>${escapeHtml(content)}` : ""}</p><textarea class="preview-text-answer" data-open-answer placeholder="${previewText("typeAnswer")}"></textarea>`;
+        if (!answer) checkable = false;
+    } else if (type === "flashcards") {
+        body = `<p class="preview-instruction">${prompt}</p><div class="preview-flashcards">${lines.map((line) => { const [front, ...back] = line.split(":"); return `<button type="button" class="preview-flashcard" data-front="${escapeHtml(front.trim())}" data-back="${escapeHtml(back.join(":").trim())}"><strong>${escapeHtml(front.trim())}</strong><small>${previewText("flip")}</small></button>`; }).join("") || `<p class="preview-material">${escapeHtml(content)}</p>`}</div>`;
+        checkable = false;
+    } else if (type === "image") {
+        const markdownImage = content.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+        const source = previewMediaUrl(markdownImage?.[2] || content);
+        body = `<p class="preview-instruction">${prompt}</p>${source ? `<img class="preview-image" src="${escapeHtml(source)}" alt="${escapeHtml(markdownImage?.[1] || activity.prompt || "")}" data-preview-image>` : `<p class="preview-material">${escapeHtml(content || previewText("imageError"))}</p>`}`;
+        checkable = false;
+    } else if (type === "audio" || type === "video") {
+        const source = previewMediaUrl(content);
+        body = `<p class="preview-instruction">${prompt}</p>${source ? `<${type} class="preview-media" controls preload="metadata" data-preview-media><source src="${escapeHtml(source)}"></${type}>` : `<p class="preview-material">${escapeHtml(content || previewText("mediaError"))}</p>`}`;
+        checkable = false;
+    } else if (type === "table") {
+        let blankIndex = 0;
+        const rows = lines.map((line) => line.split(/\t|\s*\|\s*/).map((cell) => cell.trim()));
+        body = `<p class="preview-instruction">${prompt}</p><div class="preview-table-wrap"><table class="preview-table"><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell.split("___").map((part, partIndex, parts) => `${escapeHtml(part)}${partIndex < parts.length - 1 ? `<input class="preview-inline-input" data-table-answer-index="${blankIndex++}" aria-label="${previewText("typeAnswer")}" autocomplete="off">` : ""}`).join("")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+        checkable = blankIndex > 0;
+    } else if (type === "text") {
+        body = `<p class="preview-instruction">${prompt}</p><div class="preview-material">${escapeHtml(content).replace(/\n/g, "<br>")}</div>`;
+        checkable = false;
+    } else {
+        body = `<p class="preview-instruction">${prompt}</p><div class="preview-material">${escapeHtml(content).replace(/\n/g, "<br>")}</div>`;
+        checkable = false;
+    }
+
+    return `<article class="preview-activity" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}"><h3>${index + 1}. ${prompt}</h3>${body}${checkable ? `<button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button><p class="preview-result" data-preview-result aria-live="polite"></p>` : ""}</article>`;
+}
+
+function openLessonPreview(id) {
+    const lesson = data.lessons.find((item) => item.id === id);
+    if (!lesson) return;
+    activeView = "lessons";
+    document.getElementById("breadcrumb").textContent = t("page.lessons");
+    document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === "lessons"));
+    lessonWorkspaceMode = "preview";
+    workspaceLessonId = id;
+    activeLessonSectionId = normalizeLessonSections(lesson)[0].id;
+    render();
+}
+
+function bindLessonPreviewActions(container = pageContent) {
+    container.querySelectorAll("[data-check-activity]").forEach((button) => button.addEventListener("click", () => {
+        const card = button.closest("[data-preview-activity]");
+        const result = card.querySelector("[data-preview-result]");
+        const answer = card.dataset.previewAnswer.trim();
+        if (!answer && !["match", "columns"].includes(card.dataset.previewType)) {
+            result.textContent = previewText("noAnswer");
+            result.className = "preview-result";
+            return;
+        }
+        const type = card.dataset.previewType;
+        let correct = false;
+        if (type === "drag-words") {
+            const actual = Array.from(card.querySelectorAll("[data-dropzone] .preview-word"), (word) => word.textContent.trim());
+            const expected = answer ? previewTokens(answer) : card.dataset.previewContent.trim().split(/\s+/).filter(Boolean);
+            correct = actual.length === expected.length && actual.every((word, index) => word.toLocaleLowerCase() === expected[index].toLocaleLowerCase());
+        } else if (type === "fill-blank") {
+            const actual = Array.from(card.querySelectorAll("[data-answer-index]"), (input) => input.value.trim().toLocaleLowerCase());
+            const expected = answer.split("/").map((part) => part.trim().toLocaleLowerCase());
+            correct = actual.length === expected.length && actual.every((value, index) => value === expected[index]);
+        } else if (type === "table") {
+            const actual = Array.from(card.querySelectorAll("[data-table-answer-index]"), (input) => input.value.trim().toLocaleLowerCase());
+            const expected = answer.split("/").map((part) => part.trim().toLocaleLowerCase());
+            correct = actual.length === expected.length && actual.every((value, index) => value === expected[index]);
+        } else if (type === "multiple-choice" || type === "one-of-many" || type === "true-false") {
+            const selected = card.querySelector('input[type="radio"]:checked');
+            const options = type === "true-false" ? [previewText("true"), previewText("false")] : previewLines(card.dataset.previewContent);
+            const answerIndex = Number(answer);
+            if (type === "true-false" && /^(true|yes|так|да)$/i.test(answer)) correct = selected?.value === "0";
+            else if (type === "true-false" && /^(false|no|ні|нет)$/i.test(answer)) correct = selected?.value === "1";
+            else {
+                const expected = Number.isInteger(answerIndex) && answer !== "" ? options[answerIndex] : answer;
+                correct = Boolean(selected && options[Number(selected.value)]?.toLocaleLowerCase() === expected.toLocaleLowerCase());
+            }
+        } else if (type === "order-items" || type === "sentence-order") {
+            const actual = Array.from(card.querySelectorAll("[data-order-list] .preview-order-item"), (item) => item.querySelector("span").textContent.trim().toLocaleLowerCase());
+            const sourceItems = previewLines(card.dataset.previewContent).map((line) => line.replace(/^\d+[.)]\s*/, "").toLocaleLowerCase());
+            const expected = answer ? answer.split("/").map((part) => part.trim().toLocaleLowerCase()) : sourceItems;
+            const normalizedExpected = expected.every((part) => /^\d+$/.test(part)) ? expected.map((part) => sourceItems[Number(part) - 1]) : expected;
+            correct = actual.length === normalizedExpected.length && actual.every((value, index) => value === normalizedExpected[index]);
+        } else if (type === "match") {
+            const selects = Array.from(card.querySelectorAll("[data-match-index]"));
+            correct = selects.length > 0 && selects.every((select, index) => select.value === String(index));
+        } else if (type === "columns") {
+            const expectedCategories = previewLines(card.dataset.previewContent).map((line) => line.split(":")[0]?.trim());
+            const selects = Array.from(card.querySelectorAll("[data-column-index]"));
+            correct = selects.length > 0 && selects.every((select, index) => select.value === expectedCategories[index]);
+        } else if (type === "open-answer") {
+            correct = card.querySelector("[data-open-answer]").value.trim().toLocaleLowerCase() === answer.toLocaleLowerCase();
+        }
+        result.textContent = correct ? previewText("correct") : previewText("incorrect");
+        result.className = `preview-result ${correct ? "correct" : "incorrect"}`;
+    }));
+
+    container.querySelectorAll("[data-word-index]").forEach((word) => {
+        word.addEventListener("click", () => movePreviewWord(word, word.closest("[data-word-bank]") ? "drop" : "bank"));
+        word.addEventListener("dragstart", (event) => {
+            event.dataTransfer.setData("text/plain", word.dataset.wordIndex);
+            event.dataTransfer.effectAllowed = "move";
+        });
+    });
+    container.querySelectorAll("[data-dropzone], [data-word-bank]").forEach((target) => {
+        target.addEventListener("dragover", (event) => event.preventDefault());
+        target.addEventListener("drop", (event) => {
+            event.preventDefault();
+            const word = container.querySelector(`.preview-word[data-word-index="${event.dataTransfer.getData("text/plain")}"]`);
+            if (word) movePreviewWord(word, target.hasAttribute("data-dropzone") ? "drop" : "bank");
+        });
+    });
+    container.querySelectorAll("[data-move]").forEach((button) => button.addEventListener("click", () => {
+        const item = button.closest(".preview-order-item");
+        const sibling = button.dataset.move === "up" ? item.previousElementSibling : item.nextElementSibling;
+        if (!sibling) return;
+        if (button.dataset.move === "up") item.parentElement.insertBefore(item, sibling);
+        else item.parentElement.insertBefore(sibling, item);
+    }));
+    container.querySelectorAll("[data-order-list] .preview-order-item").forEach((item) => {
+        item.addEventListener("dragstart", (event) => {
+            event.dataTransfer.setData("text/plain", item.dataset.orderIndex);
+            event.dataTransfer.effectAllowed = "move";
+        });
+        item.addEventListener("dragover", (event) => event.preventDefault());
+        item.addEventListener("drop", (event) => {
+            event.preventDefault();
+            const moving = container.querySelector(`.preview-order-item[data-order-index="${event.dataTransfer.getData("text/plain")}"]`);
+            if (moving && moving !== item) item.parentElement.insertBefore(moving, item);
+        });
+    });
+    container.querySelectorAll(".preview-flashcard").forEach((card) => card.addEventListener("click", () => {
+        const flipped = card.dataset.flipped === "true";
+        card.dataset.flipped = String(!flipped);
+        card.querySelector("strong").textContent = flipped ? card.dataset.front : (card.dataset.back || card.dataset.front);
+        card.classList.toggle("flipped", !flipped);
+    }));
+    container.querySelectorAll("[data-preview-image]").forEach((image) => image.addEventListener("error", () => {
+        image.replaceWith(Object.assign(document.createElement("p"), { className: "preview-material", textContent: previewText("imageError") }));
+    }));
+    container.querySelectorAll("[data-preview-media]").forEach((media) => media.addEventListener("error", () => {
+        media.replaceWith(Object.assign(document.createElement("p"), { className: "preview-material", textContent: previewText("mediaError") }));
+    }));
+}
+
+function movePreviewWord(word, target) {
+    const destination = word.closest("[data-preview-activity]").querySelector(target === "drop" ? "[data-dropzone]" : "[data-word-bank]");
+    const hint = destination.querySelector(".preview-drop-hint");
+    if (hint) hint.remove();
+    destination.append(word);
+    const dropzone = destination.closest("[data-preview-activity]").querySelector("[data-dropzone]");
+    if (!dropzone.querySelector(".preview-word")) dropzone.innerHTML = `<span class="preview-drop-hint">${previewText("drop")}</span>`;
+}
+
+function emptyMessage(title, description) {
+    return `<div class="empty-state"><strong>${escapeHtml(title)}</strong>${escapeHtml(description)}</div>`;
+}
+
+function bindPageActions() {
+    pageContent.querySelectorAll("[data-unit-open]").forEach((button) => button.addEventListener("click", () => {
+        selectedLessonUnit = button.dataset.unitOpen;
+        render();
+    }));
+    pageContent.querySelectorAll("[data-view-link]").forEach((button) => button.addEventListener("click", () => {
+        activeClassFilter = "";
+        if (button.dataset.viewLink === "lessons") selectedLessonUnit = "";
+        setView(button.dataset.viewLink);
+    }));
+    pageContent.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", () => handleAction(button.dataset.action, button.dataset.id)));
+    pageContent.querySelectorAll("[data-search]").forEach((input) => input.addEventListener("input", () => {
+        searchQuery = input.value;
+        const start = input.selectionStart;
+        render();
+        const replacement = pageContent.querySelector("[data-search]");
+        replacement?.focus();
+        replacement?.setSelectionRange(start, start);
+    }));
+    pageContent.querySelector("[data-class-filter]")?.addEventListener("change", (event) => {
+        activeClassFilter = event.target.value;
+        render();
+    });
+}
+
+function handleAction(action, id) {
+    if (action === "back-to-units") {
+        selectedLessonUnit = "";
+        render();
+        return;
+    }
+    if (action === "new-class") openClassEditor();
+    if (action === "invite-student") openStudentInvite(data.classes.find((item) => item.id === id));
+    if (action === "edit-class") openClassEditor(data.classes.find((item) => item.id === id));
+    if (action === "delete-class") deleteClass(id);
+    if (action === "class-lessons") {
+        activeClassFilter = id;
+        searchQuery = "";
+        selectedLessonUnit = "";
+        setView("lessons");
+    }
+    if (action === "new-lesson") openLessonEditor();
+    if (action === "edit-lesson") openLessonEditor(data.lessons.find((item) => item.id === id));
+    if (action === "preview-lesson") openLessonPreview(id);
+    if (action === "assign-lesson") openLessonAssignment(id);
+    if (action === "delete-lesson") deleteLesson(id);
+}
+
+function openModal(content, wide = false) {
+    modalCard.classList.toggle("wide", wide);
+    modalCard.innerHTML = content;
+    modalBackdrop.hidden = false;
+    modalCard.querySelector("input, textarea, select, button")?.focus();
+    modalCard.querySelector("[data-close]")?.addEventListener("click", closeModal);
+}
+
+function closeModal() {
+    modalBackdrop.hidden = true;
+    modalCard.innerHTML = "";
+    refreshModal = null;
+}
+
+function modalHeader(title) {
+    return `<div class="modal-header"><h2 id="modalTitle">${escapeHtml(title)}</h2><button type="button" class="modal-close" data-close aria-label="${t("modal.close")}">×</button></div>`;
+}
+
+function openClassEditor(item) {
+    const selectedStudents = item?.students.join(", ") || "";
+    openModal(`${modalHeader(item ? t("modal.editClass") : t("modal.newClass"))}
+        <form id="classForm">
+            <div class="form-field"><label for="className">${t("field.className")}</label><input id="className" name="name" required maxlength="80" value="${escapeHtml(item?.name || "")}" placeholder="${t("field.exampleClass")}"></div>
+            <div class="form-field"><label for="classCourse">${t("field.course")}</label><input id="classCourse" name="course" maxlength="80" value="${escapeHtml(item?.course || "")}" placeholder="${t("field.exampleCourse")}"></div>
+            <div class="form-field"><label for="classStudents">${t("field.students")}</label><textarea id="classStudents" name="students" placeholder="${t("field.studentsPlaceholder")}">${escapeHtml(selectedStudents)}</textarea><span class="hint">${t("field.studentsHint")}</span></div>
+            <div class="modal-actions"><button type="button" class="button secondary" data-close>${t("action.cancel")}</button><button class="button" type="submit">${item ? t("action.save") : t("action.createClass")}</button></div>
+        </form>`);
+    refreshModal = () => openClassEditor(item);
+    modalCard.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", closeModal));
+    modalCard.querySelector("#classForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const name = String(form.get("name")).trim();
+        if (!name) return;
+        const updated = { id: item?.id || crypto.randomUUID(), name, course: String(form.get("course")).trim() || t("class.unnamedCourse"), students: String(form.get("students")).split(",").map((student) => student.trim()).filter(Boolean) };
+        if (item) data.classes = data.classes.map((current) => current.id === item.id ? updated : current);
+        else data.classes.push(updated);
+        persist();
+        closeModal();
+        render();
+        showToast(item ? t("toast.classUpdated") : t("toast.classCreated"));
+    });
+}
+
+function openStudentInvite(group) {
+    if (!group) return;
+    openModal(`${modalHeader(t("studentInvite.title"))}
+        <form id="studentInviteForm">
+            <div class="form-field"><label for="studentInviteName">${t("studentInvite.name")}</label><input id="studentInviteName" name="displayName" required maxlength="120" autocomplete="name"></div>
+            <div class="form-field"><label for="studentInviteEmail">${t("studentInvite.email")}</label><input id="studentInviteEmail" name="email" type="email" required maxlength="254" autocomplete="email"></div>
+            <p class="assignment-hint">${escapeHtml(group.name)} · ${t("studentInvite.hint")}</p>
+            <div class="modal-actions"><button type="button" class="button secondary" data-close>${t("action.cancel")}</button><button class="button" type="submit">${t("studentInvite.send")}</button></div>
+        </form>`);
+    refreshModal = () => openStudentInvite(group);
+    modalCard.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", closeModal));
+    modalCard.querySelector("#studentInviteForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const displayName = String(form.get("displayName")).trim();
+        const email = String(form.get("email")).trim().toLowerCase();
+        const submitButton = event.currentTarget.querySelector('[type="submit"]');
+        if (!currentUser || !window.teacherWorkspaceApi) {
+            showToast(t("profile.login"));
+            return;
+        }
+        submitButton.disabled = true;
+        try {
+            const invitation = await window.teacherWorkspaceApi.inviteStudent(window.supabaseClient, group.id, displayName, email);
+            const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, currentUser.id);
+            data = workspace.data;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            closeModal();
+            render();
+            showToast(t("toast.studentInvited"));
+        } catch (error) {
+            console.error("Could not invite a student to the selected class.", error);
+            showToast(`${t("toast.studentInviteError")} ${error.message}`);
+            submitButton.disabled = false;
+        }
+    });
+}
+
+function deleteClass(id) {
+    const item = data.classes.find((current) => current.id === id);
+    if (!item || !window.confirm(t("confirm.deleteClass", { name: item.name }))) return;
+    data.classes = data.classes.filter((current) => current.id !== id);
+    data.lessons = data.lessons.map((lesson) => ({ ...lesson, classIds: lessonClassIds(lesson).filter((classId) => classId !== id) }));
+    persist();
+    render();
+    showToast(t("toast.classDeleted"));
+}
+
+function openLessonEditor(item) {
+    activeView = "lessons";
+    document.getElementById("breadcrumb").textContent = t("page.lessons");
+    document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === "lessons"));
+    editingLessonId = item?.id || null;
+    workspaceLessonId = item?.id || "";
+    lessonWorkspaceMode = "edit";
+    lessonFormDraft = { title: item?.title || "", unit: item?.unit || selectedLessonUnit || inferLessonUnit(item || { title: "", classIds: [] }) };
+    draftSections = item ? structuredClone(normalizeLessonSections(item)) : [{ id: crypto.randomUUID(), title: lessonSectionText("intro"), activities: [] }];
+    activeLessonSectionId = draftSections[0].id;
+    render();
+}
+
+function renderLessonWorkspace() {
+    const isEditing = lessonWorkspaceMode === "edit";
+    const lesson = data.lessons.find((item) => item.id === workspaceLessonId);
+    if (!isEditing && !lesson) {
+        exitLessonWorkspace();
+        return;
+    }
+    const sections = isEditing ? draftSections : normalizeLessonSections(lesson);
+    if (!sections.some((section) => section.id === activeLessonSectionId)) activeLessonSectionId = sections[0].id;
+    const section = sections.find((item) => item.id === activeLessonSectionId);
+    const title = isEditing ? lessonFormDraft.title : lesson.title;
+    const unit = isEditing ? lessonFormDraft.unit : lesson.unit || inferLessonUnit(lesson);
+    const sectionMenu = sections.map((item, index) => `<div class="lesson-section-row ${item.id === activeLessonSectionId ? "active" : ""}">
+        <button type="button" class="lesson-section-select" data-select-section="${escapeHtml(item.id)}"><span class="lesson-section-number">${index + 1}</span><span class="lesson-section-label" data-section-label="${escapeHtml(item.id)}">${escapeHtml(item.title)}</span></button>
+        ${isEditing ? `<div class="lesson-section-tools"><button type="button" data-move-section="${index - 1}" ${index === 0 ? "disabled" : ""} aria-label="${lessonSectionText("previous")}">↑</button><button type="button" data-move-section="${index + 1}" ${index === sections.length - 1 ? "disabled" : ""} aria-label="${lessonSectionText("next")}">↓</button><button type="button" data-delete-section="${escapeHtml(item.id)}" ${sections.length === 1 ? "disabled" : ""} aria-label="${lessonSectionText("remove")}">×</button></div>` : ""}</div>`).join("");
+    const sectionBody = isEditing
+        ? `<div class="form-field section-name-field"><label for="sectionTitle">${lessonSectionText("rename")}</label><input id="sectionTitle" data-section-title="${escapeHtml(section.id)}" maxlength="80" value="${escapeHtml(section.title)}"></div><div class="builder-heading"><h3>${t("lesson.activities")}</h3><button type="button" class="button secondary small" data-action="choose-activity">${t("activity.addBlock")}</button></div><div id="activityBlocks">${renderActivityBlocks(section.activities)}</div>`
+        : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map(renderPreviewActivity).join("") : emptyMessage(lessonSectionText("empty"), "")}</div>`;
+    const actionBar = isEditing
+        ? `<button type="button" class="button secondary" data-workspace-cancel>${t("action.cancel")}</button><button class="button" type="submit">${editingLessonId ? lessonSectionText("save") : lessonSectionText("create")}</button>`
+        : `<button type="button" class="button secondary" data-edit-workspace>${lessonSectionText("edit")}</button>`;
+    pageContent.innerHTML = `<section class="lesson-workspace"><form id="lessonForm" class="lesson-workspace-form">
+        <header class="lesson-workspace-hero">
+            <div class="lesson-workspace-heading"><button type="button" class="text-link" data-workspace-back>← ${lessonSectionText("back")}</button>
+                ${isEditing ? `<div class="lesson-workspace-fields"><div class="form-field"><label for="lessonTitle">${t("field.lessonTitle")}</label><input id="lessonTitle" name="title" required maxlength="100" value="${escapeHtml(title)}" placeholder="${t("field.exampleLesson")}"></div><div class="form-field"><label for="lessonUnit">${lessonText("unit")}</label><select id="lessonUnit" name="unit" required><option value="">${lessonText("chooseUnit")}</option>${LESSON_UNITS.map((level) => `<option value="${level}" ${unit === level ? "selected" : ""}>${level}</option>`).join("")}</select></div></div>` : `<div><span class="course-hero-kicker">${escapeHtml(lessonClassNames(lesson)) || lessonText("unassigned")} · ${escapeHtml(unit)}</span><h1>${escapeHtml(title)}</h1></div>`}
+            </div>
+            ${isEditing ? "" : `<span class="lesson-workspace-unit">${escapeHtml(unit)}</span>`}
+        </header>
+        <div class="lesson-workspace-layout">
+            <main class="lesson-workspace-main"><section class="lesson-workspace-section">
+                ${isEditing ? sectionBody : `<h2>${escapeHtml(section.title)}</h2>${sectionBody}`}
+            </section>
+                <div class="lesson-workspace-footer"><button type="button" class="button secondary small" data-section-step="-1" ${sections.indexOf(section) === 0 ? "disabled" : ""}>${lessonSectionText("previous")}</button><span>${sections.indexOf(section) + 1} / ${sections.length}</span><button type="button" class="button secondary small" data-section-step="1" ${sections.indexOf(section) === sections.length - 1 ? "disabled" : ""}>${lessonSectionText("next")}</button>
+                ${isEditing ? `<span class="lesson-workspace-spacer"></span><button type="button" class="button secondary small" data-action="choose-activity">${lessonSectionText("addElement")}</button><button type="button" class="button secondary small" data-copy-activity ${section.activities.length ? "" : "disabled"}>${lessonSectionText("copyElement")}</button>` : ""}</div>
+            </main>
+            <aside class="lesson-sections-panel"><h2>${lessonSectionText("section")}</h2><nav class="lesson-sections-list" aria-label="${lessonSectionText("section")}">${sectionMenu}</nav>
+                ${isEditing ? `<button type="button" class="button secondary lesson-add-section" data-add-section>${lessonSectionText("addSection")}</button>` : ""}
+            </aside>
+        </div>
+        <div class="lesson-workspace-actions">${actionBar}</div>
+    </form></section>`;
+    pageContent.querySelector("[data-workspace-back]").addEventListener("click", exitLessonWorkspace);
+    pageContent.querySelector("[data-workspace-cancel]")?.addEventListener("click", exitLessonWorkspace);
+    pageContent.querySelector("[data-edit-workspace]")?.addEventListener("click", () => openLessonEditor(lesson));
+    if (isEditing) pageContent.querySelector("#lessonForm").addEventListener("submit", saveLesson);
+    pageContent.querySelector("#lessonTitle")?.addEventListener("input", (event) => { lessonFormDraft.title = event.target.value; });
+    pageContent.querySelector("#lessonUnit")?.addEventListener("change", (event) => { lessonFormDraft.unit = event.target.value; });
+    pageContent.querySelectorAll('[data-action="choose-activity"]').forEach((button) => button.addEventListener("click", openActivityPicker));
+    pageContent.querySelectorAll("[data-select-section]").forEach((button) => button.addEventListener("click", () => {
+        activeLessonSectionId = button.dataset.selectSection;
+        render();
+    }));
+    pageContent.querySelector("[data-add-section]")?.addEventListener("click", () => {
+        const section = { id: crypto.randomUUID(), title: lessonSectionText("newSection"), activities: [] };
+        draftSections.push(section);
+        activeLessonSectionId = section.id;
+        render();
+    });
+    pageContent.querySelectorAll("[data-move-section]").forEach((button) => button.addEventListener("click", () => {
+        const from = sections.indexOf(section);
+        const to = Number(button.dataset.moveSection);
+        if (to < 0 || to >= draftSections.length) return;
+        [draftSections[from], draftSections[to]] = [draftSections[to], draftSections[from]];
+        render();
+    }));
+    pageContent.querySelectorAll("[data-delete-section]").forEach((button) => button.addEventListener("click", () => {
+        if (draftSections.length < 2) return;
+        const index = draftSections.findIndex((item) => item.id === button.dataset.deleteSection);
+        draftSections.splice(index, 1);
+        activeLessonSectionId = draftSections[Math.max(0, index - 1)].id;
+        render();
+    }));
+    pageContent.querySelectorAll("[data-section-step]").forEach((button) => button.addEventListener("click", () => {
+        const next = sections.indexOf(section) + Number(button.dataset.sectionStep);
+        if (sections[next]) {
+            activeLessonSectionId = sections[next].id;
+            render();
+        }
+    }));
+    pageContent.querySelector("[data-section-title]")?.addEventListener("input", (event) => {
+        const currentSection = draftSections.find((item) => item.id === event.target.dataset.sectionTitle);
+        if (!currentSection) return;
+        currentSection.title = event.target.value;
+        const label = pageContent.querySelector(`[data-section-label="${CSS.escape(currentSection.id)}"]`);
+        if (label) label.textContent = currentSection.title;
+    });
+    pageContent.querySelector("[data-copy-activity]")?.addEventListener("click", () => {
+        const currentSection = activeDraftSection();
+        if (!currentSection?.activities.length) return;
+        currentSection.activities.push(structuredClone(currentSection.activities[currentSection.activities.length - 1]));
+        render();
+    });
+    bindActivityBlockActions();
+    if (!isEditing) bindLessonPreviewActions(pageContent);
+}
+
+function exitLessonWorkspace() {
+    lessonWorkspaceMode = "";
+    workspaceLessonId = "";
+    editingLessonId = null;
+    draftSections = [];
+    activeLessonSectionId = "";
+    lessonFormDraft = { title: "", unit: "A1" };
+    render();
+}
+
+function renderActivityBlocks(activities = activeDraftSection()?.activities || []) {
+    if (!activities.length) return `<div class="empty-state"><strong>${t("lesson.firstActivity")}</strong>${t("lesson.firstActivityHint")}</div>`;
+    return activities.map((block, index) => {
+        const type = activityTypes.find((item) => item.id === block.type);
+        return `<article class="builder-block" data-block-index="${index}">
+            <div class="builder-block-header"><strong>${index + 1}. ${escapeHtml(type ? t(type.nameKey) : t("activity.task"))}</strong><button type="button" class="mini-action" data-remove-block="${index}" aria-label="${t("action.delete")}">×</button></div>
+            <div class="form-field"><label>${t("field.instruction")}</label><input data-field="prompt" value="${escapeHtml(block.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
+            <div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(block.type))}</span></label><textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea></div>
+            ${block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
+        </article>`;
+    }).join("");
+}
+
+function contentHint(type) {
+    return ({ "drag-words": t("hint.drag"), "fill-blank": t("hint.blank"), "multiple-choice": t("hint.options"), "order-items": t("hint.order"), "sentence-order": t("hint.sentences"), match: t("hint.match"), columns: t("hint.columns"), table: t("hint.table"), "one-of-many": t("hint.select"), "true-false": t("hint.trueFalse"), flashcards: t("hint.cards") })[type] || "";
+}
+
+function contentPlaceholder(type) {
+    const examples = {
+        ua: { match: "dom = дім\nškola = школа", columns: "Дієслова: ísť\nІменники: dom" },
+        ru: { match: "dom = дом\nškola = школа", columns: "Глаголы: ísť\nСуществительные: dom" },
+        en: { match: "dom = house\nškola = school", columns: "Verbs: ísť\nNouns: dom" }
+    };
+    return examples[currentLanguage][type] || ({ "drag-words": "Napríklad: Ja bývam v Bratislave.", "fill-blank": "Ja ___ v Bratislave.", "multiple-choice": "Bratislava\nKošice\nŽilina", "order-items": "1. ráno\n2. popoludní\n3. večer" })[type] || t("field.enterText");
+}
+
+function answerHint(type) {
+    return ({ "drag-words": t("hint.answerSlash"), "fill-blank": t("hint.answerText"), "multiple-choice": t("hint.answerChoice"), "order-items": t("hint.answerOrder"), "open-answer": t("hint.answerText"), table: t("hint.answerSlash"), match: t("hint.optional"), "one-of-many": t("hint.correctChoice") })[type] || "";
+}
+
+function answerPlaceholder(type) {
+    return ({ "drag-words": "Ja / bývam / v / Bratislave", "fill-blank": "bývam", "multiple-choice": "Bratislava", "order-items": "1 / 2 / 3", "one-of-many": t("hint.correctChoice"), "true-false": "True / False" })[type] || t("field.answer");
+}
+
+function bindActivityBlockActions() {
+    pageContent.querySelectorAll("[data-remove-block]").forEach((button) => button.addEventListener("click", () => {
+        activeDraftSection().activities.splice(Number(button.dataset.removeBlock), 1);
+        render();
+    }));
+    pageContent.querySelectorAll(".builder-block").forEach((blockElement) => {
+        blockElement.querySelectorAll("[data-field]").forEach((input) => input.addEventListener("input", () => {
+            const block = activeDraftSection().activities[Number(blockElement.dataset.blockIndex)];
+            block[input.dataset.field] = input.value;
+        }));
+    });
+}
+
+function openActivityPicker() {
+    const categories = [{ id: "all", label: t("picker.all") }, { id: "tests", label: t("picker.tests") }, { id: "media", label: t("picker.media") }, { id: "other", label: t("picker.other") }];
+    const choices = activityTypes.filter((item) => (selectedActivityCategory === "all" || item.category === selectedActivityCategory) && `${t(item.nameKey)} ${t(item.descKey)}`.toLowerCase().includes(activitySearch.toLowerCase()));
+    openModal(`${modalHeader(t("picker.title"))}
+        <div class="block-tabs">${categories.map((category) => `<button class="block-tab ${selectedActivityCategory === category.id ? "active" : ""}" type="button" data-category="${category.id}">${category.label}</button>`).join("")}</div>
+        <div class="form-field"><input type="search" id="activitySearch" value="${escapeHtml(activitySearch)}" placeholder="${t("picker.search")}" aria-label="${t("picker.search")}"></div>
+        <div class="activity-grid">${choices.map((choice) => `<button type="button" class="activity-choice" data-add-activity="${choice.id}" title="${escapeHtml(t(choice.descKey))}"><span>${choice.icon}</span>${escapeHtml(t(choice.nameKey))}</button>`).join("") || emptyMessage(t("empty.search"), t("empty.changeSearch"))}</div>
+        <div class="modal-actions"><button type="button" class="button secondary" data-back-editor>${t("picker.back")}</button></div>`, true);
+    refreshModal = openActivityPicker;
+    modalCard.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", closeModal));
+    modalCard.querySelectorAll("[data-category]").forEach((button) => button.addEventListener("click", () => {
+        selectedActivityCategory = button.dataset.category;
+        openActivityPicker();
+    }));
+    modalCard.querySelector("#activitySearch").addEventListener("input", (event) => {
+        activitySearch = event.target.value;
+        openActivityPicker();
+        const search = modalCard.querySelector("#activitySearch");
+        search.focus();
+        search.setSelectionRange(search.value.length, search.value.length);
+    });
+    modalCard.querySelectorAll("[data-add-activity]").forEach((button) => button.addEventListener("click", () => {
+        const type = activityTypes.find((entry) => entry.id === button.dataset.addActivity);
+        activeDraftSection().activities.push({ type: type.id, prompt: t(type.nameKey), content: "", answer: "" });
+        activitySearch = "";
+        closeModal();
+        render();
+        pageContent.querySelector("#activityBlocks")?.lastElementChild?.scrollIntoView({ block: "nearest" });
+    }));
+    modalCard.querySelector("[data-back-editor]").addEventListener("click", () => {
+        closeModal();
+        render();
+    });
+}
+
+function saveLesson(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const title = String(form.get("title")).trim();
+    const unit = String(form.get("unit"));
+    if (!title || !LESSON_UNITS.includes(unit)) {
+        showToast(lessonText("chooseUnit"));
+        return;
+    }
+    const existingLesson = data.lessons.find((current) => current.id === editingLessonId);
+    const lesson = { id: editingLessonId || crypto.randomUUID(), title, unit, classIds: existingLesson ? lessonClassIds(existingLesson) : [], sections: structuredClone(draftSections), activities: draftSections.flatMap((section) => section.activities) };
+    const previousLessons = data.lessons;
+    const wasEditing = Boolean(editingLessonId);
+    data.lessons = editingLessonId
+        ? data.lessons.map((current) => current.id === editingLessonId ? lesson : current)
+        : [...data.lessons, lesson];
+    if (!persist()) {
+        data.lessons = previousLessons;
+        return;
+    }
+    lessonWorkspaceMode = "";
+    workspaceLessonId = "";
+    editingLessonId = null;
+    draftSections = [];
+    activeLessonSectionId = "";
+    lessonFormDraft = { title: "", unit: "A1" };
+    render();
+    showToast(wasEditing ? t("toast.lessonUpdated") : t("toast.lessonCreated"));
+}
+
+function openLessonAssignment(id) {
+    const lesson = data.lessons.find((item) => item.id === id);
+    if (!lesson) return;
+    openModal(`${modalHeader(assignmentText("dialog"))}
+        <form id="lessonAssignmentForm">
+            <p class="assignment-hint">${assignmentText("hint")}</p>
+            <div class="class-assignment-list">${classAssignmentChoices(lessonClassIds(lesson))}</div>
+            <div class="modal-actions"><button type="button" class="button secondary" data-close>${t("action.cancel")}</button><button class="button" type="submit">${assignmentText("save")}</button></div>
+        </form>`);
+    modalCard.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", closeModal));
+    modalCard.querySelector("#lessonAssignmentForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const classIds = form.getAll("classIds").map(String).filter((classId) => data.classes.some((item) => item.id === classId));
+        const previousLesson = data.lessons.find((item) => item.id === id);
+        data.lessons = data.lessons.map((item) => item.id === id ? { ...item, classIds } : item);
+        if (!persist()) {
+            data.lessons = data.lessons.map((item) => item.id === id ? previousLesson : item);
+            return;
+        }
+        closeModal();
+        render();
+        showToast(assignmentText("saved"));
+    });
+}
+
+function deleteLesson(id) {
+    const lesson = data.lessons.find((item) => item.id === id);
+    if (!lesson || !window.confirm(t("confirm.deleteLesson", { name: lesson.title }))) return;
+    data.lessons = data.lessons.filter((item) => item.id !== id);
+    persist();
+    render();
+    showToast(t("toast.lessonDeleted"));
+}
+
+document.querySelectorAll(".nav-item").forEach((button) => button.addEventListener("click", () => {
+    searchQuery = "";
+    activeClassFilter = "";
+    if (button.dataset.view === "lessons") selectedLessonUnit = "";
+    setView(button.dataset.view);
+}));
+document.getElementById("menuToggle").addEventListener("click", () => document.getElementById("sidebar").classList.toggle("open"));
+document.querySelectorAll(".language-button").forEach((button) => button.addEventListener("click", () => setLanguage(button.dataset.lang)));
+document.getElementById("notificationButton").addEventListener("click", (event) => showNotifications(event.currentTarget));
+document.querySelectorAll(".profile-trigger").forEach((button) => button.addEventListener("click", () => showUserMenu(button)));
+document.addEventListener("click", (event) => {
+    if (openPopover && !event.target.closest(".popover-root, .popover-trigger, .profile-trigger")) closePopover();
+});
+modalBackdrop.addEventListener("click", (event) => {
+    if (event.target === modalBackdrop) closeModal();
+});
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !modalBackdrop.hidden) closeModal();
+    if (event.key === "Escape" && openPopover) closePopover();
+});
+
+translateStaticUI();
+render();
+loadCurrentUser();

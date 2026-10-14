@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f8f5">
+    <title>SlovaSofi · Учнівський кабінет</title>
+    <link rel="stylesheet" href="student.css">
+</head>
+<body>
+    <main class="student-shell">
+        <a class="student-brand" href="index.html"><span>S</span> Slova<span>Sofi</span></a>
+        <section class="student-card" id="studentCard" aria-live="polite">
+            <p class="student-eyebrow">SLOVASOFI</p>
+            <h1 id="studentHeading">Завантаження…</h1>
+            <p id="studentMessage"></p>
+        </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="student.js"></script>
+</body>
+</html>
