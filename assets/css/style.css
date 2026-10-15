@@ -22,6 +22,19 @@ body {
     box-shadow: 0 4px 18px rgba(31, 70, 52, 0.06);
 }
 
+.custom-nav .navbar-toggler {
+    border-color: var(--sage-line);
+    padding: 8px 10px;
+}
+
+.custom-nav .navbar-toggler:focus {
+    box-shadow: 0 0 0 3px rgba(43, 100, 70, 0.16);
+}
+
+#mainNav .navbar-nav {
+    gap: 4px;
+}
+
 .nav-link {
     color: #2B6446 !important;
     font-weight: 600;
@@ -271,10 +284,23 @@ body {
 @media (max-width: 991.98px) {
     .lang-switcher {
         margin-left: 0;
-        margin-top: 15px; 
+        margin-top: 8px;
         display: inline-flex; 
         align-self: flex-start; 
     } 
+
+    #mainNav .navbar-nav {
+        align-items: stretch;
+        padding: 10px 0 4px;
+    }
+
+    #mainNav .lang-switcher {
+        margin-bottom: 8px;
+    }
+
+    #mainNav .btn-card-green-cta {
+        margin-top: 4px;
+    }
 }
 /* Стиль для активной кнопки (выбранный язык) */
 .btn-lang-item.active {
@@ -581,9 +607,37 @@ html {
 .hero-section .btn-custom-lg { animation-delay: 0.16s; }
 
 @media (max-width: 767.98px) {
-    .hero-section { padding: 76px 0; }
-    .hero-subtitle { font-size: 1.05rem; }
+    .hero-section { padding: 64px 0; }
+    .hero-title { font-size: clamp(2rem, 8vw, 2.8rem); }
+    .hero-subtitle { font-size: 1rem; line-height: 1.55; }
+    .btn-custom-lg { padding: 13px 24px; }
+    #prices { padding-top: 32px !important; padding-bottom: 32px !important; }
+    #prices .row.mb-5 { margin-bottom: 1.5rem !important; }
     #teachers { padding-top: 56px !important; }
+    .teacher-card { padding: 24px !important; }
+    .footer { padding: 32px 0; }
+    .footer .container > .mt-2 {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px 12px;
+    }
+    .footer .container > .mt-2 a { margin: 0 !important; }
+}
+
+@media (max-width: 480px) {
+    .custom-nav .container { padding-right: 16px; padding-left: 16px; }
+    .custom-nav .logo-s { font-size: 3.5rem; }
+    .custom-nav .logo-lova,
+    .custom-nav .logo-sofi { font-size: 1.45rem; }
+    .custom-nav .logo-sub { font-size: 0.5rem; }
+    .hero-section { padding: 52px 0; }
+    .hero-title { max-width: 12ch; }
+    #prices .free-trial-wide .card-body { padding: 1.25rem !important; }
+    .price-card { padding: 18px; }
+    .price-tag { font-size: 2.1rem; }
+    .teacher-avatar-container { width: 150px; height: 150px; }
+    .mini-avatar { width: 76px; height: 76px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

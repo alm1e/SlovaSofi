@@ -768,6 +768,8 @@ function setView(view) {
     document.getElementById("breadcrumb").textContent = view === "staff" ? staffText("title") : t(`page.${view}`);
     document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
     document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("sidebarBackdrop").classList.remove("open");
+    document.getElementById("menuToggle").setAttribute("aria-expanded", "false");
     render();
 }
 
@@ -2774,7 +2776,16 @@ document.querySelectorAll(".nav-item").forEach((button) => button.addEventListen
     if (button.dataset.view === "lessons") selectedLessonUnit = "";
     setView(button.dataset.view);
 }));
-document.getElementById("menuToggle").addEventListener("click", () => document.getElementById("sidebar").classList.toggle("open"));
+document.getElementById("menuToggle").addEventListener("click", () => {
+    const isOpen = document.getElementById("sidebar").classList.toggle("open");
+    document.getElementById("sidebarBackdrop").classList.toggle("open", isOpen);
+    document.getElementById("menuToggle").setAttribute("aria-expanded", String(isOpen));
+});
+document.getElementById("sidebarBackdrop").addEventListener("click", () => {
+    document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("sidebarBackdrop").classList.remove("open");
+    document.getElementById("menuToggle").setAttribute("aria-expanded", "false");
+});
 document.querySelectorAll(".language-button").forEach((button) => button.addEventListener("click", () => setLanguage(button.dataset.lang)));
 document.getElementById("notificationButton").addEventListener("click", (event) => showNotifications(event.currentTarget));
 document.querySelectorAll(".profile-trigger").forEach((button) => button.addEventListener("click", () => showUserMenu(button)));

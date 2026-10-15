@@ -914,6 +914,8 @@
         selectedLessonId = "";
         openedLesson = null;
         sidebar.classList.remove("open");
+        document.getElementById("studentSidebarBackdrop").classList.remove("open");
+        document.getElementById("studentMenuToggle").setAttribute("aria-expanded", "false");
         render();
     }));
     document.querySelectorAll(".language-button").forEach((button) => button.addEventListener("click", () => {
@@ -923,7 +925,16 @@
         localStorage.setItem("siteLanguage", language);
         render();
     }));
-    document.getElementById("studentMenuToggle").addEventListener("click", () => sidebar.classList.toggle("open"));
+    document.getElementById("studentMenuToggle").addEventListener("click", () => {
+        const isOpen = sidebar.classList.toggle("open");
+        document.getElementById("studentSidebarBackdrop").classList.toggle("open", isOpen);
+        document.getElementById("studentMenuToggle").setAttribute("aria-expanded", String(isOpen));
+    });
+    document.getElementById("studentSidebarBackdrop").addEventListener("click", () => {
+        sidebar.classList.remove("open");
+        document.getElementById("studentSidebarBackdrop").classList.remove("open");
+        document.getElementById("studentMenuToggle").setAttribute("aria-expanded", "false");
+    });
     
     // Profile menu for student (like teacher)
     document.querySelectorAll(".profile-trigger").forEach((button) => button.addEventListener("click", () => showUserMenu(button)));

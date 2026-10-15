@@ -23,8 +23,13 @@
         </div>
     </a>
     
-    <div class="d-flex align-items-center ms-auto">
-        <div class="navbar-nav me-3">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+            aria-controls="mainNav" aria-expanded="false" aria-label="Відкрити меню">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse justify-content-end" id="mainNav">
+        <div class="navbar-nav align-items-lg-center">
             <a class="nav-link" href="#prices" data-key="nav_courses">Курси</a>
             <a class="nav-link" href="#teachers" data-key="nav_teachers">Викладачі</a>
             <div class="lang-switcher d-flex gap-1">
@@ -32,7 +37,7 @@
                 <button class="btn-lang-item" data-lang="ru" onclick="changeLanguage('ru')">RU</button>
                 <button class="btn-lang-item" data-lang="en" onclick="changeLanguage('en')">EN</button>
             </div>
-            <a href="login.html" class="btn btn-card-green-cta ms-2" data-key="account">
+            <a href="login.html" class="btn btn-card-green-cta ms-lg-2" data-key="account">
                 Особистий кабінет
             </a>
         </div>
