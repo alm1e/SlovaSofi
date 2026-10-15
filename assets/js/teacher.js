@@ -1246,6 +1246,7 @@ const previewLabels = {
     ru: { open: "Открыть урок", practice: "Попробуйте выполнить задания. Результаты здесь не сохраняются.", check: "Проверить", correct: "Верно!", incorrect: "Попробуйте ещё раз.", noAnswer: "Для этого задания ещё не указан правильный ответ.", typeAnswer: "Введите ответ", choose: "Выберите ответ", drop: "Перетащите или нажмите слова сюда", bank: "Слова", answer: "Ваш ответ", up: "Выше", down: "Ниже", flip: "Перевернуть карточку", empty: "В этом уроке пока нет блоков.", imageError: "Не удалось загрузить изображение.", mediaError: "Проверьте ссылку на медиафайл.", readOnly: "Учебный материал", true: "Да", false: "Нет" },
     en: { open: "Open lesson", practice: "Try the activities. Your results are not saved here.", check: "Check answer", correct: "Correct!", incorrect: "Try again.", noAnswer: "No correct answer has been set for this activity.", typeAnswer: "Type your answer", choose: "Choose an answer", drop: "Drag or click words here", bank: "Words", answer: "Your answer", up: "Move up", down: "Move down", flip: "Flip card", empty: "This lesson has no activities yet.", imageError: "The image could not be loaded.", mediaError: "Check the media link.", readOnly: "Learning material", true: "True", false: "False" }
 };
+const previewGroupCheckLabels = { ua: "Перевірити відповіді", ru: "Проверить ответы", en: "Check answers" };
 
 function previewText(key) {
     return previewLabels[currentLanguage][key];
@@ -1307,14 +1308,16 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
 
     if (!isQuestion && Array.isArray(activity.questions) && activity.questions.length) {
         const questionAnswers = Array.isArray(liveAnswerMarkup) ? liveAnswerMarkup : [];
+        const questionsMarkup = activity.questions.map((question, itemIndex) => renderPreviewActivity({
+            type,
+            prompt: String(question.prompt || ""),
+            content: String(question.content || ""),
+            answer: String(question.answer || "")
+        }, index, false, false, questionAnswers[itemIndex] || "", itemIndex)).join("");
         return `<article class="preview-activity preview-activity-group ${canEdit ? "preview-activity-editable" : ""}" data-preview-activity="${index}">
             <header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}<h3>${index + 1}. ${escapeHtml(activity.prompt || t(activityTypes.find((item) => item.id === type)?.nameKey || "activity.task"))}</h3>${canEdit ? `<div class="preview-activity-actions"><button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>
-            <div class="preview-question-list">${activity.questions.map((question, itemIndex) => renderPreviewActivity({
-                type,
-                prompt: String(question.prompt || ""),
-                content: String(question.content || ""),
-                answer: String(question.answer || "")
-            }, index, false, false, questionAnswers[itemIndex] || "", itemIndex)).join("")}</div>
+            <div class="preview-question-list">${questionsMarkup}</div>
+            ${liveAnswerActivityTypes.has(type) ? `<button class="button preview-check" type="button" data-check-activity-group>${previewGroupCheckLabels[currentLanguage]}</button>` : ""}
         </article>`;
     }
 
@@ -1380,7 +1383,67 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
     const previewItemNumber = isQuestion ? `${index + 1}.${questionIndex + 1}` : String(index + 1);
     const previewItemClass = isQuestion ? "preview-question-activity" : "preview-activity";
     const questionAttribute = isQuestion ? `data-question-index="${questionIndex}"` : "";
-    return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}"><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}<h3>${previewItemNumber}. ${prompt}</h3>${canEdit ? `<div class="preview-activity-actions"><button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${body}${checkable ? `<button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button><p class="preview-result" data-preview-result aria-live="polite"></p>` : ""}${liveAnswerMarkup}</article>`;
+    const resultMarkup = checkable || (isQuestion && liveAnswerActivityTypes.has(type))
+        ? `<p class="preview-result${isQuestion ? " preview-question-result" : ""}" data-preview-result aria-live="polite"></p>`
+        : "";
+    const checkButton = checkable && !isQuestion
+        ? `<button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button>`
+        : "";
+    return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}"><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}<h3>${previewItemNumber}. ${prompt}</h3>${canEdit ? `<div class="preview-activity-actions"><button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${liveAnswerMarkup}${resultMarkup}${body}${checkButton}</article>`;
+}
+
+function checkPreviewActivity(card) {
+    const result = card.querySelector("[data-preview-result]");
+    if (!result) return;
+    const answer = card.dataset.previewAnswer.trim();
+    const resultClass = (status = "") => `preview-result${card.classList.contains("preview-question-activity") ? " preview-question-result" : ""}${status ? ` ${status}` : ""}`;
+    if (!answer && !["match", "columns"].includes(card.dataset.previewType)) {
+        result.textContent = previewText("noAnswer");
+        result.className = resultClass();
+        return;
+    }
+    const type = card.dataset.previewType;
+    let correct = false;
+    if (type === "drag-words") {
+        const actual = Array.from(card.querySelectorAll("[data-dropzone] .preview-word"), (word) => word.textContent.trim());
+        const expected = answer ? previewTokens(answer) : card.dataset.previewContent.trim().split(/\s+/).filter(Boolean);
+        correct = actual.length === expected.length && actual.every((word, index) => word.toLocaleLowerCase() === expected[index].toLocaleLowerCase());
+    } else if (type === "fill-blank") {
+        const actual = Array.from(card.querySelectorAll("[data-answer-index]"), (input) => input.value.trim().toLocaleLowerCase());
+        const expected = answer.split("/").map((part) => part.trim().toLocaleLowerCase());
+        correct = actual.length === expected.length && actual.every((value, index) => value === expected[index]);
+    } else if (type === "table") {
+        const actual = Array.from(card.querySelectorAll("[data-table-answer-index]"), (input) => input.value.trim().toLocaleLowerCase());
+        const expected = answer.split("/").map((part) => part.trim().toLocaleLowerCase());
+        correct = actual.length === expected.length && actual.every((value, index) => value === expected[index]);
+    } else if (type === "multiple-choice" || type === "one-of-many" || type === "true-false") {
+        const selected = card.querySelector('input[type="radio"]:checked');
+        const options = type === "true-false" ? [previewText("true"), previewText("false")] : previewLines(card.dataset.previewContent);
+        const answerIndex = Number(answer);
+        if (type === "true-false" && /^(true|yes|так|да)$/i.test(answer)) correct = selected?.value === "0";
+        else if (type === "true-false" && /^(false|no|ні|нет)$/i.test(answer)) correct = selected?.value === "1";
+        else {
+            const expected = Number.isInteger(answerIndex) && answer !== "" ? options[answerIndex] : answer;
+            correct = Boolean(selected && options[Number(selected.value)]?.toLocaleLowerCase() === expected.toLocaleLowerCase());
+        }
+    } else if (type === "order-items" || type === "sentence-order") {
+        const actual = Array.from(card.querySelectorAll("[data-order-list] .preview-order-item"), (item) => item.querySelector("span").textContent.trim().toLocaleLowerCase());
+        const sourceItems = previewLines(card.dataset.previewContent).map((line) => line.replace(/^\d+[.)]\s*/, "").toLocaleLowerCase());
+        const expected = answer ? answer.split("/").map((part) => part.trim().toLocaleLowerCase()) : sourceItems;
+        const normalizedExpected = expected.every((part) => /^\d+$/.test(part)) ? expected.map((part) => sourceItems[Number(part) - 1]) : expected;
+        correct = actual.length === normalizedExpected.length && actual.every((value, index) => value === normalizedExpected[index]);
+    } else if (type === "match") {
+        const selects = Array.from(card.querySelectorAll("[data-match-index]"));
+        correct = selects.length > 0 && selects.every((select, index) => select.value === String(index));
+    } else if (type === "columns") {
+        const expectedCategories = previewLines(card.dataset.previewContent).map((line) => line.split(":")[0]?.trim());
+        const selects = Array.from(card.querySelectorAll("[data-column-index]"));
+        correct = selects.length > 0 && selects.every((select, index) => select.value === expectedCategories[index]);
+    } else if (type === "open-answer") {
+        correct = card.querySelector("[data-open-answer]").value.trim().toLocaleLowerCase() === answer.toLocaleLowerCase();
+    }
+    result.textContent = correct ? previewText("correct") : previewText("incorrect");
+    result.className = resultClass(correct ? "correct" : "incorrect");
 }
 
 function openLessonPreview(id) {
@@ -1588,56 +1651,11 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
         });
     }
     container.querySelectorAll("[data-check-activity]").forEach((button) => button.addEventListener("click", () => {
-        const card = button.closest("[data-preview-activity]");
-        const result = card.querySelector("[data-preview-result]");
-        const answer = card.dataset.previewAnswer.trim();
-        if (!answer && !["match", "columns"].includes(card.dataset.previewType)) {
-            result.textContent = previewText("noAnswer");
-            result.className = "preview-result";
-            return;
-        }
-        const type = card.dataset.previewType;
-        let correct = false;
-        if (type === "drag-words") {
-            const actual = Array.from(card.querySelectorAll("[data-dropzone] .preview-word"), (word) => word.textContent.trim());
-            const expected = answer ? previewTokens(answer) : card.dataset.previewContent.trim().split(/\s+/).filter(Boolean);
-            correct = actual.length === expected.length && actual.every((word, index) => word.toLocaleLowerCase() === expected[index].toLocaleLowerCase());
-        } else if (type === "fill-blank") {
-            const actual = Array.from(card.querySelectorAll("[data-answer-index]"), (input) => input.value.trim().toLocaleLowerCase());
-            const expected = answer.split("/").map((part) => part.trim().toLocaleLowerCase());
-            correct = actual.length === expected.length && actual.every((value, index) => value === expected[index]);
-        } else if (type === "table") {
-            const actual = Array.from(card.querySelectorAll("[data-table-answer-index]"), (input) => input.value.trim().toLocaleLowerCase());
-            const expected = answer.split("/").map((part) => part.trim().toLocaleLowerCase());
-            correct = actual.length === expected.length && actual.every((value, index) => value === expected[index]);
-        } else if (type === "multiple-choice" || type === "one-of-many" || type === "true-false") {
-            const selected = card.querySelector('input[type="radio"]:checked');
-            const options = type === "true-false" ? [previewText("true"), previewText("false")] : previewLines(card.dataset.previewContent);
-            const answerIndex = Number(answer);
-            if (type === "true-false" && /^(true|yes|так|да)$/i.test(answer)) correct = selected?.value === "0";
-            else if (type === "true-false" && /^(false|no|ні|нет)$/i.test(answer)) correct = selected?.value === "1";
-            else {
-                const expected = Number.isInteger(answerIndex) && answer !== "" ? options[answerIndex] : answer;
-                correct = Boolean(selected && options[Number(selected.value)]?.toLocaleLowerCase() === expected.toLocaleLowerCase());
-            }
-        } else if (type === "order-items" || type === "sentence-order") {
-            const actual = Array.from(card.querySelectorAll("[data-order-list] .preview-order-item"), (item) => item.querySelector("span").textContent.trim().toLocaleLowerCase());
-            const sourceItems = previewLines(card.dataset.previewContent).map((line) => line.replace(/^\d+[.)]\s*/, "").toLocaleLowerCase());
-            const expected = answer ? answer.split("/").map((part) => part.trim().toLocaleLowerCase()) : sourceItems;
-            const normalizedExpected = expected.every((part) => /^\d+$/.test(part)) ? expected.map((part) => sourceItems[Number(part) - 1]) : expected;
-            correct = actual.length === normalizedExpected.length && actual.every((value, index) => value === normalizedExpected[index]);
-        } else if (type === "match") {
-            const selects = Array.from(card.querySelectorAll("[data-match-index]"));
-            correct = selects.length > 0 && selects.every((select, index) => select.value === String(index));
-        } else if (type === "columns") {
-            const expectedCategories = previewLines(card.dataset.previewContent).map((line) => line.split(":")[0]?.trim());
-            const selects = Array.from(card.querySelectorAll("[data-column-index]"));
-            correct = selects.length > 0 && selects.every((select, index) => select.value === expectedCategories[index]);
-        } else if (type === "open-answer") {
-            correct = card.querySelector("[data-open-answer]").value.trim().toLocaleLowerCase() === answer.toLocaleLowerCase();
-        }
-        result.textContent = correct ? previewText("correct") : previewText("incorrect");
-        result.className = `preview-result ${correct ? "correct" : "incorrect"}`;
+        checkPreviewActivity(button.closest("[data-preview-activity]"));
+    }));
+    container.querySelectorAll("[data-check-activity-group]").forEach((button) => button.addEventListener("click", () => {
+        button.closest(".preview-activity-group")?.querySelectorAll(".preview-question-activity")
+            .forEach((card) => checkPreviewActivity(card));
     }));
 
     container.querySelectorAll("[data-word-index]").forEach((word) => {

@@ -14,7 +14,7 @@
             profileRole: "Учень", logout: "Вийти з профілю", home: "← На головну", language: "Мова",
             saveError: "Не вдалося зберегти пароль:", loadError: "Не вдалося завантажити кабінет:",
             logoutError: "Не вдалося вийти з профілю. Спробуйте ще раз.", imageAlt: "Зображення до завдання",
-            checkAnswer: "Перевірити відповідь", correct: "Правильно!", incorrect: "Поки неправильно. Спробуйте ще раз.",
+            checkAnswer: "Перевірити відповідь", checkAnswers: "Перевірити відповіді", correct: "Правильно!", incorrect: "Поки неправильно. Спробуйте ще раз.",
             submitted: "Відповідь збережено. Викладач зможе її перевірити.", saved: "Прогрес збережено.", draftSaveError: "Не вдалося зберегти чернетку:",
             completed: "Урок завершено!", homework: "Домашня робота", progress: "відповідей", progressSaved: "Чернетку збережено.",
             choose: "Виберіть відповідь", true: "Так", false: "Ні",
@@ -35,7 +35,7 @@
             profileRole: "Ученик", logout: "Выйти из профиля", home: "← На главную", language: "Язык",
             saveError: "Не удалось сохранить пароль:", loadError: "Не удалось загрузить кабинет:",
             logoutError: "Не удалось выйти из профиля. Попробуйте ещё раз.", imageAlt: "Изображение к заданию",
-            checkAnswer: "Проверить ответ", correct: "Правильно!", incorrect: "Пока неверно. Попробуйте ещё раз.",
+            checkAnswer: "Проверить ответ", checkAnswers: "Проверить ответы", correct: "Правильно!", incorrect: "Пока неверно. Попробуйте ещё раз.",
             submitted: "Ответ сохранён. Преподаватель сможет его проверить.", saved: "Прогресс сохранён.", draftSaveError: "Не удалось сохранить черновик:",
             completed: "Урок завершён!", homework: "Домашняя работа", progress: "ответов", progressSaved: "Черновик сохранён.",
             choose: "Выберите ответ", true: "Да", false: "Нет",
@@ -56,7 +56,7 @@
             profileRole: "Student", logout: "Sign out", home: "← Home", language: "Language",
             saveError: "Could not save the password:", loadError: "Could not load the dashboard:",
             logoutError: "Could not sign out. Please try again.", imageAlt: "Activity image",
-            checkAnswer: "Check answer", correct: "Correct!", incorrect: "Not quite. Try again.",
+            checkAnswer: "Check answer", checkAnswers: "Check answers", correct: "Correct!", incorrect: "Not quite. Try again.",
             submitted: "Answer saved. Your teacher can review it.", saved: "Progress saved.", draftSaveError: "Could not save the draft:",
             completed: "Lesson completed!", homework: "Homework", progress: "answered", progressSaved: "Draft saved.",
             choose: "Choose an answer", true: "True", false: "False",
@@ -255,6 +255,7 @@
     function renderActivity(activity) {
         const index = activity.index;
         if (Array.isArray(activity.questions) && activity.questions.length) {
+            const canSubmit = activity.questions.some((question) => question.gradable || question.reviewRequired);
             return `<section class="student-activity-group">
                 <header class="student-activity-group-heading"><span class="student-activity-number">${index + 1}</span><h3>${escapeHtml(activity.prompt || text("activity"))}</h3></header>
                 <div class="student-activity-subitems">${activity.questions.map((question, questionIndex) => renderActivityItem(
@@ -263,6 +264,7 @@
                     questionIndex,
                     progressForQuestion(openedLesson, index, question.questionId || `legacy-${questionIndex}`, questionIndex)
                 )).join("")}</div>
+                ${canSubmit ? `<div class="student-activity-group-actions"><button class="button small" type="button" data-submit-activity-group>${escapeHtml(text("checkAnswers"))}</button></div>` : ""}
             </section>`;
         }
         return renderActivityItem(activity, index, null, progressFor(openedLesson, index));
@@ -332,17 +334,21 @@
             : saved?.correct === true ? text("correct")
                 : saved?.correct === false ? text("incorrect")
                     : saved?.correct === null ? text("submitted") : "";
-        const submitButton = activity.gradable || activity.reviewRequired
-            ? `<div class="student-activity-actions">${controls}<button class="button small" type="button" data-submit-answer>${escapeHtml(text("checkAnswer"))}</button></div><p class="student-answer-feedback ${saved?.correct === true ? "is-correct" : saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml(feedback)}</p>`
-            : activity.type === "flashcards" ? "" : "";
         const isQuestion = Number.isInteger(questionIndex);
+        const canSubmit = Boolean(activity.gradable || activity.reviewRequired);
+        const feedbackMarkup = canSubmit
+            ? `<p class="student-answer-feedback ${saved?.correct === true ? "is-correct" : saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml(feedback)}</p>`
+            : "";
+        const submitMarkup = !canSubmit ? ""
+            : isQuestion ? controls
+                : `<div class="student-activity-actions">${controls}<button class="button small" type="button" data-submit-answer>${escapeHtml(text("checkAnswer"))}</button></div>${feedbackMarkup}`;
         const questionId = isQuestion ? String(activity.questionId || `legacy-${questionIndex}`) : "";
         const questionAttributes = isQuestion
-            ? `data-question-id="${escapeHtml(questionId)}" data-question-index="${questionIndex}"`
+            ? `data-question-id="${escapeHtml(questionId)}" data-question-index="${questionIndex}" data-submittable="${canSubmit}"`
             : "";
         const itemNumber = isQuestion ? `${index + 1}.${questionIndex + 1}` : String(index + 1);
         const title = activity.prompt || (isQuestion ? questionItemLabel(questionIndex) : text("activity"));
-        return `<article class="student-activity" data-activity-index="${index}" ${questionAttributes} data-activity-type="${escapeHtml(activity.type)}"><span class="student-activity-number">${itemNumber}</span><div class="student-activity-main"><h3>${escapeHtml(title)}</h3>${body}${submitButton}</div></article>`;
+        return `<article class="student-activity" data-activity-index="${index}" ${questionAttributes} data-activity-type="${escapeHtml(activity.type)}"><span class="student-activity-number">${itemNumber}</span><div class="student-activity-main"><h3>${escapeHtml(title)}</h3>${isQuestion ? feedbackMarkup : ""}${body}${submitMarkup}</div></article>`;
     }
 
     function renderLessonDetail(lesson) {
@@ -519,7 +525,7 @@
     }
 
     function lockLessonControls() {
-        const controls = [...pageContent.querySelectorAll('.student-activity input:not([type="hidden"]), .student-activity select, .student-activity textarea, .student-activity [data-word-token], .student-activity [data-remove-word], .student-activity [data-move-item], .student-activity [data-submit-answer]')];
+        const controls = [...pageContent.querySelectorAll('.student-activity input:not([type="hidden"]), .student-activity select, .student-activity textarea, .student-activity [data-word-token], .student-activity [data-remove-word], .student-activity [data-move-item], .student-activity [data-submit-answer], [data-submit-activity-group]')];
         const previousStates = controls.map((control) => control.disabled);
         controls.forEach((control) => { control.disabled = true; });
         return () => controls.forEach((control, index) => {
@@ -543,7 +549,7 @@
         target.append(replacement);
     }
 
-    async function submitActivity(element) {
+    async function submitActivity(element, renderAfterSubmit = true) {
         const index = Number(element.dataset.activityIndex);
         const questionId = element.dataset.questionId || null;
         const draftKey = activityDraftKey(index, questionId);
@@ -562,7 +568,7 @@
                 feedback.textContent = text("emptyAnswer");
                 feedback.className = "student-answer-feedback is-incorrect";
                 unlockControls();
-                return;
+                return true;
             }
             const submission = draftSaveQueue.catch((error) => {
                 console.warn("Submitting after a failed draft request; pending answers will be retried before leaving.", error);
@@ -581,11 +587,29 @@
                 : result.correct ? text("correct") : text("incorrect");
             feedback.className = `student-answer-feedback ${result.reviewRequired ? "" : result.correct ? "is-correct" : "is-incorrect"}`;
             if (result.completed) showToast(text("completed"));
-            render();
+            if (renderAfterSubmit) render();
+            else unlockControls();
+            return true;
         } catch (error) {
             console.error("Could not submit the student answer.", error);
             feedback.textContent = error.message;
             feedback.className = "student-answer-feedback is-incorrect";
+            unlockControls();
+            return false;
+        }
+    }
+
+    async function submitActivityGroup(group) {
+        const activities = group
+            ? [...group.querySelectorAll('.student-activity[data-submittable="true"]')]
+            : [];
+        if (!activities.length) return;
+        const unlockControls = lockLessonControls();
+        try {
+            for (const activity of activities) {
+                if (!await submitActivity(activity, false)) break;
+            }
+        } finally {
             unlockControls();
         }
     }
@@ -662,6 +686,9 @@
         });
         pageContent.querySelectorAll("[data-submit-answer]").forEach((button) => {
             button.addEventListener("click", () => submitActivity(button.closest("[data-activity-index]")));
+        });
+        pageContent.querySelectorAll("[data-submit-activity-group]").forEach((button) => {
+            button.addEventListener("click", () => submitActivityGroup(button.closest(".student-activity-group")));
         });
         pageContent.querySelectorAll("[data-move-item]").forEach((button) => {
             button.addEventListener("click", () => {
