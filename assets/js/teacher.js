@@ -297,6 +297,7 @@ let homeworkSourceLessonId = "__current__";
 let lessonWorkspaceMode = "";
 let workspaceLessonId = "";
 let monitorClassId = "";
+let selectedLiveStudentId = "";
 let liveProgressRows = new Map();
 let liveProgressChannel = null;
 let liveProgressKey = "";
@@ -811,6 +812,32 @@ function lessonSectionText(key) {
         en: { intro: "Introduction", newSection: "New section", addSection: "＋ Add section", section: "Lesson sections", rename: "Section name", remove: "Delete", previous: "← Back", next: "Next →", moveUp: "Move up", moveDown: "Move down", moveBlock: "Drag to move this activity", addElement: "＋ Add new item", copyElement: "▣ Duplicate item", edit: "Edit", done: "Done", back: "Back to lessons", save: "Save lesson", create: "Create lesson", empty: "This section has no items yet.", confirmRemove: "Delete this section and its items?", lessonTab: "Lesson", editorTab: "Edit", workspaceMode: "Lesson mode", homework: "Homework", homeworkSections: "Homework sections", homeworkActivities: "Homework activities", currentLesson: "Current lesson", copyFromLesson: "Copy activities from a lesson", dragCopyHint: "Drag or click an activity to copy it here.", dropCopyHint: "Drop an activity here", noSourceActivities: "This lesson has no activities to copy yet.", liveHint: "Student answers update in real time.", liveClass: "Class", liveConnect: "Connecting to answers…", liveReady: "Connected · answers update live", liveOffline: "Sign in to the teacher dashboard to see live answers.", liveError: "Could not connect to student answers.", liveNoClass: "This lesson is not assigned to a class yet.", liveNoPermission: "You do not have access to student answers.", liveNoStudents: "There are no students in this class yet.", liveAnswers: "Student answers", liveWait: "No answer yet", liveDraft: "Draft", liveSubmitted: "Submitted", liveUnsaved: "Editor changes are not saved yet. Students see the last saved version." }
     };
     return labels[currentLanguage][key];
+}
+
+const liveStudentLabels = {
+    ua: {
+        selector: "Показувати відповіді учня",
+        answer: "Відповідь учня",
+        count: "{answered}/{total} відповідей",
+        noActivities: "Немає завдань із відповідями"
+    },
+    ru: {
+        selector: "Показывать ответы ученика",
+        answer: "Ответ ученика",
+        count: "{answered}/{total} ответов",
+        noActivities: "Нет заданий с ответами"
+    },
+    en: {
+        selector: "Show answers for",
+        answer: "Student answer",
+        count: "{answered}/{total} answers",
+        noActivities: "No answer activities"
+    }
+};
+
+function liveStudentText(key, values = {}) {
+    const text = liveStudentLabels[currentLanguage]?.[key] || liveStudentLabels.ru[key];
+    return text.replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ""));
 }
 
 function normalizeLessonSections(lesson) {
@@ -2002,32 +2029,67 @@ function formatLiveResponse(activity, response) {
     return value;
 }
 
-function renderLiveAnswerPanel(group, activity, progressIndex) {
+function liveStudentsForGroup(group) {
     const students = group.studentRecords?.length
         ? group.studentRecords.map((student) => ({ id: student.id, name: student.display_name }))
         : (group.students || []).map((name, index) => ({ id: `student-${index}`, name }));
-    const answerKey = `a${progressIndex}`;
-    const answerRows = students.map((student) => {
-        const answer = liveProgressRows.get(student.id)?.answers?.[answerKey];
-        const response = formatLiveResponse(activity, answer?.response);
-        const answerStatus = answer
-            ? `<span class="live-answer-status ${answer.draft ? "is-draft" : "is-submitted"}">${answer.draft ? lessonSectionText("liveDraft") : lessonSectionText("liveSubmitted")}</span>`
-            : "";
-        return `<div class="live-answer-row"><strong>${escapeHtml(student.name)}</strong>${answerStatus}<p class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</p></div>`;
-    }).join("");
-    return `<section class="live-answers-panel" aria-label="${lessonSectionText("liveAnswers")}"><h4>${lessonSectionText("liveAnswers")}</h4><div class="live-answer-list">${answerRows || `<p class="live-answer-empty">${lessonSectionText("liveNoStudents")}</p>`}</div></section>`;
+    return students;
 }
 
-function renderLiveMonitor(lesson) {
+function liveStudentAnswerProgress(lesson, studentId, progressIndexes) {
+    const answers = liveProgressRows.get(studentId)?.answers || {};
+    let answered = 0;
+    let total = 0;
+    const sections = [...normalizeLessonSections(lesson), ...normalizeHomeworkSections(lesson)];
+    sections.forEach((section) => section.activities.forEach((activity, activityIndex) => {
+        if (!liveAnswerActivityTypes.has(activity.type)) return;
+        total += 1;
+        const progressIndex = progressIndexes.get(`${section.id}:${activityIndex}`);
+        if (progressIndex === undefined) return;
+        const response = answers[`a${progressIndex}`]?.response;
+        const hasResponse = Array.isArray(response)
+            ? response.some((item) => typeof item === "string" && item.trim())
+            : typeof response === "string" && Boolean(response.trim());
+        if (hasResponse) answered += 1;
+    }));
+    return { answered, total };
+}
+
+function renderLiveAnswerPanel(student, activity, progressIndex) {
+    const answerKey = `a${progressIndex}`;
+    const answer = student ? liveProgressRows.get(student.id)?.answers?.[answerKey] : null;
+    const response = formatLiveResponse(activity, answer?.response);
+    const answerStatus = answer
+        ? `<span class="live-answer-status ${answer.draft ? "is-draft" : "is-submitted"}">${answer.draft ? lessonSectionText("liveDraft") : lessonSectionText("liveSubmitted")}</span>`
+        : "";
+    const content = student
+        ? `<div class="live-answer-row">${answerStatus}<p class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</p></div>`
+        : `<p class="live-answer-empty">${lessonSectionText("liveNoStudents")}</p>`;
+    return `<section class="live-answers-panel" aria-label="${liveStudentText("answer")}"><h4>${liveStudentText("answer")}</h4>${content}</section>`;
+}
+
+function renderLiveMonitor(lesson, progressIndexes) {
     const groups = lessonClassIds(lesson).map((classId) => data.classes.find((group) => group.id === classId)).filter(Boolean);
     const selectedGroup = groups.find((group) => group.id === monitorClassId) || groups[0];
     monitorClassId = selectedGroup?.id || "";
     if (selectedGroup && currentUser) ensureLiveProgressSubscription(lesson, selectedGroup);
     else if (liveProgressKey) stopLiveProgressSubscription();
+    const students = selectedGroup ? liveStudentsForGroup(selectedGroup) : [];
+    const selectedStudent = students.find((student) => student.id === selectedLiveStudentId) || students[0] || null;
+    selectedLiveStudentId = selectedStudent?.id || "";
 
     const groupPicker = groups.length > 1
         ? `<label class="live-class-picker"><span>${lessonSectionText("liveClass")}</span><select data-live-class>${groups.map((group) => `<option value="${escapeHtml(group.id)}" ${group.id === monitorClassId ? "selected" : ""}>${escapeHtml(group.name)}</option>`).join("")}</select></label>`
         : selectedGroup ? `<div class="live-class-picker"><span>${lessonSectionText("liveClass")}</span><strong>${escapeHtml(selectedGroup.name)}</strong></div>` : "";
+    const studentPicker = students.length
+        ? `<div class="live-student-switcher"><span class="live-student-label">${liveStudentText("selector")}</span><div class="live-student-tabs ${students.length === 1 ? "is-single" : students.length === 2 ? "is-pair" : "is-triple"}" role="group" aria-label="${liveStudentText("selector")}">${students.map((student) => {
+            const { answered, total } = liveStudentAnswerProgress(lesson, student.id, progressIndexes);
+            const count = total
+                ? liveStudentText("count", { answered, total })
+                : liveStudentText("noActivities");
+            return `<button type="button" class="live-student-tab ${student.id === selectedLiveStudentId ? "active" : ""}" data-live-student-id="${escapeHtml(student.id)}" aria-pressed="${student.id === selectedLiveStudentId}"><span class="live-student-name">${escapeHtml(student.name)}</span><span class="live-student-progress">${escapeHtml(count)}</span></button>`;
+        }).join("")}</div></div>`
+        : "";
     let statusText = lessonSectionText("liveNoClass");
     let statusClass = "is-idle";
     if (!selectedGroup) {
@@ -2047,7 +2109,7 @@ function renderLiveMonitor(lesson) {
         statusText = lessonSectionText("liveConnect");
         statusClass = "is-connecting";
     }
-    return `<section class="live-monitor-bar"><div class="live-monitor-heading"><strong>${lessonSectionText("liveHint")}</strong><p>${selectedGroup ? escapeHtml(selectedGroup.name) : lessonSectionText("liveNoClass")}</p></div>${groupPicker}<p class="live-monitor-status ${statusClass}" role="status" aria-live="polite">${escapeHtml(statusText)}</p></section>`;
+    return `<section class="live-monitor-bar"><div class="live-monitor-heading"><strong>${lessonSectionText("liveHint")}</strong><p>${selectedGroup ? escapeHtml(selectedGroup.name) : lessonSectionText("liveNoClass")}</p></div>${groupPicker}${studentPicker}<p class="live-monitor-status ${statusClass}" role="status" aria-live="polite">${escapeHtml(statusText)}</p></section>`;
 }
 
 function renderLessonWorkspace() {
@@ -2073,9 +2135,11 @@ function renderLessonWorkspace() {
         ? activeWorkspaceSectionId()
         : isHomework ? activeHomeworkSectionId : activeLessonSectionId;
     const section = sections.find((item) => item.id === selectedSectionId);
-    const liveMonitor = isEditing ? "" : renderLiveMonitor(lesson);
-    const liveGroup = !isEditing ? data.classes.find((group) => group.id === monitorClassId) : null;
     const progressIndexes = isEditing ? new Map() : lessonProgressIndexes(lesson);
+    const liveMonitor = isEditing ? "" : renderLiveMonitor(lesson, progressIndexes);
+    const liveGroup = !isEditing ? data.classes.find((group) => group.id === monitorClassId) : null;
+    const liveStudents = liveGroup ? liveStudentsForGroup(liveGroup) : [];
+    const liveStudent = liveStudents.find((student) => student.id === selectedLiveStudentId) || liveStudents[0] || null;
     const quickEditActive = !isEditing && previewActivityEdit?.lessonId === lesson.id
         && previewActivityEdit.sectionId === section.id && previewActivityEdit.isHomework === isHomework;
     const title = isEditing ? lessonFormDraft.title : lesson.title;
@@ -2090,7 +2154,7 @@ function renderLessonWorkspace() {
         : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map((activity, index) => {
             const progressIndex = progressIndexes.get(`${section.id}:${index}`);
             const answerPanel = liveGroup && liveAnswerActivityTypes.has(activity.type) && progressIndex !== undefined
-                ? renderLiveAnswerPanel(liveGroup, activity, progressIndex)
+                ? renderLiveAnswerPanel(liveStudent, activity, progressIndex)
                 : "";
             return `${renderPreviewActivity(activity, index)}${answerPanel}`;
         }).join("") : emptyMessage(lessonSectionText("empty"), "")}</div>`;
@@ -2148,9 +2212,15 @@ function renderLessonWorkspace() {
     }));
     pageContent.querySelector("[data-live-class]")?.addEventListener("change", (event) => {
         monitorClassId = event.target.value;
+        selectedLiveStudentId = "";
         stopLiveProgressSubscription();
         render();
     });
+    pageContent.querySelectorAll("[data-live-student-id]").forEach((button) => button.addEventListener("click", () => {
+        if (selectedLiveStudentId === button.dataset.liveStudentId) return;
+        selectedLiveStudentId = button.dataset.liveStudentId;
+        render();
+    }));
     pageContent.querySelectorAll('[data-action="choose-activity"]').forEach((button) => button.addEventListener("click", openActivityPicker));
     pageContent.querySelectorAll("[data-select-section]").forEach((button) => button.addEventListener("click", () => {
         if (previewActivityEdit) return;
