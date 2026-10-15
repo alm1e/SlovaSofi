@@ -1,25 +1,36 @@
 /* 1. Общие настройки */
 :root {
-    --primary-green: #2B6446; 
-    --light-white: #FFFFFF; 
+    --primary-green: #2B6446;
+    --sage-deep: #1F4634;
+    --sage-page: #F4F7F2;
+    --sage-line: #DCE7DC;
+    --sage-accent: #D9AE58;
+    --light-white: #FFFFFF;
 }
 
 body {
-    background-color: var(--primary-green) !important;
-    color: var(--light-white) !important;
-    font-family: 'Arial', sans-serif; 
+    background-color: var(--sage-page) !important;
+    color: var(--sage-deep) !important;
+    font-family: "Segoe UI", Arial, sans-serif;
 }
 
 /* 2. Навигация */
 .custom-nav {
     background-color: #ffffff !important;
     padding: 10px 0;
-    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    border-bottom: 1px solid var(--sage-line);
+    box-shadow: 0 4px 18px rgba(31, 70, 52, 0.06);
 }
 
 .nav-link {
     color: #2B6446 !important;
     font-weight: 600;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.nav-link:hover {
+    color: var(--sage-deep) !important;
+    transform: translateY(-1px);
 }
 
 .logo-wrap {
@@ -59,17 +70,50 @@ body {
 }
 /* 3. Hero секция */
 .hero-section {
-    padding: 100px 0;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    padding: clamp(76px, 10vw, 132px) 0;
+    color: #ffffff !important;
+    background:
+        radial-gradient(circle at 82% 18%, rgba(217, 174, 88, 0.2), transparent 24%),
+        linear-gradient(125deg, #1F4634 0%, #2B6446 62%, #477553 100%);
+}
+
+.hero-section::before {
+    position: absolute;
+    z-index: -1;
+    top: -180px;
+    right: -90px;
+    width: 420px;
+    height: 420px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    content: "";
+}
+
+.hero-section .container {
+    position: relative;
+    z-index: 1;
 }
 
 .hero-title {
-    font-size: 3.5rem;
+    max-width: 13ch;
+    margin-right: auto;
+    margin-left: auto;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
     font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.04em;
     margin-bottom: 20px;
 }
 
 .hero-subtitle {
+    max-width: 640px;
+    margin: 0 auto 32px;
     font-size: 1.25rem;
+    line-height: 1.65;
+    color: rgba(255, 255, 255, 0.82);
 }
 
 /* Большая кнопка в Hero */
@@ -80,24 +124,26 @@ body {
     border-radius: 50px;
     font-weight: bold;
     text-decoration: none;
-    transition: 0.3s ease;
+    box-shadow: 0 8px 22px rgba(15, 39, 25, 0.18);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .btn-custom-lg:hover {
-    background-color: #f8f9fa;
+    background-color: #F7F2E6;
     color: var(--primary-green);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px rgba(15, 39, 25, 0.24);
 }
 
 /* 4. Карточки цен (Ящички) */
 .price-card {
-    border: none;
+    border: 1px solid var(--sage-line);
     border-radius: 20px;
     padding: 20px;
     background-color: var(--light-white); 
-    color: var(--primary-green) !important; 
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
+    color: var(--sage-deep) !important;
+    box-shadow: 0 8px 24px rgba(31, 70, 52, 0.07);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
     
     display: flex;
     flex-direction: column;
@@ -109,8 +155,9 @@ body {
 
 
 .price-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+    transform: translateY(-5px);
+    border-color: #C6D9C8;
+    box-shadow: 0 16px 34px rgba(31, 70, 52, 0.13);
 }
 
 .card-body {
@@ -144,14 +191,15 @@ body {
     padding: 15px;
     font-weight: 700;
     border: none;
-    transition: all 0.3s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
     text-align: center;
     text-decoration: none;
     margin-top: auto; 
 }
 .btn-card-green-cta:hover {
-    background-color: #214d35 !important;
-    transform: scale(1.02);
+    background-color: var(--sage-deep) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(31, 70, 52, 0.18);
 }
 
 .features-list {
@@ -175,7 +223,18 @@ body {
 
 .footer {
     padding: 40px 0;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(255,255,255,0.12);
+    background: linear-gradient(130deg, #1F4634, #2B6446);
+    color: #F4F7F2;
+}
+
+.footer a {
+    color: #E7EFE7;
+    transition: color 0.2s ease;
+}
+
+.footer a:hover {
+    color: var(--sage-accent);
 }
 
 .badge-hit-svg {
@@ -233,26 +292,27 @@ body {
 }
 
 #teachers {
-    padding-top: 100px !important; 
-    margin-top: 50px !important;
+    padding-top: 76px !important;
+    margin-top: 0 !important;
 }
 .teachers_title{
     margin-top: 10px;
 }
 /* Карточка преподавателя */
 .teacher-card {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: #ffffff !important;
+    border: 1px solid var(--sage-line) !important;
     border-radius: 25px;
-    /* Усиливаем анимацию для GitHub */
-    transition: all 0.4s ease-in-out !important; 
+    box-shadow: 0 8px 24px rgba(31, 70, 52, 0.07) !important;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease !important;
     height: 100%;
 }
 /* Эффект при наведении на карточку */
 .teacher-card:hover {
-    transform: translateY(-15px) !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    border-color: #4CAF50 !important;
+    transform: translateY(-5px) !important;
+    background: #ffffff !important;
+    border-color: #B8D0BD !important;
+    box-shadow: 0 16px 34px rgba(31, 70, 52, 0.13) !important;
 }
 /* Контейнер для фото */
 .teacher-avatar-container {
@@ -263,8 +323,8 @@ body {
     overflow: hidden;
     border: 5px solid #2B6446; 
     position: relative;
-    transition: all 0.4s ease-in-out;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+    transition: transform 0.25s ease, border-color 0.25s ease;
+    box-shadow: 0 5px 15px rgba(31, 70, 52, 0.16);
 }
 
 .teacher-avatar-container img {
@@ -283,11 +343,11 @@ body {
 }
 
 .teacher-card:hover .teacher-avatar-container {
-    transform: scale(1.1) !important;
-    border-color: #4CAF50 !important;
+    transform: scale(1.03) !important;
+    border-color: var(--sage-accent) !important;
 }
 .teacher-card:hover .teacher-avatar-container img {
-    transform: scale(1.1); 
+    transform: scale(1.04);
 }
 
 .teacher-card h3 {
@@ -297,7 +357,7 @@ body {
 }
 
 .teacher-card .text-success {
-    color: #4CAF50 !important; 
+    color: var(--primary-green) !important;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
@@ -310,7 +370,7 @@ body {
 .mini-avatar {
     width: 100px;  
     height: 100px;      
-    background: rgba(255,255,255,0.2);
+    background: #E8F0E7;
     border-radius: 50%;
     margin: 0 auto;
     border: 3px solid #2B6446;
@@ -330,9 +390,9 @@ body {
 }
 
 .team-mini-item:hover .mini-avatar {
-    transform: scale(1.1);
-    border-color: #4CAF50;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    transform: scale(1.04);
+    border-color: var(--sage-accent);
+    box-shadow: 0 5px 15px rgba(31, 70, 52, 0.16);
 }
 .social-links{
     display: flex;
@@ -354,8 +414,8 @@ body {
 }
 .social-icon:hover,
 .social-icon:focus-visible {
-    background-color: #e8f4eb;
-    color: #2b6446;
+    background-color: #E8F0E7;
+    color: var(--sage-deep);
     transform: translateY(-2px);
 }
 @media (max-width: 768px) {
@@ -383,10 +443,11 @@ html {
 
 .auth-card {
     background: #fff;
-    color: var(--primary-green);
+    color: var(--sage-deep);
     padding: 40px;
     border-radius: 20px;
-    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.18);
+    border: 1px solid var(--sage-line);
+    box-shadow: 0 18px 48px rgba(31, 70, 52, 0.12);
 }
 
 .auth-title {
@@ -425,6 +486,16 @@ html {
 .auth-card .form-control {
     min-height: 48px;
     border-radius: 10px;
+}
+
+.auth-card a:not(.auth-forgot-password) {
+    color: var(--primary-green);
+    text-underline-offset: 3px;
+    transition: color 0.2s ease;
+}
+
+.auth-card a:not(.auth-forgot-password):hover {
+    color: var(--sage-deep);
 }
 
 .auth-forgot-password {
@@ -482,5 +553,37 @@ html {
 @media (max-width: 480px) {
     .auth-card {
         padding: 28px 22px;
+    }
+}
+
+@keyframes sage-rise {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-title,
+.hero-subtitle,
+.hero-section .btn-custom-lg {
+    animation: sage-rise 0.55s ease-out both;
+}
+
+.hero-subtitle { animation-delay: 0.08s; }
+.hero-section .btn-custom-lg { animation-delay: 0.16s; }
+
+@media (max-width: 767.98px) {
+    .hero-section { padding: 76px 0; }
+    .hero-subtitle { font-size: 1.05rem; }
+    #teachers { padding-top: 56px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
     }
 }

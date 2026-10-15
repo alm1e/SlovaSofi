@@ -12,6 +12,10 @@ const interactiveTypes = new Set([
     "sentence-order", "true-false", "table", "match", "columns", "open-answer",
     "flashcards", "text", "image", "audio", "video"
 ]);
+const answerableTypes = new Set([
+    "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
+    "sentence-order", "true-false", "table", "match", "columns", "open-answer"
+]);
 
 type JsonRecord = Record<string, unknown>;
 type Activity = { type: string; prompt: string; content: string; answer: string };
@@ -250,6 +254,18 @@ function publicProgress(value: unknown): Record<string, ProgressAnswer> {
     return result;
 }
 
+function hasAnswerResponse(response: unknown): boolean {
+    if (typeof response === "string") return response.trim().length > 0;
+    return Array.isArray(response) && response.some((part) => typeof part === "string" && part.trim().length > 0);
+}
+
+function progressSummary(activities: Activity[], value: unknown): { progressActivityCount: number; answeredCount: number } {
+    const answers = publicProgress(value);
+    const answerableIndexes = activities.flatMap((activity, index) => answerableTypes.has(activity.type) ? [index] : []);
+    const answeredCount = answerableIndexes.filter((index) => hasAnswerResponse(answers[`a${index}`]?.response)).length;
+    return { progressActivityCount: answerableIndexes.length, answeredCount };
+}
+
 Deno.serve(async (request: Request) => {
     const appUrl = Deno.env.get("APP_URL");
     const appBaseUrl = new URL(appUrl ? (appUrl.endsWith("/") ? appUrl : `${appUrl}/`) : "http://invalid.local/");
@@ -345,13 +361,14 @@ Deno.serve(async (request: Request) => {
             const lessonIdValue = String(lesson.id);
             const byId = classLessons.get(classId) || new Map<string, JsonRecord>();
             const progress = progressByLesson.get(`${assignment.memberId}:${lessonIdValue}`);
+            const activities = flattenActivities(lesson.activities);
             byId.set(lessonIdValue, {
                 id: lessonIdValue,
                 title: stringValue(lesson.title),
                 unit: stringValue(lesson.unit),
-                activityCount: flattenActivities(lesson.activities).length,
+                activityCount: activities.length,
                 completed: Boolean(progress?.completed_at),
-                answeredCount: Object.keys(publicProgress(progress?.answers)).length
+                ...progressSummary(activities, progress?.answers)
             });
             classLessons.set(classId, byId);
         }
@@ -363,13 +380,14 @@ Deno.serve(async (request: Request) => {
         }));
         const lessons = [...new Map(assignmentRows.map((row) => {
             const progress = progressByLesson.get(`${row.memberId}:${String(row.lesson.id)}`);
+            const activities = flattenActivities(row.lesson.activities);
             return [String(row.lesson.id), {
                 id: String(row.lesson.id),
                 title: stringValue(row.lesson.title),
                 unit: stringValue(row.lesson.unit),
-                activityCount: flattenActivities(row.lesson.activities).length,
+                activityCount: activities.length,
                 completed: Boolean(progress?.completed_at),
-                answeredCount: Object.keys(publicProgress(progress?.answers)).length
+                ...progressSummary(activities, progress?.answers)
             }];
         })).values()];
         return jsonResponse(200, { classes, lessons }, allowedOrigin);
@@ -384,6 +402,8 @@ Deno.serve(async (request: Request) => {
             id: lessonId,
             title: stringValue(assignment.lesson.title),
             unit: stringValue(assignment.lesson.unit),
+            activityCount: allActivities.length,
+            ...progressSummary(allActivities, progress?.answers),
             sections: sectionsWithSafeActivities(assignment.lesson.activities),
             progress: publicProgress(progress?.answers),
             completed: Boolean(progress?.completed_at)
@@ -400,12 +420,8 @@ Deno.serve(async (request: Request) => {
     }
     const activity = allActivities[Number(activityIndex)];
     const response = payload.response;
-    const canAnswer = new Set([
-        "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
-        "sentence-order", "true-false", "table", "match", "columns", "open-answer"
-    ]);
     if (action === "save-draft") {
-        if (!canAnswer.has(activity.type)) return jsonResponse(400, { error: "This activity does not accept a saved answer." }, allowedOrigin);
+        if (!answerableTypes.has(activity.type)) return jsonResponse(400, { error: "This activity does not accept a saved answer." }, allowedOrigin);
         if (!(typeof response === "string" || Array.isArray(response))
             || (typeof response === "string" && response.length > 10000)
             || (Array.isArray(response) && (response.length > 100 || response.some((item) => typeof item !== "string" || item.length > 500)))) {

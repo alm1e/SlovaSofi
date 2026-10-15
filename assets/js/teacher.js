@@ -2087,7 +2087,12 @@ function renderLiveMonitor(lesson, progressIndexes) {
             const count = total
                 ? liveStudentText("count", { answered, total })
                 : liveStudentText("noActivities");
-            return `<button type="button" class="live-student-tab ${student.id === selectedLiveStudentId ? "active" : ""}" data-live-student-id="${escapeHtml(student.id)}" aria-pressed="${student.id === selectedLiveStudentId}"><span class="live-student-name">${escapeHtml(student.name)}</span><span class="live-student-progress">${escapeHtml(count)}</span></button>`;
+            const safeAnswered = Math.min(answered, total);
+            const percent = total ? Math.round((safeAnswered / total) * 100) : 0;
+            const progressBar = total
+                ? `<span class="live-student-progress-track" role="progressbar" aria-label="${escapeHtml(count)}" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${safeAnswered}" aria-valuetext="${escapeHtml(count)}"><span class="live-student-progress-fill" style="--progress-width:${percent}%"></span></span>`
+                : "";
+            return `<button type="button" class="live-student-tab ${student.id === selectedLiveStudentId ? "active" : ""}" data-live-student-id="${escapeHtml(student.id)}" aria-pressed="${student.id === selectedLiveStudentId}"><span class="live-student-name">${escapeHtml(student.name)}</span><span class="live-student-progress">${escapeHtml(count)}</span>${progressBar}</button>`;
         }).join("")}</div></div>`
         : "";
     let statusText = lessonSectionText("liveNoClass");

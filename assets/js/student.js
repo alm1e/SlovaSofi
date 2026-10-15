@@ -96,13 +96,42 @@
     const text = (key) => copy[language][key];
     const lessonSections = (lesson) => Array.isArray(lesson.sections) ? lesson.sections : [];
     const activitiesFor = (lesson) => lessonSections(lesson).flatMap((section) => Array.isArray(section.activities) ? section.activities : []);
+    const answerableActivityTypes = new Set([
+        "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
+        "sentence-order", "true-false", "table", "match", "columns", "open-answer"
+    ]);
+    const progressActivitiesFor = (lesson) => activitiesFor(lesson).filter((activity) => answerableActivityTypes.has(activity.type));
     const activityCount = (lesson) => activitiesFor(lesson).length || Number(lesson.activityCount) || 0;
+    function progressActivityCountFor(lesson) {
+        const reported = Number(lesson.progressActivityCount);
+        if (lesson.progressActivityCount !== undefined && lesson.progressActivityCount !== null
+            && lesson.progressActivityCount !== "" && Number.isInteger(reported) && reported >= 0) return reported;
+        return Array.isArray(lesson.sections) ? progressActivitiesFor(lesson).length : null;
+    }
+    function hasAnswerResponse(response) {
+        if (typeof response === "string") return response.trim().length > 0;
+        return Array.isArray(response) && response.some((part) => typeof part === "string" && part.trim().length > 0);
+    }
+    function answeredCountFor(lesson, answers = lesson.progress) {
+        if (Array.isArray(lesson.sections)) {
+            return progressActivitiesFor(lesson).filter((activity) => Number.isInteger(activity.index)
+                && hasAnswerResponse(answers?.[`a${activity.index}`]?.response)).length;
+        }
+        return Number(lesson.answeredCount) || 0;
+    }
     function progressBadge(lesson) {
-        const answered = Number(lesson.answeredCount) || 0;
-        if (lesson.completed) return `<span class="student-progress-badge is-complete">${escapeHtml(text("completed"))}</span>`;
-        if (!answered) return "";
-        const total = Math.max(Number(lesson.activityCount) || activityCount(lesson), answered);
-        return `<span class="student-progress-badge">${answered}/${total} ${escapeHtml(text("progress"))}</span>`;
+        const completedBadge = lesson.completed
+            ? `<span class="student-progress-badge is-complete">${escapeHtml(text("completed"))}</span>` : "";
+        const total = progressActivityCountFor(lesson);
+        if (total === null || total === 0) return completedBadge;
+        const answered = Math.min(answeredCountFor(lesson), total);
+        const percent = Math.round((answered / total) * 100);
+        const label = `${answered}/${total} ${text("progress")}`;
+        return `<span class="student-progress" data-progress-lesson="${escapeHtml(lesson.id)}">
+            <span class="student-progress-meta"><span>${escapeHtml(label)}</span><strong>${percent}%</strong></span>
+            <span class="student-progress-track" role="progressbar" aria-label="${escapeHtml(label)}" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${answered}" aria-valuetext="${escapeHtml(label)}"><span class="student-progress-fill" style="--progress-width:${percent}%"></span></span>
+            ${completedBadge}
+        </span>`;
     }
     function countLabel(count, type) {
         if (language === "en") {
@@ -274,7 +303,7 @@
     function renderLessonDetail(lesson) {
         const sections = lessonSections(lesson);
         return `<button class="text-link student-back-link" type="button" data-back-to-lessons>← ${escapeHtml(text("back"))}</button>
-            <section class="student-lesson-hero"><span class="eyebrow">${escapeHtml(lesson.className || "")}</span><h1>${escapeHtml(lesson.title)}</h1><p>${escapeHtml(lesson.unit || "")} · ${escapeHtml(countLabel(activityCount(lesson), "activity"))}${lesson.completed ? ` · ${escapeHtml(text("completed"))}` : ""}</p></section>
+            <section class="student-lesson-hero"><span class="eyebrow">${escapeHtml(lesson.className || "")}</span><h1>${escapeHtml(lesson.title)}</h1><p>${escapeHtml(lesson.unit || "")} · ${escapeHtml(countLabel(activityCount(lesson), "activity"))}</p>${progressBadge(lesson)}</section>
             <div class="student-section-list">${sections.map((section) => `<section class="panel student-section ${section.homework ? "student-homework-section" : ""}"><h2>${section.homework ? `${escapeHtml(text("homework"))} · ` : ""}${escapeHtml(section.title || text("section"))}</h2><div class="student-activity-list">${(Array.isArray(section.activities) ? section.activities : []).map((activity) => renderActivity(activity)).join("") || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</div></section>`).join("")}</div>`;
     }
 
@@ -326,20 +355,42 @@
         return "";
     }
 
+    function syncProgressDisplay(lessonId) {
+        const lesson = lessons.find((item) => item.id === lessonId)
+            || classes.flatMap((group) => group.lessons).find((item) => item.id === lessonId);
+        if (!lesson) return;
+        pageContent.querySelectorAll("[data-progress-lesson]").forEach((element) => {
+            if (element.dataset.progressLesson !== lessonId) return;
+            const template = document.createElement("template");
+            template.innerHTML = progressBadge(lesson);
+            const replacement = template.content.firstElementChild;
+            if (replacement) element.replaceWith(replacement);
+            else element.remove();
+        });
+    }
+
     function updateLessonProgress(lessonId, answers, completed) {
-        const answeredCount = Object.keys(answers || {}).length;
-        if (openedLesson?.id === lessonId) {
-            openedLesson.progress = answers;
-            openedLesson.completed = completed;
+        const currentLesson = openedLesson?.id === lessonId ? openedLesson : null;
+        let answeredCount = Object.values(answers || {}).filter((entry) => hasAnswerResponse(entry?.response)).length;
+        let progressActivityCount = null;
+        if (currentLesson) {
+            currentLesson.progress = answers;
+            currentLesson.completed = completed;
+            progressActivityCount = progressActivityCountFor(currentLesson);
+            currentLesson.answeredCount = answeredCountFor(currentLesson, answers);
+            answeredCount = currentLesson.answeredCount;
         }
         lessons.filter((lesson) => lesson.id === lessonId).forEach((lesson) => {
             lesson.answeredCount = answeredCount;
             lesson.completed = completed;
+            if (progressActivityCount !== null) lesson.progressActivityCount = progressActivityCount;
         });
         classes.flatMap((group) => group.lessons).filter((lesson) => lesson.id === lessonId).forEach((lesson) => {
             lesson.answeredCount = answeredCount;
             lesson.completed = completed;
+            if (progressActivityCount !== null) lesson.progressActivityCount = progressActivityCount;
         });
+        syncProgressDisplay(lessonId);
     }
 
     function setDraftFeedback(lessonId, activityIndex, message, isError = false) {
@@ -486,6 +537,10 @@
             const result = await invokeLessonApi({ action: "load", lessonId });
             openedLesson = result.lesson;
             openedLesson.className = result.className;
+            openedLesson.activityCount = activityCount(openedLesson);
+            const progressActivityCount = progressActivityCountFor(openedLesson);
+            if (progressActivityCount !== null) openedLesson.progressActivityCount = progressActivityCount;
+            openedLesson.answeredCount = answeredCountFor(openedLesson, openedLesson.progress);
             activeView = "lessons";
             render();
             window.scrollTo({ top: 0, behavior: "smooth" });
