@@ -609,14 +609,22 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .live-monitor-status.is-ready { color: #2d7544; }
 .live-monitor-status.is-error { color: #a33e35; }
 .live-monitor-status.is-connecting { color: #896e35; }
-.live-answers-panel { border: 1px solid #dce8dc; border-radius: 12px; padding: 13px; background: #f8fbf8; }
-.live-answers-panel h4 { margin: 0 0 9px; color: #47664d; font-size: 13px; }
+.live-answer-comparison { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-top: 15px; border-top: 1px solid #e7eee7; padding-top: 14px; }
+.live-correct-answer { display: grid; align-content: start; gap: 7px; min-width: 0; border: 1px solid #e2e7e2; border-radius: 12px; padding: 12px; background: #f2f4f2; }
+.live-correct-answer h4, .live-answers-panel h4 { margin: 0; font-size: 13px; }
+.live-correct-answer h4 { color: #879189; }
+.live-correct-answer-value { margin: 0; border-radius: 7px; padding: 7px 8px; background: #e9ede9; color: #78837a; font-size: 12px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.live-answers-panel { display: grid; align-content: start; gap: 9px; min-width: 0; border: 1px solid #dce8dc; border-radius: 12px; padding: 12px; background: #f8fbf8; }
+.live-answers-panel h4 { color: #47664d; }
 .live-answer-row { display: grid; justify-items: start; gap: 6px; border: 1px solid #e5ede5; border-radius: 9px; padding: 9px 10px; background: #fff; }
 .live-answer-status { align-self: start; border-radius: 20px; padding: 3px 7px; color: #536c57; font-size: 10px; white-space: nowrap; }
 .live-answer-status.is-draft { background: #fff3d9; color: #816426; }
 .live-answer-status.is-submitted { background: #e6f3e8; color: #2d7544; }
 .live-answer-response { width: 100%; margin: 0; overflow-wrap: anywhere; border-radius: 7px; padding: 7px 8px; background: #f6f8f6; color: #48564a; font-size: 12px; white-space: pre-wrap; }
 .live-answer-empty { margin: 0; color: var(--muted); font-size: 12px; }
+@media (max-width: 700px) {
+    .live-answer-comparison { grid-template-columns: 1fr; }
+}
 .homework-copy-source { margin-bottom: 20px; border: 1px solid #e0e9e0; border-radius: 13px; padding: 14px; background: #f8fbf8; }
 .homework-copy-source .form-field { max-width: 500px; }
 .homework-copy-source > .hint { margin: 8px 0 12px; }

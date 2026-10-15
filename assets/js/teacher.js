@@ -818,18 +818,24 @@ const liveStudentLabels = {
     ua: {
         selector: "Показувати відповіді учня",
         answer: "Відповідь учня",
+        correctAnswer: "Правильна відповідь",
+        noCorrectAnswer: "Еталонну відповідь не задано",
         count: "{answered}/{total} відповідей",
         noActivities: "Немає завдань із відповідями"
     },
     ru: {
         selector: "Показывать ответы ученика",
         answer: "Ответ ученика",
+        correctAnswer: "Правильный ответ",
+        noCorrectAnswer: "Эталонный ответ не задан",
         count: "{answered}/{total} ответов",
         noActivities: "Нет заданий с ответами"
     },
     en: {
         selector: "Show answers for",
         answer: "Student answer",
+        correctAnswer: "Correct answer",
+        noCorrectAnswer: "No reference answer set",
         count: "{answered}/{total} answers",
         noActivities: "No answer activities"
     }
@@ -1170,7 +1176,7 @@ function previewMediaUrl(value) {
     }
 }
 
-function renderPreviewActivity(activity, index, canEdit = false, quickEditing = false) {
+function renderPreviewActivity(activity, index, canEdit = false, quickEditing = false, liveAnswerMarkup = "") {
     const type = activity.type;
     const prompt = escapeHtml(activity.prompt || t(activityTypes.find((item) => item.id === type)?.nameKey || "activity.task"));
     const content = String(activity.content || "");
@@ -1254,7 +1260,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         checkable = false;
     }
 
-    return `<article class="preview-activity ${canEdit ? "preview-activity-editable" : ""}" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}"><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}<h3>${index + 1}. ${prompt}</h3>${canEdit ? `<div class="preview-activity-actions"><button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${body}${checkable ? `<button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button><p class="preview-result" data-preview-result aria-live="polite"></p>` : ""}</article>`;
+    return `<article class="preview-activity ${canEdit ? "preview-activity-editable" : ""}" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}"><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}<h3>${index + 1}. ${prompt}</h3>${canEdit ? `<div class="preview-activity-actions"><button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${body}${checkable ? `<button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button><p class="preview-result" data-preview-result aria-live="polite"></p>` : ""}${liveAnswerMarkup}</article>`;
 }
 
 function openLessonPreview(id) {
@@ -2029,6 +2035,47 @@ function formatLiveResponse(activity, response) {
     return value;
 }
 
+function formatLiveCorrectAnswer(activity) {
+    const answer = String(activity.answer ?? "").trim();
+    const expectedParts = previewTokens(answer);
+    const contentLines = previewLines(activity.content);
+
+    if (activity.type === "drag-words") return expectedParts.join(" ");
+    if (activity.type === "fill-blank" || activity.type === "table") return expectedParts.join(" · ");
+    if (activity.type === "multiple-choice" || activity.type === "one-of-many") {
+        const answerIndex = Number(answer);
+        return answer && Number.isInteger(answerIndex) && answerIndex >= 0 && answerIndex < contentLines.length
+            ? contentLines[answerIndex]
+            : answer;
+    }
+    if (activity.type === "true-false") {
+        const normalized = answer.replace(/\s+/g, " ").toLocaleLowerCase();
+        if (["true", "yes", "да", "так", "правда", "0"].includes(normalized)) return previewText("true");
+        if (["false", "no", "нет", "ні", "неправда", "1"].includes(normalized)) return previewText("false");
+        return answer;
+    }
+    if (activity.type === "order-items" || activity.type === "sentence-order") {
+        const source = contentLines.map((line) => line.replace(/^\d+[.)]\s*/, ""));
+        if (!expectedParts.length) return source.join(" → ");
+        const numericOrder = expectedParts.every((part) => /^\d+$/.test(part));
+        const order = numericOrder ? expectedParts.map((part) => Number(part) - 1) : [];
+        return numericOrder && order.every((index) => index >= 0 && index < source.length)
+            ? order.map((index) => source[index]).join(" → ")
+            : expectedParts.join(" → ");
+    }
+    if (activity.type === "match") {
+        const pairs = contentLines.map((line) => line.split("=").map((part) => part.trim()))
+            .filter((pair) => pair.length >= 2 && pair[0] && pair[1]);
+        return pairs.length ? pairs.map(([left, right]) => `${left} → ${right}`).join("\n") : answer;
+    }
+    if (activity.type === "columns") {
+        const pairs = contentLines.map((line) => line.split(":").map((part) => part.trim()))
+            .filter((pair) => pair.length >= 2 && pair[0] && pair[1]);
+        return pairs.length ? pairs.map(([category, item]) => `${item} → ${category}`).join("\n") : answer;
+    }
+    return answer;
+}
+
 function liveStudentsForGroup(group) {
     const students = group.studentRecords?.length
         ? group.studentRecords.map((student) => ({ id: student.id, name: student.display_name }))
@@ -2059,13 +2106,17 @@ function renderLiveAnswerPanel(student, activity, progressIndex) {
     const answerKey = `a${progressIndex}`;
     const answer = student ? liveProgressRows.get(student.id)?.answers?.[answerKey] : null;
     const response = formatLiveResponse(activity, answer?.response);
+    const correctResponse = formatLiveCorrectAnswer(activity) || liveStudentText("noCorrectAnswer");
     const answerStatus = answer
         ? `<span class="live-answer-status ${answer.draft ? "is-draft" : "is-submitted"}">${answer.draft ? lessonSectionText("liveDraft") : lessonSectionText("liveSubmitted")}</span>`
         : "";
     const content = student
         ? `<div class="live-answer-row">${answerStatus}<p class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</p></div>`
         : `<p class="live-answer-empty">${lessonSectionText("liveNoStudents")}</p>`;
-    return `<section class="live-answers-panel" aria-label="${liveStudentText("answer")}"><h4>${liveStudentText("answer")}</h4>${content}</section>`;
+    return `<div class="live-answer-comparison">
+        <div class="live-correct-answer"><h4>${escapeHtml(liveStudentText("correctAnswer"))}</h4><p class="live-correct-answer-value">${escapeHtml(correctResponse)}</p></div>
+        <section class="live-answers-panel" aria-label="${escapeHtml(liveStudentText("answer"))}"><h4>${escapeHtml(liveStudentText("answer"))}${student ? ` · ${escapeHtml(student.name)}` : ""}</h4>${content}</section>
+    </div>`;
 }
 
 function renderLiveMonitor(lesson, progressIndexes) {
@@ -2158,10 +2209,10 @@ function renderLessonWorkspace() {
         ? `<div class="form-field section-name-field"><label for="sectionTitle">${lessonSectionText("rename")}</label><input id="sectionTitle" data-section-title="${escapeHtml(section.id)}" maxlength="80" value="${escapeHtml(section.title)}"></div><div class="builder-heading"><h3>${isHomework ? lessonSectionText("homeworkActivities") : t("lesson.activities")}</h3><button type="button" class="button secondary small" data-action="choose-activity">${t("activity.addBlock")}</button></div><div id="activityBlocks">${renderActivityBlocks(section.activities)}</div>`
         : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map((activity, index) => {
             const progressIndex = progressIndexes.get(`${section.id}:${index}`);
-            const answerPanel = liveGroup && liveAnswerActivityTypes.has(activity.type) && progressIndex !== undefined
+            const liveAnswerMarkup = liveGroup && liveAnswerActivityTypes.has(activity.type) && progressIndex !== undefined
                 ? renderLiveAnswerPanel(liveStudent, activity, progressIndex)
                 : "";
-            return `${renderPreviewActivity(activity, index)}${answerPanel}`;
+            return renderPreviewActivity(activity, index, false, false, liveAnswerMarkup);
         }).join("") : emptyMessage(lessonSectionText("empty"), "")}</div>`;
     const sourceOptions = [`<option value="__current__" ${homeworkSourceLessonId === "__current__" ? "selected" : ""}>${lessonSectionText("currentLesson")} · ${escapeHtml(lessonFormDraft.title.trim() || lessonSectionText("newSection"))}</option>`,
         ...data.lessons.filter((item) => item.id !== workspaceLessonId).map((item) => `<option value="${escapeHtml(item.id)}" ${homeworkSourceLessonId === item.id ? "selected" : ""}>${escapeHtml(item.title)}</option>`)].join("");
