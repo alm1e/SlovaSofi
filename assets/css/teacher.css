@@ -586,7 +586,7 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .lesson-workspace-tabs button:focus-visible { outline: 3px solid #83b894; outline-offset: 2px; }
 .lesson-workspace-tabs button:disabled { opacity: .55; cursor: default; }
 .lesson-editor-draft-notice { margin: 0; border: 1px solid #f0d59a; border-radius: 12px; padding: 11px 14px; background: #fff8e9; color: #7a5b20; font-size: 13px; }
-.live-monitor-bar { position: sticky; top: 12px; z-index: 3; display: grid; grid-template-columns: minmax(0,1fr) minmax(180px,auto); align-items: center; gap: 10px 18px; border: 1px solid #dce8dc; border-radius: 14px; padding: 13px 16px; background: #f7faf7; box-shadow: 0 8px 22px #25443212; }
+.live-monitor-bar { position: sticky; top: 12px; z-index: 3; display: grid; grid-template-columns: minmax(0,1fr) minmax(180px,auto); align-items: center; gap: 10px 18px; margin-bottom: 18px; border: 1px solid #dce8dc; border-radius: 14px; padding: 13px 16px; background: #f7faf7; box-shadow: 0 8px 22px #25443212; }
 .live-monitor-heading { min-width: 0; }
 .live-monitor-heading strong, .live-class-picker span { color: #425b48; font-size: 13px; }
 .live-monitor-heading p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }

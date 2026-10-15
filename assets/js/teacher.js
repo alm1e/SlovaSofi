@@ -2241,9 +2241,9 @@ function renderLessonWorkspace() {
             ${isEditing ? "" : `<div class="lesson-workspace-preview-actions"><span class="lesson-workspace-unit">${escapeHtml(unit)}</span></div>`}
         </header>
         <nav class="lesson-workspace-tabs" role="tablist" aria-label="${lessonSectionText("workspaceMode")}"><button type="button" class="${!isEditing ? "active" : ""}" role="tab" aria-selected="${!isEditing}" data-workspace-mode="preview" ${!lesson || quickEditActive ? "disabled" : ""}>${lessonSectionText("lessonTab")}</button>${hasPermission("edit_lessons") ? `<button type="button" class="${isEditing ? "active" : ""}" role="tab" aria-selected="${isEditing}" data-workspace-mode="edit" ${quickEditActive ? "disabled" : ""}>${lessonSectionText("editorTab")}</button>` : ""}</nav>
-        ${previewDraftNotice}${liveMonitor}
+        ${previewDraftNotice}
         <div class="lesson-workspace-layout">
-            <main class="lesson-workspace-main"><section class="lesson-workspace-section">
+            <main class="lesson-workspace-main">${liveMonitor}<section class="lesson-workspace-section">
                 ${isEditing ? `${sourcePanel}${sectionBody}${dropZone}` : `<h2>${escapeHtml(section.title)}</h2>${sectionBody}`}
             </section>
                 <div class="lesson-workspace-footer"><button type="button" class="button secondary small" data-section-step="-1" ${sections.indexOf(section) === 0 || quickEditActive ? "disabled" : ""}>${lessonSectionText("previous")}</button><span>${sections.indexOf(section) + 1} / ${sections.length}</span><button type="button" class="button secondary small" data-section-step="1" ${sections.indexOf(section) === sections.length - 1 || quickEditActive ? "disabled" : ""}>${lessonSectionText("next")}</button>
