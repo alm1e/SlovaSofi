@@ -100,7 +100,16 @@
         "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
         "sentence-order", "true-false", "table", "match", "columns", "open-answer"
     ]);
-    const progressActivitiesFor = (lesson) => activitiesFor(lesson).filter((activity) => answerableActivityTypes.has(activity.type));
+    const progressActivitiesFor = (lesson) => activitiesFor(lesson).flatMap((activity) => {
+        if (!answerableActivityTypes.has(activity.type)) return [];
+        return Array.isArray(activity.questions) && activity.questions.length
+            ? activity.questions.map((question, questionIndex) => ({
+                activity,
+                questionId: question.questionId || `legacy-${questionIndex}`,
+                questionIndex
+            }))
+            : [{ activity, questionId: null, questionIndex: null }];
+    });
     const activityCount = (lesson) => activitiesFor(lesson).length || Number(lesson.activityCount) || 0;
     function progressActivityCountFor(lesson) {
         const reported = Number(lesson.progressActivityCount);
@@ -114,8 +123,12 @@
     }
     function answeredCountFor(lesson, answers = lesson.progress) {
         if (Array.isArray(lesson.sections)) {
-            return progressActivitiesFor(lesson).filter((activity) => Number.isInteger(activity.index)
-                && hasAnswerResponse(answers?.[`a${activity.index}`]?.response)).length;
+            return progressActivitiesFor(lesson).filter(({ activity, questionId, questionIndex }) => {
+                if (!Number.isInteger(activity.index)) return false;
+                const key = questionId ? `a${activity.index}.q${questionId}` : `a${activity.index}`;
+                const answer = answers?.[key] || (questionIndex === 0 ? answers?.[`a${activity.index}`] : null);
+                return hasAnswerResponse(answer?.response);
+            }).length;
         }
         return Number(lesson.answeredCount) || 0;
     }
@@ -220,6 +233,16 @@
         return lesson.progress?.[`a${index}`] || null;
     }
 
+    function progressForQuestion(lesson, index, questionId, questionIndex) {
+        return lesson.progress?.[`a${index}.q${questionId}`]
+            || (questionIndex === 0 ? lesson.progress?.[`a${index}`] : null);
+    }
+
+    function questionItemLabel(index) {
+        const labels = { ua: "Пункт", ru: "Пункт", en: "Item" };
+        return `${labels[language] || labels.en} ${index + 1}`;
+    }
+
     function mediaUrl(value) {
         try {
             const url = new URL(value, location.href);
@@ -231,8 +254,23 @@
 
     function renderActivity(activity) {
         const index = activity.index;
-        const saved = progressFor(openedLesson, index);
+        if (Array.isArray(activity.questions) && activity.questions.length) {
+            return `<section class="student-activity-group">
+                <header class="student-activity-group-heading"><span class="student-activity-number">${index + 1}</span><h3>${escapeHtml(activity.prompt || text("activity"))}</h3></header>
+                <div class="student-activity-subitems">${activity.questions.map((question, questionIndex) => renderActivityItem(
+                    question,
+                    index,
+                    questionIndex,
+                    progressForQuestion(openedLesson, index, question.questionId || `legacy-${questionIndex}`, questionIndex)
+                )).join("")}</div>
+            </section>`;
+        }
+        return renderActivityItem(activity, index, null, progressFor(openedLesson, index));
+    }
+
+    function renderActivityItem(activity, index, questionIndex, saved) {
         const savedResponse = saved?.response;
+        const radioName = questionIndex === null ? `student-answer-${index}` : `student-answer-${index}-${questionIndex}`;
         let body = "";
         let controls = "";
         if (activity.type === "drag-words") {
@@ -251,10 +289,10 @@
             controls = `<input type="hidden" data-answer-kind="blanks">`;
         } else if (activity.type === "multiple-choice" || activity.type === "one-of-many") {
             const options = Array.isArray(activity.options) ? activity.options : [];
-            body = `<div class="student-answer-options">${options.map((option, optionIndex) => `<label class="student-answer-option"><input type="radio" name="student-answer-${index}" value="${escapeHtml(option)}" ${savedResponse === option ? "checked" : ""}><span>${escapeHtml(option)}</span></label>`).join("")}</div>`;
+            body = `<div class="student-answer-options">${options.map((option) => `<label class="student-answer-option"><input type="radio" name="${radioName}" value="${escapeHtml(option)}" ${savedResponse === option ? "checked" : ""}><span>${escapeHtml(option)}</span></label>`).join("")}</div>`;
             controls = `<input type="hidden" data-answer-kind="choice">`;
         } else if (activity.type === "true-false") {
-            body = `<p class="student-activity-content">${escapeHtml(activity.content || "")}</p><div class="student-answer-options">${[["true", text("true")], ["false", text("false")]].map(([value, label]) => `<label class="student-answer-option"><input type="radio" name="student-answer-${index}" value="${value}" ${savedResponse === value ? "checked" : ""}><span>${escapeHtml(label)}</span></label>`).join("")}</div>`;
+            body = `<p class="student-activity-content">${escapeHtml(activity.content || "")}</p><div class="student-answer-options">${[["true", text("true")], ["false", text("false")]].map(([value, label]) => `<label class="student-answer-option"><input type="radio" name="${radioName}" value="${value}" ${savedResponse === value ? "checked" : ""}><span>${escapeHtml(label)}</span></label>`).join("")}</div>`;
             controls = `<input type="hidden" data-answer-kind="choice">`;
         } else if (activity.type === "order-items" || activity.type === "sentence-order") {
             const savedItems = Array.isArray(savedResponse) ? savedResponse.map(String) : [];
@@ -297,7 +335,14 @@
         const submitButton = activity.gradable || activity.reviewRequired
             ? `<div class="student-activity-actions">${controls}<button class="button small" type="button" data-submit-answer>${escapeHtml(text("checkAnswer"))}</button></div><p class="student-answer-feedback ${saved?.correct === true ? "is-correct" : saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml(feedback)}</p>`
             : activity.type === "flashcards" ? "" : "";
-        return `<article class="student-activity" data-activity-index="${index}" data-activity-type="${escapeHtml(activity.type)}"><span class="student-activity-number">${index + 1}</span><div class="student-activity-main"><h3>${escapeHtml(activity.prompt || text("activity"))}</h3>${body}${submitButton}</div></article>`;
+        const isQuestion = Number.isInteger(questionIndex);
+        const questionId = isQuestion ? String(activity.questionId || `legacy-${questionIndex}`) : "";
+        const questionAttributes = isQuestion
+            ? `data-question-id="${escapeHtml(questionId)}" data-question-index="${questionIndex}"`
+            : "";
+        const itemNumber = isQuestion ? `${index + 1}.${questionIndex + 1}` : String(index + 1);
+        const title = activity.prompt || (isQuestion ? questionItemLabel(questionIndex) : text("activity"));
+        return `<article class="student-activity" data-activity-index="${index}" ${questionAttributes} data-activity-type="${escapeHtml(activity.type)}"><span class="student-activity-number">${itemNumber}</span><div class="student-activity-main"><h3>${escapeHtml(title)}</h3>${body}${submitButton}</div></article>`;
     }
 
     function renderLessonDetail(lesson) {
@@ -393,16 +438,22 @@
         syncProgressDisplay(lessonId);
     }
 
-    function setDraftFeedback(lessonId, activityIndex, message, isError = false) {
+    function activityDraftKey(activityIndex, questionId) {
+        return questionId ? `${activityIndex}:${questionId}` : String(activityIndex);
+    }
+
+    function setDraftFeedback(lessonId, activityIndex, questionId, message, isError = false) {
         if (openedLesson?.id !== lessonId || selectedLessonId !== lessonId) return;
-        const activity = pageContent.querySelector(`.student-activity[data-activity-index="${activityIndex}"]`);
+        const activity = [...pageContent.querySelectorAll(".student-activity[data-activity-index]")].find((item) =>
+            item.dataset.activityIndex === String(activityIndex)
+            && (questionId ? item.dataset.questionId === questionId : !item.dataset.questionId));
         const feedback = activity?.querySelector("[data-answer-feedback]");
         if (!feedback) return;
         feedback.textContent = message;
         feedback.className = `student-answer-feedback${isError ? " is-incorrect" : ""}`;
     }
 
-    function queueDraftSave(lessonId, activityIndex, response) {
+    function queueDraftSave(lessonId, draftKey, activityIndex, questionId, response) {
         const snapshot = structuredClone(response);
         const save = draftSaveQueue.catch((error) => {
             console.warn("Continuing the progress-save queue after an earlier draft failed.", error);
@@ -411,16 +462,18 @@
                 action: "save-draft",
                 lessonId,
                 activityIndex,
+                ...(questionId ? { questionId } : {}),
                 response: snapshot
             });
             updateLessonProgress(lessonId, result.answers, result.completed);
-            if (JSON.stringify(pendingDrafts.get(activityIndex)) === JSON.stringify(snapshot)) {
-                pendingDrafts.delete(activityIndex);
+            const pending = pendingDrafts.get(draftKey);
+            if (pending && JSON.stringify(pending.response) === JSON.stringify(snapshot)) {
+                pendingDrafts.delete(draftKey);
             }
-            setDraftFeedback(lessonId, activityIndex, text("progressSaved"));
+            setDraftFeedback(lessonId, activityIndex, questionId, text("progressSaved"));
         }).catch((error) => {
             console.error("Could not save the student answer draft.", error);
-            setDraftFeedback(lessonId, activityIndex, error.message || text("loadError"), true);
+            setDraftFeedback(lessonId, activityIndex, questionId, error.message || text("loadError"), true);
             throw error;
         });
         draftSaveQueue = save;
@@ -432,14 +485,16 @@
         const lessonId = openedLesson.id;
         const activityIndex = Number(element.dataset.activityIndex);
         if (!Number.isInteger(activityIndex) || activityIndex < 0) return;
+        const questionId = element.dataset.questionId || null;
+        const draftKey = activityDraftKey(activityIndex, questionId);
         const response = responseForActivity(element);
-        pendingDrafts.set(activityIndex, structuredClone(response));
-        clearTimeout(draftSaveTimers.get(activityIndex));
-        draftSaveTimers.set(activityIndex, setTimeout(() => {
-            draftSaveTimers.delete(activityIndex);
-            const pendingResponse = pendingDrafts.get(activityIndex);
-            if (pendingResponse !== undefined) {
-                queueDraftSave(lessonId, activityIndex, pendingResponse).catch((error) => {
+        pendingDrafts.set(draftKey, { activityIndex, questionId, response: structuredClone(response) });
+        clearTimeout(draftSaveTimers.get(draftKey));
+        draftSaveTimers.set(draftKey, setTimeout(() => {
+            draftSaveTimers.delete(draftKey);
+            const pending = pendingDrafts.get(draftKey);
+            if (pending) {
+                queueDraftSave(lessonId, draftKey, pending.activityIndex, pending.questionId, pending.response).catch((error) => {
                     console.warn("The answer draft remains pending until the next save attempt.", error);
                 });
             }
@@ -452,9 +507,13 @@
         while (draftSaveTimers.size || pendingDrafts.size) {
             draftSaveTimers.forEach((timer) => clearTimeout(timer));
             draftSaveTimers.clear();
-            const pending = [...pendingDrafts.entries()].map(([activityIndex, response]) => [activityIndex, structuredClone(response)]);
+            const pending = [...pendingDrafts.entries()].map(([draftKey, entry]) => [
+                draftKey,
+                { ...entry, response: structuredClone(entry.response) }
+            ]);
             if (!pending.length) break;
-            await Promise.all(pending.map(([activityIndex, response]) => queueDraftSave(lessonId, activityIndex, response)));
+            await Promise.all(pending.map(([draftKey, entry]) =>
+                queueDraftSave(lessonId, draftKey, entry.activityIndex, entry.questionId, entry.response)));
         }
         await draftSaveQueue;
     }
@@ -486,11 +545,13 @@
 
     async function submitActivity(element) {
         const index = Number(element.dataset.activityIndex);
+        const questionId = element.dataset.questionId || null;
+        const draftKey = activityDraftKey(index, questionId);
         const feedback = element.querySelector("[data-answer-feedback]");
         const lessonId = openedLesson.id;
         const unlockControls = lockLessonControls();
-        clearTimeout(draftSaveTimers.get(index));
-        draftSaveTimers.delete(index);
+        clearTimeout(draftSaveTimers.get(draftKey));
+        draftSaveTimers.delete(draftKey);
         feedback.textContent = text("loading");
         feedback.className = "student-answer-feedback";
         try {
@@ -509,11 +570,12 @@
                 action: "submit",
                 lessonId,
                 activityIndex: index,
+                ...(questionId ? { questionId } : {}),
                 response
             }));
             draftSaveQueue = submission;
             const result = await submission;
-            pendingDrafts.delete(index);
+            pendingDrafts.delete(draftKey);
             updateLessonProgress(lessonId, result.answers, result.completed);
             feedback.textContent = result.reviewRequired ? text("submitted")
                 : result.correct ? text("correct") : text("incorrect");

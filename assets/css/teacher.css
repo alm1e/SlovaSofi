@@ -250,6 +250,12 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .preview-note { margin: -7px 0 18px; color: var(--muted); font-size: 14px; line-height: 1.5; }
 .lesson-preview-list { display: grid; gap: 15px; }
 .preview-activity { border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: #fff; }
+.preview-activity-group { display: grid; gap: 12px; }
+.preview-question-list { display: grid; gap: 10px; }
+.preview-question-activity { border: 1px solid #e3ebe3; border-radius: 12px; padding: 14px; background: #fbfdfb; }
+.preview-question-activity h3 { color: var(--ink); font-size: 16px; }
+.preview-question-activity .preview-activity-header { margin-bottom: 11px; }
+.preview-question-activity .preview-activity-header h3 { flex: 1 1 auto; min-width: 0; margin: 3px 0 0; }
 .preview-activity-editable { transition: border-color .18s ease, box-shadow .18s ease; }
 .preview-activity-editable:hover { border-color: #cbdccc; }
 .preview-activity-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
@@ -367,6 +373,15 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .builder-block-drag:focus-visible, .builder-block-actions .mini-action:focus-visible { outline: 2px solid #6b9d78; outline-offset: 2px; }
 .builder-block-fields { margin-top: 14px; border-top: 1px solid #e7eee7; padding-top: 14px; }
 .builder-block-fields[hidden] { display: none; }
+.activity-question-editor { display: grid; gap: 10px; margin-top: 12px; }
+.activity-question-editor-item { display: grid; gap: 10px; border: 1px solid #dfe9e0; border-radius: 11px; padding: 12px; background: #f9fcf9; }
+.activity-question-editor-item .form-field { margin: 0; }
+.activity-question-editor-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.activity-question-editor-heading strong { color: #45634b; font-size: 13px; }
+.activity-question-remove { width: 28px; height: 28px; background: #f5f7f5; color: #748276; }
+.activity-question-remove:hover:not(:disabled) { background: #fae9e7; color: #a33e35; }
+.activity-question-remove:disabled, .activity-question-add:disabled { opacity: .45; cursor: default; }
+.activity-question-add { justify-self: start; }
 .builder-block.is-expanded { background: #fff; border-color: #cbdccc; box-shadow: 0 4px 14px #2544320a; }
 .builder-block.is-dragging { opacity: .55; }
 .builder-block.is-drop-target { border-color: #6b9d78; box-shadow: 0 0 0 2px #6b9d7820; }

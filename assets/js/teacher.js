@@ -257,10 +257,104 @@ const activityTypes = [
     { id: "audio", nameKey: "activity.audio", descKey: "activity.audioDesc", icon: "♫", category: "media" },
     { id: "image", nameKey: "activity.image", descKey: "activity.imageDesc", icon: "▧", category: "media" }
 ];
+const MAX_ACTIVITY_QUESTIONS = 100;
+const activityQuestionLabels = {
+    ua: { item: "Пункт", commonPrompt: "Загальна інструкція", itemPrompt: "Питання або пункт (необов’язково)", add: "＋ Додати пункт", remove: "Видалити пункт", limit: "Можна додати до 100 пунктів" },
+    ru: { item: "Пункт", commonPrompt: "Общая инструкция", itemPrompt: "Вопрос или пункт (необязательно)", add: "＋ Добавить пункт", remove: "Удалить пункт", limit: "Можно добавить до 100 пунктов" },
+    en: { item: "Item", commonPrompt: "Shared instructions", itemPrompt: "Question or item (optional)", add: "＋ Add item", remove: "Remove item", limit: "Up to 100 items can be added" }
+};
 const liveAnswerActivityTypes = new Set([
     "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
     "sentence-order", "true-false", "table", "match", "columns", "open-answer"
 ]);
+
+function activityQuestionText(key) {
+    return activityQuestionLabels[currentLanguage]?.[key] || activityQuestionLabels.en[key];
+}
+
+function createActivityQuestionId() {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+    return `q-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
+function activityQuestionProgressId(question, index, questions = []) {
+    const usedIds = new Set();
+    questions.slice(0, index).forEach((item, itemIndex) => {
+        const requestedId = typeof item?.id === "string" ? item.id.trim() : "";
+        let id = /^[A-Za-z0-9_-]{1,100}$/.test(requestedId) && !usedIds.has(requestedId)
+            ? requestedId
+            : `legacy-${itemIndex}`;
+        while (usedIds.has(id)) id = `legacy-${itemIndex}-${usedIds.size}`;
+        usedIds.add(id);
+    });
+    const requestedId = typeof question?.id === "string" ? question.id.trim() : "";
+    let id = /^[A-Za-z0-9_-]{1,100}$/.test(requestedId) && !usedIds.has(requestedId)
+        ? requestedId
+        : `legacy-${index}`;
+    while (usedIds.has(id)) id = `legacy-${index}-${usedIds.size}`;
+    return id;
+}
+
+function ensureActivityQuestionIds(activity) {
+    if (!Array.isArray(activity.questions)) return;
+    const ids = new Set();
+    activity.questions.forEach((question, index) => {
+        if (!question || typeof question !== "object" || Array.isArray(question)) {
+            question = { prompt: "", content: "", answer: "" };
+            activity.questions[index] = question;
+        }
+        let id = typeof question.id === "string" ? question.id.trim() : "";
+        if (!/^[A-Za-z0-9_-]{1,100}$/.test(id) || ids.has(id)) id = createActivityQuestionId();
+        question.id = id;
+        ids.add(id);
+    });
+}
+
+function addActivityQuestion(activity) {
+    if (!Array.isArray(activity.questions) || !activity.questions.length) {
+        activity.questions = [{
+            id: createActivityQuestionId(),
+            prompt: "",
+            content: String(activity.content || ""),
+            answer: String(activity.answer || "")
+        }, {
+            id: createActivityQuestionId(),
+            prompt: "",
+            content: "",
+            answer: ""
+        }];
+        delete activity.content;
+        delete activity.answer;
+        return activity.questions.length - 1;
+    }
+    if (activity.questions.length >= MAX_ACTIVITY_QUESTIONS) return -1;
+    ensureActivityQuestionIds(activity);
+    activity.questions.push({ id: createActivityQuestionId(), prompt: "", content: "", answer: "" });
+    return activity.questions.length - 1;
+}
+
+function renderActivityQuestionEditor(activity, preview = false) {
+    const questions = Array.isArray(activity.questions) ? activity.questions : [];
+    ensureActivityQuestionIds(activity);
+    const fieldAttribute = preview ? "data-preview-question-field" : "data-field";
+    const indexAttribute = preview ? "data-preview-question-index" : "data-question-index";
+    const addAttribute = preview ? "data-add-preview-question" : "data-add-question";
+    const removeAttribute = preview ? "data-preview-remove-question" : "data-remove-question";
+    const type = activityTypes.find((item) => item.id === activity.type);
+    const hasAnswer = !["text", "image", "video", "audio"].includes(activity.type);
+    const items = questions.map((question, index) => `<section class="activity-question-editor-item" ${indexAttribute}="${index}">
+        <header class="activity-question-editor-heading"><strong>${activityQuestionText("item")} ${index + 1}</strong><button type="button" class="mini-action activity-question-remove" ${removeAttribute} aria-label="${activityQuestionText("remove")}" title="${activityQuestionText("remove")}" ${questions.length <= 1 ? "disabled" : ""}>×</button></header>
+        <div class="form-field"><label>${activityQuestionText("itemPrompt")}</label><input ${fieldAttribute}="prompt" value="${escapeHtml(question.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
+        <div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(activity.type))}</span></label><textarea ${fieldAttribute}="content" placeholder="${escapeHtml(contentPlaceholder(activity.type))}">${escapeHtml(question.content || "")}</textarea></div>
+        ${hasAnswer ? `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(activity.type))}</span></label><input ${fieldAttribute}="answer" value="${escapeHtml(question.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(activity.type))}"></div>` : ""}
+    </section>`).join("");
+    return `<div class="activity-question-editor">${items}<button type="button" class="button secondary small activity-question-add" ${addAttribute} ${questions.length >= MAX_ACTIVITY_QUESTIONS ? "disabled" : ""} title="${activityQuestionText("limit")}">${activityQuestionText("add")}</button></div>`;
+}
+
+function activitySummary(activity) {
+    const firstQuestion = Array.isArray(activity.questions) ? activity.questions[0] : null;
+    return String(activity.prompt || firstQuestion?.prompt || activity.content || firstQuestion?.content || "").trim().replace(/\s+/g, " ");
+}
 
 const initialData = {
     classes: [
@@ -1176,9 +1270,12 @@ function previewMediaUrl(value) {
     }
 }
 
-function renderPreviewActivity(activity, index, canEdit = false, quickEditing = false, liveAnswerMarkup = "") {
+function renderPreviewActivity(activity, index, canEdit = false, quickEditing = false, liveAnswerMarkup = "", questionIndex = null) {
     const type = activity.type;
-    const prompt = escapeHtml(activity.prompt || t(activityTypes.find((item) => item.id === type)?.nameKey || "activity.task"));
+    const isQuestion = Number.isInteger(questionIndex);
+    const prompt = escapeHtml(activity.prompt || (isQuestion
+        ? `${activityQuestionText("item")} ${questionIndex + 1}`
+        : t(activityTypes.find((item) => item.id === type)?.nameKey || "activity.task")));
     const content = String(activity.content || "");
     const contentMatchesPrompt = Boolean(activity.prompt?.trim())
         && content.trim().replace(/\s+/g, " ").toLocaleLowerCase() === activity.prompt.trim().replace(/\s+/g, " ").toLocaleLowerCase();
@@ -1191,16 +1288,33 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
     if (quickEditing) {
         const activityType = activityTypes.find((item) => item.id === type);
         const hasAnswer = !["text", "image", "video", "audio"].includes(type);
+        const hasQuestions = Array.isArray(activity.questions) && activity.questions.length > 0;
         return `<article class="preview-activity preview-activity-editable preview-activity-editing" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}">
             <header class="preview-activity-header"><h3>${index + 1}. ${prompt}</h3><div class="preview-activity-actions">
                 <button class="mini-action" type="button" data-save-preview-block aria-label="${lessonSectionText("done")}" title="${lessonSectionText("done")}">✓</button>
                 <button class="mini-action preview-activity-delete" type="button" data-cancel-preview-edit aria-label="${t("action.cancel")}" title="${t("action.cancel")}">×</button>
             </div></header>
             <div class="preview-inline-editor">
-                <div class="form-field"><label>${t("field.instruction")}</label><input data-preview-field="prompt" value="${escapeHtml(activity.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
-                <div class="form-field"><label>${activityType?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(type))}</span></label><textarea data-preview-field="content" placeholder="${escapeHtml(contentPlaceholder(type))}">${escapeHtml(activity.content || "")}</textarea></div>
-                ${hasAnswer ? `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(type))}</span></label><input data-preview-field="answer" value="${escapeHtml(activity.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(type))}"></div>` : ""}
+                <div class="form-field"><label>${hasQuestions ? activityQuestionText("commonPrompt") : t("field.instruction")}</label><input data-preview-field="prompt" value="${escapeHtml(activity.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
+                ${hasQuestions
+                    ? renderActivityQuestionEditor(activity, true)
+                    : `<div class="form-field"><label>${activityType?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(type))}</span></label><textarea data-preview-field="content" placeholder="${escapeHtml(contentPlaceholder(type))}">${escapeHtml(activity.content || "")}</textarea></div>
+                    ${hasAnswer ? `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(type))}</span></label><input data-preview-field="answer" value="${escapeHtml(activity.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(type))}"></div>` : ""}
+                    ${renderActivityQuestionEditor(activity, true)}`}
             </div>
+        </article>`;
+    }
+
+    if (!isQuestion && Array.isArray(activity.questions) && activity.questions.length) {
+        const questionAnswers = Array.isArray(liveAnswerMarkup) ? liveAnswerMarkup : [];
+        return `<article class="preview-activity preview-activity-group ${canEdit ? "preview-activity-editable" : ""}" data-preview-activity="${index}">
+            <header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}<h3>${index + 1}. ${escapeHtml(activity.prompt || t(activityTypes.find((item) => item.id === type)?.nameKey || "activity.task"))}</h3>${canEdit ? `<div class="preview-activity-actions"><button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>
+            <div class="preview-question-list">${activity.questions.map((question, itemIndex) => renderPreviewActivity({
+                type,
+                prompt: String(question.prompt || ""),
+                content: String(question.content || ""),
+                answer: String(question.answer || "")
+            }, index, false, false, questionAnswers[itemIndex] || "", itemIndex)).join("")}</div>
         </article>`;
     }
 
@@ -1208,7 +1322,8 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         const expected = answer ? previewTokens(answer) : content.trim().split(/\s+/).filter(Boolean);
         const tokens = expected.map((word, wordIndex) => ({ word, wordIndex }));
         if (tokens.length > 1) tokens.push(tokens.shift());
-        body = `<div class="preview-drag-layout"><div><strong>${previewText("bank")}</strong><div class="preview-word-bank" data-word-bank>${tokens.map(({ word, wordIndex }) => `<button type="button" class="preview-word" draggable="true" data-word-index="${wordIndex}">${escapeHtml(word)}</button>`).join("")}</div></div><div><strong>${previewText("answer")}</strong><div class="preview-dropzone" data-dropzone tabindex="0"><span class="preview-drop-hint">${previewText("drop")}</span></div></div></div>`;
+        const previewKey = isQuestion ? `${index}-q${questionIndex}` : String(index);
+        body = `<div class="preview-drag-layout"><div><strong>${previewText("bank")}</strong><div class="preview-word-bank" data-word-bank>${tokens.map(({ word, wordIndex }) => `<button type="button" class="preview-word" draggable="true" data-word-index="${previewKey}-${wordIndex}">${escapeHtml(word)}</button>`).join("")}</div></div><div><strong>${previewText("answer")}</strong><div class="preview-dropzone" data-dropzone tabindex="0"><span class="preview-drop-hint">${previewText("drop")}</span></div></div></div>`;
         if (!expected.length) checkable = false;
     } else if (type === "fill-blank") {
         let blankIndex = 0;
@@ -1217,12 +1332,14 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
     } else if (type === "multiple-choice" || type === "one-of-many" || type === "true-false") {
         const options = type === "true-false" ? [previewText("true"), previewText("false")] : lines;
         const statement = type === "true-false" && displayContent ? `<p class="preview-instruction">${escapeHtml(displayContent)}</p>` : "";
-        body = `${statement}<div class="preview-options">${options.map((option, optionIndex) => `<label class="preview-option"><input type="radio" name="preview-${index}" value="${optionIndex}"><span>${escapeHtml(option)}</span></label>`).join("")}</div>`;
+        const radioName = isQuestion ? `preview-${index}-q${questionIndex}` : `preview-${index}`;
+        body = `${statement}<div class="preview-options">${options.map((option, optionIndex) => `<label class="preview-option"><input type="radio" name="${radioName}" value="${optionIndex}"><span>${escapeHtml(option)}</span></label>`).join("")}</div>`;
         if (!answer) checkable = false;
     } else if (type === "order-items" || type === "sentence-order") {
         const items = lines.map((line, itemIndex) => ({ text: line.replace(/^\d+[.)]\s*/, ""), itemIndex }));
         if (items.length > 1) items.reverse();
-        body = `<ol class="preview-order-list" data-order-list>${items.map(({ text, itemIndex }) => `<li class="preview-order-item" draggable="true" data-order-index="${itemIndex}"><span>${escapeHtml(text)}</span><span class="preview-order-actions"><button type="button" data-move="up" aria-label="${previewText("up")}">↑</button><button type="button" data-move="down" aria-label="${previewText("down")}">↓</button></span></li>`).join("")}</ol>`;
+        const previewKey = isQuestion ? `${index}-q${questionIndex}` : String(index);
+        body = `<ol class="preview-order-list" data-order-list>${items.map(({ text, itemIndex }) => `<li class="preview-order-item" draggable="true" data-order-index="${previewKey}-${itemIndex}"><span>${escapeHtml(text)}</span><span class="preview-order-actions"><button type="button" data-move="up" aria-label="${previewText("up")}">↑</button><button type="button" data-move="down" aria-label="${previewText("down")}">↓</button></span></li>`).join("")}</ol>`;
     } else if (type === "columns") {
         const pairs = lines.map((line) => line.split(":").map((part) => part.trim())).filter((pair) => pair.length >= 2 && pair[0] && pair[1]);
         const categories = [...new Set(pairs.map(([category]) => category))];
@@ -1260,7 +1377,10 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         checkable = false;
     }
 
-    return `<article class="preview-activity ${canEdit ? "preview-activity-editable" : ""}" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}"><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}<h3>${index + 1}. ${prompt}</h3>${canEdit ? `<div class="preview-activity-actions"><button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${body}${checkable ? `<button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button><p class="preview-result" data-preview-result aria-live="polite"></p>` : ""}${liveAnswerMarkup}</article>`;
+    const previewItemNumber = isQuestion ? `${index + 1}.${questionIndex + 1}` : String(index + 1);
+    const previewItemClass = isQuestion ? "preview-question-activity" : "preview-activity";
+    const questionAttribute = isQuestion ? `data-question-index="${questionIndex}"` : "";
+    return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}"><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}<h3>${previewItemNumber}. ${prompt}</h3>${canEdit ? `<div class="preview-activity-actions"><button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${body}${checkable ? `<button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button><p class="preview-result" data-preview-result aria-live="polite"></p>` : ""}${liveAnswerMarkup}</article>`;
 }
 
 function openLessonPreview(id) {
@@ -1399,15 +1519,18 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
             const activityIndex = Number(button.dataset.editPreviewBlock);
             const activity = section.activities[activityIndex];
             if (!activity) return;
+            const draft = structuredClone(activity);
+            ensureActivityQuestionIds(draft);
             previewActivityEdit = {
                 lessonId: lesson.id,
                 sectionId: section.id,
                 activityIndex,
                 isHomework,
-                draft: structuredClone(activity)
+                draft
             };
             render();
-            pageContent.querySelector('[data-preview-field="prompt"]')?.focus();
+            (pageContent.querySelector('[data-preview-question-field="content"]')
+                || pageContent.querySelector('[data-preview-field="prompt"]'))?.focus();
         }));
         container.querySelectorAll("[data-preview-field]").forEach((input) => input.addEventListener("input", () => {
             if (previewActivityEdit?.lessonId === lesson.id
@@ -1415,6 +1538,28 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
                 && previewActivityEdit.isHomework === isHomework) {
                 previewActivityEdit.draft[input.dataset.previewField] = input.value;
             }
+        }));
+        container.querySelectorAll("[data-preview-question-field]").forEach((input) => input.addEventListener("input", () => {
+            const edit = previewActivityEdit;
+            if (edit?.lessonId !== lesson.id || edit.sectionId !== section.id || edit.isHomework !== isHomework) return;
+            const question = edit.draft.questions?.[Number(input.closest("[data-preview-question-index]")?.dataset.previewQuestionIndex)];
+            if (question) question[input.dataset.previewQuestionField] = input.value;
+        }));
+        container.querySelectorAll("[data-add-preview-question]").forEach((button) => button.addEventListener("click", () => {
+            const edit = previewActivityEdit;
+            if (!edit || edit.lessonId !== lesson.id || edit.sectionId !== section.id || edit.isHomework !== isHomework) return;
+            const questionIndex = addActivityQuestion(edit.draft);
+            if (questionIndex < 0) return;
+            render();
+            pageContent.querySelector(`[data-preview-question-index="${questionIndex}"] [data-preview-question-field="content"]`)?.focus();
+        }));
+        container.querySelectorAll("[data-preview-remove-question]").forEach((button) => button.addEventListener("click", () => {
+            const edit = previewActivityEdit;
+            if (!edit || edit.lessonId !== lesson.id || edit.sectionId !== section.id || edit.isHomework !== isHomework) return;
+            const questionIndex = Number(button.closest("[data-preview-question-index]")?.dataset.previewQuestionIndex);
+            if (!Array.isArray(edit.draft.questions) || edit.draft.questions.length <= 1) return;
+            edit.draft.questions.splice(questionIndex, 1);
+            render();
         }));
         container.querySelectorAll("[data-cancel-preview-edit]").forEach((button) => button.addEventListener("click", () => {
             previewActivityEdit = null;
@@ -2090,21 +2235,32 @@ function liveStudentAnswerProgress(lesson, studentId, progressIndexes) {
     const sections = [...normalizeLessonSections(lesson), ...normalizeHomeworkSections(lesson)];
     sections.forEach((section) => section.activities.forEach((activity, activityIndex) => {
         if (!liveAnswerActivityTypes.has(activity.type)) return;
-        total += 1;
         const progressIndex = progressIndexes.get(`${section.id}:${activityIndex}`);
         if (progressIndex === undefined) return;
-        const response = answers[`a${progressIndex}`]?.response;
-        const hasResponse = Array.isArray(response)
-            ? response.some((item) => typeof item === "string" && item.trim())
-            : typeof response === "string" && Boolean(response.trim());
-        if (hasResponse) answered += 1;
+        const questionEntries = Array.isArray(activity.questions) && activity.questions.length
+            ? activity.questions.map((question, questionIndex) => ({
+                questionId: activityQuestionProgressId(question, questionIndex, activity.questions),
+                questionIndex
+            }))
+            : [{ questionId: null, questionIndex: null }];
+        questionEntries.forEach(({ questionId, questionIndex }) => {
+            total += 1;
+            const key = questionId ? `a${progressIndex}.q${questionId}` : `a${progressIndex}`;
+            const answer = answers[key] || (questionIndex === 0 ? answers[`a${progressIndex}`] : null);
+            const response = answer?.response;
+            const hasResponse = Array.isArray(response)
+                ? response.some((item) => typeof item === "string" && item.trim())
+                : typeof response === "string" && Boolean(response.trim());
+            if (hasResponse) answered += 1;
+        });
     }));
     return { answered, total };
 }
 
-function renderLiveAnswerPanel(student, activity, progressIndex) {
-    const answerKey = `a${progressIndex}`;
-    const answer = student ? liveProgressRows.get(student.id)?.answers?.[answerKey] : null;
+function renderLiveAnswerPanel(student, activity, progressIndex, questionId = null, questionIndex = null) {
+    const answerKey = questionId ? `a${progressIndex}.q${questionId}` : `a${progressIndex}`;
+    const studentAnswers = student ? liveProgressRows.get(student.id)?.answers || {} : {};
+    const answer = studentAnswers[answerKey] || (questionIndex === 0 ? studentAnswers[`a${progressIndex}`] : null);
     const response = formatLiveResponse(activity, answer?.response);
     const correctResponse = formatLiveCorrectAnswer(activity) || liveStudentText("noCorrectAnswer");
     const answerStatus = answer
@@ -2210,7 +2366,14 @@ function renderLessonWorkspace() {
         : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map((activity, index) => {
             const progressIndex = progressIndexes.get(`${section.id}:${index}`);
             const liveAnswerMarkup = liveGroup && liveAnswerActivityTypes.has(activity.type) && progressIndex !== undefined
-                ? renderLiveAnswerPanel(liveStudent, activity, progressIndex)
+                ? Array.isArray(activity.questions) && activity.questions.length
+                    ? activity.questions.map((question, questionIndex) => renderLiveAnswerPanel(liveStudent, {
+                        type: activity.type,
+                        prompt: String(question.prompt || ""),
+                        content: String(question.content || ""),
+                        answer: String(question.answer || "")
+                    }, progressIndex, activityQuestionProgressId(question, questionIndex, activity.questions), questionIndex))
+                    : renderLiveAnswerPanel(liveStudent, activity, progressIndex)
                 : "";
             return renderPreviewActivity(activity, index, false, false, liveAnswerMarkup);
         }).join("") : emptyMessage(lessonSectionText("empty"), "")}</div>`;
@@ -2222,7 +2385,7 @@ function renderLessonWorkspace() {
         <p class="hint">${lessonSectionText("dragCopyHint")}</p>
         <div class="homework-source-activities">${sourceActivities.length ? sourceActivities.map((activity, index) => {
             const type = activityTypes.find((item) => item.id === activity.type);
-            const summary = String(activity.prompt || activity.content || "").trim().replace(/\s+/g, " ");
+            const summary = activitySummary(activity);
             return `<button type="button" class="homework-source-activity" draggable="true" data-homework-copy="${index}"><span>${escapeHtml(type ? t(type.nameKey) : t("activity.task"))}</span><strong>${escapeHtml(summary || lessonSectionText("newSection"))}</strong><span class="homework-source-copy-icon">＋</span></button>`;
         }).join("") : `<p class="hint">${lessonSectionText("noSourceActivities")}</p>`}</div>
     </div>` : "";
@@ -2363,7 +2526,8 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
     return activities.map((block, index) => {
         const type = activityTypes.find((item) => item.id === block.type);
         const isExpanded = expandedActivityBlocks.has(block);
-        const summary = String(block.prompt || block.content || "").trim().replace(/\s+/g, " ");
+        const hasQuestions = Array.isArray(block.questions) && block.questions.length > 0;
+        const summary = activitySummary(block);
         return `<article class="builder-block ${isExpanded ? "is-expanded" : ""}" data-block-index="${index}">
             <header class="builder-block-header">
                 <button type="button" class="builder-block-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>
@@ -2374,9 +2538,12 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
                 </div>
             </header>
             <div class="builder-block-fields" ${isExpanded ? "" : "hidden"}>
-                <div class="form-field"><label>${t("field.instruction")}</label><input data-field="prompt" value="${escapeHtml(block.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
-                <div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(block.type))}</span></label><textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea></div>
-                ${block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
+                <div class="form-field"><label>${hasQuestions ? activityQuestionText("commonPrompt") : t("field.instruction")}</label><input data-field="prompt" value="${escapeHtml(block.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
+                ${hasQuestions
+                    ? renderActivityQuestionEditor(block)
+                    : `<div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(block.type))}</span></label><textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea></div>
+                    ${block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
+                    ${renderActivityQuestionEditor(block)}`}
             </div>
         </article>`;
     }).join("");
@@ -2425,10 +2592,35 @@ function bindActivityBlockActions() {
             blockElement?.querySelector("[data-field]")?.focus({ preventScroll: true });
         }
     }));
+    pageContent.querySelectorAll("[data-add-question]").forEach((button) => button.addEventListener("click", () => {
+        const blockElement = button.closest(".builder-block");
+        const blockIndex = Number(blockElement?.dataset.blockIndex);
+        const block = activities[blockIndex];
+        if (!block) return;
+        const questionIndex = addActivityQuestion(block);
+        if (questionIndex < 0) return;
+        expandedActivityBlocks.add(block);
+        render();
+        pageContent.querySelector(`.builder-block[data-block-index="${blockIndex}"] [data-question-index="${questionIndex}"] [data-field="content"]`)?.focus();
+    }));
+    pageContent.querySelectorAll("[data-remove-question]").forEach((button) => button.addEventListener("click", () => {
+        const blockElement = button.closest(".builder-block");
+        const block = activities[Number(blockElement?.dataset.blockIndex)];
+        const questionIndex = Number(button.closest("[data-question-index]")?.dataset.questionIndex);
+        if (!block || !Array.isArray(block.questions) || block.questions.length <= 1) return;
+        block.questions.splice(questionIndex, 1);
+        render();
+    }));
     pageContent.querySelectorAll(".builder-block").forEach((blockElement) => {
         blockElement.querySelectorAll("[data-field]").forEach((input) => input.addEventListener("input", () => {
             const block = activeDraftSection().activities[Number(blockElement.dataset.blockIndex)];
-            block[input.dataset.field] = input.value;
+            const questionElement = input.closest("[data-question-index]");
+            if (questionElement && Array.isArray(block.questions)) {
+                const question = block.questions[Number(questionElement.dataset.questionIndex)];
+                if (question) question[input.dataset.field] = input.value;
+            } else {
+                block[input.dataset.field] = input.value;
+            }
         }));
     });
 

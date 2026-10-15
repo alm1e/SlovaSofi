@@ -18,8 +18,10 @@ const answerableTypes = new Set([
 ]);
 
 type JsonRecord = Record<string, unknown>;
-type Activity = { type: string; prompt: string; content: string; answer: string };
+type ActivityQuestion = { id: string; prompt: string; content: string; answer: string };
+type Activity = { type: string; prompt: string; content: string; answer: string; questions?: ActivityQuestion[] };
 type ProgressAnswer = { response: unknown; correct: boolean | null; submitted_at: string; draft?: boolean };
+type ActivityProgressItem = { activity: Activity; key: string; fallbackKey?: string };
 
 function jsonResponse(status: number, body: unknown, origin: string) {
     return new Response(JSON.stringify(body), {
@@ -44,6 +46,57 @@ function answerParts(value: string): string[] {
     return value.split(/\s*\/\s*|\r?\n/).map((part) => part.trim()).filter(Boolean);
 }
 
+function normalizedQuestions(value: unknown): ActivityQuestion[] | undefined {
+    if (!Array.isArray(value)) return undefined;
+    const usedIds = new Set<string>();
+    return value.map((rawQuestion, index) => {
+        const question = record(rawQuestion);
+        const requestedId = stringValue(question.id).trim();
+        let id = /^[A-Za-z0-9_-]{1,100}$/.test(requestedId) && !usedIds.has(requestedId)
+            ? requestedId
+            : `legacy-${index}`;
+        while (usedIds.has(id)) id = `legacy-${index}-${usedIds.size}`;
+        usedIds.add(id);
+        return {
+            id,
+            prompt: stringValue(question.prompt).slice(0, 500),
+            content: stringValue(question.content).slice(0, 20000),
+            answer: stringValue(question.answer).slice(0, 2000)
+        };
+    });
+}
+
+function activityForQuestion(activity: Activity, question: ActivityQuestion): Activity {
+    return {
+        type: activity.type,
+        prompt: question.prompt,
+        content: question.content,
+        answer: question.answer
+    };
+}
+
+function activityProgressItems(activities: Activity[]): ActivityProgressItem[] {
+    return activities.flatMap((activity, activityIndex) => {
+        if (activity.questions?.length) {
+            return activity.questions.map((question, questionIndex) => ({
+                activity: activityForQuestion(activity, question),
+                key: `a${activityIndex}.q${question.id}`,
+                ...(questionIndex === 0 ? { fallbackKey: `a${activityIndex}` } : {})
+            }));
+        }
+        return [{ activity, key: `a${activityIndex}` }];
+    });
+}
+
+function progressEntry(answers: Record<string, ProgressAnswer>, item: ActivityProgressItem): ProgressAnswer | undefined {
+    return answers[item.key] || (item.fallbackKey ? answers[item.fallbackKey] : undefined);
+}
+
+function allGradableAnswersCorrect(activities: Activity[], answers: Record<string, ProgressAnswer>): boolean {
+    const gradableItems = activityProgressItems(activities).filter(({ activity }) => isGradable(activity));
+    return gradableItems.length > 0 && gradableItems.every((item) => progressEntry(answers, item)?.correct === true);
+}
+
 function shuffle<T>(items: T[]): T[] {
     const result = [...items];
     for (let index = result.length - 1; index > 0; index -= 1) {
@@ -65,11 +118,13 @@ function flattenActivities(activities: unknown): Activity[] {
             const activity = record(rawActivity);
             const type = stringValue(activity.type);
             if (!interactiveTypes.has(type)) return [];
+            const questions = normalizedQuestions(activity.questions);
             return [{
                 type,
                 prompt: stringValue(activity.prompt).slice(0, 500),
                 content: stringValue(activity.content).slice(0, 20000),
-                answer: stringValue(activity.answer).slice(0, 2000)
+                answer: stringValue(activity.answer).slice(0, 2000),
+                ...(questions ? { questions } : {})
             }];
         });
     });
@@ -93,11 +148,13 @@ function sectionsWithSafeActivities(activities: unknown) {
             const activity = record(rawActivity);
             const type = stringValue(activity.type);
             if (!interactiveTypes.has(type)) return [];
+            const questions = normalizedQuestions(activity.questions);
             const safe = safeActivity({
                 type,
                 prompt: stringValue(activity.prompt).slice(0, 500),
                 content: stringValue(activity.content).slice(0, 20000),
-                answer: stringValue(activity.answer).slice(0, 2000)
+                answer: stringValue(activity.answer).slice(0, 2000),
+                ...(questions ? { questions } : {})
             });
             return [{ ...safe, index: activityIndex++ }];
         });
@@ -108,6 +165,16 @@ function sectionsWithSafeActivities(activities: unknown) {
 function safeActivity(activity: Activity) {
     const contentLines = lines(activity.content);
     const prompt = activity.prompt;
+    if (activity.questions?.length) {
+        return {
+            type: activity.type,
+            prompt,
+            questions: activity.questions.map((question) => ({
+                questionId: question.id,
+                ...safeActivity(activityForQuestion(activity, question))
+            }))
+        };
+    }
     switch (activity.type) {
         case "drag-words": {
             const expected = answerParts(activity.answer);
@@ -261,9 +328,9 @@ function hasAnswerResponse(response: unknown): boolean {
 
 function progressSummary(activities: Activity[], value: unknown): { progressActivityCount: number; answeredCount: number } {
     const answers = publicProgress(value);
-    const answerableIndexes = activities.flatMap((activity, index) => answerableTypes.has(activity.type) ? [index] : []);
-    const answeredCount = answerableIndexes.filter((index) => hasAnswerResponse(answers[`a${index}`]?.response)).length;
-    return { progressActivityCount: answerableIndexes.length, answeredCount };
+    const answerableItems = activityProgressItems(activities).filter(({ activity }) => answerableTypes.has(activity.type));
+    const answeredCount = answerableItems.filter((item) => hasAnswerResponse(progressEntry(answers, item)?.response)).length;
+    return { progressActivityCount: answerableItems.length, answeredCount };
 }
 
 Deno.serve(async (request: Request) => {
@@ -419,26 +486,36 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(400, { error: "Choose a valid activity." }, allowedOrigin);
     }
     const activity = allActivities[Number(activityIndex)];
+    let answerActivity = activity;
+    let answerKey = `a${activityIndex}`;
+    if (activity.questions?.length) {
+        const questionId = stringValue(payload.questionId);
+        const questionIndex = activity.questions.findIndex((question) => question.id === questionId);
+        if (!questionId || questionIndex < 0) {
+            return jsonResponse(400, { error: "Choose a valid item in this activity." }, allowedOrigin);
+        }
+        const question = activity.questions[questionIndex];
+        answerActivity = activityForQuestion(activity, question);
+        answerKey = `a${activityIndex}.q${question.id}`;
+    } else if (payload.questionId !== undefined) {
+        return jsonResponse(400, { error: "This activity does not contain separate items." }, allowedOrigin);
+    }
     const response = payload.response;
     if (action === "save-draft") {
-        if (!answerableTypes.has(activity.type)) return jsonResponse(400, { error: "This activity does not accept a saved answer." }, allowedOrigin);
+        if (!answerableTypes.has(answerActivity.type)) return jsonResponse(400, { error: "This activity does not accept a saved answer." }, allowedOrigin);
         if (!(typeof response === "string" || Array.isArray(response))
             || (typeof response === "string" && response.length > 10000)
             || (Array.isArray(response) && (response.length > 100 || response.some((item) => typeof item !== "string" || item.length > 500)))) {
             return jsonResponse(400, { error: "The saved answer has an invalid format." }, allowedOrigin);
         }
         const answers = publicProgress(progress?.answers);
-        answers[`a${activityIndex}`] = {
+        answers[answerKey] = {
             response,
             correct: null,
             submitted_at: new Date().toISOString(),
             draft: true
         };
-        const gradedIndexes = allActivities
-            .map((item, index) => ({ item, index }))
-            .filter(({ item }) => isGradable(item))
-            .map(({ index }) => `a${index}`);
-        const completed = gradedIndexes.length > 0 && gradedIndexes.every((key) => answers[key]?.correct === true);
+        const completed = allGradableAnswersCorrect(allActivities, answers);
         const completedAt = completed ? progress?.completed_at || new Date().toISOString() : null;
         const { error } = await admin.from("student_lesson_progress").upsert({
             student_id: assignment.memberId,
@@ -454,11 +531,11 @@ Deno.serve(async (request: Request) => {
         }
         return jsonResponse(200, { answers, completed }, allowedOrigin);
     }
-    if (activity.type === "open-answer") {
+    if (answerActivity.type === "open-answer") {
         const writtenResponse = stringValue(response).trim();
         if (!writtenResponse || writtenResponse.length > 10000) return jsonResponse(400, { error: "Enter an answer of up to 10,000 characters." }, allowedOrigin);
         const answers = publicProgress(progress?.answers);
-        answers[`a${activityIndex}`] = { response: writtenResponse, correct: null, submitted_at: new Date().toISOString() };
+        answers[answerKey] = { response: writtenResponse, correct: null, submitted_at: new Date().toISOString() };
         const { error } = await admin.from("student_lesson_progress").upsert({
             student_id: assignment.memberId,
             class_id: assignment.classId,
@@ -479,14 +556,10 @@ Deno.serve(async (request: Request) => {
         || (Array.isArray(response) && (response.length > 100 || response.some((item) => typeof item !== "string" || item.length > 500)))) {
         return jsonResponse(400, { error: "The submitted answer has an invalid format." }, allowedOrigin);
     }
-    const correct = isCorrect(activity, response);
+    const correct = isCorrect(answerActivity, response);
     const answers = publicProgress(progress?.answers);
-    answers[`a${activityIndex}`] = { response, correct, submitted_at: new Date().toISOString() };
-    const gradedIndexes = allActivities
-        .map((item, index) => ({ item, index }))
-        .filter(({ item }) => isGradable(item))
-        .map(({ index }) => `a${index}`);
-    const completed = gradedIndexes.length > 0 && gradedIndexes.every((key) => answers[key]?.correct === true);
+    answers[answerKey] = { response, correct, submitted_at: new Date().toISOString() };
+    const completed = allGradableAnswersCorrect(allActivities, answers);
     const { error: saveError } = await admin.from("student_lesson_progress").upsert({
         student_id: assignment.memberId,
         class_id: assignment.classId,
