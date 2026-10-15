@@ -1,5 +1,32 @@
 const loginForm = document.getElementById("loginForm");
 
+function dashboardPathFor(user) {
+    return user?.user_metadata?.role === "student" ? "student.html" : "teacher.html";
+}
+
+async function restoreSavedSession() {
+    if (!loginForm || !window.supabaseClient) return;
+    try {
+        const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+        if (error) throw error;
+        if (session) window.location.replace(dashboardPathFor(session.user));
+    } catch (error) {
+        console.error("Could not restore the saved sign-in session.", error);
+        const messages = {
+            ua: "Не вдалося перевірити збережений сеанс. Ви можете увійти ще раз.",
+            ru: "Не удалось проверить сохранённую сессию. Вы можете войти ещё раз.",
+            en: "Could not verify the saved session. You can sign in again."
+        };
+        const message = document.getElementById("authMessage");
+        if (message) {
+            message.textContent = messages[localStorage.getItem("siteLanguage")] || messages.ua;
+            message.className = "mb-3 text-danger";
+        }
+    }
+}
+
+void restoreSavedSession();
+
 loginForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -32,7 +59,7 @@ loginForm?.addEventListener("submit", async (event) => {
 
         message.textContent = "Вход выполнен.";
         message.className = "mb-3 text-success";
-        window.location.assign(data.user?.user_metadata?.role === "student" ? "student.html" : "teacher.html");
+        window.location.assign(dashboardPathFor(data.user));
     } catch {
         message.textContent = "Ошибка соединения. Попробуйте ещё раз.";
         message.className = "mb-3 text-danger";
