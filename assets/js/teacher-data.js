@@ -214,18 +214,25 @@
         if (!isAdmin) query = query.eq("teacher_id", userId);
         const { data: existing, error: readError } = await query;
         fail(readError, "Не удалось прочитать список учеников перед сохранением");
+        const studentsById = new Map(existing.map((student) => [student.id, student]));
         const studentsByIdentity = new Map(existing.map((student) => [`${student.class_id}\u0000${student.display_name}`, student]));
-        const desired = classes.flatMap((group) => group.students.map((displayName) => ({
-            id: studentsByIdentity.get(`${group.id}\u0000${displayName}`)?.id || crypto.randomUUID(),
-            class_id: group.id,
-            teacher_id: isAdmin ? group.teacherId || userId : userId,
-            display_name: displayName,
-            email: studentsByIdentity.get(`${group.id}\u0000${displayName}`)?.email || null,
-            linked_user_id: studentsByIdentity.get(`${group.id}\u0000${displayName}`)?.linked_user_id || null
-        })));
+        const desired = classes.flatMap((group) => group.students.map((displayName, index) => {
+            const editedRecord = group.studentRecords?.[index];
+            const editedPriorRecord = editedRecord?.id ? studentsById.get(editedRecord.id) : null;
+            const priorRecord = (editedPriorRecord?.class_id === group.id && editedPriorRecord)
+                || studentsByIdentity.get(`${group.id}\u0000${displayName}`);
+            return {
+                id: priorRecord?.id || crypto.randomUUID(),
+                class_id: group.id,
+                teacher_id: isAdmin ? group.teacherId || userId : userId,
+                display_name: displayName,
+                email: priorRecord?.email || null,
+                linked_user_id: priorRecord?.linked_user_id || null
+            };
+        }));
         await upsertRows(client, "class_students", desired, "Не удалось сохранить учеников");
-        const desiredIdentities = new Set(desired.map((student) => `${student.class_id}\u0000${student.display_name}`));
-        const staleIds = existing.filter((student) => !desiredIdentities.has(`${student.class_id}\u0000${student.display_name}`)).map((student) => student.id);
+        const desiredIds = new Set(desired.map((student) => student.id));
+        const staleIds = existing.filter((student) => !desiredIds.has(student.id)).map((student) => student.id);
         await deleteIds(client, "class_students", staleIds, "Не удалось удалить учеников из списка");
     }
 

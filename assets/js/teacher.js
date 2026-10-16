@@ -10,7 +10,7 @@ const translations = {
         "materials.title": "Матеріали", "materials.description": "Спільна бібліотека файлів, посилань і навчальних ресурсів.", "materials.add": "＋ Додати матеріал", "materials.total": "Усього матеріалів: {count}", "materials.search": "Пошук матеріалів…", "materials.open": "Відкрити матеріал ↗", "materials.inLibrary": "Додано до бібліотеки", "materials.notFound": "Матеріалів не знайдено", "materials.notFoundHint": "Додайте перший матеріал або змініть запит.",
         "students.title": "Учні", "students.description": "Список учнів, розподілених за вашими класами.", "students.manage": "Керувати класами", "students.total": "Усього учнів: {count}", "students.search": "Пошук учня…", "students.role": "Учень SlovaSofi", "students.notFound": "Учнів не знайдено", "students.notFoundHint": "Додайте учнів до класів, щоб вони з’явилися тут.",
         "empty.noClasses": "Класів поки немає", "empty.createClass": "Створіть клас, щоб призначати уроки.", "empty.search": "Нічого не знайдено", "empty.changeSearch": "Змініть пошуковий запит.",
-        "modal.editClass": "Редагувати клас", "modal.newClass": "Новий клас", "field.className": "Назва класу", "field.course": "Курс або рівень", "field.students": "Учні", "field.studentsPlaceholder": "Введіть імена через кому", "field.studentsHint": "Кожне ім’я стане окремим учнем.", "field.exampleClass": "Наприклад, Словацька A1", "field.exampleCourse": "Наприклад, Словацька · A1", "action.cancel": "Скасувати", "action.save": "Зберегти", "action.createClass": "Створити клас", "action.delete": "Видалити", "class.unnamedCourse": "Курс не вказано",
+        "modal.editClass": "Редагувати клас", "modal.newClass": "Новий клас", "field.className": "Назва класу", "field.course": "Курс або рівень", "field.students": "Учні", "field.studentsPlaceholder": "Введіть імена через кому", "field.studentsHint": "Кожне ім’я стане окремим учнем.", "action.addStudent": "＋ Додати учня", "field.exampleClass": "Наприклад, Словацька A1", "field.exampleCourse": "Наприклад, Словацька · A1", "action.cancel": "Скасувати", "action.save": "Зберегти", "action.createClass": "Створити клас", "action.delete": "Видалити", "class.unnamedCourse": "Курс не вказано",
         "modal.editLesson": "Редагувати урок", "modal.newLesson": "Новий урок", "field.lessonTitle": "Назва уроку", "field.exampleLesson": "Наприклад, Lekcia 5. Rodina", "field.chooseClass": "Виберіть клас", "lesson.activities": "Завдання уроку", "activity.addBlock": "＋ Додати блок", "lesson.firstActivity": "Додайте перше завдання", "lesson.firstActivityHint": "Виберіть тип блоку: перетягування, пропуск, порядок, відповідність тощо.", "lesson.save": "Зберегти урок", "lesson.create": "Створити урок",
         "field.instruction": "Інструкція", "field.instructionExample": "Наприклад, складіть речення", "field.taskText": "Текст завдання", "field.mediaContent": "Посилання або вміст", "field.answer": "Правильна відповідь", "field.enterText": "Введіть текст або вставте посилання", "hint.drag": "слова у правильному порядку", "hint.blank": "використовуйте ___ для пропуску", "hint.options": "кожен варіант з нового рядка", "hint.order": "кожен елемент з нового рядка", "hint.sentences": "кожне речення з нового рядка", "hint.match": "пара у форматі слово = переклад, одна на рядок", "hint.columns": "категорія: елемент, кожен з нового рядка", "hint.table": "колонки розділіть |, порожні комірки позначте ___", "hint.select": "1-й рядок: речення з ___, далі варіанти (або лише варіанти)", "hint.trueFalse": "твердження для перевірки", "hint.cards": "картка: переклад, по одній на рядок", "hint.answerSlash": "слова через /", "hint.answerText": "слово або фраза", "hint.answerChoice": "точний текст правильної відповіді", "hint.answerOrder": "правильний порядок через /", "hint.optional": "необов’язково", "hint.correctChoice": "правильний варіант",
         "picker.title": "Виберіть інтерактивне завдання", "picker.all": "Усі", "picker.tests": "Тести", "picker.media": "Медіа", "picker.other": "Інше", "picker.search": "Пошук блоку…", "picker.back": "← До уроку",
@@ -28,7 +28,7 @@ const translations = {
         "materials.title": "Материалы", "materials.description": "Общая библиотека файлов, ссылок и учебных ресурсов.", "materials.add": "＋ Добавить материал", "materials.total": "Всего материалов: {count}", "materials.search": "Поиск материалов…", "materials.open": "Открыть материал ↗", "materials.inLibrary": "Добавлен в библиотеку", "materials.notFound": "Материалы не найдены", "materials.notFoundHint": "Добавьте первый материал или измените запрос.",
         "students.title": "Ученики", "students.description": "Список учеников, распределённых по вашим классам.", "students.manage": "Управлять классами", "students.total": "Всего учеников: {count}", "students.search": "Поиск ученика…", "students.role": "Ученик SlovaSofi", "students.notFound": "Ученики не найдены", "students.notFoundHint": "Добавьте учеников в классы, чтобы они появились здесь.",
         "empty.noClasses": "Классов пока нет", "empty.createClass": "Создайте класс, чтобы назначать уроки.", "empty.search": "Ничего не найдено", "empty.changeSearch": "Измените поисковый запрос.",
-        "modal.editClass": "Редактировать класс", "modal.newClass": "Новый класс", "field.className": "Название класса", "field.course": "Курс или уровень", "field.students": "Ученики", "field.studentsPlaceholder": "Введите имена через запятую", "field.studentsHint": "Каждое имя станет отдельным учеником.", "field.exampleClass": "Например, Словацкий A1", "field.exampleCourse": "Например, Словацкий · A1", "action.cancel": "Отмена", "action.save": "Сохранить", "action.createClass": "Создать класс", "action.delete": "Удалить", "class.unnamedCourse": "Курс не указан",
+        "modal.editClass": "Редактировать класс", "modal.newClass": "Новый класс", "field.className": "Название класса", "field.course": "Курс или уровень", "field.students": "Ученики", "field.studentsPlaceholder": "Введите имена через запятую", "field.studentsHint": "Каждое имя станет отдельным учеником.", "action.addStudent": "＋ Добавить ученика", "field.exampleClass": "Например, Словацкий A1", "field.exampleCourse": "Например, Словацкий · A1", "action.cancel": "Отмена", "action.save": "Сохранить", "action.createClass": "Создать класс", "action.delete": "Удалить", "class.unnamedCourse": "Курс не указан",
         "modal.editLesson": "Редактировать урок", "modal.newLesson": "Новый урок", "field.lessonTitle": "Название урока", "field.exampleLesson": "Например, Lekcia 5. Rodina", "field.chooseClass": "Выберите класс", "lesson.activities": "Задания урока", "activity.addBlock": "＋ Добавить блок", "lesson.firstActivity": "Добавьте первое задание", "lesson.firstActivityHint": "Выберите тип блока: перетягивание, пропуск, порядок, соответствия и другие.", "lesson.save": "Сохранить урок", "lesson.create": "Создать урок",
         "field.instruction": "Инструкция", "field.instructionExample": "Например, соберите предложение", "field.taskText": "Текст задания", "field.mediaContent": "Ссылка или содержимое", "field.answer": "Правильный ответ", "field.enterText": "Введите текст или вставьте ссылку", "hint.drag": "слова в правильном порядке", "hint.blank": "используйте ___ для пропуска", "hint.options": "каждый вариант с новой строки", "hint.order": "каждый элемент с новой строки", "hint.sentences": "каждое предложение с новой строки", "hint.match": "пара в формате слово = перевод, одна на строку", "hint.columns": "категория: элемент, каждый с новой строки", "hint.table": "колонки разделяйте |, пустые ячейки отмечайте ___", "hint.select": "1-я строка: предложение с ___, далее варианты (или только варианты)", "hint.trueFalse": "утверждение для проверки", "hint.cards": "карточка: перевод, по одной на строку", "hint.answerSlash": "слова через /", "hint.answerText": "слово или фраза", "hint.answerChoice": "точный текст верного варианта", "hint.answerOrder": "правильный порядок через /", "hint.optional": "необязательно", "hint.correctChoice": "правильный вариант",
         "picker.title": "Выберите интерактивное задание", "picker.all": "Все", "picker.tests": "Тесты", "picker.media": "Медиа", "picker.other": "Другое", "picker.search": "Поиск блока…", "picker.back": "← К уроку",
@@ -46,7 +46,7 @@ const translations = {
         "materials.title": "Materials", "materials.description": "A shared library of files, links, and learning resources.", "materials.add": "＋ Add material", "materials.total": "Total materials: {count}", "materials.search": "Search materials…", "materials.open": "Open material ↗", "materials.inLibrary": "Added to library", "materials.notFound": "No materials found", "materials.notFoundHint": "Add your first material or change the search.",
         "students.title": "Students", "students.description": "Students organized by your classes.", "students.manage": "Manage classes", "students.total": "Total students: {count}", "students.search": "Search students…", "students.role": "SlovaSofi student", "students.notFound": "No students found", "students.notFoundHint": "Add students to classes to see them here.",
         "empty.noClasses": "No classes yet", "empty.createClass": "Create a class to assign lessons.", "empty.search": "Nothing found", "empty.changeSearch": "Try a different search.",
-        "modal.editClass": "Edit class", "modal.newClass": "New class", "field.className": "Class name", "field.course": "Course or level", "field.students": "Students", "field.studentsPlaceholder": "Enter names separated by commas", "field.studentsHint": "Each name will be added as a student.", "field.exampleClass": "For example, Slovak A1", "field.exampleCourse": "For example, Slovak · A1", "action.cancel": "Cancel", "action.save": "Save", "action.createClass": "Create class", "action.delete": "Delete", "class.unnamedCourse": "Course not specified",
+        "modal.editClass": "Edit class", "modal.newClass": "New class", "field.className": "Class name", "field.course": "Course or level", "field.students": "Students", "field.studentsPlaceholder": "Enter names separated by commas", "field.studentsHint": "Each name will be added as a student.", "action.addStudent": "＋ Add student", "field.exampleClass": "For example, Slovak A1", "field.exampleCourse": "For example, Slovak · A1", "action.cancel": "Cancel", "action.save": "Save", "action.createClass": "Create class", "action.delete": "Delete", "class.unnamedCourse": "Course not specified",
         "modal.editLesson": "Edit lesson", "modal.newLesson": "New lesson", "field.lessonTitle": "Lesson name", "field.exampleLesson": "For example, Lekcia 5. Rodina", "field.chooseClass": "Choose a class", "lesson.activities": "Lesson activities", "activity.addBlock": "＋ Add activity", "lesson.firstActivity": "Add your first activity", "lesson.firstActivityHint": "Choose a block: drag and drop, fill in the blank, ordering, matching, and more.", "lesson.save": "Save lesson", "lesson.create": "Create lesson",
         "field.instruction": "Instructions", "field.instructionExample": "For example, arrange the sentence", "field.taskText": "Activity text", "field.mediaContent": "Link or content", "field.answer": "Correct answer", "field.enterText": "Enter text or paste a link", "hint.drag": "words in the correct order", "hint.blank": "use ___ for the blank", "hint.options": "one option per line", "hint.order": "one item per line", "hint.sentences": "one sentence per line", "hint.match": "pair format word = translation, one per line", "hint.columns": "category: item, one per line", "hint.table": "separate columns with | and mark empty cells with ___", "hint.select": "line 1: sentence with ___, then options (or options only)", "hint.trueFalse": "statement to evaluate", "hint.cards": "card: translation, one per line", "hint.answerSlash": "separate words with /", "hint.answerText": "word or phrase", "hint.answerChoice": "exact text of the correct answer", "hint.answerOrder": "correct order separated by /", "hint.optional": "optional", "hint.correctChoice": "correct option",
         "picker.title": "Choose an interactive activity", "picker.all": "All", "picker.tests": "Quizzes", "picker.media": "Media", "picker.other": "Other", "picker.search": "Search activities…", "picker.back": "← Back to lesson",
@@ -463,6 +463,27 @@ async function waitForWorkspaceSave() {
     return !currentUser || await workspaceSaveQueue;
 }
 
+async function persistWorkspaceChange(previousData, deletedLessonIds = []) {
+    if (!persist(deletedLessonIds)) {
+        data = previousData;
+        render();
+        return false;
+    }
+    if (await waitForWorkspaceSave()) return true;
+
+    data = previousData;
+    if (!persist()) {
+        render();
+        return false;
+    }
+    if (!await waitForWorkspaceSave()) {
+        console.error("Could not restore the previous teacher workspace after a failed save.");
+        showToast(t("toast.databaseSaveError"));
+    }
+    render();
+    return false;
+}
+
 function escapeHtml(value = "") {
     return String(value).replace(/[&<>"']/g, (character) => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -477,27 +498,42 @@ function showToast(message) {
     toastTimer = window.setTimeout(() => toast.classList.remove("visible"), 3000);
 }
 
-function updateUserIdentity(user) {
-    currentUser = user;
+function userDisplayName(user) {
     const metadata = user?.user_metadata || {};
     const firstName = metadata.first_name || metadata.firstName || "";
     const lastName = metadata.last_name || metadata.lastName || "";
-    const displayName = [firstName, lastName].filter(Boolean).join(" ") || metadata.full_name || metadata.name || user?.email || t("profile.signedOut");
-    const initials = [firstName, lastName].filter(Boolean).map((part) => part.trim()[0]).join("").toLocaleUpperCase()
-        || displayName.split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toLocaleUpperCase()
+    return metadata.display_name || metadata.displayName
+        || [firstName, lastName].filter(Boolean).join(" ")
+        || metadata.full_name || metadata.name || user?.email || t("profile.signedOut");
+}
+
+function userInitials(user) {
+    const metadata = user?.user_metadata || {};
+    const displayName = userDisplayName(user);
+    if (metadata.display_name || metadata.displayName) return initialsFor(displayName);
+    const firstName = metadata.first_name || metadata.firstName || "";
+    const lastName = metadata.last_name || metadata.lastName || "";
+    return [firstName, lastName].filter(Boolean).map((part) => part.trim()[0]).join("").toLocaleUpperCase()
+        || initialsFor(displayName)
         || "—";
+}
+
+function updateUserIdentity(user) {
+    currentUser = user;
+    const displayName = userDisplayName(user);
+    const initials = userInitials(user);
     document.querySelectorAll(".user-name").forEach((element) => { element.textContent = displayName; });
     document.querySelectorAll(".user-avatar").forEach((element) => { element.textContent = initials; });
     const profileLabel = t("profile.open", { name: displayName });
     document.querySelectorAll(".profile-trigger").forEach((element) => { element.setAttribute("aria-label", profileLabel); });
     const welcomeHeading = document.getElementById("welcomeHeading");
-    if (welcomeHeading) welcomeHeading.textContent = t("welcome.title", { name: firstName || displayName });
+    if (welcomeHeading) welcomeHeading.textContent = t("welcome.title", { name: displayName });
 }
 
 async function loadCurrentUser() {
     if (!window.supabaseClient) {
         console.error("Supabase is not configured; user profile and sign out are unavailable.");
-        updateUserIdentity(null);
+        window.location.replace("login.html");
         return;
     }
     try {
@@ -508,11 +544,7 @@ async function loadCurrentUser() {
         const user = session?.user;
         
         if (!session) {
-            updateUserIdentity(null);
-            data = loadData();
-            workspaceAccess = { workspaceOwnerId: null, permissions: ownerPermissions, staff: [] };
-            translateStaticUI();
-            render();
+            window.location.replace("login.html");
             return;
         }
         
@@ -566,12 +598,7 @@ async function loadCurrentUser() {
         }
     } catch (error) {
         console.error("Could not load the signed-in user profile.", error);
-        updateUserIdentity(null);
-        data = loadData();
-        workspaceAccess = { workspaceOwnerId: null, permissions: ownerPermissions, staff: [] };
-        translateStaticUI();
-        render();
-        showToast(t("profile.loadError"));
+        window.location.replace("login.html");
     }
 }
 
@@ -606,9 +633,7 @@ function openPopoverAt(button, content, kind) {
 }
 
 function showUserMenu(button) {
-    const metadata = currentUser?.user_metadata || {};
-    const name = [metadata.first_name || metadata.firstName, metadata.last_name || metadata.lastName].filter(Boolean).join(" ")
-        || metadata.full_name || metadata.name || currentUser?.email || t("profile.signedOut");
+    const name = userDisplayName(currentUser);
     const identity = currentUser?.email
         ? `<div class="popover-email">${escapeHtml(currentUser.email)}</div>`
         : `<div class="popover-email">${t("profile.notSignedIn")}</div>`;
@@ -1054,12 +1079,10 @@ function renderOverview() {
     const studentCount = data.classes.reduce((total, item) => total + item.students.length, 0);
     const recentLessons = [...data.lessons].slice(-3).reverse();
     const featuredClasses = data.classes.slice(0, 3);
-    const profileMetadata = currentUser?.user_metadata || {};
-    const firstName = profileMetadata.first_name || profileMetadata.firstName;
-    const profileName = [firstName, profileMetadata.last_name || profileMetadata.lastName].filter(Boolean).join(" ") || profileMetadata.full_name || profileMetadata.name || currentUser?.email || t("profile.signedOut");
-    const initials = [firstName, profileMetadata.last_name || profileMetadata.lastName].filter(Boolean).map((part) => part[0]).join("").toLocaleUpperCase() || initialsFor(profileName);
+    const profileName = userDisplayName(currentUser);
+    const initials = userInitials(currentUser);
     const roleLabel = workspaceAccess.role === "admin" ? roleLabels.admin[currentLanguage] : t("teacher.role");
-    return `<section class="profile-hero"><div class="profile-identity"><span class="profile-avatar">${escapeHtml(initials)}</span><div><span class="eyebrow">✦ ${t("welcome.badge")}</span><h1 id="welcomeHeading">${t("welcome.title", { name: firstName || profileName })}</h1><p>${escapeHtml(currentUser?.email || t("profile.notSignedIn"))}</p></div></div><div class="profile-role">${roleLabel}</div></section>
+    return `<section class="profile-hero"><div class="profile-identity"><span class="profile-avatar">${escapeHtml(initials)}</span><div><span class="eyebrow">✦ ${t("welcome.badge")}</span><h1 id="welcomeHeading">${t("welcome.title", { name: escapeHtml(profileName) })}</h1><p>${escapeHtml(currentUser?.email || t("profile.notSignedIn"))}</p></div></div><div class="profile-role">${roleLabel}</div></section>
         <div class="profile-welcome"><div><h2>${t("profile.dashboardTitle")}</h2><p>${t("profile.dashboardHint")}</p><span class="storage-note">${t("welcome.storage")}</span></div>${hasPermission("edit_lessons") ? `<button class="button" data-action="new-lesson">${t("action.createLesson")}</button>` : ""}</div>
         <div class="stats-grid profile-stats">
             <article class="stat-card"><span class="stat-icon">▣</span><span>${t("stat.classes")}</span><strong>${data.classes.length}</strong></article>
@@ -1079,9 +1102,7 @@ function renderOverview() {
 function renderClasses() {
     const canManageClasses = hasPermission("manage_classes_students");
     const filtered = data.classes.filter((item) => `${item.name} ${item.course}`.toLowerCase().includes(searchQuery.toLowerCase()));
-    const metadata = currentUser?.user_metadata || {};
-    const teacherName = [metadata.first_name || metadata.firstName, metadata.last_name || metadata.lastName].filter(Boolean).join(" ")
-        || metadata.full_name || metadata.name || currentUser?.email || t("profile.signedOut");
+    const teacherName = userDisplayName(currentUser);
     return `<div class="section-heading"><div><h1>${t("classes.title")}</h1><p>${t("classes.description")}</p></div></div>
         <div class="toolbar">${canManageClasses ? `<button class="button secondary" data-action="new-class">${t("classes.create")}</button>` : ""}<input type="search" data-search placeholder="${t("classes.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("classes.search")}"></div>
         <div class="card-grid class-grid">${filtered.length ? filtered.map((item, index) => `<article class="class-card class-card-enhanced class-tone-${index % 4}" data-open-class-id="${escapeHtml(item.id)}">
@@ -1597,8 +1618,7 @@ function animateActivityCardMove(container, cardSelector, movingCard, targetCard
 async function savePreviewActivities(lesson, sectionId, activities, successMessage, isHomework = false) {
     if (!hasPermission("edit_lessons")) return;
     const sectionProperty = isHomework ? "homeworkSections" : "sections";
-    const previousSections = lesson[sectionProperty];
-    const previousActivities = lesson.activities;
+    const previousData = structuredClone(data);
     const originalSections = isHomework ? normalizeHomeworkSections(lesson) : normalizeLessonSections(lesson);
     const sections = originalSections.map((section) => ({
         ...section,
@@ -1606,17 +1626,7 @@ async function savePreviewActivities(lesson, sectionId, activities, successMessa
     }));
     lesson[sectionProperty] = sections;
     if (!isHomework) lesson.activities = sections.flatMap((section) => section.activities);
-    if (!persist()) {
-        lesson[sectionProperty] = previousSections;
-        lesson.activities = previousActivities;
-        return false;
-    }
-    if (!await waitForWorkspaceSave()) {
-        lesson[sectionProperty] = previousSections;
-        lesson.activities = previousActivities;
-        persist();
-        return false;
-    }
+    if (!await persistWorkspaceChange(previousData)) return false;
     previewActivityEdit = null;
     render();
     showToast(successMessage);
@@ -1863,25 +1873,63 @@ function modalHeader(title) {
 
 function openClassEditor(item) {
     if (!hasPermission("manage_classes_students")) return;
-    const selectedStudents = item?.students.join(", ") || "";
+    const studentRecords = item?.studentRecords?.length
+        ? item.studentRecords
+        : (item?.students || []).map((display_name) => ({ id: "", display_name }));
+    const studentRowMarkup = (student = {}) => `<div class="class-student-edit-row" data-student-row>
+        <input name="studentNames" data-student-id="${escapeHtml(student.id || "")}" value="${escapeHtml(student.display_name || "")}" maxlength="120" placeholder="${t("field.studentsPlaceholder")}" aria-label="${t("field.students")}">
+        <button class="mini-action" type="button" data-remove-student aria-label="${t("action.delete")}">×</button>
+    </div>`;
     openModal(`${modalHeader(item ? t("modal.editClass") : t("modal.newClass"))}
         <form id="classForm">
             <div class="form-field"><label for="className">${t("field.className")}</label><input id="className" name="name" required maxlength="80" value="${escapeHtml(item?.name || "")}" placeholder="${t("field.exampleClass")}"></div>
             <div class="form-field"><label for="classCourse">${t("field.course")}</label><input id="classCourse" name="course" maxlength="80" value="${escapeHtml(item?.course || "")}" placeholder="${t("field.exampleCourse")}"></div>
-            <div class="form-field"><label for="classStudents">${t("field.students")}</label><textarea id="classStudents" name="students" placeholder="${t("field.studentsPlaceholder")}">${escapeHtml(selectedStudents)}</textarea><span class="hint">${t("field.studentsHint")}</span></div>
+            ${item
+                ? `<div class="form-field"><label>${t("field.students")}</label><div class="class-student-edit-list">${studentRecords.map(studentRowMarkup).join("")}</div><button class="text-link" id="addClassStudent" type="button">${t("action.addStudent")}</button><span class="hint">${t("field.studentsHint")}</span></div>`
+                : `<div class="form-field"><label for="classStudents">${t("field.students")}</label><textarea id="classStudents" name="students" placeholder="${t("field.studentsPlaceholder")}"></textarea><span class="hint">${t("field.studentsHint")}</span></div>`}
             <div class="modal-actions"><button type="button" class="button secondary" data-close>${t("action.cancel")}</button><button class="button" type="submit">${item ? t("action.save") : t("action.createClass")}</button></div>
         </form>`);
     refreshModal = () => openClassEditor(item);
     modalCard.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", closeModal));
-    modalCard.querySelector("#classForm").addEventListener("submit", (event) => {
+    const formElement = modalCard.querySelector("#classForm");
+    const studentRows = formElement.querySelector(".class-student-edit-list");
+    studentRows?.addEventListener("click", (event) => {
+        if (event.target.closest("[data-remove-student]")) event.target.closest("[data-student-row]").remove();
+    });
+    modalCard.querySelector("#addClassStudent")?.addEventListener("click", () => {
+        studentRows.insertAdjacentHTML("beforeend", studentRowMarkup());
+        studentRows.lastElementChild.querySelector("input").focus();
+    });
+    formElement.addEventListener("submit", async (event) => {
         event.preventDefault();
+        const submitButton = event.currentTarget.querySelector('[type="submit"]');
+        if (submitButton.disabled) return;
         const form = new FormData(event.currentTarget);
         const name = String(form.get("name")).trim();
         if (!name) return;
-        const updated = { id: item?.id || crypto.randomUUID(), teacherId: item?.teacherId || currentUser?.id, teacherName: item?.teacherName, name, course: String(form.get("course")).trim() || t("class.unnamedCourse"), students: String(form.get("students")).split(",").map((student) => student.trim()).filter(Boolean) };
+        const updatedStudents = item
+            ? [...studentRows.querySelectorAll("[data-student-row]")].map((row) => ({
+                id: row.querySelector("input").dataset.studentId,
+                display_name: row.querySelector("input").value.trim()
+            })).filter((student) => student.display_name)
+            : String(form.get("students")).split(",").map((student) => student.trim()).filter(Boolean);
+        const updated = {
+            id: item?.id || crypto.randomUUID(),
+            teacherId: item?.teacherId || currentUser?.id,
+            teacherName: item?.teacherName,
+            name,
+            course: String(form.get("course")).trim() || t("class.unnamedCourse"),
+            students: updatedStudents.map((student) => typeof student === "string" ? student : student.display_name),
+            ...(item ? { studentRecords: updatedStudents } : {})
+        };
+        const previousData = structuredClone(data);
         if (item) data.classes = data.classes.map((current) => current.id === item.id ? updated : current);
         else data.classes.push(updated);
-        persist();
+        submitButton.disabled = true;
+        if (!await persistWorkspaceChange(previousData)) {
+            if (submitButton.isConnected) submitButton.disabled = false;
+            return;
+        }
         closeModal();
         render();
         showToast(item ? t("toast.classUpdated") : t("toast.classCreated"));
@@ -2005,14 +2053,14 @@ function openStudentInvite(group) {
     });
 }
 
-function deleteClass(id) {
+async function deleteClass(id) {
     if (!hasPermission("manage_classes_students")) return;
     const item = data.classes.find((current) => current.id === id);
     if (!item || !window.confirm(t("confirm.deleteClass", { name: item.name }))) return;
+    const previousData = structuredClone(data);
     data.classes = data.classes.filter((current) => current.id !== id);
     data.lessons = data.lessons.map((lesson) => ({ ...lesson, classIds: lessonClassIds(lesson).filter((classId) => classId !== id) }));
-    persist();
-    render();
+    if (!await persistWorkspaceChange(previousData)) return;
     showToast(t("toast.classDeleted"));
 }
 
@@ -2759,20 +2807,14 @@ async function saveLesson(event) {
     }
     const existingLesson = data.lessons.find((current) => current.id === editingLessonId);
     const lesson = { id: editingLessonId || crypto.randomUUID(), teacherId: existingLesson?.teacherId || currentUser?.id, title, unit, classIds: existingLesson ? lessonClassIds(existingLesson) : [], sections: structuredClone(draftSections), homeworkSections: structuredClone(draftHomeworkSections), activities: draftSections.flatMap((section) => section.activities) };
-    const previousLessons = data.lessons;
+    const previousData = structuredClone(data);
     const wasEditing = Boolean(editingLessonId);
     data.lessons = editingLessonId
         ? data.lessons.map((current) => current.id === editingLessonId ? lesson : current)
         : [...data.lessons, lesson];
-    if (!persist()) {
-        data.lessons = previousLessons;
-        return;
-    }
     const submitButton = formElement.querySelector('[type="submit"]');
     if (submitButton) submitButton.disabled = true;
-    if (!await waitForWorkspaceSave()) {
-        data.lessons = previousLessons;
-        persist();
+    if (!await persistWorkspaceChange(previousData)) {
         if (submitButton?.isConnected) submitButton.disabled = false;
         return;
     }
@@ -2802,29 +2844,31 @@ function openLessonAssignment(id) {
             <div class="modal-actions"><button type="button" class="button secondary" data-close>${t("action.cancel")}</button><button class="button" type="submit">${assignmentText("save")}</button></div>
         </form>`);
     modalCard.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", closeModal));
-    modalCard.querySelector("#lessonAssignmentForm").addEventListener("submit", (event) => {
+    modalCard.querySelector("#lessonAssignmentForm").addEventListener("submit", async (event) => {
         event.preventDefault();
+        const submitButton = event.currentTarget.querySelector('[type="submit"]');
+        if (submitButton.disabled) return;
         const form = new FormData(event.currentTarget);
         const classIds = form.getAll("classIds").map(String).filter((classId) => data.classes.some((item) => item.id === classId));
-        const previousLesson = data.lessons.find((item) => item.id === id);
+        const previousData = structuredClone(data);
         data.lessons = data.lessons.map((item) => item.id === id ? { ...item, classIds } : item);
-        if (!persist()) {
-            data.lessons = data.lessons.map((item) => item.id === id ? previousLesson : item);
+        submitButton.disabled = true;
+        if (!await persistWorkspaceChange(previousData)) {
+            if (submitButton.isConnected) submitButton.disabled = false;
             return;
         }
         closeModal();
-        render();
         showToast(assignmentText("saved"));
     });
 }
 
-function deleteLesson(id) {
+async function deleteLesson(id) {
     if (!hasPermission("edit_lessons")) return;
     const lesson = data.lessons.find((item) => item.id === id);
     if (!lesson || !window.confirm(t("confirm.deleteLesson", { name: lesson.title }))) return;
+    const previousData = structuredClone(data);
     data.lessons = data.lessons.filter((item) => item.id !== id);
-    persist([id]);
-    render();
+    if (!await persistWorkspaceChange(previousData, [id])) return;
     showToast(t("toast.lessonDeleted"));
 }
 
@@ -2860,7 +2904,6 @@ document.addEventListener("keydown", (event) => {
 });
 
 translateStaticUI();
-render();
 loadCurrentUser().catch((error) => {
     console.error("Failed to load current user:", error);
 });
