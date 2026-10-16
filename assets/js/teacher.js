@@ -472,13 +472,16 @@ async function persistWorkspaceChange(previousData, deletedLessonIds = []) {
     if (await waitForWorkspaceSave()) return true;
 
     data = previousData;
-    if (!persist()) {
-        render();
-        return false;
-    }
-    if (!await waitForWorkspaceSave()) {
-        console.error("Could not restore the previous teacher workspace after a failed save.");
-        showToast(t("toast.databaseSaveError"));
+    // A multi-request save may have partially succeeded. Replaying an old
+    // snapshot could delete newly invited students and their cascading progress.
+    try {
+        if (currentUser && window.teacherWorkspaceApi) {
+            const loaded = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, currentUser.id);
+            data = loaded.data;
+        }
+        localStorage.setItem(storageKey(), JSON.stringify(data));
+    } catch (error) {
+        console.error("Could not reload the workspace after a failed save.", error);
     }
     render();
     return false;
@@ -1877,7 +1880,7 @@ function openClassEditor(item) {
         ? item.studentRecords
         : (item?.students || []).map((display_name) => ({ id: "", display_name }));
     const studentRowMarkup = (student = {}) => `<div class="class-student-edit-row" data-student-row>
-        <input name="studentNames" data-student-id="${escapeHtml(student.id || "")}" value="${escapeHtml(student.display_name || "")}" maxlength="120" placeholder="${t("field.studentsPlaceholder")}" aria-label="${t("field.students")}">
+        <input name="studentNames" data-student-id="${escapeHtml(student.id || crypto.randomUUID())}" value="${escapeHtml(student.display_name || "")}" maxlength="120" placeholder="${t("field.studentsPlaceholder")}" aria-label="${t("field.students")}">
         <button class="mini-action" type="button" data-remove-student aria-label="${t("action.delete")}">×</button>
     </div>`;
     openModal(`${modalHeader(item ? t("modal.editClass") : t("modal.newClass"))}
@@ -1912,7 +1915,8 @@ function openClassEditor(item) {
                 id: row.querySelector("input").dataset.studentId,
                 display_name: row.querySelector("input").value.trim()
             })).filter((student) => student.display_name)
-            : String(form.get("students")).split(",").map((student) => student.trim()).filter(Boolean);
+            : String(form.get("students")).split(",").map((student) => student.trim()).filter(Boolean)
+                .map((display_name) => ({ id: crypto.randomUUID(), display_name }));
         const updated = {
             id: item?.id || crypto.randomUUID(),
             teacherId: item?.teacherId || currentUser?.id,
@@ -1920,7 +1924,7 @@ function openClassEditor(item) {
             name,
             course: String(form.get("course")).trim() || t("class.unnamedCourse"),
             students: updatedStudents.map((student) => typeof student === "string" ? student : student.display_name),
-            ...(item ? { studentRecords: updatedStudents } : {})
+            studentRecords: updatedStudents
         };
         const previousData = structuredClone(data);
         if (item) data.classes = data.classes.map((current) => current.id === item.id ? updated : current);

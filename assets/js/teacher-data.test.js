@@ -106,3 +106,23 @@ test("renaming a class student preserves their linked account and progress ident
     assert.deepEqual(client.deletedStudentIds, []);
     assert.deepEqual(client.tables.student_lesson_progress[0].answers, progress.answers);
 });
+
+test("a newly added student keeps the supplied identity through consecutive renames", async () => {
+    const client = createClient({ teacher_classes: [], class_students: [], teacher_workspace_settings: [] });
+    const window = {};
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, "teacher-data.js"), "utf8"), {
+        window, crypto: { randomUUID: () => "wrong-generated-id" }, console, Date, Map, Set, Promise, Error
+    });
+    const group = { id: "class-1", teacherId: "teacher-1", name: "A1", course: "A1",
+        students: ["First name"], studentRecords: [{ id: "stable-new-id", display_name: "First name" }] };
+    const access = { role: "teacher", permissions: { manage_classes_students: true } };
+    await window.teacherWorkspaceApi.saveWorkspace(client, "teacher-1", { classes: [group], lessons: [] }, access);
+    assert.equal(client.tables.class_students[0].id, "stable-new-id");
+    group.students = ["Renamed"];
+    group.studentRecords[0].display_name = "Renamed";
+    await window.teacherWorkspaceApi.saveWorkspace(client, "teacher-1", { classes: [group], lessons: [] }, access);
+    assert.equal(client.tables.class_students.length, 1);
+    assert.equal(client.tables.class_students[0].id, "stable-new-id");
+    assert.equal(client.tables.class_students[0].display_name, "Renamed");
+    assert.deepEqual(client.deletedStudentIds, []);
+});

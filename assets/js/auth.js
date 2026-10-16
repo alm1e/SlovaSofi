@@ -1,7 +1,10 @@
 const loginForm = document.getElementById("loginForm");
 
-function dashboardPathFor(user) {
-    return user?.user_metadata?.role === "student" ? "student.html" : "teacher.html";
+async function dashboardPathFor(user) {
+    const { data: profile, error } = await window.supabaseClient.from("profiles")
+        .select("role").eq("id", user.id).single();
+    if (error) throw error;
+    return ["teacher", "admin"].includes(profile?.role) ? "teacher.html" : "student.html";
 }
 
 async function restoreSavedSession() {
@@ -9,7 +12,7 @@ async function restoreSavedSession() {
     try {
         const { data: { session }, error } = await window.supabaseClient.auth.getSession();
         if (error) throw error;
-        if (session) window.location.replace(dashboardPathFor(session.user));
+        if (session) window.location.replace(await dashboardPathFor(session.user));
     } catch (error) {
         console.error("Could not restore the saved sign-in session.", error);
         const messages = {
@@ -59,7 +62,7 @@ loginForm?.addEventListener("submit", async (event) => {
 
         message.textContent = "Вход выполнен.";
         message.className = "mb-3 text-success";
-        window.location.assign(dashboardPathFor(data.user));
+        window.location.assign(await dashboardPathFor(data.user));
     } catch {
         message.textContent = "Ошибка соединения. Попробуйте ещё раз.";
         message.className = "mb-3 text-danger";

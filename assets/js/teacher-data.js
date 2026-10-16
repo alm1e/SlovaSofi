@@ -222,7 +222,7 @@
             const priorRecord = (editedPriorRecord?.class_id === group.id && editedPriorRecord)
                 || studentsByIdentity.get(`${group.id}\u0000${displayName}`);
             return {
-                id: priorRecord?.id || crypto.randomUUID(),
+                id: editedRecord?.id || priorRecord?.id || crypto.randomUUID(),
                 class_id: group.id,
                 teacher_id: isAdmin ? group.teacherId || userId : userId,
                 display_name: displayName,
