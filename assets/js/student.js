@@ -82,6 +82,7 @@
     const languageChoices = ["ua", "ru", "en"];
     let language = languageChoices.includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
     let user = null;
+    let presenceChannels = [];
     let classes = [];
     let lessons = [];
     let activeView = "classes";
@@ -99,6 +100,29 @@
     let dashboardErrorKey = "connection";
     let dashboardRequest = null;
     let signingOut = false;
+
+    function trackPresence(client, workspaceIds, signedInUser) {
+        presenceChannels.forEach((channel) => {
+            client.removeChannel(channel).catch((error) => console.error("Could not stop the previous presence channel.", error));
+        });
+        presenceChannels = [];
+        if (!client?.channel || !signedInUser?.id) return;
+
+        [...new Set(workspaceIds.filter(Boolean))].forEach((workspaceId) => {
+            const channel = client.channel(`workspace-presence:${workspaceId}`, {
+                config: { presence: { key: signedInUser.id } }
+            });
+            channel.subscribe(async (status) => {
+                if (status === "SUBSCRIBED") {
+                    const { error } = await channel.track({ userId: signedInUser.id });
+                    if (error) console.error("Could not publish the student's online status.", error);
+                } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+                    console.error(`Student presence channel failed: ${status}.`);
+                }
+            });
+            presenceChannels.push(channel);
+        });
+    }
     let profileTrigger = null;
     const sidebar = document.getElementById("studentSidebar");
     const pageContent = document.getElementById("studentPageContent");
@@ -902,6 +926,7 @@
                 if (signingOut) return;
                 classes = result.classes || [];
                 lessons = result.lessons || [];
+                trackPresence(client, result.presenceWorkspaceIds || classes.map((group) => group.teacherId), signedInUser);
                 dashboardStatus = "ready";
                 if (!lessons.some((lesson) => lesson.id === selectedLessonId)) selectedLessonId = "";
                 if (!lessons.some((lesson) => lesson.id === openedLesson?.id)) openedLesson = null;
@@ -968,6 +993,10 @@
         if (logoutButton) logoutButton.disabled = true;
         try {
             await flushDraftSaves();
+            const channelsToRemove = presenceChannels;
+            presenceChannels = [];
+            Promise.all(channelsToRemove.map((channel) => window.supabaseClient.removeChannel(channel)))
+                .catch((error) => console.error("Could not stop the student's presence channels.", error));
             const { error } = await window.supabaseClient.auth.signOut();
             if (error) throw error;
             try {

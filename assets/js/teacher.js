@@ -8,7 +8,7 @@ const translations = {
         "classes.title": "Класи", "classes.description": "Створюйте групи та призначайте їм окремі уроки.", "classes.create": "＋ Створити клас", "classes.search": "Пошук класів…", "classes.lessons": "Уроки →", "classes.notFound": "Класи не знайдено", "classes.notFoundHint": "Змініть запит або створіть новий клас.",
         "lessons.title": "Уроки", "lessons.description": "Створюйте інтерактивні завдання та призначайте їх класам.", "lessons.add": "＋ Додати урок", "lessons.allClasses": "Усі класи", "lessons.search": "Пошук уроку…", "lessons.notFound": "Уроків поки немає", "lessons.notFoundHint": "Натисніть «Додати урок», щоб вибрати типи завдань.", "lessons.blocks": "блоків", "lessons.block": "блок", "lessons.task": "завдання", "lessons.tasks": "завдань",
         "materials.title": "Матеріали", "materials.description": "Спільна бібліотека файлів, посилань і навчальних ресурсів.", "materials.add": "＋ Додати матеріал", "materials.total": "Усього матеріалів: {count}", "materials.search": "Пошук матеріалів…", "materials.open": "Відкрити матеріал ↗", "materials.inLibrary": "Додано до бібліотеки", "materials.notFound": "Матеріалів не знайдено", "materials.notFoundHint": "Додайте перший матеріал або змініть запит.",
-        "students.title": "Учні", "students.description": "Список учнів, розподілених за вашими класами.", "students.manage": "Керувати класами", "students.total": "Усього учнів: {count}", "students.search": "Пошук учня…", "students.role": "Учень SlovaSofi", "students.notFound": "Учнів не знайдено", "students.notFoundHint": "Додайте учнів до класів, щоб вони з’явилися тут.",
+        "students.title": "Учні", "students.description": "Список учнів, розподілених за вашими класами.", "students.manage": "Керувати класами", "students.total": "Усього учнів: {count}", "students.search": "Пошук учня…", "students.role": "Учень SlovaSofi", "students.notFound": "Учнів не знайдено", "students.notFoundHint": "Додайте учнів до класів, щоб вони з’явилися тут.", "presence.online": "Онлайн", "presence.offline": "Офлайн",
         "empty.noClasses": "Класів поки немає", "empty.createClass": "Створіть клас, щоб призначати уроки.", "empty.search": "Нічого не знайдено", "empty.changeSearch": "Змініть пошуковий запит.",
         "modal.editClass": "Редагувати клас", "modal.newClass": "Новий клас", "field.className": "Назва класу", "field.course": "Курс або рівень", "field.students": "Учні", "field.studentsPlaceholder": "Введіть імена через кому", "field.studentsHint": "Кожне ім’я стане окремим учнем.", "action.addStudent": "＋ Додати учня", "field.exampleClass": "Наприклад, Словацька A1", "field.exampleCourse": "Наприклад, Словацька · A1", "action.cancel": "Скасувати", "action.save": "Зберегти", "action.createClass": "Створити клас", "action.delete": "Видалити", "class.unnamedCourse": "Курс не вказано",
         "modal.editLesson": "Редагувати урок", "modal.newLesson": "Новий урок", "field.lessonTitle": "Назва уроку", "field.exampleLesson": "Наприклад, Lekcia 5. Rodina", "field.chooseClass": "Виберіть клас", "lesson.activities": "Завдання уроку", "activity.addBlock": "＋ Додати блок", "lesson.firstActivity": "Додайте перше завдання", "lesson.firstActivityHint": "Виберіть тип блоку: перетягування, пропуск, порядок, відповідність тощо.", "lesson.save": "Зберегти урок", "lesson.create": "Створити урок",
@@ -26,7 +26,7 @@ const translations = {
         "classes.title": "Классы", "classes.description": "Создавайте группы и назначайте им отдельные уроки.", "classes.create": "＋ Создать класс", "classes.search": "Поиск классов…", "classes.lessons": "Уроки →", "classes.notFound": "Классы не найдены", "classes.notFoundHint": "Измените запрос или создайте новый класс.",
         "lessons.title": "Уроки", "lessons.description": "Собирайте интерактивные задания и назначайте их классам.", "lessons.add": "＋ Добавить урок", "lessons.allClasses": "Все классы", "lessons.search": "Поиск урока…", "lessons.notFound": "Уроков пока нет", "lessons.notFoundHint": "Нажмите «Добавить урок», чтобы выбрать типы заданий.", "lessons.blocks": "блоков", "lessons.block": "блок", "lessons.task": "задание", "lessons.tasks": "заданий",
         "materials.title": "Материалы", "materials.description": "Общая библиотека файлов, ссылок и учебных ресурсов.", "materials.add": "＋ Добавить материал", "materials.total": "Всего материалов: {count}", "materials.search": "Поиск материалов…", "materials.open": "Открыть материал ↗", "materials.inLibrary": "Добавлен в библиотеку", "materials.notFound": "Материалы не найдены", "materials.notFoundHint": "Добавьте первый материал или измените запрос.",
-        "students.title": "Ученики", "students.description": "Список учеников, распределённых по вашим классам.", "students.manage": "Управлять классами", "students.total": "Всего учеников: {count}", "students.search": "Поиск ученика…", "students.role": "Ученик SlovaSofi", "students.notFound": "Ученики не найдены", "students.notFoundHint": "Добавьте учеников в классы, чтобы они появились здесь.",
+        "students.title": "Ученики", "students.description": "Список учеников, распределённых по вашим классам.", "students.manage": "Управлять классами", "students.total": "Всего учеников: {count}", "students.search": "Поиск ученика…", "students.role": "Ученик SlovaSofi", "students.notFound": "Ученики не найдены", "students.notFoundHint": "Добавьте учеников в классы, чтобы они появились здесь.", "presence.online": "Онлайн", "presence.offline": "Офлайн",
         "empty.noClasses": "Классов пока нет", "empty.createClass": "Создайте класс, чтобы назначать уроки.", "empty.search": "Ничего не найдено", "empty.changeSearch": "Измените поисковый запрос.",
         "modal.editClass": "Редактировать класс", "modal.newClass": "Новый класс", "field.className": "Название класса", "field.course": "Курс или уровень", "field.students": "Ученики", "field.studentsPlaceholder": "Введите имена через запятую", "field.studentsHint": "Каждое имя станет отдельным учеником.", "action.addStudent": "＋ Добавить ученика", "field.exampleClass": "Например, Словацкий A1", "field.exampleCourse": "Например, Словацкий · A1", "action.cancel": "Отмена", "action.save": "Сохранить", "action.createClass": "Создать класс", "action.delete": "Удалить", "class.unnamedCourse": "Курс не указан",
         "modal.editLesson": "Редактировать урок", "modal.newLesson": "Новый урок", "field.lessonTitle": "Название урока", "field.exampleLesson": "Например, Lekcia 5. Rodina", "field.chooseClass": "Выберите класс", "lesson.activities": "Задания урока", "activity.addBlock": "＋ Добавить блок", "lesson.firstActivity": "Добавьте первое задание", "lesson.firstActivityHint": "Выберите тип блока: перетягивание, пропуск, порядок, соответствия и другие.", "lesson.save": "Сохранить урок", "lesson.create": "Создать урок",
@@ -44,7 +44,7 @@ const translations = {
         "classes.title": "Classes", "classes.description": "Create groups and assign individual lessons to them.", "classes.create": "＋ Create class", "classes.search": "Search classes…", "classes.lessons": "Lessons →", "classes.notFound": "No classes found", "classes.notFoundHint": "Change your search or create a new class.",
         "lessons.title": "Lessons", "lessons.description": "Build interactive activities and assign them to classes.", "lessons.add": "＋ Add lesson", "lessons.allClasses": "All classes", "lessons.search": "Search lessons…", "lessons.notFound": "No lessons yet", "lessons.notFoundHint": "Select “Add lesson” to choose activity types.", "lessons.blocks": "blocks", "lessons.block": "block", "lessons.task": "activity", "lessons.tasks": "activities",
         "materials.title": "Materials", "materials.description": "A shared library of files, links, and learning resources.", "materials.add": "＋ Add material", "materials.total": "Total materials: {count}", "materials.search": "Search materials…", "materials.open": "Open material ↗", "materials.inLibrary": "Added to library", "materials.notFound": "No materials found", "materials.notFoundHint": "Add your first material or change the search.",
-        "students.title": "Students", "students.description": "Students organized by your classes.", "students.manage": "Manage classes", "students.total": "Total students: {count}", "students.search": "Search students…", "students.role": "SlovaSofi student", "students.notFound": "No students found", "students.notFoundHint": "Add students to classes to see them here.",
+        "students.title": "Students", "students.description": "Students organized by your classes.", "students.manage": "Manage classes", "students.total": "Total students: {count}", "students.search": "Search students…", "students.role": "SlovaSofi student", "students.notFound": "No students found", "students.notFoundHint": "Add students to classes to see them here.", "presence.online": "Online", "presence.offline": "Offline",
         "empty.noClasses": "No classes yet", "empty.createClass": "Create a class to assign lessons.", "empty.search": "Nothing found", "empty.changeSearch": "Try a different search.",
         "modal.editClass": "Edit class", "modal.newClass": "New class", "field.className": "Class name", "field.course": "Course or level", "field.students": "Students", "field.studentsPlaceholder": "Enter names separated by commas", "field.studentsHint": "Each name will be added as a student.", "action.addStudent": "＋ Add student", "field.exampleClass": "For example, Slovak A1", "field.exampleCourse": "For example, Slovak · A1", "action.cancel": "Cancel", "action.save": "Save", "action.createClass": "Create class", "action.delete": "Delete", "class.unnamedCourse": "Course not specified",
         "modal.editLesson": "Edit lesson", "modal.newLesson": "New lesson", "field.lessonTitle": "Lesson name", "field.exampleLesson": "For example, Lekcia 5. Rodina", "field.chooseClass": "Choose a class", "lesson.activities": "Lesson activities", "activity.addBlock": "＋ Add activity", "lesson.firstActivity": "Add your first activity", "lesson.firstActivityHint": "Choose a block: drag and drop, fill in the blank, ordering, matching, and more.", "lesson.save": "Save lesson", "lesson.create": "Create lesson",
@@ -258,6 +258,8 @@ let currentTheme = document.documentElement.dataset.theme === "dark" ? "dark" : 
 let themeUpdateTimer = null;
 let currentUser = null;
 let workspaceAccess = { workspaceOwnerId: null, permissions: ownerPermissions, staff: [] };
+let presenceChannels = [];
+let onlineUserIds = new Set();
 let workspaceSaveQueue = Promise.resolve(true);
 let openPopover = "";
 
@@ -273,6 +275,52 @@ function staffText(key, values = {}) {
 
 function hasPermission(permission) {
     return currentUser ? workspaceAccess.permissions?.[permission] === true : permission !== "manage_teachers";
+}
+
+function presenceBadge(userId) {
+    const online = Boolean(userId && onlineUserIds.has(userId));
+    const label = t(online ? "presence.online" : "presence.offline");
+    return `<span class="presence-status ${online ? "is-online" : "is-offline"}" data-presence-user-id="${escapeHtml(userId || "")}" aria-label="${label}"><span class="presence-status-dot" aria-hidden="true"></span><span data-presence-label>${label}</span></span>`;
+}
+
+function refreshPresenceBadges() {
+    document.querySelectorAll("[data-presence-user-id]").forEach((badge) => {
+        const online = Boolean(badge.dataset.presenceUserId && onlineUserIds.has(badge.dataset.presenceUserId));
+        badge.classList.toggle("is-online", online);
+        badge.classList.toggle("is-offline", !online);
+        badge.setAttribute("aria-label", t(online ? "presence.online" : "presence.offline"));
+        badge.querySelector("[data-presence-label]").textContent = t(online ? "presence.online" : "presence.offline");
+    });
+}
+
+function startPresenceTracking(client, workspaceIds, user) {
+    presenceChannels.forEach((channel) => {
+        client.removeChannel(channel).catch((error) => console.error("Could not stop the previous presence channel.", error));
+    });
+    presenceChannels = [];
+    onlineUserIds = new Set();
+    refreshPresenceBadges();
+    if (!client?.channel || !user?.id) return;
+
+    [...new Set(workspaceIds.filter(Boolean))].forEach((workspaceId) => {
+        const channel = client.channel(`workspace-presence:${workspaceId}`, {
+            config: { presence: { key: user.id } }
+        });
+        channel.on("presence", { event: "sync" }, () => {
+            onlineUserIds = new Set(presenceChannels.flatMap((presenceChannel) =>
+                Object.keys(presenceChannel.presenceState())));
+            refreshPresenceBadges();
+        });
+        channel.subscribe(async (status) => {
+            if (status === "SUBSCRIBED") {
+                const { error } = await channel.track({ userId: user.id });
+                if (error) console.error("Could not publish the current user's online status.", error);
+            } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+                console.error(`Presence channel failed: ${status}.`);
+            }
+        });
+        presenceChannels.push(channel);
+    });
 }
 
 const activityTypes = [
@@ -634,6 +682,11 @@ async function loadCurrentUser() {
                 permissions: workspace.permissions,
                 staff: workspace.staff
             };
+            startPresenceTracking(window.supabaseClient, [
+                currentUser.id,
+                ...data.classes.map((item) => item.teacherId),
+                ...workspace.staff.map((member) => member.id)
+            ], currentUser);
             localStorage.setItem(storageKey(user.id), JSON.stringify(data));
             localStorage.setItem(`${storageKey(user.id)}:access`, JSON.stringify(workspaceAccess));
             translateStaticUI();
@@ -1228,9 +1281,9 @@ function renderClasses() {
         <div class="card-grid class-grid">${filtered.length ? filtered.map((item, index) => `<article class="class-card class-card-enhanced class-tone-${index % 4}" data-open-class-id="${escapeHtml(item.id)}">
             ${canManageClasses ? `<div class="card-actions"><button class="mini-action" data-action="edit-class" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editClass")}">✎</button><button class="mini-action" data-action="delete-class" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}">×</button></div>` : ""}
             <div class="class-card-top"><span class="class-card-avatar">${escapeHtml(item.name.slice(0, 2).toUpperCase())}</span><span class="class-course-pill">${escapeHtml(formatCourse(item.course))}</span></div><h3><button type="button" class="class-card-title" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${escapeHtml(item.name)}</button></h3>
-            <div class="class-teacher-line"><span class="class-person-icon" aria-hidden="true">♙</span><span><small>${t("classes.teacherLabel")}</small><strong>${escapeHtml(item.teacherName || teacherName)}</strong></span></div>
+            <div class="class-teacher-line"><span class="class-person-icon" aria-hidden="true">♙</span><span><small>${t("classes.teacherLabel")}</small><strong>${escapeHtml(item.teacherName || teacherName)}</strong>${presenceBadge(item.teacherId)}</span></div>
             <div class="class-roster"><div class="class-roster-heading"><strong>${t("classes.studentsLabel")}</strong><span>${item.students.length}</span></div>
-                ${item.students.length ? `<ul class="class-roster-list">${item.students.map((student) => `<li><span class="class-student-avatar">${escapeHtml(student.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toLocaleUpperCase())}</span><span>${escapeHtml(student)}</span></li>`).join("")}</ul>` : `<p class="class-roster-empty">${t("classes.noStudents")}</p>`}
+                ${item.students.length ? `<ul class="class-roster-list">${(item.studentRecords?.length ? item.studentRecords.map((student) => ({ name: student.display_name, userId: student.linked_user_id })) : item.students.map((name) => ({ name, userId: null }))).map((student) => `<li><span class="class-student-avatar">${escapeHtml(student.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toLocaleUpperCase())}</span><span class="class-roster-student-name">${escapeHtml(student.name)}</span>${presenceBadge(student.userId)}</li>`).join("")}</ul>` : `<p class="class-roster-empty">${t("classes.noStudents")}</p>`}
             </div>
             <div class="class-card-meta">${hasPermission("view_assign_lessons") || hasPermission("edit_lessons") ? `<button class="text-link" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${t("classes.lessons")}</button>` : ""}</div>
             ${canManageClasses ? `<button class="button secondary small class-invite-button" data-action="invite-student" data-id="${escapeHtml(item.id)}">${t("classes.inviteStudent")}</button>` : ""}</article>`).join("") : emptyMessage(t("classes.notFound"), t("classes.notFoundHint"))}</div>`;
@@ -1259,18 +1312,20 @@ function renderLessons() {
 
 function renderStudents() {
     const canManageClasses = hasPermission("manage_classes_students");
-    const students = data.classes.flatMap((item) => item.students.map((name, index) => ({ name, className: item.name, id: `${item.id}-${index}` })));
+    const students = data.classes.flatMap((item) => item.studentRecords?.length
+        ? item.studentRecords.map((student) => ({ name: student.display_name, className: item.name, id: student.id, userId: student.linked_user_id }))
+        : item.students.map((name, index) => ({ name, className: item.name, id: `${item.id}-${index}`, userId: null })));
     const filtered = students.filter((student) => `${student.name} ${student.className}`.toLowerCase().includes(searchQuery.toLowerCase()));
     return `<div class="section-heading"><div><h1>${t("students.title")}</h1><p>${t("students.description")}</p></div>${canManageClasses ? `<button class="button secondary" data-view-link="classes">${t("students.manage")}</button>` : ""}</div>
         <div class="toolbar"><span class="hint" style="color:#d7e9dd">${t("students.total", { count: students.length })}</span><input type="search" data-search placeholder="${t("students.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("students.search")}"></div>
-        <div class="student-list">${filtered.length ? filtered.map((student) => `<div class="student-row"><span class="avatar">${escapeHtml(student.name.split(" ").map((part) => part[0]).join("").slice(0, 2))}</span><div><strong>${escapeHtml(student.name)}</strong><small>${t("students.role")}</small></div><span class="class-label">${escapeHtml(student.className)}</span></div>`).join("") : emptyMessage(t("students.notFound"), t("students.notFoundHint"))}</div>`;
+        <div class="student-list">${filtered.length ? filtered.map((student) => `<div class="student-row"><span class="avatar">${escapeHtml(student.name.split(" ").map((part) => part[0]).join("").slice(0, 2))}</span><div class="student-row-main"><strong>${escapeHtml(student.name)}</strong><small>${t("students.role")}</small>${presenceBadge(student.userId)}</div><span class="class-label">${escapeHtml(student.className)}</span></div>`).join("") : emptyMessage(t("students.notFound"), t("students.notFoundHint"))}</div>`;
 }
 
 function renderStaff() {
     const members = workspaceAccess.staff || [];
     return `<div class="section-heading"><div><h1>${staffText("title")}</h1><p>${staffText("description")}</p></div><button class="button" data-action="add-teacher">${staffText("add")}</button></div>
         <div class="staff-grid">
-            ${members.length ? members.map((member) => `<article class="staff-card"><span class="avatar">${escapeHtml(initialsFor(member.email))}</span><div class="staff-card-main"><strong>${escapeHtml(member.email)}</strong><small>${staffText("memberRole")}</small><span class="staff-permissions">${permissionLabels.filter(([key]) => member.permissions?.[key]).map(([, label]) => staffText(label)).join(" · ") || staffText("noEditor")}</span></div>
+            ${members.length ? members.map((member) => `<article class="staff-card"><span class="avatar">${escapeHtml(initialsFor(member.email))}</span><div class="staff-card-main"><strong>${escapeHtml(member.email)}</strong><small>${staffText("memberRole")}</small>${presenceBadge(member.id)}<span class="staff-permissions">${permissionLabels.filter(([key]) => member.permissions?.[key]).map(([, label]) => staffText(label)).join(" · ") || staffText("noEditor")}</span></div>
                 <div class="staff-card-actions"><button type="button" class="button secondary small" data-action="edit-teacher" data-id="${escapeHtml(member.id)}">${staffText("edit")}</button><button type="button" class="mini-action" data-action="remove-teacher" data-id="${escapeHtml(member.id)}" aria-label="${staffText("remove")}" title="${staffText("remove")}">×</button></div></article>`).join("") : emptyMessage(staffText("empty"), staffText("emptyHint"))}
         </div>`;
 }

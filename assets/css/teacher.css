@@ -1159,6 +1159,29 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 :root[data-theme="dark"] .student-row:focus-within,
 :root[data-theme="dark"] .staff-card:hover,
 :root[data-theme="dark"] .staff-card:focus-within { border-color: #59775d; background-color: #222a24; background-image: linear-gradient(115deg, #222a24, #1c241e); box-shadow: 0 12px 26px #0007, 0 0 0 3px #6e9d7421; }
+.student-row-main { min-width: 0; flex: 1; }
+.presence-status { display: inline-flex; align-items: center; gap: 6px; width: fit-content; margin-top: 6px; color: #65766a; font-size: 11px; line-height: 1.2; }
+.presence-status-dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: #929b94; box-shadow: 0 0 0 2px #929b941c; }
+.presence-status.is-online { color: #267548; }
+.presence-status.is-online .presence-status-dot { background: #37a663; box-shadow: 0 0 0 2px #37a6632b; }
+.presence-status.is-offline .presence-status-dot { background: #929b94; }
+.class-roster-student-name { min-width: 0; flex: 1; }
+.class-roster-list .presence-status { flex: 0 0 auto; margin-top: 0; }
+.staff-card { color: #243329; }
+.staff-card strong { color: #243329; }
+.staff-card small { color: #66766a; }
+.staff-permissions { color: #55705d; }
+:root[data-theme="dark"] .student-row,
+:root[data-theme="dark"] .staff-card { border-color: #343a36; background: linear-gradient(125deg, #202522, #1a1e1c); color: #e8eee9; }
+:root[data-theme="dark"] .student-row strong,
+:root[data-theme="dark"] .staff-card strong { color: #edf3ee; }
+:root[data-theme="dark"] .student-row small,
+:root[data-theme="dark"] .staff-card small { color: #b6c1b9; }
+:root[data-theme="dark"] .staff-permissions { color: #a9c2ae; }
+:root[data-theme="dark"] .student-row .class-label { color: #b7d5bc; }
+:root[data-theme="dark"] .presence-status { color: #b4beb6; }
+:root[data-theme="dark"] .presence-status.is-online { color: #9bd7aa; }
+:root[data-theme="dark"] .presence-status.is-online .presence-status-dot { background: #55c77b; box-shadow: 0 0 0 2px #55c77b30; }
 @media (prefers-reduced-motion: reduce) {
     .class-card-enhanced,
     .unit-card-link,

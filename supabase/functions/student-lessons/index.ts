@@ -378,7 +378,7 @@ Deno.serve(async (request: Request) => {
     const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
     const [{ data: profile, error: profileError }, { data: memberships, error: membershipError }] = await Promise.all([
         admin.from("profiles").select("role").eq("id", user.id).maybeSingle(),
-        admin.from("class_students").select("id,class_id,teacher_classes(id,name,course)").eq("linked_user_id", user.id)
+        admin.from("class_students").select("id,class_id,teacher_classes(id,name,course,teacher_id)").eq("linked_user_id", user.id)
     ]);
     if (profileError || membershipError) {
         console.error("Could not verify student class access.", profileError || membershipError);
@@ -390,8 +390,9 @@ Deno.serve(async (request: Request) => {
         classId: String(row.class_id),
         group: record(Array.isArray(row.teacher_classes) ? row.teacher_classes[0] : row.teacher_classes)
     }));
+    const presenceWorkspaceIds = [...new Set(memberRows.map((row) => String(row.group.teacher_id || "")).filter(Boolean))];
     const classIds = [...new Set(memberRows.map((row) => row.classId))];
-    if (!classIds.length) return jsonResponse(200, { classes: [], lessons: [] }, allowedOrigin);
+    if (!classIds.length) return jsonResponse(200, { classes: [], lessons: [], presenceWorkspaceIds }, allowedOrigin);
 
     const { data: assignments, error: assignmentsError } = await admin.from("class_lesson_assignments")
         .select("class_id,lesson_id,teacher_lessons(id,title,unit,activities)")
@@ -443,6 +444,7 @@ Deno.serve(async (request: Request) => {
             id: member.classId,
             name: stringValue(member.group.name),
             course: stringValue(member.group.course),
+            teacherId: stringValue(member.group.teacher_id),
             lessons: [...(classLessons.get(member.classId)?.values() || [])]
         }));
         const lessons = [...new Map(assignmentRows.map((row) => {
@@ -457,7 +459,7 @@ Deno.serve(async (request: Request) => {
                 ...progressSummary(activities, progress?.answers)
             }];
         })).values()];
-        return jsonResponse(200, { classes, lessons }, allowedOrigin);
+        return jsonResponse(200, { classes, lessons, presenceWorkspaceIds }, allowedOrigin);
     }
 
     const assignment = assignmentRows.find((row) => String(row.lesson.id) === lessonId);
