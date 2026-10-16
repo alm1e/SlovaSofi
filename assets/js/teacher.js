@@ -749,6 +749,15 @@ async function loadCurrentUser() {
             window.location.replace("login.html");
             return;
         }
+
+        const invitationType = new URLSearchParams(`${location.search.slice(1)}&${location.hash.slice(1)}`).get("type");
+        if (invitationType === "invite") {
+            const setupUrl = new URL("teacher-setup.html", location.href);
+            setupUrl.search = location.search;
+            setupUrl.hash = location.hash;
+            window.location.replace(setupUrl.href);
+            return;
+        }
         
         updateUserIdentity(user);
         
@@ -804,8 +813,6 @@ async function loadCurrentUser() {
             const storageNote = document.querySelector(".storage-note");
             if (storageNote) storageNote.textContent = t("welcome.database");
             if (workspace.staffLoadError) showToast(`${t("toast.staffLoadError")} ${workspace.staffLoadError}`);
-            if (new URLSearchParams(location.hash.slice(1)).get("type") === "invite"
-                || new URLSearchParams(location.search).get("type") === "invite") openTeacherPasswordForm();
         } catch (workspaceError) {
             console.error("Could not load the teacher workspace from Supabase.", workspaceError);
             showToast(`${t("toast.databaseLoadError")} ${workspaceError.message}`);
@@ -1769,35 +1776,6 @@ function openTeacherForm(member = null) {
             showToast(`${staffText("error")} ${error.message}`);
             submitButton.disabled = false;
         }
-    });
-}
-
-function openTeacherPasswordForm() {
-    openModal(`${modalHeader(staffText("passwordTitle"))}
-        <form id="teacherPasswordForm">
-            <p class="assignment-hint">${staffText("passwordHint")}</p>
-            <div class="form-field"><label for="teacherPassword">${staffText("password")}</label><input id="teacherPassword" type="password" minlength="8" autocomplete="new-password" required></div>
-            <div class="modal-actions"><button class="button" type="submit">${staffText("setPassword")}</button></div>
-        </form>`);
-    modalCard.querySelector("#teacherPasswordForm").addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const button = event.currentTarget.querySelector('[type="submit"]');
-        button.disabled = true;
-        const { error } = await window.supabaseClient.auth.updateUser({
-            password: modalCard.querySelector("#teacherPassword").value
-        });
-        if (error) {
-            console.error("Could not set the invited teacher's password.", error);
-            showToast(`${staffText("error")} ${error.message}`);
-            button.disabled = false;
-            return;
-        }
-        const cleanUrl = new URL(location.href);
-        cleanUrl.searchParams.delete("type");
-        cleanUrl.hash = "";
-        history.replaceState(null, "", `${cleanUrl.pathname}${cleanUrl.search}`);
-        closeModal();
-        showToast(staffText("updated"));
     });
 }
 

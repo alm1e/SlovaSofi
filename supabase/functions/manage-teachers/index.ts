@@ -152,7 +152,7 @@ Deno.serve(async (request: Request) => {
         }
         let isNewTeacher = false;
         if (!teacher) {
-            const redirectTo = new URL("teacher.html", appBaseUrl).href;
+            const redirectTo = new URL("teacher-setup.html", appBaseUrl).href;
             const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
                 redirectTo,
                 data: { role: "teacher" }

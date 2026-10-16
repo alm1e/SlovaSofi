@@ -593,7 +593,7 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
     .staff-card-actions { width: 100%; justify-content: flex-end; }
 }
 .lesson-workspace-form { display: grid; gap: 18px; }
-.lesson-workspace-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; overflow: hidden; border: 1px solid #d7e6d8; border-radius: 18px; padding: 22px 26px; background: linear-gradient(115deg,var(--purple),var(--ink)); box-shadow: 0 10px 26px #25443217; color: #fff; }
+.lesson-workspace-hero { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; overflow: visible; border: 1px solid #d7e6d8; border-radius: 18px; padding: 22px 26px; background: linear-gradient(115deg,var(--purple),var(--ink)); box-shadow: 0 10px 26px #25443217; color: #fff; }
 .lesson-workspace-heading { display: grid; gap: 16px; min-width: 0; flex: 1; }
 .lesson-workspace-heading > .text-link { justify-self: start; color: #e6f2e7; }
 .lesson-workspace-heading h1 { margin: 5px 0 0; color: #fff; overflow-wrap: anywhere; }
@@ -1025,6 +1025,22 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 :root[data-theme="dark"] .lesson-workspace-tabs button.active { border-color: #74787d; background: linear-gradient(135deg, #3a3d41, #4a4d51); color: #fff; }
 :root[data-theme="dark"] .lesson-workspace-hero { border-color: #414449; background: linear-gradient(115deg, #26282b, #383a3e); }
 :root[data-theme="dark"] .lesson-workspace-hero h1, :root[data-theme="dark"] .lesson-workspace-hero p { color: #f0f1f2; }
+:root[data-theme="dark"] .lesson-workspace-hero:has(.teacher-select.open) { z-index: 4; }
+:root[data-theme="dark"] .lesson-workspace-fields .form-field:has(.teacher-select.open) { position: relative; z-index: 1; }
+:root[data-theme="dark"] .lesson-workspace-section { border-color: #3b3e42; background: #1c1e21; color: #e5e7e9; box-shadow: 0 7px 20px #0003; }
+:root[data-theme="dark"] .lesson-workspace-section > h2 { color: #a9c5ad; }
+:root[data-theme="dark"] .lesson-sections-panel { border-color: #3b3e42; background: linear-gradient(180deg,#242629,#1c1e21); box-shadow: 0 7px 20px #0003; }
+:root[data-theme="dark"] .lesson-sections-panel h2, :root[data-theme="dark"] .homework-sections-heading { border-color: #3b3e42; color: #dce6de; }
+:root[data-theme="dark"] .lesson-section-row.active { border-color: #414449; background: #303236; box-shadow: 0 3px 10px #0003; }
+:root[data-theme="dark"] .lesson-section-select { color: #dce3dd; }
+:root[data-theme="dark"] .lesson-section-row:not(.active) .lesson-section-select:hover { background: #2a2c30; }
+:root[data-theme="dark"] .lesson-section-number { background: #343a35; color: #c4dec8; }
+:root[data-theme="dark"] .lesson-section-label { color: #e0e5e1; }
+:root[data-theme="dark"] .lesson-section-tools button { color: #b0b8b1; }
+:root[data-theme="dark"] .lesson-section-tools button:hover:not(:disabled) { background: #343a35; color: #c4dec8; }
+:root[data-theme="dark"] .lesson-add-section { border-color: #414449; background: #25272a; color: #dce3dd; }
+:root[data-theme="dark"] .lesson-add-section:hover { border-color: #5c7761; background: #2b302c; }
+:root[data-theme="dark"] .lesson-editor-draft-notice { border-color: #5b4c30; background: #302a20; color: #e6cf9d; }
 :root[data-theme="dark"] .live-student-tab.active { border-color: #6c7075; background: #303236; }
 :root[data-theme="dark"] .live-answer-response, :root[data-theme="dark"] .live-correct-answer-value { background: #2a2c30; color: #d9dbde; }
 :root[data-theme="dark"] .activity-illustration { border-color: #3d4044; background: linear-gradient(145deg, #292b2f, #1c1e21); }
