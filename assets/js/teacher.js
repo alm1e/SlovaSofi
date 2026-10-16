@@ -1274,6 +1274,23 @@ function previewMediaUrl(value) {
     }
 }
 
+function previewYoutubeEmbedUrl(value) {
+    try {
+        const url = new URL(String(value || "").trim());
+        if (!["youtube.com", "www.youtube.com", "m.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com", "youtu.be", "www.youtu.be"].includes(url.hostname.toLowerCase())) return "";
+        const videoId = url.hostname.endsWith("youtu.be")
+            ? url.pathname.split("/").filter(Boolean)[0]
+            : url.searchParams.get("v") || url.pathname.match(/^\/(?:embed|shorts|live)\/([^/]+)/)?.[1];
+        if (!videoId || !/^[\w-]{11}$/.test(videoId)) return "";
+        const embed = new URL(`https://www.youtube-nocookie.com/embed/${videoId}`);
+        const start = Number(url.searchParams.get("start") || url.searchParams.get("t")?.replace(/s$/, ""));
+        if (Number.isFinite(start) && start > 0) embed.searchParams.set("start", String(Math.floor(start)));
+        return embed.href;
+    } catch {
+        return "";
+    }
+}
+
 function renderPreviewActivity(activity, index, canEdit = false, quickEditing = false, liveAnswerMarkup = "", questionIndex = null) {
     const type = activity.type;
     const isQuestion = Number.isInteger(questionIndex);
@@ -1371,8 +1388,9 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         body = `${source ? `<img class="preview-image" src="${escapeHtml(source)}" alt="${escapeHtml(markdownImage?.[1] || activity.prompt || "")}" data-preview-image>` : `<p class="preview-material">${escapeHtml(displayContent || previewText("imageError"))}</p>`}`;
         checkable = false;
     } else if (type === "audio" || type === "video") {
+        const embed = type === "video" ? previewYoutubeEmbedUrl(content) : "";
         const source = previewMediaUrl(content);
-        body = `${source ? `<${type} class="preview-media" controls preload="metadata" data-preview-media><source src="${escapeHtml(source)}"></${type}>` : `<p class="preview-material">${escapeHtml(displayContent || previewText("mediaError"))}</p>`}`;
+        body = `${embed ? `<iframe class="preview-video-embed" src="${escapeHtml(embed)}" title="${escapeHtml(prompt || previewText("mediaError"))}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>` : source ? `<${type} class="preview-media" controls preload="metadata" data-preview-media><source src="${escapeHtml(source)}"></${type}>` : `<p class="preview-material">${escapeHtml(displayContent || previewText("mediaError"))}</p>`}`;
         checkable = false;
     } else if (type === "table") {
         let blankIndex = 0;

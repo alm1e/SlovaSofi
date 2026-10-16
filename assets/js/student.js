@@ -252,6 +252,23 @@
         }
     }
 
+    function youtubeEmbedUrl(value) {
+        try {
+            const url = new URL(value);
+            if (!["youtube.com", "www.youtube.com", "m.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com", "youtu.be", "www.youtu.be"].includes(url.hostname.toLowerCase())) return "";
+            const videoId = url.hostname.endsWith("youtu.be")
+                ? url.pathname.split("/").filter(Boolean)[0]
+                : url.searchParams.get("v") || url.pathname.match(/^\/(?:embed|shorts|live)\/([^/]+)/)?.[1];
+            if (!videoId || !/^[\w-]{11}$/.test(videoId)) return "";
+            const embed = new URL(`https://www.youtube-nocookie.com/embed/${videoId}`);
+            const start = Number(url.searchParams.get("start") || url.searchParams.get("t")?.replace(/s$/, ""));
+            if (Number.isFinite(start) && start > 0) embed.searchParams.set("start", String(Math.floor(start)));
+            return embed.href;
+        } catch {
+            return "";
+        }
+    }
+
     function renderActivity(activity) {
         const index = activity.index;
         if (activity.type === "text") {
@@ -334,8 +351,11 @@
             const source = mediaUrl(activity.content);
             body = source ? `<img class="student-activity-image" src="${escapeHtml(source)}" alt="${escapeHtml(activity.alt || activity.prompt || text("imageAlt"))}">` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         } else if (activity.type === "audio" || activity.type === "video") {
+            const embed = activity.type === "video" ? youtubeEmbedUrl(activity.content) : "";
             const source = mediaUrl(activity.content);
-            body = source ? `<${activity.type} class="student-activity-media" controls preload="metadata"><source src="${escapeHtml(source)}"></${activity.type}>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
+            body = embed
+                ? `<iframe class="student-activity-video" src="${escapeHtml(embed)}" title="${escapeHtml(activity.prompt || text("activity"))}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`
+                : source ? `<${activity.type} class="student-activity-media" controls preload="metadata"><source src="${escapeHtml(source)}"></${activity.type}>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         } else {
             body = activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         }
