@@ -642,6 +642,7 @@ let lessonWorkspaceMode = "";
 let workspaceLessonId = "";
 let monitorClassId = "";
 let selectedLiveStudentId = "";
+let liveMonitorOpen = false;
 let liveProgressRows = new Map();
 let liveProgressChannel = null;
 let liveProgressKey = "";
@@ -3317,7 +3318,11 @@ function renderLessonWorkspace() {
         <nav class="lesson-workspace-tabs" role="tablist" aria-label="${lessonSectionText("workspaceMode")}"><button type="button" class="${!isEditing ? "active" : ""}" role="tab" aria-selected="${!isEditing}" data-workspace-mode="preview" ${!lesson || quickEditActive ? "disabled" : ""}>${lessonSectionText("lessonTab")}</button>${hasPermission("edit_lessons") ? `<button type="button" class="${isEditing ? "active" : ""}" role="tab" aria-selected="${isEditing}" data-workspace-mode="edit" ${quickEditActive ? "disabled" : ""}>${lessonSectionText("editorTab")}</button>` : ""}</nav>
         ${previewDraftNotice}
         <div class="lesson-workspace-layout ${liveMonitor ? "has-live-monitor" : ""}">
-            ${liveMonitor ? `<aside class="live-monitor-column">${liveMonitor}</aside>` : ""}
+            ${liveMonitor ? `<aside class="live-monitor-column ${liveMonitorOpen ? "is-expanded" : ""}">
+                <button type="button" class="live-monitor-backdrop" data-close-live-monitor aria-label="${lessonSectionText("liveAnswers")}" tabindex="-1" ${liveMonitorOpen ? "" : "hidden"}></button>
+                <button type="button" class="live-monitor-toggle" data-toggle-live-monitor aria-expanded="${liveMonitorOpen}"><span aria-hidden="true">☷</span><span>${lessonSectionText("liveAnswers")}</span></button>
+                ${liveMonitor}
+            </aside>` : ""}
             <main class="lesson-workspace-main"><section class="lesson-workspace-section">
                 ${isEditing ? `${sourcePanel}${sectionBody}${dropZone}` : `<h2>${escapeHtml(section.title)}</h2>${sectionBody}`}
             </section>
@@ -3352,6 +3357,20 @@ function renderLessonWorkspace() {
         selectedLiveStudentId = button.dataset.liveStudentId;
         render();
     }));
+    pageContent.querySelector("[data-toggle-live-monitor]")?.addEventListener("click", (event) => {
+        liveMonitorOpen = !liveMonitorOpen;
+        const column = event.currentTarget.closest(".live-monitor-column");
+        column?.classList.toggle("is-expanded", liveMonitorOpen);
+        event.currentTarget.setAttribute("aria-expanded", String(liveMonitorOpen));
+        column?.querySelector("[data-close-live-monitor]")?.toggleAttribute("hidden", !liveMonitorOpen);
+    });
+    pageContent.querySelector("[data-close-live-monitor]")?.addEventListener("click", () => {
+        liveMonitorOpen = false;
+        const column = pageContent.querySelector(".live-monitor-column");
+        column?.classList.remove("is-expanded");
+        column?.querySelector("[data-toggle-live-monitor]")?.setAttribute("aria-expanded", "false");
+        column?.querySelector("[data-close-live-monitor]")?.setAttribute("hidden", "");
+    });
     pageContent.querySelectorAll('[data-action="choose-activity"]').forEach((button) => button.addEventListener("click", openActivityPicker));
     pageContent.querySelectorAll("[data-select-section]").forEach((button) => button.addEventListener("click", () => {
         if (previewActivityEdit) return;
@@ -3752,6 +3771,12 @@ modalBackdrop.addEventListener("click", (event) => {
     if (event.target === modalBackdrop) closeModal();
 });
 document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && liveMonitorOpen) {
+        liveMonitorOpen = false;
+        pageContent.querySelector(".live-monitor-column")?.classList.remove("is-expanded");
+        pageContent.querySelector("[data-toggle-live-monitor]")?.setAttribute("aria-expanded", "false");
+        pageContent.querySelector("[data-close-live-monitor]")?.setAttribute("hidden", "");
+    }
     if (event.key === "Escape" && !modalBackdrop.hidden) closeModal();
     if (event.key === "Escape" && openPopover) closePopover();
 });
