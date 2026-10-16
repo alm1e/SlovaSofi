@@ -47,6 +47,30 @@ All three deployed Edge Function sources matched the repository base. GitHub
 Pages deployment for the base commit succeeded. Authenticated browser flows and
 email delivery still need a test account; do not use real students as fixtures.
 
+### Production verification completed
+
+20261023 was applied successfully and the management API's generated version
+20261016104025 was changed to 20261023 after an exact stored-SQL comparison.
+The complete rollback-only SQL regression passed (and had reproduced the stale
+student editor vulnerability before the migration). Existing row counts are
+unchanged: 6 profiles, 2 classes, 2 roster entries, 2 lessons, 2 assignments,
+2 progress rows. Every public table has RLS enabled.
+
+Both JavaScript tests and all JavaScript syntax checks passed. The live Pages
+homepage returns 200; unauthenticated student access shows the sign-in prompt
+and teacher access redirects to login. All three Edge Functions return 200 to
+the site's CORS preflight and 401 to requests without authentication.
+
+Security advisors no longer report public EXECUTE on create_student_profile.
+Six authenticated SECURITY DEFINER helpers remain intentionally callable, and
+the service-only directory intentionally has no client RLS policies. Leaked
+password protection remains disabled in Auth; this needs an Auth configuration
+change, not a SQL migration. No available Supabase connector tool changes that
+setting. No emails were sent, live users impersonated, or Edge Functions replaced.
+
+Frontend changes remain in the PR until merge and Pages deployment. This report
+does not claim a complete signed-in browser or email-delivery end-to-end test.
+
 Remaining architectural limitation: workspace persistence uses multiple REST
 requests and is not atomic across concurrent tabs. Error recovery now reloads
 the server state instead of replaying an old snapshot. A future transactional,
