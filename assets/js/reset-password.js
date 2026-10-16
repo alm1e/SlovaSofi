@@ -94,8 +94,8 @@
         history.replaceState(null, "", location.pathname);
         form.hidden = true;
         actions.hidden = false;
-        const role = data.user?.user_metadata?.role;
-        document.getElementById("loginLink").href = role === "student" ? "student.html" : "teacher.html";
+        // The login page resolves the trusted database role; metadata is editable.
+        document.getElementById("loginLink").href = "login.html";
         document.getElementById("loginLink").textContent = copy.dashboard;
     });
 

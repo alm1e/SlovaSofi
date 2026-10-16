@@ -356,18 +356,7 @@ function activitySummary(activity) {
     return String(activity.prompt || firstQuestion?.prompt || activity.content || firstQuestion?.content || "").trim().replace(/\s+/g, " ");
 }
 
-const initialData = {
-    classes: [
-        { id: "class-a1", name: "Slovenčina A1 Deti", course: "Slovenčina · A1", students: ["Виктория К.", "Анастасия М."] },
-        { id: "class-a2", name: "Slovenčina A1", course: "Slovenčina · A1", students: ["Вероника Т."] },
-        { id: "class-b1", name: "Slovenčina B1 Deti", course: "Slovenčina · B1", students: ["Ирина П.", "Анна С."] }
-    ],
-    lessons: [
-        { id: "lesson-1", title: "Lekcia 3. Či, ktorý, aký", unit: "A1", classIds: ["class-a1"], activities: [{ type: "drag-words", prompt: "Zostavte vetu", content: "Kde bývaš dnes?", answer: "Kde / bývaš / dnes?" }] },
-        { id: "lesson-2", title: "Lekcia 4. Nábytok", unit: "A1", classIds: ["class-a1"], activities: [{ type: "match", prompt: "Spojte slovo a preklad", content: "stolička = стул\nstôl = стол", answer: "" }] },
-        { id: "lesson-3", title: "Počasie a ročné obdobia", unit: "B1", classIds: ["class-b1"], activities: [{ type: "fill-blank", prompt: "Doplňte vhodné slovo", content: "V zime často ___ .", answer: "sneží" }] }
-    ],
-};
+const initialData = { classes: [], lessons: [] };
 
 let data = loadData();
 let activeView = "overview";
@@ -407,29 +396,20 @@ const pageContent = document.getElementById("pageContent");
 const modalBackdrop = document.getElementById("modalBackdrop");
 const modalCard = document.getElementById("modalCard");
 
-function loadData() {
+function clearWorkspaceCache() {
+    // Remove only this application's old workspace snapshots, never auth tokens.
     try {
-        const saved = localStorage.getItem(storageKey());
-        if (!saved) return structuredClone(initialData);
-        const parsed = JSON.parse(saved);
-        if (!parsed || !Array.isArray(parsed.classes) || !Array.isArray(parsed.lessons)) {
-            throw new Error("Сохранённые данные кабинета имеют неверный формат.");
+        for (const key of Object.keys(localStorage)) {
+            if (key === STORAGE_KEY || key.startsWith(STORAGE_KEY + ":")) localStorage.removeItem(key);
         }
-        delete parsed.materials;
-        parsed.classes = parsed.classes.map((item) => item.id === "class-a2" && item.name === "Словацкий A1" ? { ...item, name: "Slovenčina A1" } : item);
-        parsed.lessons = parsed.lessons.map((lesson) => ({
-            ...lesson,
-            classIds: lessonClassIds(lesson),
-            unit: LESSON_UNITS.includes(lesson.unit) ? lesson.unit : inferLessonUnit(lesson, parsed.classes),
-            sections: normalizeLessonSections(lesson),
-            homeworkSections: normalizeHomeworkSections(lesson),
-            activities: lessonActivities(lesson)
-        }));
-        return parsed;
     } catch (error) {
-        console.error("Не удалось загрузить данные кабинета преподавателя.", error);
-        return structuredClone(initialData);
+        console.warn("Could not remove the legacy workspace cache.", error);
     }
+}
+
+function loadData() {
+    clearWorkspaceCache();
+    return structuredClone(initialData);
 }
 
 function storageKey(userId = currentUser?.id) {
@@ -438,7 +418,6 @@ function storageKey(userId = currentUser?.id) {
 
 function persist(deletedLessonIds = []) {
     try {
-        localStorage.setItem(storageKey(), JSON.stringify(data));
         if (currentUser && window.teacherWorkspaceApi) {
             const snapshot = structuredClone(data);
             const userId = currentUser.id;
@@ -479,7 +458,6 @@ async function persistWorkspaceChange(previousData, deletedLessonIds = []) {
             const loaded = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, currentUser.id);
             data = loaded.data;
         }
-        localStorage.setItem(storageKey(), JSON.stringify(data));
     } catch (error) {
         console.error("Could not reload the workspace after a failed save.", error);
     }
@@ -553,29 +531,13 @@ async function loadCurrentUser() {
         
         updateUserIdentity(user);
         
-        // Load from cache first (instant UI)
-        const cachedData = (() => {
-            try {
-                const cached = localStorage.getItem(storageKey(user.id));
-                return cached ? JSON.parse(cached) : { classes: [], lessons: [] };
-            } catch {
-                return { classes: [], lessons: [] };
-            }
-        })();
-        
-        const cachedAccess = (() => {
-            try { return JSON.parse(localStorage.getItem(`${storageKey(user.id)}:access`)); } catch { return null; }
-        })();
-
-        data = cachedData;
-        workspaceAccess = cachedAccess || {
-            workspaceOwnerId: null,
-            permissions: { view_classes_students: true, view_assign_lessons: true },
-            staff: []
-        };
+        // Fail closed until server-side role and permissions have been checked.
+        clearWorkspaceCache();
+        data = { classes: [], lessons: [] };
+        workspaceAccess = { workspaceOwnerId: null, permissions: {}, staff: [] };
         translateStaticUI();
         render();
-        
+
         // Load workspace in background (don't block UI)
         try {
             const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, user.id);
@@ -586,8 +548,6 @@ async function loadCurrentUser() {
                 permissions: workspace.permissions,
                 staff: workspace.staff
             };
-            localStorage.setItem(storageKey(user.id), JSON.stringify(data));
-            localStorage.setItem(`${storageKey(user.id)}:access`, JSON.stringify(workspaceAccess));
             translateStaticUI();
             render();
             const storageNote = document.querySelector(".storage-note");
@@ -597,7 +557,11 @@ async function loadCurrentUser() {
                 || new URLSearchParams(location.search).get("type") === "invite") openTeacherPasswordForm();
         } catch (workspaceError) {
             console.error("Could not load the teacher workspace from Supabase.", workspaceError);
-            showToast(`${t("toast.databaseLoadError")} ${workspaceError.message}`);
+            if (workspaceError.code === "WORKSPACE_FORBIDDEN") {
+                window.location.replace("student.html");
+                return;
+            }
+            showToast(t("toast.databaseLoadError") + " " + workspaceError.message);
         }
     } catch (error) {
         console.error("Could not load the signed-in user profile.", error);
@@ -659,6 +623,9 @@ async function signOut() {
     try {
         const { error } = await window.supabaseClient.auth.signOut();
         if (error) throw error;
+        clearWorkspaceCache();
+        data = { classes: [], lessons: [] };
+        workspaceAccess = { permissions: {}, staff: [] };
         currentUser = null;
         closePopover();
         window.location.assign("login.html");
@@ -1194,7 +1161,6 @@ function openTeacherForm(member = null) {
                 permissions: workspace.permissions,
                 staff: workspace.staff
             };
-            localStorage.setItem(storageKey(currentUser.id), JSON.stringify(data));
             closeModal();
             translateStaticUI();
             render();
@@ -1249,7 +1215,6 @@ async function removeTeacher(memberId) {
             permissions: workspace.permissions,
             staff: workspace.staff
         };
-        localStorage.setItem(storageKey(currentUser.id), JSON.stringify(data));
         render();
         showToast(staffText("removed"));
     } catch (error) {
@@ -1291,7 +1256,7 @@ function previewMediaUrl(value) {
     if (!source) return "";
     try {
         const url = new URL(source, window.location.href);
-        return ["https:", "http:", "file:"].includes(url.protocol) ? url.href : "";
+        return ["https:", "http:"].includes(url.protocol) ? url.href : "";
     } catch {
         return "";
     }
@@ -2017,8 +1982,6 @@ function openStudentInvite(group) {
                 permissions: workspace.permissions,
                 staff: workspace.staff
             };
-            localStorage.setItem(storageKey(currentUser.id), JSON.stringify(data));
-            localStorage.setItem(`${storageKey(currentUser.id)}:access`, JSON.stringify(workspaceAccess));
             closeModal();
             render();
             showToast(t(mode === "existing" ? "toast.studentAdded" : "toast.studentInvited"));
