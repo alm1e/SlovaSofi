@@ -650,6 +650,7 @@ let liveProgressStatus = "idle";
 let liveProgressError = "";
 let activeSelectDropdown = null;
 let selectDropdownSequence = 0;
+const enhancedSelectRefreshers = new WeakMap();
 let toastTimer;
 let refreshModal = null;
 
@@ -1141,25 +1142,6 @@ function enhanceSelects(root) {
             });
         };
 
-        Array.from(select.options).forEach((option, index) => {
-            const item = document.createElement("button");
-            item.type = "button";
-            item.className = "select-option";
-            item.tabIndex = -1;
-            item.setAttribute("role", "option");
-            item.setAttribute("aria-selected", String(index === select.selectedIndex));
-            item.textContent = option.textContent;
-            item.disabled = option.disabled;
-            item.addEventListener("click", () => {
-                select.selectedIndex = index;
-                syncSelection();
-                closeSelectDropdown();
-                select.dispatchEvent(new Event("change", { bubbles: true }));
-                trigger.focus();
-            });
-            listbox.append(item);
-        });
-
         const openListbox = () => {
             if (activeSelectDropdown === wrapper) {
                 closeSelectDropdown();
@@ -1204,12 +1186,36 @@ function enhanceSelects(root) {
             enabledOptions[nextIndex]?.focus();
         });
 
+        const refreshOptions = () => {
+            trigger.disabled = select.disabled;
+            listbox.replaceChildren();
+            Array.from(select.options).forEach((option, index) => {
+                const item = document.createElement("button");
+                item.type = "button";
+                item.className = "select-option";
+                item.tabIndex = -1;
+                item.setAttribute("role", "option");
+                item.setAttribute("aria-selected", String(index === select.selectedIndex));
+                item.textContent = option.textContent;
+                item.disabled = option.disabled;
+                item.addEventListener("click", () => {
+                    select.selectedIndex = index;
+                    syncSelection();
+                    closeSelectDropdown();
+                    select.dispatchEvent(new Event("change", { bubbles: true }));
+                    trigger.focus();
+                });
+                listbox.append(item);
+            });
+            syncSelection();
+        };
+        enhancedSelectRefreshers.set(select, refreshOptions);
         select.classList.add("teacher-select-native");
         select.tabIndex = -1;
         select.setAttribute("aria-hidden", "true");
         select.parentNode.insertBefore(wrapper, select);
         wrapper.append(trigger, listbox, select);
-        syncSelection();
+        refreshOptions();
     });
 }
 
@@ -2735,6 +2741,7 @@ function openStudentInvite(group) {
             <div class="modal-actions"><button type="button" class="button secondary" data-close>${t("action.cancel")}</button><button class="button" type="submit">${t("studentInvite.send")}</button></div>
         </form>`);
     refreshModal = () => openStudentInvite(group);
+    enhanceSelects(modalCard);
     modalCard.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", closeModal));
     const formElement = modalCard.querySelector("#studentInviteForm");
     const nameInput = formElement.querySelector("#studentInviteName");
@@ -2816,6 +2823,7 @@ function openStudentInvite(group) {
         });
         existingSelect.innerHTML = `<option value="">${t("studentInvite.selectExisting")}</option>${available.map((student) => `<option value="${escapeHtml(student.id)}">${escapeHtml(student.displayName)} · ${escapeHtml(student.email)}</option>`).join("")}`;
         existingSelect.disabled = !available.length;
+        enhancedSelectRefreshers.get(existingSelect)?.();
         existingStatus.textContent = available.length ? "" : students.length ? t("studentInvite.noneAvailable") : t("studentInvite.noExisting");
         existingSelect.required = mode === "existing" && Boolean(available.length);
         if (mode === "existing") submitButton.disabled = !available.length;
@@ -2823,6 +2831,7 @@ function openStudentInvite(group) {
         console.error("Could not load the existing student directory.", error);
         existingSelect.innerHTML = `<option value="">${t("studentInvite.noExisting")}</option>`;
         existingSelect.disabled = true;
+        enhancedSelectRefreshers.get(existingSelect)?.();
         existingStatus.textContent = `${t("toast.studentListError")} ${error.message}`;
         if (mode === "existing") submitButton.disabled = true;
     });
@@ -3307,8 +3316,9 @@ function renderLessonWorkspace() {
         </header>
         <nav class="lesson-workspace-tabs" role="tablist" aria-label="${lessonSectionText("workspaceMode")}"><button type="button" class="${!isEditing ? "active" : ""}" role="tab" aria-selected="${!isEditing}" data-workspace-mode="preview" ${!lesson || quickEditActive ? "disabled" : ""}>${lessonSectionText("lessonTab")}</button>${hasPermission("edit_lessons") ? `<button type="button" class="${isEditing ? "active" : ""}" role="tab" aria-selected="${isEditing}" data-workspace-mode="edit" ${quickEditActive ? "disabled" : ""}>${lessonSectionText("editorTab")}</button>` : ""}</nav>
         ${previewDraftNotice}
-        <div class="lesson-workspace-layout">
-            <main class="lesson-workspace-main">${liveMonitor}<section class="lesson-workspace-section">
+        <div class="lesson-workspace-layout ${liveMonitor ? "has-live-monitor" : ""}">
+            ${liveMonitor ? `<aside class="live-monitor-column">${liveMonitor}</aside>` : ""}
+            <main class="lesson-workspace-main"><section class="lesson-workspace-section">
                 ${isEditing ? `${sourcePanel}${sectionBody}${dropZone}` : `<h2>${escapeHtml(section.title)}</h2>${sectionBody}`}
             </section>
                 <div class="lesson-workspace-footer"><button type="button" class="button secondary small" data-section-step="-1" ${sections.indexOf(section) === 0 || quickEditActive ? "disabled" : ""}>${lessonSectionText("previous")}</button><span>${sections.indexOf(section) + 1} / ${sections.length}</span><button type="button" class="button secondary small" data-section-step="1" ${sections.indexOf(section) === sections.length - 1 || quickEditActive ? "disabled" : ""}>${lessonSectionText("next")}</button>
