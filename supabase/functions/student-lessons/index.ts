@@ -396,7 +396,7 @@ Deno.serve(async (request: Request) => {
 
     const { data: calendarEvents, error: calendarError } = action === "list"
         ? await admin.from("calendar_events")
-            .select("id,class_id,title,starts_at,duration_minutes,recurrence,repeat_until,repeat_days")
+            .select("id,class_id,title,starts_at,duration_minutes,recurrence,repeat_until,repeat_days,repeat_dates")
             .in("class_id", classIds)
             .gte("starts_at", new Date(Date.now() - 366 * 86_400_000).toISOString())
             .order("starts_at")

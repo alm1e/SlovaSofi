@@ -313,6 +313,27 @@ Object.assign(translations.ru, {
     "calendar.migrationRequired": "Календарь ещё не настроен в базе. Администратору нужно применить миграции Supabase командой supabase db push."
 });
 Object.assign(translations.ua, {
+    "calendar.selectedDates": "Обрати конкретні дати",
+    "calendar.selectedDatesLabel": "Дати занять",
+    "calendar.selectedDatesHint": "Натискайте на дати в календарі. Час кожного заняття буде однаковим.",
+    "calendar.selectedDatesCount": "Обрано дат: {count}",
+    "calendar.invalidSelectedDates": "Оберіть дату початку та інші дати в межах року після неї."
+});
+Object.assign(translations.ru, {
+    "calendar.selectedDates": "Выбрать конкретные даты",
+    "calendar.selectedDatesLabel": "Даты занятий",
+    "calendar.selectedDatesHint": "Нажимайте на даты в календаре. Время каждого занятия будет одинаковым.",
+    "calendar.selectedDatesCount": "Выбрано дат: {count}",
+    "calendar.invalidSelectedDates": "Выберите дату начала и остальные даты в пределах года после неё."
+});
+Object.assign(translations.en, {
+    "calendar.selectedDates": "Choose specific dates",
+    "calendar.selectedDatesLabel": "Session dates",
+    "calendar.selectedDatesHint": "Select dates on the calendar. Each session will use the same time.",
+    "calendar.selectedDatesCount": "Dates selected: {count}",
+    "calendar.invalidSelectedDates": "Select the start date and any other dates within one year of it."
+});
+Object.assign(translations.ua, {
     "welcome.morning": "Доброго ранку, {name} ☀️",
     "welcome.day": "Добрий день, {name} 👋",
     "welcome.evening": "Добрий вечір, {name} 🌇",
@@ -1454,7 +1475,8 @@ function calendarRecurrenceLabel(recurrence) {
         daily: "calendar.daily",
         every_other_day: "calendar.everyOtherDay",
         weekly: "calendar.weekly",
-        custom: "calendar.customDays"
+        custom: "calendar.customDays",
+        selected_dates: "calendar.selectedDates"
     };
     return labels[recurrence] ? t(labels[recurrence]) : "";
 }
@@ -1464,14 +1486,14 @@ function calendarLocale() {
 }
 
 function isMissingCalendarTable(error) {
-    return error.code === "PGRST205" || error.code === "42P01"
+    return error.code === "PGRST205" || error.code === "PGRST204" || error.code === "42P01"
         || /public\.calendar_events.*(schema cache|does not exist)/i.test(error.message || "");
 }
 
 async function loadCalendarEvents() {
     if (!window.supabaseClient || !currentUser?.id) return;
     const { data: events, error } = await window.supabaseClient.from("calendar_events")
-        .select("id,teacher_id,class_id,lesson_id,title,starts_at,duration_minutes,recurrence,repeat_until,repeat_days")
+        .select("id,teacher_id,class_id,lesson_id,title,starts_at,duration_minutes,recurrence,repeat_until,repeat_days,repeat_dates")
         .order("starts_at");
     if (error) throw error;
     calendarEvents = events || [];
@@ -1577,6 +1599,39 @@ function calendarRepeatDays(event) {
     </fieldset>`;
 }
 
+function renderSelectedDatesPicker(selectedDates, month, startDate, maxDate) {
+    const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
+    const gridStart = new Date(monthStart);
+    gridStart.setDate(gridStart.getDate() - ((gridStart.getDay() + 6) % 7));
+    const weekdays = Array.from({ length: 7 }, (_, index) => {
+        const weekday = new Date(2024, 0, 1 + index);
+        return `<span>${escapeHtml(new Intl.DateTimeFormat(calendarLocale(), { weekday: "short" }).format(weekday))}</span>`;
+    }).join("");
+    const dates = Array.from({ length: 42 }, (_, index) => {
+        const date = new Date(gridStart);
+        date.setDate(gridStart.getDate() + index);
+        const key = localDateKey(date);
+        const selected = selectedDates.has(key);
+        const unavailable = key < startDate || key > maxDate;
+        return `<button type="button" class="calendar-selected-date ${date.getMonth() === month.getMonth() ? "" : "is-outside"} ${selected ? "is-selected" : ""}" data-selected-date="${key}" aria-pressed="${selected}" aria-label="${escapeHtml(formatCalendarDate(date, { dateStyle: "full" }))}" ${unavailable ? "disabled" : ""}>${date.getDate()}</button>`;
+    }).join("");
+    const monthLabel = new Intl.DateTimeFormat(calendarLocale(), { month: "long", year: "numeric" }).format(month);
+    const minimumMonth = startDate.slice(0, 7);
+    const maximumMonth = maxDate.slice(0, 7);
+    const currentMonth = localDateKey(month).slice(0, 7);
+    const previousDisabled = currentMonth <= minimumMonth;
+    const nextDisabled = currentMonth >= maximumMonth;
+    return `<fieldset class="calendar-repeat-days calendar-selected-dates" data-selected-dates-picker>
+        <legend>${t("calendar.selectedDatesLabel")}</legend>
+        <div class="calendar-selected-dates-toolbar"><button type="button" class="mini-action" data-date-picker-shift="-1" aria-label="←" ${previousDisabled ? "disabled" : ""}>‹</button><strong>${escapeHtml(monthLabel)}</strong><button type="button" class="mini-action" data-date-picker-shift="1" aria-label="→" ${nextDisabled ? "disabled" : ""}>›</button></div>
+        <div class="calendar-selected-dates-weekdays">${weekdays}</div>
+        <div class="calendar-selected-dates-grid">${dates}</div>
+        <small data-selected-dates-count>${t("calendar.selectedDatesCount", { count: selectedDates.size })}</small>
+        <small>${t("calendar.selectedDatesHint")}</small>
+        ${Array.from(selectedDates).sort().map((date) => `<input type="hidden" name="repeatDates" value="${date}">`).join("")}
+    </fieldset>`;
+}
+
 function openCalendarEvent(event = null, selectedDate = new Date()) {
     if (!hasPermission("manage_classes_students")) return;
     if (!data.classes.length) {
@@ -1590,12 +1645,15 @@ function openCalendarEvent(event = null, selectedDate = new Date()) {
     const lessonOptions = data.lessons.map((lesson) => `<option value="${escapeHtml(lesson.id)}" ${lesson.id === event?.lesson_id ? "selected" : ""}>${escapeHtml(lesson.title)}</option>`).join("");
     const repeatUntil = event?.repeat_until || localDateKey(new Date(startAt.getFullYear(), startAt.getMonth(), startAt.getDate() + 56));
     const recurrence = event?.recurrence || "none";
+    const selectedDates = new Set(event?.repeat_dates || (!event ? [localDateKey(startAt)] : []));
+    let selectedDatesMonth = new Date(startAt.getFullYear(), startAt.getMonth(), 1);
     const repeatTypes = [
         ["none", t("calendar.noRepeat")],
         ["daily", t("calendar.daily")],
         ["every_other_day", t("calendar.everyOtherDay")],
         ["weekly", t("calendar.weekly")],
-        ["custom", t("calendar.customDays")]
+        ["custom", t("calendar.customDays")],
+        ["selected_dates", t("calendar.selectedDates")]
     ];
     const repeatMax = localDateKey(new Date(startAt.getFullYear(), startAt.getMonth(), startAt.getDate() + 365));
     const title = event ? t("calendar.editEvent") : t("calendar.newEvent");
@@ -1607,6 +1665,7 @@ function openCalendarEvent(event = null, selectedDate = new Date()) {
             <div class="form-grid"><div class="form-field"><label for="calendarEventStartsAt">${t("calendar.dateLabel")}</label><input id="calendarEventStartsAt" name="startsAt" type="datetime-local" required value="${localDateTimeValue(startAt)}"></div><div class="form-field"><label for="calendarEventDuration">${t("calendar.duration")}</label><select id="calendarEventDuration" name="duration" required>${[30, 45, 60, 90, 120].map((minutes) => `<option value="${minutes}" ${Number(event?.duration_minutes || 60) === minutes ? "selected" : ""}>${minutes} ${t("calendar.minutes")}</option>`).join("")}</select></div></div>
             <div class="form-field"><label for="calendarEventRecurrence">${t("calendar.repeat")}</label><select id="calendarEventRecurrence" name="recurrence">${repeatTypes.map(([value, label]) => `<option value="${value}" ${recurrence === value ? "selected" : ""}>${label}</option>`).join("")}</select></div>
             ${calendarRepeatDays(event)}
+            <div data-selected-dates-field ${recurrence === "selected_dates" ? "" : "hidden"}>${renderSelectedDatesPicker(selectedDates, selectedDatesMonth, localDateKey(startAt), repeatMax)}</div>
             <div class="form-field" data-repeat-until ${recurrence !== "none" ? "" : "hidden"}><label for="calendarEventRepeatUntil">${t("calendar.repeatUntil")}</label><input id="calendarEventRepeatUntil" name="repeatUntil" type="date" value="${repeatUntil}" min="${localDateKey(startAt)}" max="${repeatMax}"></div>
             <div class="modal-actions">${event ? `<button type="button" class="button danger" data-calendar-delete="${escapeHtml(event.id)}">${t("calendar.delete")}</button>` : ""}<button type="button" class="button secondary" data-close>${t("calendar.cancel")}</button><button type="submit" class="button">${t("calendar.save")}</button></div>
         </form>`, true);
@@ -1615,21 +1674,50 @@ function openCalendarEvent(event = null, selectedDate = new Date()) {
     const recurrenceSelect = form.elements.recurrence;
     const repeatUntilField = form.querySelector("[data-repeat-until]");
     const repeatDaysField = form.querySelector("[data-repeat-days]");
+    const selectedDatesField = form.querySelector("[data-selected-dates-field]");
+    const renderDatePicker = () => {
+        const startsAt = new Date(form.elements.startsAt.value);
+        if (Number.isNaN(startsAt.getTime())) return;
+        const startDate = localDateKey(startsAt);
+        const maxDate = localDateKey(new Date(startsAt.getFullYear(), startsAt.getMonth(), startsAt.getDate() + 365));
+        for (const date of selectedDates) {
+            if (date < startDate || date > maxDate) selectedDates.delete(date);
+        }
+        selectedDatesField.innerHTML = renderSelectedDatesPicker(selectedDates, selectedDatesMonth, startDate, maxDate);
+    };
     const syncRecurrenceFields = () => {
-        const repeating = recurrenceSelect.value !== "none";
+        const repeating = recurrenceSelect.value !== "none" && recurrenceSelect.value !== "selected_dates";
         repeatUntilField.hidden = !repeating;
         repeatDaysField.hidden = recurrenceSelect.value !== "custom";
+        selectedDatesField.hidden = recurrenceSelect.value !== "selected_dates";
         form.elements.repeatUntil.required = repeating;
+        renderDatePicker();
     };
     recurrenceSelect.addEventListener("change", syncRecurrenceFields);
+    selectedDatesField.addEventListener("click", (clickEvent) => {
+        const shiftButton = clickEvent.target.closest("[data-date-picker-shift]");
+        if (shiftButton && !shiftButton.disabled) {
+            selectedDatesMonth.setMonth(selectedDatesMonth.getMonth() + Number(shiftButton.dataset.datePickerShift));
+            renderDatePicker();
+            return;
+        }
+        const dateButton = clickEvent.target.closest("[data-selected-date]");
+        if (!dateButton || dateButton.disabled) return;
+        const date = dateButton.dataset.selectedDate;
+        if (selectedDates.has(date)) selectedDates.delete(date);
+        else selectedDates.add(date);
+        renderDatePicker();
+    });
     form.elements.startsAt.addEventListener("change", () => {
         const startsAt = new Date(form.elements.startsAt.value);
         if (Number.isNaN(startsAt.getTime())) return;
         form.elements.repeatUntil.min = localDateKey(startsAt);
         form.elements.repeatUntil.max = localDateKey(new Date(startsAt.getFullYear(), startsAt.getMonth(), startsAt.getDate() + 365));
+        selectedDatesMonth = new Date(startsAt.getFullYear(), startsAt.getMonth(), 1);
         if (form.elements.repeatUntil.value < form.elements.repeatUntil.min) {
             form.elements.repeatUntil.value = form.elements.repeatUntil.min;
         }
+        renderDatePicker();
     });
     syncRecurrenceFields();
     form.addEventListener("submit", async (submitEvent) => {
@@ -1649,8 +1737,9 @@ function openCalendarEvent(event = null, selectedDate = new Date()) {
             return;
         }
         const recurrenceType = String(values.get("recurrence"));
-        const repeating = recurrenceType !== "none";
+        const repeating = recurrenceType !== "none" && recurrenceType !== "selected_dates";
         const repeatDays = values.getAll("repeatDays").map(Number).filter((day) => Number.isInteger(day) && day >= 0 && day <= 6);
+        const selectedDateKeys = values.getAll("repeatDates").map(String).filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)).sort();
         const repeatDate = String(values.get("repeatUntil") || "");
         const startDate = localDateKey(startsAt);
         const maxRepeatDate = localDateKey(new Date(startsAt.getFullYear(), startsAt.getMonth(), startsAt.getDate() + 365));
@@ -1665,6 +1754,14 @@ function openCalendarEvent(event = null, selectedDate = new Date()) {
             form.querySelector('[name="repeatDays"]')?.focus();
             return;
         }
+        const maxSelectedDate = localDateKey(new Date(startsAt.getFullYear(), startsAt.getMonth(), startsAt.getDate() + 365));
+        if (recurrenceType === "selected_dates" && (
+            !selectedDateKeys.includes(startDate)
+            || selectedDateKeys.some((date) => date < startDate || date > maxSelectedDate)
+        )) {
+            showToast(t("calendar.invalidSelectedDates"));
+            return;
+        }
         const payload = {
             ...(event ? { id: event.id } : {}),
             teacher_id: group.teacherId || currentUser.id,
@@ -1676,6 +1773,7 @@ function openCalendarEvent(event = null, selectedDate = new Date()) {
             recurrence: recurrenceType,
             repeat_until: repeating ? repeatDate : null,
             repeat_days: recurrenceType === "custom" ? repeatDays : [],
+            repeat_dates: recurrenceType === "selected_dates" ? selectedDateKeys : [],
             updated_at: new Date().toISOString()
         };
         const submitButton = form.querySelector('[type="submit"]');
@@ -1767,7 +1865,7 @@ function renderClasses() {
         <div class="card-grid class-grid">${filtered.length ? filtered.map((item, index) => `<article class="class-card class-card-enhanced class-tone-${index % 4}" data-open-class-id="${escapeHtml(item.id)}">
             ${canManageClasses ? `<div class="card-actions"><button class="mini-action" data-action="edit-class" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editClass")}">✎</button><button class="mini-action" data-action="delete-class" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}">×</button></div>` : ""}
             <div class="class-card-top"><span class="class-card-avatar">${escapeHtml(item.name.slice(0, 2).toUpperCase())}</span><span class="class-course-pill">${escapeHtml(formatCourse(item.course))}</span></div><h3><button type="button" class="class-card-title" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${escapeHtml(item.name)}</button></h3>
-            <div class="class-teacher-line"><span class="class-person-icon" aria-hidden="true">♙</span><span><small>${t("classes.teacherLabel")}</small><strong>${escapeHtml(item.teacherName || teacherName)}</strong>${presenceBadge(item.teacherId)}</span></div>
+            <div class="class-teacher-line"><span class="class-person-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="7" r="4"></circle><path d="M4.5 21v-2a7.5 7.5 0 0 1 15 0v2z"></path></svg></span><span><small>${t("classes.teacherLabel")}</small><strong>${escapeHtml(item.teacherName || teacherName)}</strong>${presenceBadge(item.teacherId)}</span></div>
             <div class="class-roster"><div class="class-roster-heading"><strong>${t("classes.studentsLabel")}</strong><span>${item.students.length}</span></div>
                 ${item.students.length ? `<ul class="class-roster-list">${(item.studentRecords?.length ? item.studentRecords.map((student) => ({ name: student.display_name, userId: student.linked_user_id })) : item.students.map((name) => ({ name, userId: null }))).map((student) => `<li><span class="class-student-avatar">${escapeHtml(student.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toLocaleUpperCase())}</span><span class="class-roster-student-name">${escapeHtml(student.name)}</span>${presenceBadge(student.userId)}</li>`).join("")}</ul>` : `<p class="class-roster-empty">${t("classes.noStudents")}</p>`}
             </div>

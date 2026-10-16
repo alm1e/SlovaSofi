@@ -338,3 +338,15 @@
 
 .student-platform .student-activity-list > :first-child,
 .student-platform [data-student-section] > h2 { scroll-margin-top: 20px; }
+
+.student-platform .stat-icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+.student-platform .student-activity-group { border-color: #e2e3df; background: #f7f7f5; }
+.student-platform .student-word-bank { border-color: #e2e3df; background: #f7f7f5; }
+.student-platform .student-answer-zone { border: 1px dashed #b8bcb7; background: #fbfbfa; }
+.student-platform .student-inline-answer { border: 0; border-bottom: 1px dashed #8d9b90; border-radius: 0; background: transparent; }
+.student-platform .student-answer-option:has(input:checked) { border-color: #c5c8c4; background: #f2f3f1; }
+:root[data-theme="dark"] .student-platform .student-activity-group,
+:root[data-theme="dark"] .student-platform .student-word-bank,
+:root[data-theme="dark"] .student-platform .student-answer-zone { border-color: #484b4e; background: #202225; }
+:root[data-theme="dark"] .student-platform .student-inline-answer { border-bottom-color: #778079; background: transparent; color: #e0e2e4; }
+:root[data-theme="dark"] .student-platform .student-answer-option:has(input:checked) { border-color: #565a5d; background: #303236; }

@@ -90,6 +90,7 @@
         calendarDaily: "Щодня",
         calendarEveryOtherDay: "Через день",
         calendarCustom: "За вибраними днями",
+        calendarSelectedDates: "У вибрані дати",
         notifications: "Сповіщення",
         notificationsEmpty: "Найближчих занять немає.",
         openCalendar: "Відкрити календар →",
@@ -106,6 +107,7 @@
         calendarDaily: "Каждый день",
         calendarEveryOtherDay: "Через день",
         calendarCustom: "В выбранные дни",
+        calendarSelectedDates: "В выбранные даты",
         notifications: "Уведомления",
         notificationsEmpty: "Ближайших занятий нет.",
         openCalendar: "Открыть календарь →",
@@ -122,6 +124,7 @@
         calendarDaily: "Daily",
         calendarEveryOtherDay: "Every other day",
         calendarCustom: "On selected days",
+        calendarSelectedDates: "On selected dates",
         notifications: "Notifications",
         notificationsEmpty: "No upcoming sessions.",
         openCalendar: "Open calendar →",
@@ -314,8 +317,8 @@
         const studentCount = lessons.length;
         return `<section class="student-hero"><div class="student-hero-copy"><span class="eyebrow">✦ SLOVASOFI · ${escapeHtml(text("profileRole").toLocaleUpperCase())}</span><h1>${escapeHtml(text("welcome"))}</h1><p>${escapeHtml(text("welcomeHint"))}</p></div><span class="student-hero-mark" aria-hidden="true">S</span></section>
             <div class="stats-grid student-stats">
-                <article class="stat-card"><span class="stat-icon">▣</span><span>${escapeHtml(text("classes"))}</span><strong>${classes.length}</strong></article>
-                <article class="stat-card"><span class="stat-icon blue">▤</span><span>${escapeHtml(text("lessons"))}</span><strong>${studentCount}</strong></article>
+                <article class="stat-card"><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3.5" y="4.5" width="17" height="15" rx="3"></rect><path d="M8 9h8M8 13h5"></path></svg></span><span>${escapeHtml(text("classes"))}</span><strong>${classes.length}</strong></article>
+                <article class="stat-card"><span class="stat-icon blue" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 3.5h10l4 4v13H5z"></path><path d="M14.5 3.5v4h4M8 12h8M8 16h8"></path></svg></span><span>${escapeHtml(text("lessons"))}</span><strong>${studentCount}</strong></article>
             </div>`;
     }
 
@@ -356,7 +359,8 @@
             daily: "calendarDaily",
             every_other_day: "calendarEveryOtherDay",
             weekly: "calendarWeekly",
-            custom: "calendarCustom"
+            custom: "calendarCustom",
+            selected_dates: "calendarSelectedDates"
         };
         return labels[recurrence] ? text(labels[recurrence]) : "";
     }
