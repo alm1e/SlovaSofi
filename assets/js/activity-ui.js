@@ -41,8 +41,10 @@
                 slots.forEach((slot, rowIndex) => {
                     const value = selects[rowIndex].value;
                     const option = optionList.find((item) => item.value === value);
-                    slot.textContent = option ? option.label : labels.empty || "";
+                    const correctLabel = rows[rowIndex].dataset.pairCorrect || "";
+                    slot.textContent = option ? option.label : correctLabel || labels.empty || "";
                     slot.classList.toggle("is-filled", Boolean(option));
+                    slot.classList.toggle("is-correct-hint", !option && Boolean(correctLabel));
                     slot.classList.toggle("is-active", rowIndex === active);
                 });
                 const used = new Set(selects.map((select) => select.value).filter(Boolean));

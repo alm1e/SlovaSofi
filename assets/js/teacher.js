@@ -1248,7 +1248,6 @@ const previewLabels = {
     ru: { open: "Открыть урок", practice: "Попробуйте выполнить задания. Результаты здесь не сохраняются.", check: "Проверить", correct: "Верно!", incorrect: "Попробуйте ещё раз.", noAnswer: "Для этого задания ещё не указан правильный ответ.", typeAnswer: "Введите ответ", choose: "Выберите ответ", drop: "Перетащите или нажмите слова сюда", bank: "Слова", answer: "Ваш ответ", up: "Выше", down: "Ниже", flip: "Перевернуть карточку", empty: "В этом уроке пока нет блоков.", imageError: "Не удалось загрузить изображение.", mediaError: "Проверьте ссылку на медиафайл.", readOnly: "Учебный материал", true: "Да", false: "Нет" },
     en: { open: "Open lesson", practice: "Try the activities. Your results are not saved here.", check: "Check answer", correct: "Correct!", incorrect: "Try again.", noAnswer: "No correct answer has been set for this activity.", typeAnswer: "Type your answer", choose: "Choose an answer", drop: "Drag or click words here", bank: "Words", answer: "Your answer", up: "Move up", down: "Move down", flip: "Flip card", empty: "This lesson has no activities yet.", imageError: "The image could not be loaded.", mediaError: "Check the media link.", readOnly: "Learning material", true: "True", false: "False" }
 };
-const previewShowAnswersLabels = { ua: "Показати відповіді", ru: "Показать ответы", en: "Show answers" };
 const previewGroupCheckLabels = { ua: "Перевірити відповіді", ru: "Проверить ответы", en: "Check answers" };
 
 function previewText(key) {
@@ -1337,44 +1336,59 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         return `<article class="preview-activity preview-activity-group ${canEdit ? "preview-activity-editable" : ""}" data-preview-activity="${index}">
             <header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}<h3>${index + 1}. ${escapeHtml(activity.prompt || t(activityTypes.find((item) => item.id === type)?.nameKey || "activity.task"))}</h3>${canEdit ? `<div class="preview-activity-actions"><button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>
             <div class="preview-question-list">${questionsMarkup}</div>
-            ${liveAnswerActivityTypes.has(type) ? `<div class="preview-actions"><button class="button preview-check" type="button" data-check-activity-group>${previewGroupCheckLabels[currentLanguage]}</button><button class="button secondary preview-show-answers" type="button" data-show-answers-group>${previewShowAnswersLabels[currentLanguage]}</button></div>` : ""}
+            ${liveAnswerActivityTypes.has(type) ? `<div class="preview-actions"><button class="button preview-check" type="button" data-check-activity-group>${previewGroupCheckLabels[currentLanguage]}</button></div>` : ""}
         </article>`;
     }
 
     if (type === "drag-words") {
         const expected = answer ? previewTokens(answer) : content.trim().split(/\s+/).filter(Boolean);
+        const correctOrder = answer ? expected.join(" ") : content.trim();
         const tokens = expected.map((word, wordIndex) => ({ word, wordIndex }));
         if (tokens.length > 1) tokens.push(tokens.shift());
         const previewKey = isQuestion ? `${index}-q${questionIndex}` : String(index);
-        body = `<div class="preview-drag-layout"><div><strong>${previewText("bank")}</strong><div class="preview-word-bank" data-word-bank>${tokens.map(({ word, wordIndex }) => `<button type="button" class="preview-word" draggable="true" data-word-index="${previewKey}-${wordIndex}">${escapeHtml(word)}</button>`).join("")}</div></div><div><strong>${previewText("answer")}</strong><div class="preview-dropzone" data-dropzone tabindex="0"><span class="preview-drop-hint">${previewText("drop")}</span></div></div></div>`;
+        body = `<div class="preview-drag-layout"><div><strong>${previewText("bank")}</strong><div class="preview-word-bank" data-word-bank>${tokens.map(({ word, wordIndex }) => `<button type="button" class="preview-word" draggable="true" data-word-index="${previewKey}-${wordIndex}">${escapeHtml(word)}</button>`).join("")}</div></div><div><strong>${previewText("answer")}</strong><div class="preview-dropzone" data-dropzone tabindex="0">${correctOrder ? `<span class="preview-answer-ghost">${escapeHtml(correctOrder)}</span>` : `<span class="preview-drop-hint">${previewText("drop")}</span>`}</div></div></div>`;
         if (!expected.length) checkable = false;
     } else if (type === "fill-blank") {
         let blankIndex = 0;
         const parts = content.split("___");
-        body = `<p class="preview-instruction">${parts.map((part, partIndex) => `${escapeHtml(part)}${partIndex < parts.length - 1 ? `<input class="preview-inline-input" data-answer-index="${blankIndex++}" aria-label="${previewText("typeAnswer")}" autocomplete="off">` : ""}`).join("")}</p>`;
+        const correctParts = previewTokens(answer);
+        body = `<p class="preview-instruction">${parts.map((part, partIndex) => `${escapeHtml(part)}${partIndex < parts.length - 1 ? `<input class="preview-inline-input" data-answer-index="${blankIndex}" placeholder="${escapeHtml(correctParts[blankIndex++] || "")}" aria-label="${previewText("typeAnswer")}" autocomplete="off">` : ""}`).join("")}</p>`;
     } else if (type === "one-of-many" && (lines[0] || "").includes("___")) {
         const [before, ...after] = lines[0].split("___");
-        body = `<p class="preview-instruction">${escapeHtml(before)}<select class="preview-inline-select" data-inline-choice aria-label="${previewText("choose")}"><option value="">---</option>${lines.slice(1).map((option, optionIndex) => `<option value="${optionIndex + 1}">${escapeHtml(option)}</option>`).join("")}</select>${escapeHtml(after.join("___"))}</p>`;
+        const options = lines.slice(1);
+        const answerIndex = Number(answer);
+        const correctOption = Number.isInteger(answerIndex) && answer !== "" && options[answerIndex - 1] !== undefined
+            ? options[answerIndex - 1]
+            : answer;
+        body = `<p class="preview-instruction">${escapeHtml(before)}<select class="preview-inline-select" data-inline-choice aria-label="${previewText("choose")}"><option value="">---</option>${options.map((option, optionIndex) => `<option value="${optionIndex + 1}" ${option.toLocaleLowerCase() === correctOption.toLocaleLowerCase() ? "data-correct-option" : ""}>${escapeHtml(option)}</option>`).join("")}</select>${escapeHtml(after.join("___"))}</p>`;
         if (!answer) checkable = false;
     } else if (type === "multiple-choice" || type === "one-of-many" || type === "true-false") {
         const options = type === "true-false" ? [previewText("true"), previewText("false")] : lines;
         const statement = type === "true-false" && displayContent ? `<p class="preview-instruction">${escapeHtml(displayContent)}</p>` : "";
         const radioName = isQuestion ? `preview-${index}-q${questionIndex}` : `preview-${index}`;
-        body = `${statement}<div class="preview-options">${options.map((option, optionIndex) => `<label class="preview-option"><input type="radio" name="${radioName}" value="${optionIndex}"><span>${escapeHtml(option)}</span></label>`).join("")}</div>`;
+        const answerIndex = Number(answer);
+        const booleanAnswerIndex = /^(true|yes|так|да|правда|0)$/i.test(answer) ? 0
+            : /^(false|no|ні|нет|неправда|1)$/i.test(answer) ? 1 : -1;
+        const correctOption = type === "true-false" && booleanAnswerIndex >= 0
+            ? options[booleanAnswerIndex].toLocaleLowerCase()
+            : Number.isInteger(answerIndex) && answer !== "" && options[answerIndex] !== undefined
+                ? options[answerIndex].toLocaleLowerCase()
+                : answer.toLocaleLowerCase();
+        body = `${statement}<div class="preview-options">${options.map((option, optionIndex) => `<label class="preview-option ${option.toLocaleLowerCase() === correctOption ? "is-correct-option" : ""}"><input type="radio" name="${radioName}" value="${optionIndex}"><span>${escapeHtml(option)}</span>${option.toLocaleLowerCase() === correctOption ? `<span class="preview-correct-mark" title="${liveStudentText("correctAnswer")}" aria-label="${liveStudentText("correctAnswer")}">✓</span>` : ""}</label>`).join("")}</div>`;
         if (!answer) checkable = false;
     } else if (type === "order-items" || type === "sentence-order") {
         const items = lines.map((line, itemIndex) => ({ text: line.replace(/^\d+[.)]\s*/, ""), itemIndex }));
         if (items.length > 1) items.reverse();
         const previewKey = isQuestion ? `${index}-q${questionIndex}` : String(index);
-        body = `<ol class="preview-order-list" data-order-list>${items.map(({ text, itemIndex }) => `<li class="preview-order-item" draggable="true" data-order-index="${previewKey}-${itemIndex}"><span>${escapeHtml(text)}</span><span class="preview-order-actions"><button type="button" data-move="up" aria-label="${previewText("up")}">↑</button><button type="button" data-move="down" aria-label="${previewText("down")}">↓</button></span></li>`).join("")}</ol>`;
+        body = `<ol class="preview-order-list" data-order-list>${items.map(({ text, itemIndex }) => `<li class="preview-order-item" draggable="true" data-order-index="${previewKey}-${itemIndex}"><span class="preview-order-item-text">${escapeHtml(text)}</span><span class="preview-order-actions"><button type="button" data-move="up" aria-label="${previewText("up")}">↑</button><button type="button" data-move="down" aria-label="${previewText("down")}">↓</button></span></li>`).join("")}</ol>`;
     } else if (type === "columns") {
         const pairs = lines.map((line) => line.split(":").map((part) => part.trim())).filter((pair) => pair.length >= 2 && pair[0] && pair[1]);
         const categories = [...new Set(pairs.map(([category]) => category))];
-        body = `${pairs.length ? `<div class="preview-match-list" data-pair-board data-pair-reuse>${pairs.map(([, item], itemIndex) => `<div class="preview-match-row" data-pair-row><span>${escapeHtml(item)}</span><select data-column-index="${itemIndex}" aria-label="${previewText("choose")}"><option value="">${previewText("choose")}</option>${categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("")}</select></div>`).join("")}</div>` : displayContent ? `<p class="preview-material">${escapeHtml(displayContent)}</p>` : ""}`;
+        body = `${pairs.length ? `<div class="preview-match-list" data-pair-board data-pair-reuse>${pairs.map(([category, item], itemIndex) => `<div class="preview-match-row" data-pair-row data-pair-correct="${escapeHtml(category)}"><span>${escapeHtml(item)}</span><select data-column-index="${itemIndex}" aria-label="${previewText("choose")}"><option value="">${previewText("choose")}</option>${categories.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("")}</select></div>`).join("")}</div>` : displayContent ? `<p class="preview-material">${escapeHtml(displayContent)}</p>` : ""}`;
         if (!pairs.length) checkable = false;
     } else if (type === "match") {
         const pairs = lines.map((line) => line.split("=").map((part) => part.trim())).filter((pair) => pair.length >= 2 && pair[0] && pair[1]);
-        body = `${pairs.length ? `<div class="preview-match-list" data-pair-board>${pairs.map(([left], pairIndex) => `<div class="preview-match-row" data-pair-row><span>${escapeHtml(left)}</span><select data-match-index="${pairIndex}" aria-label="${previewText("choose")}"><option value="">${previewText("choose")}</option>${pairs.map(([, right], rightIndex) => `<option value="${rightIndex}">${escapeHtml(right)}</option>`).join("")}</select></div>`).join("")}</div>` : displayContent ? `<p class="preview-material">${escapeHtml(displayContent)}</p>` : ""}`;
+        body = `${pairs.length ? `<div class="preview-match-list" data-pair-board>${pairs.map(([left, correct], pairIndex) => `<div class="preview-match-row" data-pair-row data-pair-correct="${escapeHtml(correct)}"><span>${escapeHtml(left)}</span><select data-match-index="${pairIndex}" aria-label="${previewText("choose")}"><option value="">${previewText("choose")}</option>${pairs.map(([, right], rightIndex) => `<option value="${rightIndex}">${escapeHtml(right)}</option>`).join("")}</select></div>`).join("")}</div>` : displayContent ? `<p class="preview-material">${escapeHtml(displayContent)}</p>` : ""}`;
         if (!pairs.length) checkable = false;
     } else if (type === "open-answer") {
         body = `${displayContent ? `<p class="preview-material">${escapeHtml(displayContent)}</p>` : ""}<textarea class="preview-text-answer" data-open-answer placeholder="${previewText("typeAnswer")}"></textarea>`;
@@ -1395,7 +1409,8 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
     } else if (type === "table") {
         let blankIndex = 0;
         const rows = lines.map((line) => line.split(/\t|\s*\|\s*/).map((cell) => cell.trim()));
-        body = `<div class="preview-table-wrap"><table class="preview-table"><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell.split("___").map((part, partIndex, parts) => `${escapeHtml(part)}${partIndex < parts.length - 1 ? `<input class="preview-inline-input" data-table-answer-index="${blankIndex++}" aria-label="${previewText("typeAnswer")}" autocomplete="off">` : ""}`).join("")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+        const correctParts = previewTokens(answer);
+        body = `<div class="preview-table-wrap"><table class="preview-table"><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell.split("___").map((part, partIndex, parts) => `${escapeHtml(part)}${partIndex < parts.length - 1 ? `<input class="preview-inline-input" data-table-answer-index="${blankIndex}" placeholder="${escapeHtml(correctParts[blankIndex++] || "")}" aria-label="${previewText("typeAnswer")}" autocomplete="off">` : ""}`).join("")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
         checkable = blankIndex > 0;
     } else if (type === "text") {
         const note = window.SlovaActivityUI?.renderNote(content, activity.prompt);
@@ -1417,11 +1432,9 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         ? `<p class="preview-result${isQuestion ? " preview-question-result" : ""}" data-preview-result aria-live="polite"></p>`
         : "";
     const checkButton = checkable && !isQuestion
-        ? `<div class="preview-actions"><button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button><button class="button secondary preview-show-answers" type="button" data-show-answers>${previewShowAnswersLabels[currentLanguage]}</button></div>`
+        ? `<div class="preview-actions"><button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button></div>`
         : "";
-    const correctMarkup = liveAnswerActivityTypes.has(type)
-        ? `<p class="preview-correct-answer" data-preview-correct hidden>${escapeHtml(formatLiveCorrectAnswer({ type, answer, content })).replace(/\n/g, "<br>")}</p>`
-        : "";
+    const correctMarkup = "";
     return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}"><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}${isQuestion ? `<span class="preview-q-badge">${questionIndex + 1}</span>` : `<h3>${previewItemNumber}. ${prompt}</h3>`}${canEdit ? `<div class="preview-activity-actions"><button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${isQuestion && activity.prompt?.trim() ? `<p class="preview-q-prompt">${prompt}</p>` : ""}${liveAnswerMarkup}${resultMarkup}${body}${correctMarkup}${checkButton}</article>`;
 }
 
@@ -1688,15 +1701,6 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
     container.querySelectorAll("[data-check-activity]").forEach((button) => button.addEventListener("click", () => {
         checkPreviewActivity(button.closest("[data-preview-activity]"));
     }));
-    container.querySelectorAll("[data-show-answers]").forEach((button) => button.addEventListener("click", () => {
-        const answer = button.closest("[data-preview-activity]").querySelector("[data-preview-correct]");
-        if (answer) answer.hidden = !answer.hidden;
-    }));
-    container.querySelectorAll("[data-show-answers-group]").forEach((button) => button.addEventListener("click", () => {
-        const answers = [...button.closest(".preview-activity-group").querySelectorAll("[data-preview-correct]")];
-        const hide = answers.every((answer) => !answer.hidden);
-        answers.forEach((answer) => { answer.hidden = hide; });
-    }));
     container.querySelectorAll("[data-check-activity-group]").forEach((button) => button.addEventListener("click", () => {
         button.closest(".preview-activity-group")?.querySelectorAll(".preview-question-activity")
             .forEach((card) => checkPreviewActivity(card));
@@ -1721,8 +1725,10 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
         const item = button.closest(".preview-order-item");
         const sibling = button.dataset.move === "up" ? item.previousElementSibling : item.nextElementSibling;
         if (!sibling) return;
-        if (button.dataset.move === "up") item.parentElement.insertBefore(item, sibling);
-        else item.parentElement.insertBefore(sibling, item);
+        animatePreviewReorder(item.parentElement, () => {
+            if (button.dataset.move === "up") item.parentElement.insertBefore(item, sibling);
+            else item.parentElement.insertBefore(sibling, item);
+        });
     }));
     container.querySelectorAll("[data-order-list] .preview-order-item").forEach((item) => {
         item.addEventListener("dragstart", (event) => {
@@ -1733,7 +1739,7 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
         item.addEventListener("drop", (event) => {
             event.preventDefault();
             const moving = container.querySelector(`.preview-order-item[data-order-index="${event.dataTransfer.getData("text/plain")}"]`);
-            if (moving && moving !== item) item.parentElement.insertBefore(moving, item);
+            if (moving && moving !== item) animatePreviewReorder(item.parentElement, () => item.parentElement.insertBefore(moving, item));
         });
     });
     container.querySelectorAll(".preview-flashcard").forEach((card) => card.addEventListener("click", () => {
@@ -1756,7 +1762,23 @@ function movePreviewWord(word, target) {
     if (hint) hint.remove();
     destination.append(word);
     const dropzone = destination.closest("[data-preview-activity]").querySelector("[data-dropzone]");
-    if (!dropzone.querySelector(".preview-word")) dropzone.innerHTML = `<span class="preview-drop-hint">${previewText("drop")}</span>`;
+    dropzone.classList.toggle("has-words", Boolean(dropzone.querySelector(".preview-word")));
+    word.animate([{ transform: "translateY(4px) scale(.96)", opacity: .65 }, { transform: "translateY(0) scale(1)", opacity: 1 }], { duration: 200, easing: "cubic-bezier(.2,.75,.25,1)" });
+    if (!dropzone.querySelector(".preview-word") && !dropzone.querySelector(".preview-answer-ghost")) dropzone.innerHTML = `<span class="preview-drop-hint">${previewText("drop")}</span>`;
+}
+
+function animatePreviewReorder(container, update) {
+    const items = [...container.children];
+    const positions = new Map(items.map((item) => [item, item.getBoundingClientRect()]));
+    update();
+    [...container.children].forEach((item) => {
+        const before = positions.get(item);
+        if (!before) return;
+        const after = item.getBoundingClientRect();
+        const x = before.left - after.left;
+        const y = before.top - after.top;
+        if (x || y) item.animate([{ transform: `translate(${x}px, ${y}px)` }, { transform: "translate(0, 0)" }], { duration: 220, easing: "cubic-bezier(.2,.75,.25,1)" });
+    });
 }
 
 function emptyMessage(title, description) {
@@ -2324,17 +2346,11 @@ function renderLiveAnswerPanel(student, activity, progressIndex, questionId = nu
     const studentAnswers = student ? liveProgressRows.get(student.id)?.answers || {} : {};
     const answer = studentAnswers[answerKey] || (questionIndex === 0 ? studentAnswers[`a${progressIndex}`] : null);
     const response = formatLiveResponse(activity, answer?.response);
-    const correctResponse = formatLiveCorrectAnswer(activity) || liveStudentText("noCorrectAnswer");
     const answerStatus = answer
         ? `<span class="live-answer-status ${answer.draft ? "is-draft" : "is-submitted"}">${answer.draft ? lessonSectionText("liveDraft") : lessonSectionText("liveSubmitted")}</span>`
         : "";
-    const content = student
-        ? `<div class="live-answer-row">${answerStatus}<p class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</p></div>`
-        : `<p class="live-answer-empty">${lessonSectionText("liveNoStudents")}</p>`;
-    return `<div class="live-answer-comparison">
-        <div class="live-correct-answer"><h4>${escapeHtml(liveStudentText("correctAnswer"))}</h4><p class="live-correct-answer-value">${escapeHtml(correctResponse)}</p></div>
-        <section class="live-answers-panel" aria-label="${escapeHtml(liveStudentText("answer"))}"><h4>${escapeHtml(liveStudentText("answer"))}${student ? ` · ${escapeHtml(student.name)}` : ""}</h4>${content}</section>
-    </div>`;
+    const name = student?.name ? `${liveStudentText("answer")} · ${student.name}` : lessonSectionText("liveNoStudents");
+    return `<div class="live-answer-inline" aria-label="${escapeHtml(name)}"><strong>${escapeHtml(name)}</strong>${answerStatus}<span class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</span></div>`;
 }
 
 function renderLiveMonitor(lesson, progressIndexes) {

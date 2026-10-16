@@ -759,6 +759,23 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .preview-question-activity .live-correct-answer-value, .preview-question-activity .live-answer-response { width: auto; padding: 2px 8px; font-size: 12px; }
 @media (max-width: 640px) { .preview-question-activity { grid-template-columns: 24px minmax(0, 1fr); column-gap: 8px; } }
 .preview-question-result:empty { display: none; }
+.live-answer-inline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 9px; margin: 0 0 7px; color: #365f43; font-size: 13px; line-height: 1.45; }
+.live-answer-inline > strong { font-weight: 700; }
+.live-answer-inline .live-answer-response { width: auto; max-width: 100%; padding: 4px 9px; background: #edf5ee; color: #254d33; font-size: 14px; font-weight: 600; }
+.live-answer-inline .live-answer-status { font-size: 10px; }
+.preview-inline-input::placeholder, .preview-table input::placeholder { color: #aab8ac; opacity: 1; }
+.preview-answer-ghost { align-self: flex-start; color: #aab8ac; opacity: .65; font-size: 13px; pointer-events: none; }
+.preview-dropzone { position: relative; width: 100%; min-height: 86px; }
+.preview-dropzone.has-words .preview-answer-ghost { display: none; }
+.preview-drop-hint { width: 100%; }
+.preview-option.is-correct-option { border-color: #9fbea6; background: #f0f7f1; }
+.preview-correct-mark { margin-left: auto; color: #4f855c; font-weight: 800; }
+.preview-order-list { gap: 8px; }
+.preview-order-item { cursor: grab; user-select: none; touch-action: none; }
+.preview-order-item:active { cursor: grabbing; }
+.preview-order-item.is-dragging { opacity: .55; }
+.preview-order-item-text { flex: 1; min-width: 0; }
+.pair-slot.is-correct-hint { color: #aab8ac; border-style: dashed; background: #f8faf8; font-weight: 500; }
 
 .activity-note { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; margin: 6px 0; padding: 14px 16px; border-radius: 14px; border: 1px solid #cfe2d6; background: #eef6f1; color: #1f4634; line-height: 1.5; }
 .activity-note-star { border-color: #ecd9a8; background: #fbf5e3; }
