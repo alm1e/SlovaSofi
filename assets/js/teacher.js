@@ -2767,7 +2767,10 @@ function openActivityPicker() {
     openModal(`${modalHeader(t("picker.title"))}
         <div class="block-tabs">${categories.map((category) => `<button class="block-tab ${selectedActivityCategory === category.id ? "active" : ""}" type="button" data-category="${category.id}">${category.label}</button>`).join("")}</div>
         <div class="form-field"><input type="search" id="activitySearch" value="${escapeHtml(activitySearch)}" placeholder="${t("picker.search")}" aria-label="${t("picker.search")}"></div>
-        <div class="activity-grid">${choices.map((choice) => `<button type="button" class="activity-choice" data-add-activity="${choice.id}" title="${escapeHtml(t(choice.descKey))}"><span>${choice.icon}</span>${escapeHtml(t(choice.nameKey))}</button>`).join("") || emptyMessage(t("empty.search"), t("empty.changeSearch"))}</div>
+        <div class="activity-grid">${choices.map((choice) => `<button type="button" class="activity-choice activity-choice-${choice.category}" data-add-activity="${choice.id}" aria-label="${escapeHtml(`${t(choice.nameKey)}. ${t(choice.descKey)}`)}">
+            <span class="activity-illustration">${activityIllustration(choice.id)}</span>
+            <span class="activity-choice-copy"><strong>${escapeHtml(t(choice.nameKey))}</strong><small>${escapeHtml(t(choice.descKey))}</small></span>
+        </button>`).join("") || emptyMessage(t("empty.search"), t("empty.changeSearch"))}</div>
         <div class="modal-actions"><button type="button" class="button secondary" data-back-editor>${t("picker.back")}</button></div>`, true);
     refreshModal = openActivityPicker;
     modalCard.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", closeModal));
@@ -2796,6 +2799,42 @@ function openActivityPicker() {
         closeModal();
         render();
     });
+}
+
+function activityIllustration(type) {
+    const visuals = {
+        "drag-words": '<rect x="12" y="17" width="28" height="13" rx="4" fill="#dff1e4"/><rect x="45" y="17" width="24" height="13" rx="4" fill="#ebe8ff"/><rect x="73" y="17" width="19" height="13" rx="4" fill="#fff0d9"/><path d="M29 40h37" stroke="#8c84dc" stroke-width="2" stroke-linecap="round"/><path d="m61 36 5 4-5 4" stroke="#8c84dc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="m77 43 4-9 6 6-4 1-2 4z" fill="#7069ca"/>',
+        "fill-blank": '<path d="M18 20h62M18 31h36" stroke="#b5b7d8" stroke-width="4" stroke-linecap="round"/><rect x="57" y="25" width="26" height="13" rx="4" fill="#fff" stroke="#8a82d8" stroke-width="2"/><path d="M25 47h54" stroke="#d4d5e8" stroke-width="4" stroke-linecap="round"/><path d="M69 47v8" stroke="#7069ca" stroke-width="2" stroke-linecap="round"/>',
+        "multiple-choice": '<rect x="18" y="15" width="57" height="11" rx="4" fill="#fff" stroke="#d8d9e9"/><rect x="23" y="18" width="6" height="6" rx="2" fill="#8c84dc"/><path d="m24 21 2 2 4-5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><path d="M35 21h31" stroke="#a9abc8" stroke-width="3" stroke-linecap="round"/><rect x="18" y="32" width="57" height="11" rx="4" fill="#fff" stroke="#d8d9e9"/><rect x="23" y="35" width="6" height="6" rx="2" fill="#eef0f7" stroke="#c8cadc"/><path d="M35 38h24" stroke="#c1c2d5" stroke-width="3" stroke-linecap="round"/>',
+        "order-items": '<circle cx="23" cy="19" r="6" fill="#e5e2ff"/><circle cx="23" cy="35" r="6" fill="#dff1e4"/><circle cx="23" cy="51" r="6" fill="#fff0d9"/><path d="M21 19h4M21 35h4M21 51h4" stroke="#7069ca" stroke-width="1.5"/><rect x="35" y="15" width="48" height="8" rx="4" fill="#fff" stroke="#d8d9e9"/><rect x="35" y="31" width="38" height="8" rx="4" fill="#fff" stroke="#d8d9e9"/><rect x="35" y="47" width="54" height="8" rx="4" fill="#fff" stroke="#d8d9e9"/>',
+        "sentence-order": '<rect x="15" y="14" width="68" height="12" rx="4" fill="#e9e7ff"/><path d="M23 20h46" stroke="#8c84dc" stroke-width="3" stroke-linecap="round"/><rect x="23" y="30" width="68" height="12" rx="4" fill="#e3f1e6"/><path d="M31 36h42" stroke="#85b493" stroke-width="3" stroke-linecap="round"/><rect x="11" y="46" width="68" height="12" rx="4" fill="#fff0d9"/><path d="M19 52h47" stroke="#d7b46f" stroke-width="3" stroke-linecap="round"/>',
+        "one-of-many": '<rect x="17" y="14" width="67" height="15" rx="5" fill="#fff" stroke="#d8d9e9"/><path d="M25 21h38" stroke="#a4a6c7" stroke-width="3" stroke-linecap="round"/><path d="m72 19 4 4 4-4" fill="none" stroke="#7069ca" stroke-width="2" stroke-linecap="round"/><rect x="37" y="32" width="47" height="24" rx="5" fill="#fff" stroke="#d8d9e9"/><rect x="42" y="36" width="37" height="6" rx="3" fill="#e5e2ff"/><path d="M44 49h27" stroke="#c3c4d8" stroke-width="3" stroke-linecap="round"/>',
+        "true-false": '<rect x="15" y="15" width="74" height="34" rx="8" fill="#fff" stroke="#d8d9e9"/><path d="M24 25h49M24 33h36" stroke="#b5b7d8" stroke-width="3" stroke-linecap="round"/><rect x="23" y="42" width="25" height="11" rx="5" fill="#e1f2e5"/><path d="m30 47 3 3 6-6" fill="none" stroke="#4b9a62" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="53" y="42" width="25" height="11" rx="5" fill="#f0edff"/><path d="m63 46 5 5m0-5-5 5" stroke="#827ad4" stroke-width="1.8" stroke-linecap="round"/>',
+        "table": '<rect x="17" y="13" width="68" height="44" rx="5" fill="#fff" stroke="#d8d9e9"/><path d="M17 27h68M17 42h68M40 27v30M62 27v30" stroke="#d8d9e9" stroke-width="1.5"/><rect x="44" y="31" width="14" height="7" rx="3" fill="#e5e2ff"/><rect x="20" y="45" width="16" height="8" rx="3" fill="#dff1e4"/><path d="M68 34h11" stroke="#c0c1d6" stroke-width="2.5" stroke-linecap="round"/>',
+        "match": '<rect x="14" y="15" width="26" height="12" rx="4" fill="#e5e2ff"/><rect x="65" y="15" width="26" height="12" rx="4" fill="#dff1e4"/><rect x="14" y="40" width="26" height="12" rx="4" fill="#fff0d9"/><rect x="65" y="40" width="26" height="12" rx="4" fill="#e7efff"/><path d="M40 21c20 0 5 20 25 20M40 46c18 0 10-19 25-25" fill="none" stroke="#8c84dc" stroke-width="2" stroke-linecap="round"/><circle cx="40" cy="21" r="2.5" fill="#7069ca"/><circle cx="65" cy="41" r="2.5" fill="#7069ca"/>',
+        "columns": '<rect x="15" y="14" width="32" height="42" rx="5" fill="#fff" stroke="#d8d9e9"/><rect x="57" y="14" width="32" height="42" rx="5" fill="#fff" stroke="#d8d9e9"/><rect x="20" y="19" width="22" height="7" rx="3" fill="#e5e2ff"/><rect x="62" y="19" width="22" height="7" rx="3" fill="#dff1e4"/><rect x="21" y="33" width="17" height="8" rx="3" fill="#fff0d9"/><rect x="63" y="43" width="18" height="8" rx="3" fill="#e7efff"/><path d="m43 37 12-9m-5 0h5v5" fill="none" stroke="#8c84dc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+        "open-answer": '<rect x="17" y="13" width="68" height="44" rx="6" fill="#fff" stroke="#d8d9e9"/><path d="M25 23h49M25 32h41M25 41h48M25 50h29" stroke="#c0c1d6" stroke-width="3" stroke-linecap="round"/><path d="m70 47 10-10 4 4-10 10-5 1z" fill="#8c84dc"/><path d="m70 47 4 4" stroke="#fff" stroke-width="1.5"/>',
+        "flashcards": '<g transform="rotate(-9 43 35)"><rect x="19" y="14" width="47" height="39" rx="6" fill="#e5e2ff" stroke="#c9c5f0"/><path d="M26 24h27M26 33h19" stroke="#8c84dc" stroke-width="3" stroke-linecap="round"/></g><g transform="rotate(8 62 35)"><rect x="40" y="19" width="39" height="37" rx="6" fill="#fff" stroke="#d8d9e9"/><circle cx="60" cy="31" r="5" fill="#dff1e4"/><path d="M49 45h22" stroke="#aeb0ca" stroke-width="3" stroke-linecap="round"/></g>',
+        "text": '<rect x="16" y="13" width="70" height="44" rx="6" fill="#fff" stroke="#d8d9e9"/><rect x="23" y="20" width="35" height="7" rx="3" fill="#8c84dc"/><path d="M23 34h55M23 42h47M23 50h31" stroke="#c0c1d6" stroke-width="3" stroke-linecap="round"/>',
+        "video": '<rect x="14" y="13" width="74" height="46" rx="7" fill="#e9e7ff"/><rect x="19" y="18" width="64" height="36" rx="4" fill="#7770cc"/><circle cx="51" cy="36" r="11" fill="#fff"/><path d="m48 30 10 6-10 6z" fill="#7770cc"/><path d="M24 49h17" stroke="#c7c3f2" stroke-width="2" stroke-linecap="round"/>',
+        "audio": '<rect x="16" y="13" width="70" height="46" rx="8" fill="#f0edff"/><circle cx="34" cy="36" r="10" fill="#7770cc"/><path d="m32 31 7 5-7 5z" fill="#fff"/><path d="M51 36h4m4-7v14m5-19v24m5-14v5m5-11v17m5-13v9" stroke="#8c84dc" stroke-width="3" stroke-linecap="round"/>',
+        "image": '<rect x="15" y="13" width="72" height="46" rx="7" fill="#fff" stroke="#d8d9e9"/><circle cx="68" cy="24" r="5" fill="#f4cf7b"/><path d="m20 51 17-17 11 10 10-9 23 16z" fill="#b5dcb9"/><path d="m20 51 17-17 11 10" fill="none" stroke="#78af83" stroke-width="2"/>'
+    };
+    const brandColors = new Map([
+        ["#ebe8ff", "#fff0cc"],
+        ["#e5e2ff", "#f8e9bd"],
+        ["#e9e7ff", "#fff2d5"],
+        ["#f0edff", "#fff4df"],
+        ["#c9c5f0", "#e5d4aa"],
+        ["#8c84dc", "#bd913b"],
+        ["#8a82d8", "#bd913b"],
+        ["#7069ca", "#8b651f"],
+        ["#827ad4", "#9d752b"],
+        ["#7770cc", "#2b6446"],
+        ["#e7efff", "#f3ecd9"]
+    ]);
+    const artwork = (visuals[type] || visuals.text).replace(/#[0-9a-f]{6}/gi, (color) => brandColors.get(color.toLowerCase()) || color);
+    return `<svg viewBox="0 0 104 72" focusable="false" aria-hidden="true">${artwork}</svg>`;
 }
 
 async function saveLesson(event) {
