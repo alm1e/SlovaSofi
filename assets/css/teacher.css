@@ -1475,84 +1475,50 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 }
 @media (min-width: 701px) {
     .lesson-workspace-layout.has-live-monitor .live-monitor-column {
-        position: fixed;
-        left: 260px;
-        bottom: 18px;
-        z-index: 45;
-        display: flex;
-        flex-direction: column-reverse;
-        align-items: flex-start;
-        width: min(340px, calc(100vw - 284px));
-        max-height: calc(100vh - 36px);
-        overflow: visible;
-        pointer-events: none;
-    }
-    .live-monitor-toggle {
-        position: relative;
-        z-index: 1;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        min-height: 46px;
-        border: 1px solid #cbdacb;
-        border-radius: 999px;
-        padding: 0 16px;
-        background: #f7faf7;
-        box-shadow: 0 8px 24px #17251b30;
-        color: #31573a;
-        font: inherit;
-        font-size: 13px;
-        font-weight: 750;
-        cursor: pointer;
-        pointer-events: auto;
-    }
-    .live-monitor-toggle > span:first-child { font-size: 20px; line-height: 1; }
-    .live-monitor-toggle:focus-visible { outline: 3px solid #75a982; outline-offset: 2px; }
-    .live-monitor-column:not(.is-expanded) .live-monitor-bar { display: none; }
-    .live-monitor-column.is-expanded {
-        width: min(360px, calc(100vw - 284px));
-        max-height: calc(100vh - 36px);
+        position: sticky;
+        top: 16px;
+        align-self: start;
+        width: auto;
+        max-height: calc(100vh - 32px);
         overflow: visible;
         pointer-events: auto;
     }
-    .live-monitor-column.is-expanded .live-monitor-toggle {
-        min-height: 40px;
-        margin-top: 8px;
-        box-shadow: 0 4px 14px #17251b24;
-    }
-    .live-monitor-column.is-expanded .live-monitor-bar {
-        position: relative;
-        z-index: 1;
-        display: grid;
-        max-height: min(55vh, 460px);
+    .live-monitor-toggle,
+    .live-monitor-backdrop { display: none; }
+    .live-monitor-column .live-monitor-bar {
+        position: static;
+        max-height: calc(100vh - 32px);
         overflow-y: auto;
         overscroll-behavior: contain;
         margin: 0;
         scrollbar-width: thin;
-        pointer-events: auto;
     }
-    .live-monitor-backdrop:not([hidden]) {
-        position: fixed;
-        inset: 0;
-        z-index: 0;
-        display: block;
-        width: 100vw;
-        height: 100vh;
-        border: 0;
-        padding: 0;
-        background: transparent;
-        pointer-events: auto;
-    }
-    :root[data-theme="dark"] .live-monitor-toggle { border-color: #3a3d41; background: #25272a; color: #e0e2e4; }
 }
-@media (max-width: 1000px) and (min-width: 701px) {
-    .lesson-workspace-layout.has-live-monitor .live-monitor-column {
-        left: max(12px, calc(215px + 12px));
-        width: min(340px, calc(100vw - 251px));
+@media (min-width: 880px) and (max-width: 1050px) {
+    .lesson-workspace-layout.has-live-monitor {
+        grid-template-columns: minmax(170px,.75fr) minmax(0,1.7fr) minmax(180px,.85fr);
     }
-    .lesson-workspace-layout.has-live-monitor .live-monitor-column.is-expanded {
-        width: min(360px, calc(100vw - 251px));
-    }
+    .lesson-workspace-layout.has-live-monitor .live-monitor-column { grid-column: auto; }
+}
+@media (min-width: 701px) {
+    :root[data-theme="dark"] .live-monitor-toggle { border-color: #3a3d41; background: #25272a; color: #e0e2e4; }
+    .live-monitor-column.is-expanded .live-monitor-bar,
+    .live-monitor-column:not(.is-expanded) .live-monitor-bar { display: grid; }
+    .live-monitor-column .live-monitor-bar { width: 100%; }
+}
+@media (min-width: 701px) and (max-height: 520px) {
+    .lesson-workspace-layout.has-live-monitor .live-monitor-column,
+    .live-monitor-column .live-monitor-bar { max-height: calc(100vh - 24px); }
+    .live-monitor-column .live-monitor-bar { padding: 10px; }
+}
+@media (min-width: 701px) and (max-width: 879px) {
+    .lesson-workspace-layout.has-live-monitor .live-monitor-column { position: static; max-height: none; }
+    .lesson-workspace-layout.has-live-monitor .live-monitor-column .live-monitor-bar { max-height: none; }
+}
+@media (min-width: 701px) {
+    .lesson-workspace-layout.has-live-monitor .live-monitor-column.is-expanded { width: auto; }
+    .lesson-workspace-layout.has-live-monitor .live-monitor-column.is-expanded .live-monitor-toggle { display: none; }
+    .lesson-workspace-layout.has-live-monitor .live-monitor-backdrop:not([hidden]) { display: none; }
 }
 @media (prefers-reduced-motion: no-preference) and (max-width: 700px) {
     .live-monitor-bar { animation: live-monitor-enter .16s ease-out; }
