@@ -173,6 +173,40 @@ Object.assign(translations.en, {
     "classes.studentsLabel": "Students in this class",
     "classes.noStudents": "No students yet"
 });
+Object.assign(translations.ua, {
+    "welcome.morning": "Доброго ранку, {name} ☀️",
+    "welcome.day": "Добрий день, {name} 👋",
+    "welcome.evening": "Добрий вечір, {name} 🌇",
+    "welcome.night": "Ніч надворі — чого не спиш, {name}? 🌙"
+});
+Object.assign(translations.ru, {
+    "welcome.morning": "Доброе утро, {name} ☀️",
+    "welcome.day": "Добрый день, {name} 👋",
+    "welcome.evening": "Добрый вечер, {name} 🌇",
+    "welcome.night": "Ночь на дворе — чего не спишь, {name}? 🌙"
+});
+Object.assign(translations.en, {
+    "welcome.morning": "Good morning, {name} ☀️",
+    "welcome.day": "Good afternoon, {name} 👋",
+    "welcome.evening": "Good evening, {name} 🌇",
+    "welcome.night": "It's late — still up, {name}? 🌙"
+});
+Object.assign(translations.ua, {
+    "theme.switchToDark": "Увімкнути нічну тему",
+    "theme.switchToLight": "Увімкнути світлу тему",
+    "theme.saveError": "Не вдалося зберегти налаштування теми."
+});
+Object.assign(translations.ru, {
+    "theme.switchToDark": "Включить ночную тему",
+    "theme.switchToLight": "Включить светлую тему",
+    "theme.saveError": "Не удалось сохранить настройку темы."
+});
+Object.assign(translations.en, {
+    "theme.switchToDark": "Switch to dark theme",
+    "theme.switchToLight": "Switch to light theme",
+    "theme.saveError": "Could not save the theme preference."
+});
+
 const staffLabels = {
     ua: {
         nav: "Викладачі", title: "Викладачі", description: "Викладачі керують своїми класами й учнями. Редагування спільних уроків можна надати окремо.",
@@ -220,6 +254,8 @@ const permissionLabels = [
 const roleLabels = { admin: { ua: "Адміністратор", ru: "Администратор", en: "Administrator" } };
 const ownerPermissions = Object.fromEntries(permissionLabels.map(([key]) => [key, true]));
 let currentLanguage = ["ua", "ru", "en"].includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
+let currentTheme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+let themeUpdateTimer = null;
 let currentUser = null;
 let workspaceAccess = { workspaceOwnerId: null, permissions: ownerPermissions, staff: [] };
 let workspaceSaveQueue = Promise.resolve(true);
@@ -521,6 +557,18 @@ function userInitials(user) {
         || "—";
 }
 
+function profileGreeting(user) {
+    const hour = new Date().getHours();
+    const greeting = hour >= 5 && hour < 12
+        ? "welcome.morning"
+        : hour >= 12 && hour < 18
+            ? "welcome.day"
+            : hour >= 18 && hour < 23
+                ? "welcome.evening"
+                : "welcome.night";
+    return t(greeting, { name: userDisplayName(user) });
+}
+
 function updateUserIdentity(user) {
     currentUser = user;
     const displayName = userDisplayName(user);
@@ -530,7 +578,7 @@ function updateUserIdentity(user) {
     const profileLabel = t("profile.open", { name: displayName });
     document.querySelectorAll(".profile-trigger").forEach((element) => { element.setAttribute("aria-label", profileLabel); });
     const welcomeHeading = document.getElementById("welcomeHeading");
-    if (welcomeHeading) welcomeHeading.textContent = t("welcome.title", { name: displayName });
+    if (welcomeHeading) welcomeHeading.textContent = profileGreeting(user);
 }
 
 async function loadCurrentUser() {
@@ -1053,6 +1101,75 @@ function setLanguage(language) {
     }
 }
 
+function syncThemeToggle() {
+    const button = document.getElementById("themeToggle");
+    const label = t(currentTheme === "dark" ? "theme.switchToLight" : "theme.switchToDark");
+    button.setAttribute("aria-label", label);
+    button.title = label;
+    button.setAttribute("aria-pressed", String(currentTheme === "dark"));
+}
+
+function timeBasedTheme(date = new Date()) {
+    const hour = date.getHours();
+    return hour < 7 || hour >= 18 ? "dark" : "light";
+}
+
+function updateThemeFromTime() {
+    let savedTheme;
+    try {
+        savedTheme = localStorage.getItem("slovasofiTeacherTheme");
+    } catch (error) {
+        console.error("Could not read the teacher theme preference.", error);
+        return;
+    }
+    if (savedTheme === "light" || savedTheme === "dark") return;
+
+    const theme = timeBasedTheme();
+    if (theme !== currentTheme) applyTheme(theme);
+}
+
+function scheduleThemeUpdate() {
+    if (themeUpdateTimer !== null) window.clearTimeout(themeUpdateTimer);
+    if (document.hidden) return;
+
+    const now = new Date();
+    const nextChange = new Date(now);
+    if (now.getHours() < 7) {
+        nextChange.setHours(7, 0, 0, 0);
+    } else if (now.getHours() < 18) {
+        nextChange.setHours(18, 0, 0, 0);
+    } else {
+        nextChange.setDate(nextChange.getDate() + 1);
+        nextChange.setHours(7, 0, 0, 0);
+    }
+    themeUpdateTimer = window.setTimeout(() => {
+        updateThemeFromTime();
+        scheduleThemeUpdate();
+    }, Math.max(1000, nextChange.getTime() - now.getTime()));
+}
+
+function applyTheme(theme) {
+    currentTheme = theme;
+    if (theme === "dark") document.documentElement.dataset.theme = "dark";
+    else document.documentElement.removeAttribute("data-theme");
+    document.querySelector('meta[name="theme-color"]').content = theme === "dark" ? "#111a16" : "#f5f8f5";
+    syncThemeToggle();
+}
+
+function setTheme(theme) {
+    if (theme !== "light" && theme !== "dark") return;
+    try {
+        localStorage.setItem("slovasofiTeacherTheme", theme);
+    } catch (error) {
+        console.error("Could not save the teacher theme preference.", error);
+        showToast(t("theme.saveError"));
+        return;
+    }
+    applyTheme(theme);
+    if (themeUpdateTimer !== null) window.clearTimeout(themeUpdateTimer);
+    themeUpdateTimer = null;
+}
+
 function translateStaticUI() {
     document.querySelectorAll("[data-i18n]").forEach((element) => {
         element.textContent = t(element.dataset.i18n);
@@ -1064,6 +1181,7 @@ function translateStaticUI() {
         button.classList.toggle("active", button.dataset.lang === currentLanguage);
         button.setAttribute("aria-pressed", button.dataset.lang === currentLanguage ? "true" : "false");
     });
+    syncThemeToggle();
     document.getElementById("breadcrumb").textContent = activeView === "staff" ? staffText("title") : t(`page.${activeView}`);
     const staffNav = document.querySelector(".staff-nav-item");
     staffNav.hidden = !hasPermission("manage_teachers");
@@ -1082,15 +1200,14 @@ function renderOverview() {
     const studentCount = data.classes.reduce((total, item) => total + item.students.length, 0);
     const recentLessons = [...data.lessons].slice(-3).reverse();
     const featuredClasses = data.classes.slice(0, 3);
-    const profileName = userDisplayName(currentUser);
     const initials = userInitials(currentUser);
     const roleLabel = workspaceAccess.role === "admin" ? roleLabels.admin[currentLanguage] : t("teacher.role");
-    return `<section class="profile-hero"><div class="profile-identity"><span class="profile-avatar">${escapeHtml(initials)}</span><div><span class="eyebrow">✦ ${t("welcome.badge")}</span><h1 id="welcomeHeading">${t("welcome.title", { name: escapeHtml(profileName) })}</h1><p>${escapeHtml(currentUser?.email || t("profile.notSignedIn"))}</p></div></div><div class="profile-role">${roleLabel}</div></section>
+    return `<section class="profile-hero"><div class="profile-identity"><span class="profile-avatar">${escapeHtml(initials)}</span><div><span class="eyebrow">✦ ${t("welcome.badge")}</span><h1 id="welcomeHeading">${escapeHtml(profileGreeting(currentUser))}</h1><p>${escapeHtml(currentUser?.email || t("profile.notSignedIn"))}</p></div></div><div class="profile-role">${roleLabel}</div></section>
         <div class="profile-welcome"><div><h2>${t("profile.dashboardTitle")}</h2><p>${t("profile.dashboardHint")}</p><span class="storage-note">${t("welcome.storage")}</span></div>${hasPermission("edit_lessons") ? `<button class="button" data-action="new-lesson">${t("action.createLesson")}</button>` : ""}</div>
         <div class="stats-grid profile-stats">
-            <article class="stat-card"><span class="stat-icon">▣</span><span>${t("stat.classes")}</span><strong>${data.classes.length}</strong></article>
-            <article class="stat-card"><span class="stat-icon blue">♧</span><span>${t("stat.students")}</span><strong>${studentCount}</strong></article>
-            <article class="stat-card"><span class="stat-icon orange">▤</span><span>${t("stat.lessons")}</span><strong>${data.lessons.length}</strong></article>
+            <article class="stat-card"><span class="stat-icon stat-icon-classes" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M8 4.5v15M8 9h12.5M8 14h12.5"/></svg></span><span>${t("stat.classes")}</span><strong>${data.classes.length}</strong></article>
+            <article class="stat-card"><span class="stat-icon stat-icon-students" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 5.5a3 3 0 0 1 0 5.5M17 14a5 5 0 0 1 3.5 5"/></svg></span><span>${t("stat.students")}</span><strong>${studentCount}</strong></article>
+            <article class="stat-card"><span class="stat-icon stat-icon-lessons" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17H7.5A2.5 2.5 0 0 0 5 21.5z"/><path d="M5 5h12M9 9h7M9 12.5h7"/></svg></span><span>${t("stat.lessons")}</span><strong>${data.lessons.length}</strong></article>
         </div>
         <div class="overview-grid">
             <section class="panel"><div class="panel-heading"><div><h2>${t("overview.recent")}</h2><p class="hint">${t("overview.recentHint")}</p></div><button class="text-link" data-view-link="lessons">${t("overview.allLessons")}</button></div>
@@ -1258,9 +1375,29 @@ async function removeTeacher(memberId) {
     }
 }
 
+const lessonIconPaths = {
+    "drag-words": '<path d="M4 8h10m-3-3 3 3-3 3M20 16H10m3-3-3 3 3 3"/>',
+    "fill-blank": '<path d="M4 7h16M4 12h6m4 0h6M4 17h16"/><path d="M10 13v-2m4 2v-2"/>',
+    "multiple-choice": '<circle cx="12" cy="12" r="8.5"/><path d="m8.5 12 2.3 2.3 4.8-5"/>',
+    "order-items": '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
+    "sentence-order": '<path d="M5 5h15M5 9h11M5 15h15M5 19h11"/><path d="M3 5h.01M3 15h.01"/>',
+    "one-of-many": '<rect x="4" y="5" width="16" height="14" rx="3"/><path d="m9 11 3 3 3-3"/>',
+    "true-false": '<path d="m4.5 7 2 2 3.5-4M13 7h7M4.5 17l2-2 3.5 4M13 17h7"/>',
+    table: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 10h17M3.5 14.5h17M9 4.5v15M15 4.5v15"/>',
+    match: '<circle cx="6" cy="6" r="1.5"/><circle cx="18" cy="18" r="1.5"/><path d="M7.5 6H12a3 3 0 0 1 3 3v3a3 3 0 0 0 3 3M6 7.5v9"/>',
+    columns: '<rect x="4" y="4" width="7" height="16" rx="1.5"/><rect x="13" y="4" width="7" height="16" rx="1.5"/><path d="M6 8h3M15 8h3"/>',
+    "open-answer": '<path d="m14 5 5 5M4 20l4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/>',
+    flashcards: '<rect x="7" y="4" width="13" height="15" rx="2"/><path d="M4 7v13h12"/>',
+    text: '<path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/>',
+    video: '<rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="m10 9 5 3-5 3z"/>',
+    audio: '<path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/>',
+    image: '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="9" r="1.5"/><path d="m4 16 5-4 3 2 3-3 5 4"/>'
+};
+
 function lessonIcon(lesson) {
-    const activity = activityTypes.find((item) => item.id === lessonActivities(lesson)[0]?.type);
-    return `<span class="lesson-symbol">${activity?.icon || "▤"}</span>`;
+    const activityType = lessonActivities(lesson)[0]?.type;
+    const icon = lessonIconPaths[activityType] || lessonIconPaths.text;
+    return `<span class="lesson-symbol" aria-hidden="true"><svg viewBox="0 0 24 24">${icon}</svg></span>`;
 }
 
 function lessonRow(lesson) {
@@ -2932,6 +3069,22 @@ document.getElementById("sidebarBackdrop").addEventListener("click", () => {
     document.getElementById("menuToggle").setAttribute("aria-expanded", "false");
 });
 document.querySelectorAll(".language-button").forEach((button) => button.addEventListener("click", () => setLanguage(button.dataset.lang)));
+document.getElementById("themeToggle").addEventListener("click", () => setTheme(currentTheme === "dark" ? "light" : "dark"));
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) updateThemeFromTime();
+    scheduleThemeUpdate();
+});
+window.addEventListener("storage", (event) => {
+    if (event.key !== "slovasofiTeacherTheme") return;
+    if (event.newValue === "light" || event.newValue === "dark") {
+        if (themeUpdateTimer !== null) window.clearTimeout(themeUpdateTimer);
+        themeUpdateTimer = null;
+        applyTheme(event.newValue);
+    } else {
+        updateThemeFromTime();
+        scheduleThemeUpdate();
+    }
+});
 document.getElementById("notificationButton").addEventListener("click", (event) => showNotifications(event.currentTarget));
 document.querySelectorAll(".profile-trigger").forEach((button) => button.addEventListener("click", () => showUserMenu(button)));
 document.addEventListener("click", (event) => {
@@ -2946,7 +3099,17 @@ document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && openPopover) closePopover();
 });
 
+window.setInterval(() => {
+    const welcomeHeading = document.getElementById("welcomeHeading");
+    if (activeView === "overview" && !lessonWorkspaceMode && welcomeHeading) {
+        welcomeHeading.textContent = profileGreeting(currentUser);
+    }
+}, 60_000);
+
 translateStaticUI();
+syncThemeToggle();
+updateThemeFromTime();
+scheduleThemeUpdate();
 loadCurrentUser().catch((error) => {
     console.error("Failed to load current user:", error);
 });
