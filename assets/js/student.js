@@ -7,10 +7,13 @@
             needInvite: "Щоб переглянути кабінет, увійдіть за посиланням із запрошення або через сторінку входу.",
             navClasses: "Мої класи", navLessons: "Мої уроки", classes: "Мої класи", classesHint: "Класи, до яких вас запросили.",
             lessons: "Мої уроки", lessonsHint: "Уроки, призначені для ваших класів.", class: "Клас", classCount: "класів",
+            classLessons: "Уроки класу", allLessons: "Усі уроки",
             lessonCount: "уроків", activities: "завдань", noClasses: "Поки немає класів, пов’язаних з акаунтом.",
             noLessons: "Для цього класу поки не призначено уроків.", noAssignedLessons: "Викладач ще не призначив вам уроки.",
             openLesson: "Відкрити урок", back: "Назад до уроків", section: "Розділ", activity: "Завдання",
             noContent: "Викладач поки не додав вміст до цього завдання.", materials: "Матеріал",
+            lessonTab: "Урок", homeworkTab: "Домашня робота", lessonSections: "Розділи уроку",
+            homeworkSections: "Розділи домашньої роботи", previousSection: "← Назад", nextSection: "Далі →",
             profileRole: "Учень", logout: "Вийти з профілю", home: "← На головну", language: "Мова",
             saveError: "Не вдалося зберегти пароль:", loadError: "Не вдалося завантажити кабінет:",
             logoutError: "Не вдалося вийти з профілю. Спробуйте ще раз.", imageAlt: "Зображення до завдання",
@@ -28,10 +31,13 @@
             needInvite: "Чтобы открыть кабинет, войдите по ссылке из приглашения или через страницу входа.",
             navClasses: "Мои классы", navLessons: "Мои уроки", classes: "Мои классы", classesHint: "Классы, в которые вас пригласили.",
             lessons: "Мои уроки", lessonsHint: "Уроки, назначенные вашим классам.", class: "Класс", classCount: "классов",
+            classLessons: "Уроки класса", allLessons: "Все уроки",
             lessonCount: "уроков", activities: "заданий", noClasses: "Пока нет классов, связанных с аккаунтом.",
             noLessons: "Для этого класса пока не назначены уроки.", noAssignedLessons: "Учитель пока не назначил вам уроки.",
             openLesson: "Открыть урок", back: "Назад к урокам", section: "Раздел", activity: "Задание",
             noContent: "Учитель пока не добавил содержимое этого задания.", materials: "Материал",
+            lessonTab: "Урок", homeworkTab: "Домашняя работа", lessonSections: "Разделы урока",
+            homeworkSections: "Разделы домашней работы", previousSection: "← Назад", nextSection: "Далее →",
             profileRole: "Ученик", logout: "Выйти из профиля", home: "← На главную", language: "Язык",
             saveError: "Не удалось сохранить пароль:", loadError: "Не удалось загрузить кабинет:",
             logoutError: "Не удалось выйти из профиля. Попробуйте ещё раз.", imageAlt: "Изображение к заданию",
@@ -49,10 +55,13 @@
             needInvite: "Open your invitation link or sign in to access your dashboard.",
             navClasses: "My classes", navLessons: "My lessons", classes: "My classes", classesHint: "Classes you have been invited to.",
             lessons: "My lessons", lessonsHint: "Lessons assigned to your classes.", class: "Class", classCount: "classes",
+            classLessons: "Class lessons", allLessons: "All lessons",
             lessonCount: "lessons", activities: "activities", noClasses: "No classes are linked to this account yet.",
             noLessons: "No lessons have been assigned to this class yet.", noAssignedLessons: "Your teacher has not assigned any lessons yet.",
             openLesson: "Open lesson", back: "Back to lessons", section: "Section", activity: "Activity",
             noContent: "Your teacher has not added content to this activity yet.", materials: "Material",
+            lessonTab: "Lesson", homeworkTab: "Homework", lessonSections: "Lesson sections",
+            homeworkSections: "Homework sections", previousSection: "← Previous", nextSection: "Next →",
             profileRole: "Student", logout: "Sign out", home: "← Home", language: "Language",
             saveError: "Could not save the password:", loadError: "Could not load the dashboard:",
             logoutError: "Could not sign out. Please try again.", imageAlt: "Activity image",
@@ -76,8 +85,11 @@
     let classes = [];
     let lessons = [];
     let activeView = "classes";
+    let selectedClassId = "";
     let selectedLessonId = "";
     let openedLesson = null;
+    let studentWorkspaceTab = "lesson";
+    let activeStudentSectionId = "";
     let draggedWordButton = null;
     let draftSaveTimers = new Map();
     let pendingDrafts = new Map();
@@ -208,8 +220,8 @@
     function renderClasses() {
         const content = classes.length
             ? `<div class="card-grid student-class-grid">${classes.map((group, index) => `<article class="class-card student-class-card class-tone-${index % 4}">
-                <div class="class-card-top"><span class="class-card-avatar">${escapeHtml(group.name.slice(0, 2).toLocaleUpperCase())}</span><span class="class-course-pill">${escapeHtml(countLabel(group.lessons.length, "lesson"))}</span></div>
-                <h3>${escapeHtml(group.name)}</h3><p>${escapeHtml(text("class"))}</p>
+                <button type="button" class="student-class-open" data-open-class-lessons="${escapeHtml(group.id)}"><span class="class-card-top"><span class="class-card-avatar">${escapeHtml(group.name.slice(0, 2).toLocaleUpperCase())}</span><span class="class-course-pill">${escapeHtml(countLabel(group.lessons.length, "lesson"))}</span></span>
+                <span class="student-class-open-title">${escapeHtml(group.name)}</span><span class="student-class-open-subtitle">${escapeHtml(text("classLessons"))} →</span></button>
                 <div class="student-class-lessons">${group.lessons.length
                     ? group.lessons.map((lesson) => `<button class="student-lesson-link" type="button" data-open-lesson="${escapeHtml(lesson.id)}"><span class="student-lesson-icon" aria-hidden="true">▤</span><span><strong>${escapeHtml(lesson.title)}</strong><small>${escapeHtml(lesson.unit || "")} · ${escapeHtml(countLabel(activityCount(lesson), "activity"))}</small>${progressBadge(lesson)}</span><span aria-hidden="true">→</span></button>`).join("")
                     : `<p class="student-muted">${escapeHtml(text("noLessons"))}</p>`}</div>
@@ -219,14 +231,18 @@
     }
 
     function renderLessons() {
-        const allLessons = lessons.map((lesson) => ({
+        const sourceLessons = selectedClassId
+            ? classes.find((group) => group.id === selectedClassId)?.lessons || []
+            : lessons;
+        const allLessons = sourceLessons.map((lesson) => ({
             ...lesson,
             classNames: classes.filter((group) => group.lessons.some((item) => item.id === lesson.id)).map((group) => group.name)
         }));
         const content = allLessons.length
-            ? `<div class="panel student-lessons-panel"><div class="student-lessons-list">${allLessons.map((lesson) => `<article class="lesson-row student-lesson-row"><span class="lesson-symbol">▤</span><div class="lesson-main"><strong>${escapeHtml(lesson.title)}</strong><small>${escapeHtml(lesson.classNames.join(", "))}${lesson.unit ? ` · ${escapeHtml(lesson.unit)}` : ""}</small>${progressBadge(lesson)}</div><span class="lesson-count">${escapeHtml(countLabel(activityCount(lesson), "activity"))}</span><button class="button secondary small" type="button" data-open-lesson="${escapeHtml(lesson.id)}">${escapeHtml(text("openLesson"))}</button></article>`).join("")}</div></div>`
+            ? `<div class="panel student-lessons-panel"><div class="student-lessons-list">${allLessons.map((lesson) => `<article class="lesson-row student-lesson-row" role="button" tabindex="0" data-open-lesson-card="${escapeHtml(lesson.id)}"><span class="lesson-symbol">▤</span><div class="lesson-main"><strong>${escapeHtml(lesson.title)}</strong><small>${escapeHtml(lesson.classNames.join(", "))}${lesson.unit ? ` · ${escapeHtml(lesson.unit)}` : ""}</small>${progressBadge(lesson)}</div><span class="lesson-count">${escapeHtml(countLabel(activityCount(lesson), "activity"))}<span class="student-lesson-open-arrow" aria-hidden="true"> →</span></span></article>`).join("")}</div></div>`
             : `<div class="panel student-empty"><span class="student-empty-icon">▤</span><h2>${escapeHtml(text("noAssignedLessons"))}</h2></div>`;
-        return `<div class="section-heading"><div><h1>${escapeHtml(text("lessons"))}</h1><p>${escapeHtml(text("lessonsHint"))}</p></div></div>${content}`;
+        const selectedClass = classes.find((group) => group.id === selectedClassId);
+        return `<div class="section-heading"><div><h1>${escapeHtml(selectedClass ? selectedClass.name : text("lessons"))}</h1><p>${escapeHtml(selectedClass ? text("classLessons") : text("lessonsHint"))}</p></div>${selectedClass ? `<button type="button" class="button secondary small" data-clear-class-filter>← ${escapeHtml(text("allLessons"))}</button>` : ""}</div>${content}`;
     }
 
     function progressFor(lesson, index) {
@@ -381,10 +397,40 @@
     }
 
     function renderLessonDetail(lesson) {
-        const sections = lessonSections(lesson);
+        const allSections = lessonSections(lesson);
+        const lessonItems = allSections.filter((section) => !section.homework);
+        const homeworkItems = allSections.filter((section) => section.homework);
+        const sections = studentWorkspaceTab === "homework" ? homeworkItems : lessonItems;
+        const sectionKey = (item, index, homework) => item.id || `${homework ? "homework" : "lesson"}-${index}`;
+        if (!sections.some((item, index) => sectionKey(item, index, studentWorkspaceTab === "homework") === activeStudentSectionId)) {
+            activeStudentSectionId = sections.length ? sectionKey(sections[0], 0, studentWorkspaceTab === "homework") : "";
+        }
+        const sectionIndex = sections.findIndex((item, index) => sectionKey(item, index, studentWorkspaceTab === "homework") === activeStudentSectionId);
+        const section = sections[sectionIndex];
+        const renderSectionList = (items, homework) => items.map((item, index) => {
+            const id = sectionKey(item, index, homework);
+            return `<div class="student-section-row ${id === activeStudentSectionId && studentWorkspaceTab === (homework ? "homework" : "lesson") ? "active" : ""}">
+            <button type="button" class="student-section-select" data-student-select-section="${escapeHtml(id)}" data-student-section-tab="${homework ? "homework" : "lesson"}"><span class="student-section-number">${index + 1}</span><span class="student-section-label">${escapeHtml(item.title || text("section"))}</span></button>
+        </div>`;
+        }).join("");
         return `<button class="button secondary student-back-link" type="button" data-back-to-lessons>← ${escapeHtml(text("back"))}</button>
             <section class="student-lesson-hero"><span class="eyebrow">${escapeHtml(lesson.className || "")}</span><h1>${escapeHtml(lesson.title)}</h1><p>${escapeHtml(lesson.unit || "")} · ${escapeHtml(countLabel(activityCount(lesson), "activity"))}</p>${progressBadge(lesson)}</section>
-            <div class="student-section-list">${sections.map((section) => `<section class="panel student-section ${section.homework ? "student-homework-section" : ""}" data-student-section><h2>${section.homework ? `${escapeHtml(text("homework"))} · ` : ""}${escapeHtml(section.title || text("section"))}</h2><div class="student-activity-list">${(Array.isArray(section.activities) ? section.activities : []).map((activity) => renderActivity(activity)).join("") || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</div></section>`).join("")}</div>`;
+            <nav class="student-workspace-tabs" role="tablist" aria-label="${escapeHtml(text("lessonTab"))}">
+                <button type="button" role="tab" aria-selected="${studentWorkspaceTab === "lesson"}" class="${studentWorkspaceTab === "lesson" ? "active" : ""}" data-student-workspace-tab="lesson">${escapeHtml(text("lessonTab"))}</button>
+                <button type="button" role="tab" aria-selected="${studentWorkspaceTab === "homework"}" class="${studentWorkspaceTab === "homework" ? "active" : ""}" data-student-workspace-tab="homework">${escapeHtml(text("homeworkTab"))}</button>
+            </nav>
+            <div class="student-workspace-layout">
+                <main class="student-workspace-main">${section ? `<section class="panel student-section ${section.homework ? "student-homework-section" : ""}" data-student-section>
+                    <h2>${escapeHtml(section.title || text("section"))}</h2>
+                    <div class="student-activity-list">${section.activities.map((activity) => renderActivity(activity)).join("") || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</div>
+                </section>
+                <div class="student-workspace-footer"><button type="button" class="button secondary small" data-student-step="-1" data-student-section-target="${sectionIndex > 0 ? escapeHtml(sectionKey(sections[sectionIndex - 1], sectionIndex - 1, studentWorkspaceTab === "homework")) : ""}" ${sectionIndex <= 0 ? "disabled" : ""}>${escapeHtml(text("previousSection"))}</button><span>${sectionIndex + 1} / ${sections.length}</span><button type="button" class="button secondary small" data-student-step="1" data-student-section-target="${sectionIndex >= 0 && sectionIndex < sections.length - 1 ? escapeHtml(sectionKey(sections[sectionIndex + 1], sectionIndex + 1, studentWorkspaceTab === "homework")) : ""}" ${sectionIndex < 0 || sectionIndex >= sections.length - 1 ? "disabled" : ""}>${escapeHtml(text("nextSection"))}</button></div>`
+                    : `<section class="panel student-section"><h2>${escapeHtml(text(studentWorkspaceTab === "homework" ? "homeworkSections" : "lessonSections"))}</h2><p class="student-muted">${escapeHtml(text("noContent"))}</p></section>`}
+                </main>
+                <aside class="student-sections-panel"><h2>${escapeHtml(text("lessonSections"))}</h2><nav class="student-sections-list" aria-label="${escapeHtml(text("lessonSections"))}">${renderSectionList(lessonItems, false) || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</nav>
+                    <h3>${escapeHtml(text("homeworkSections"))}</h3><nav class="student-sections-list student-homework-sections-list" aria-label="${escapeHtml(text("homeworkSections"))}">${renderSectionList(homeworkItems, true) || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</nav>
+                </aside>
+            </div>`;
     }
 
     async function invokeLessonApi(payload) {
@@ -652,6 +698,8 @@
             const result = await invokeLessonApi({ action: "load", lessonId });
             openedLesson = result.lesson;
             openedLesson.className = result.className;
+            studentWorkspaceTab = "lesson";
+            activeStudentSectionId = lessonSections(openedLesson).find((section) => !section.homework)?.id || "";
             openedLesson.activityCount = activityCount(openedLesson);
             const progressActivityCount = progressActivityCountFor(openedLesson);
             if (progressActivityCount !== null) openedLesson.progressActivityCount = progressActivityCount;
@@ -697,6 +745,23 @@
         pageContent.querySelectorAll("[data-open-lesson]").forEach((button) => {
             button.addEventListener("click", () => openStudentLesson(button.dataset.openLesson));
         });
+        pageContent.querySelectorAll("[data-open-lesson-card]").forEach((card) => {
+            card.addEventListener("click", () => openStudentLesson(card.dataset.openLessonCard));
+            card.addEventListener("keydown", (event) => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                openStudentLesson(card.dataset.openLessonCard);
+            });
+        });
+        pageContent.querySelectorAll("[data-open-class-lessons]").forEach((button) => button.addEventListener("click", () => {
+            selectedClassId = button.dataset.openClassLessons;
+            activeView = "lessons";
+            render();
+        }));
+        pageContent.querySelector("[data-clear-class-filter]")?.addEventListener("click", () => {
+            selectedClassId = "";
+            render();
+        });
         pageContent.querySelector("[data-back-to-lessons]")?.addEventListener("click", async (event) => {
             const button = event.currentTarget;
             const unlockControls = lockLessonControls();
@@ -714,6 +779,33 @@
                 unlockControls();
             }
         });
+        const switchWorkspace = async (tab, sectionId) => {
+            const unlockControls = lockLessonControls();
+            try {
+                await flushDraftSaves();
+                studentWorkspaceTab = tab;
+                activeStudentSectionId = sectionId;
+                render();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            } catch (error) {
+                console.error("Could not save student progress before switching lesson sections.", error);
+                showToast(`${text("draftSaveError")} ${error.message}`, true);
+                unlockControls();
+            }
+        };
+        pageContent.querySelectorAll("[data-student-workspace-tab]").forEach((button) => button.addEventListener("click", () => {
+            const tab = button.dataset.studentWorkspaceTab;
+            const firstSection = lessonSections(openedLesson).filter((item) => (tab === "homework") === Boolean(item.homework))[0];
+            const index = lessonSections(openedLesson).filter((item) => (tab === "homework") === Boolean(item.homework)).indexOf(firstSection);
+            const id = firstSection ? (firstSection.id || `${tab}-${index}`) : "";
+            switchWorkspace(tab, id);
+        }));
+        pageContent.querySelectorAll("[data-student-select-section]").forEach((button) => button.addEventListener("click", () => {
+            switchWorkspace(button.dataset.studentSectionTab, button.dataset.studentSelectSection);
+        }));
+        pageContent.querySelectorAll("[data-student-section-target]").forEach((button) => button.addEventListener("click", () => {
+            if (!button.disabled && button.dataset.studentSectionTarget) switchWorkspace(studentWorkspaceTab, button.dataset.studentSectionTarget);
+        }));
         pageContent.querySelectorAll("[data-submit-answer]").forEach((button) => {
             button.addEventListener("click", () => submitActivity(button.closest("[data-activity-index]")));
         });
@@ -745,11 +837,11 @@
     document.addEventListener("keydown", (event) => {
         if (!["ArrowLeft", "ArrowRight"].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
         if (event.target.closest("input, textarea, select, [contenteditable]")) return;
-        const sections = [...pageContent.querySelectorAll("[data-student-section]")];
-        if (!sections.length) return;
-        const current = sections.findIndex((section) => section.getBoundingClientRect().bottom > 120);
-        const target = sections[Math.max(0, Math.min(sections.length - 1, (current < 0 ? 0 : current) + (event.key === "ArrowRight" ? 1 : -1)))];
-        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        const step = pageContent.querySelector(`[data-student-step="${event.key === "ArrowRight" ? 1 : -1}"]:not(:disabled)`);
+        if (step) {
+            event.preventDefault();
+            step.click();
+        }
     });
     pageContent.addEventListener("click", (event) => {
         const button = event.target.closest("[data-word-token], [data-remove-word]");
@@ -950,6 +1042,7 @@
             button.disabled = false;
         }
         activeView = button.dataset.view;
+        selectedClassId = "";
         selectedLessonId = "";
         openedLesson = null;
         sidebar.classList.remove("open");

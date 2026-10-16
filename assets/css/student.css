@@ -9,6 +9,13 @@
 .student-platform .student-stats { grid-template-columns: repeat(2,minmax(0,1fr)); margin-bottom: 25px; }
 .student-platform .student-class-grid { grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); }
 .student-platform .student-class-card { min-height: 230px; }
+.student-platform .student-class-open { display: block; width: 100%; border: 0; padding: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.student-platform .student-class-open .class-card-top { display: flex; }
+.student-platform .student-class-open-title, .student-platform .student-class-open-subtitle { display: block; }
+.student-platform .student-class-open-title { margin-top: 12px; color: var(--ink); font-size: 17px; font-weight: 750; line-height: 1.35; }
+.student-platform .student-class-open-subtitle { margin-top: 4px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.student-platform .student-class-open:hover .student-class-open-subtitle { color: var(--purple); }
+.student-platform .student-class-open:focus-visible, .student-platform .student-lesson-row:focus-visible { outline: 3px solid #6b9d7866; outline-offset: 3px; }
 .student-platform .student-class-card > p { margin-bottom: 12px; color: var(--muted); }
 .student-platform .student-class-lessons { display: grid; gap: 7px; margin-top: 14px; }
 .student-platform .student-lesson-link { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; border: 1px solid #ffffffa8; border-radius: 10px; padding: 10px; background: #ffffffad; color: var(--ink); text-align: left; }
@@ -35,7 +42,9 @@
 .student-platform .student-lessons-panel { padding: 14px; }
 .student-platform .student-lessons-list { display: grid; gap: 8px; }
 .student-platform .student-lesson-row { padding: 13px; }
-.student-platform .student-lesson-row .button { flex: 0 0 auto; }
+.student-platform .student-lesson-row { cursor: pointer; transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease; }
+.student-platform .student-lesson-row:hover { border-color: #a9c8b4; background: #fbfdfb; box-shadow: 0 4px 14px #25443212; transform: translateY(-1px); }
+.student-platform .student-lesson-open-arrow { color: var(--purple); font-weight: 700; }
 .student-platform .student-back-link { margin: 0 0 16px; }
 .student-platform .student-lesson-hero { margin-bottom: 16px; border: 1px solid #d7e6d8; border-radius: 18px; padding: 25px 28px; background: linear-gradient(115deg,var(--purple),var(--ink)); color: #fff; }
 .student-platform .student-lesson-hero .eyebrow { margin-bottom: 12px; background: #ffffff25; color: #fff; }
@@ -157,3 +166,32 @@
 .lesson-nav-buttons .button, .student-lesson-nav .button { flex: 1 1 200px; }
 
 .student-platform .student-back-link { padding: 10px 20px; border-radius: 999px; font-weight: 700; }
+.student-platform .student-workspace-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 560px); gap: 6px; margin-bottom: 16px; border: 1px solid #dce8dc; border-radius: 14px; padding: 6px; background: #edf4ee; }
+.student-platform .student-workspace-tabs button { min-height: 48px; border: 0; border-radius: 10px; background: transparent; color: #4b6251; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: color .16s ease, background .16s ease, box-shadow .16s ease; }
+.student-platform .student-workspace-tabs button:hover:not(.active) { background: #ffffffa8; }
+.student-platform .student-workspace-tabs button.active { background: #5d896b; color: #fff; box-shadow: 0 3px 10px #25443220; }
+.student-platform .student-workspace-layout { display: grid; grid-template-columns: minmax(0, 1fr) 250px; align-items: start; gap: 15px; }
+.student-platform .student-workspace-main { min-width: 0; }
+.student-platform .student-workspace-main .student-section { min-height: 220px; padding: 20px; }
+.student-platform .student-workspace-main .student-section > h2 { margin: 0 0 16px; color: var(--ink); font-size: 18px; }
+.student-platform .student-sections-panel { position: sticky; top: 18px; border: 1px solid #d6e2dc; border-radius: 17px; padding: 18px; background: linear-gradient(180deg,#f4f8f4,#edf3fb); box-shadow: 0 7px 20px #2544320c; }
+.student-platform .student-sections-panel h2, .student-platform .student-sections-panel h3 { margin: 0 0 12px; border-bottom: 1px solid #d8e3dd; padding-bottom: 11px; color: #2f4935; font-size: 17px; font-weight: 800; line-height: 1.3; }
+.student-platform .student-sections-panel h3 { margin-top: 18px; }
+.student-platform .student-sections-list { display: grid; gap: 6px; }
+.student-platform .student-section-row { min-width: 0; border: 1px solid transparent; border-radius: 11px; padding: 3px; transition: background .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.student-platform .student-section-row.active { border-color: #dce8dc; background: #fff; box-shadow: 0 3px 10px #253c5710; }
+.student-platform .student-section-select { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; border: 0; border-radius: 8px; padding: 10px 8px; background: transparent; color: #34483a; text-align: left; cursor: pointer; }
+.student-platform .student-section-row:not(.active) .student-section-select:hover { background: #e5eee8; }
+.student-platform .student-section-number { display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; border-radius: 8px; background: #e3eee4; color: var(--purple); font-size: 12px; font-weight: 800; }
+.student-platform .student-section-label { min-width: 0; overflow: hidden; font-size: 13px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.student-platform .student-workspace-footer { display: flex; align-items: center; gap: 9px; margin-top: 15px; }
+.student-platform .student-workspace-footer > span { color: var(--muted); font-size: 12px; }
+.student-platform .student-workspace-footer .button:disabled { opacity: .45; cursor: default; transform: none; }
+@media (max-width: 700px) {
+    .student-platform .student-workspace-layout { grid-template-columns: 1fr; }
+    .student-platform .student-sections-panel { position: static; order: -1; }
+    .student-platform .student-sections-list { display: flex; overflow-x: auto; padding-bottom: 4px; }
+    .student-platform .student-section-row { flex: 0 0 auto; max-width: 230px; }
+    .student-platform .student-workspace-footer { flex-wrap: wrap; }
+    .student-platform .student-workspace-footer .button { flex: 1; }
+}
