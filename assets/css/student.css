@@ -110,6 +110,7 @@
 .student-platform .student-activity-media { display: block; width: min(100%,640px); }
 .student-platform .student-activity-video { display: block; width: min(100%, 720px); aspect-ratio: 16 / 9; border: 0; border-radius: 12px; background: #17251c; }
 .student-platform .student-auth-content { display: grid; min-height: 100vh; place-items: center; padding: 28px; }
+.student-platform .student-auth-controls { display: flex; justify-content: flex-end; margin-bottom: 16px; }
 .student-platform .student-auth-card { width: min(680px,100%); border: 1px solid var(--line); border-radius: 20px; padding: clamp(26px,5vw,44px); background: white; box-shadow: 0 16px 44px #2544320d; }
 .student-platform .student-auth-brand { margin-bottom: 44px; }
 .student-platform .student-auth-card > .eyebrow { display: flex; width: max-content; margin-bottom: 12px; }
@@ -195,3 +196,145 @@
     .student-platform .student-workspace-footer { flex-wrap: wrap; }
     .student-platform .student-workspace-footer .button { flex: 1; }
 }
+
+:root[data-theme="dark"] .student-platform .student-hero {
+    border-color: #35483a;
+    background: radial-gradient(circle at 91% 15%, #294331 0, transparent 33%), linear-gradient(115deg, #1a241d, #202c23);
+    box-shadow: 0 12px 34px #0004;
+}
+:root[data-theme="dark"] .student-platform .student-hero p,
+:root[data-theme="dark"] .student-platform .student-progress-meta,
+:root[data-theme="dark"] .student-platform .student-progress-meta strong { color: #c1d0c4; }
+:root[data-theme="dark"] .student-platform .student-hero-mark { color: #d5ead60d; }
+:root[data-theme="dark"] .student-platform .student-lesson-link {
+    border-color: #34483a;
+    background: #202a23;
+    color: var(--ink);
+}
+:root[data-theme="dark"] .student-platform .student-lesson-link:hover,
+:root[data-theme="dark"] .student-platform .student-lesson-row:hover { border-color: #496d52; background: #222e26; }
+:root[data-theme="dark"] .student-platform .student-progress-track { background: #303a32; }
+:root[data-theme="dark"] .student-platform .student-progress-badge { background: #27343c; color: #b9d1dc; }
+:root[data-theme="dark"] .student-platform .student-progress-badge.is-complete { background: #294331; color: #bfe0c4; }
+:root[data-theme="dark"] .student-platform .student-lesson-icon,
+:root[data-theme="dark"] .student-platform .student-empty-icon,
+:root[data-theme="dark"] .student-platform .student-activity-number {
+    background: #293b2f;
+    color: #b9dfbd;
+}
+:root[data-theme="dark"] .student-platform .student-lesson-hero {
+    border-color: #35513d;
+    background: linear-gradient(115deg, #1d3828, #294b34);
+}
+:root[data-theme="dark"] .student-platform .student-lesson-hero .student-progress-fill {
+    background: linear-gradient(90deg, #78ad83, #b7dfbc);
+}
+:root[data-theme="dark"] .student-platform .student-homework-section {
+    border-color: #34483a;
+    background: linear-gradient(180deg, #1b2821, #17191c 140px);
+}
+:root[data-theme="dark"] .student-platform .student-activity {
+    border-color: #34483a;
+    background: #1d2a23;
+    color: #e0eae3;
+}
+:root[data-theme="dark"] .student-platform .student-activity-content { color: #cbd8ce; }
+:root[data-theme="dark"] .student-platform .student-activity-group {
+    border-color: #34483a;
+    background: #202f26;
+}
+:root[data-theme="dark"] .student-platform .student-activity-subitems .student-activity { border-color: #34483a; }
+:root[data-theme="dark"] .student-platform .student-activity-group-actions { border-color: #34483a; }
+:root[data-theme="dark"] .student-platform .student-activity-number { color: #c4e4c9; }
+:root[data-theme="dark"] .student-platform .student-answer-feedback { color: #b6c7b9; }
+:root[data-theme="dark"] .student-platform .student-activity-main > .student-answer-feedback { background: #2a302c; }
+:root[data-theme="dark"] .student-platform .student-activity-main > .student-answer-feedback.is-correct { background: #243b2b; color: #a9dcb1; }
+:root[data-theme="dark"] .student-platform .student-activity-main > .student-answer-feedback.is-incorrect { background: #422c2a; color: #f0aaa0; }
+:root[data-theme="dark"] .student-platform .student-answer-zone,
+:root[data-theme="dark"] .student-platform .student-word-bank,
+:root[data-theme="dark"] .student-platform .student-flashcard-list {
+    border-color: #3a5140;
+    background: #18231c;
+}
+:root[data-theme="dark"] .student-platform .student-word-token,
+:root[data-theme="dark"] .student-platform .student-order-list button {
+    border-color: #49644e;
+    background: #26352b;
+    color: #e0ece2;
+}
+:root[data-theme="dark"] .student-platform .student-word-token:hover,
+:root[data-theme="dark"] .student-platform .student-word-token.selected,
+:root[data-theme="dark"] .student-platform .student-order-list button:hover:not(:disabled) {
+    border-color: #6b9d78;
+    background: #304a38;
+}
+:root[data-theme="dark"] .student-platform .student-inline-answer,
+:root[data-theme="dark"] .student-platform .student-match-row select,
+:root[data-theme="dark"] .student-platform .student-open-answer {
+    border-color: #49644e;
+    background-color: #18231c;
+    color: #e0eae3;
+}
+:root[data-theme="dark"] .student-platform .student-inline-answer:focus { background: #202c23; }
+:root[data-theme="dark"] .student-platform .student-answer-option,
+:root[data-theme="dark"] .student-platform .student-order-list li,
+:root[data-theme="dark"] .student-platform .student-match-row,
+:root[data-theme="dark"] .student-platform .student-answer-table td {
+    border-color: #34483a;
+    background: #202a23;
+    color: #dce9df;
+}
+:root[data-theme="dark"] .student-platform .student-answer-option:hover,
+:root[data-theme="dark"] .student-platform .student-order-list li:hover,
+:root[data-theme="dark"] .student-platform .student-answer-option:has(input:checked) {
+    border-color: #63966d;
+    background: #263c2d;
+    box-shadow: 0 2px 10px #0004;
+}
+:root[data-theme="dark"] .student-platform .student-flashcard {
+    border-color: #34483a;
+    background: #202f26;
+    color: #e0eae3;
+}
+:root[data-theme="dark"] .student-platform .student-sections-panel {
+    border-color: #34483a;
+    background: linear-gradient(180deg, #202b24, #1a2328);
+    box-shadow: 0 7px 20px #0004;
+}
+:root[data-theme="dark"] .student-platform .student-sections-panel h2,
+:root[data-theme="dark"] .student-platform .student-sections-panel h3 {
+    border-color: #34483a;
+    color: #dce9df;
+}
+:root[data-theme="dark"] .student-platform .student-section-row.active {
+    border-color: #3b5140;
+    background: #26332a;
+    box-shadow: 0 3px 10px #0004;
+}
+:root[data-theme="dark"] .student-platform .student-section-select { color: #dce9df; }
+:root[data-theme="dark"] .student-platform .student-section-row:not(.active) .student-section-select:hover { background: #293b30; }
+:root[data-theme="dark"] .student-platform .student-section-number { background: #293b2f; color: #c4e4c9; }
+:root[data-theme="dark"] .student-platform .student-workspace-tabs {
+    border-color: #34483a;
+    background: #202f26;
+}
+:root[data-theme="dark"] .student-platform .student-workspace-tabs button { color: #c2d1c5; }
+:root[data-theme="dark"] .student-platform .student-workspace-tabs button:hover:not(.active) { background: #293b30; }
+:root[data-theme="dark"] .student-platform .student-workspace-tabs button.active { background: #376346; color: #fff; }
+:root[data-theme="dark"] .student-platform .student-auth-card,
+:root[data-theme="dark"] .student-platform .student-message-card {
+    border-color: #34483a;
+    background: #17191c;
+    color: #e0eae3;
+}
+:root[data-theme="dark"] .student-platform .student-form input {
+    border-color: #3c5142;
+    background: #111815;
+    color: #e0eae3;
+}
+:root[data-theme="dark"] .student-platform .student-form input::placeholder { color: #89968c; }
+:root[data-theme="dark"] .student-platform .student-workspace-main [data-student-section] { scroll-margin-top: 20px; }
+:root[data-theme="dark"] .student-platform .student-activity-list > :first-child { scroll-margin-top: 20px; }
+
+.student-platform .student-activity-list > :first-child,
+.student-platform [data-student-section] > h2 { scroll-margin-top: 20px; }

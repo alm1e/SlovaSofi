@@ -8,14 +8,29 @@ create table if not exists public.calendar_events (
     title text not null check (length(trim(title)) between 1 and 120),
     starts_at timestamptz not null,
     duration_minutes integer not null default 60 check (duration_minutes between 15 and 360),
-    recurrence text not null default 'none' check (recurrence in ('none', 'weekly')),
+    recurrence text not null default 'none'
+        check (recurrence in ('none', 'daily', 'every_other_day', 'weekly', 'custom')),
     repeat_until date,
+    repeat_days smallint[] not null default '{}',
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
     check (
-        (recurrence = 'none' and repeat_until is null)
-        or (recurrence = 'weekly' and repeat_until is not null and repeat_until >= starts_at::date
-            and repeat_until <= (starts_at::date + 365))
+        (
+            recurrence = 'none'
+            and repeat_until is null
+            and cardinality(repeat_days) = 0
+        )
+        or (
+            recurrence <> 'none'
+            and repeat_until is not null
+            and repeat_until >= starts_at::date
+            and repeat_until <= (starts_at::date + 365)
+            and (
+                (recurrence = 'custom' and cardinality(repeat_days) between 1 and 7
+                    and repeat_days <@ array[0, 1, 2, 3, 4, 5, 6]::smallint[])
+                or (recurrence <> 'custom' and cardinality(repeat_days) = 0)
+            )
+        )
     )
 );
 

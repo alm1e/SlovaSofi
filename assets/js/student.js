@@ -87,6 +87,9 @@
         calendarClass: "Клас",
         calendarLesson: "Урок",
         calendarWeekly: "Щотижня",
+        calendarDaily: "Щодня",
+        calendarEveryOtherDay: "Через день",
+        calendarCustom: "За вибраними днями",
         notifications: "Сповіщення",
         notificationsEmpty: "Найближчих занять немає.",
         openCalendar: "Відкрити календар →",
@@ -100,6 +103,9 @@
         calendarClass: "Класс",
         calendarLesson: "Урок",
         calendarWeekly: "Каждую неделю",
+        calendarDaily: "Каждый день",
+        calendarEveryOtherDay: "Через день",
+        calendarCustom: "В выбранные дни",
         notifications: "Уведомления",
         notificationsEmpty: "Ближайших занятий нет.",
         openCalendar: "Открыть календарь →",
@@ -113,6 +119,9 @@
         calendarClass: "Class",
         calendarLesson: "Lesson",
         calendarWeekly: "Weekly",
+        calendarDaily: "Daily",
+        calendarEveryOtherDay: "Every other day",
+        calendarCustom: "On selected days",
         notifications: "Notifications",
         notificationsEmpty: "No upcoming sessions.",
         openCalendar: "Open calendar →",
@@ -339,21 +348,17 @@
     }
 
     function scheduledOccurrences(from = new Date(), to = new Date(Date.now() + 30 * 86_400_000)) {
-        const occurrences = [];
-        calendarEvents.forEach((event) => {
-            const start = new Date(event.starts_at);
-            if (Number.isNaN(start.getTime())) return;
-            const repeatUntil = event.recurrence === "weekly" && event.repeat_until
-                ? new Date(`${event.repeat_until}T23:59:59`)
-                : start;
-            const occurrence = new Date(start);
-            while (occurrence <= repeatUntil && occurrence <= to) {
-                if (occurrence >= from) occurrences.push({ ...event, occurrenceAt: new Date(occurrence) });
-                if (event.recurrence !== "weekly") break;
-                occurrence.setDate(occurrence.getDate() + 7);
-            }
-        });
-        return occurrences.sort((left, right) => left.occurrenceAt - right.occurrenceAt);
+        return window.SlovaCalendar.occurrences(calendarEvents, from, to);
+    }
+
+    function calendarRecurrenceLabel(recurrence) {
+        const labels = {
+            daily: "calendarDaily",
+            every_other_day: "calendarEveryOtherDay",
+            weekly: "calendarWeekly",
+            custom: "calendarCustom"
+        };
+        return labels[recurrence] ? text(labels[recurrence]) : "";
     }
 
     function formatScheduledDate(date, options) {
@@ -371,7 +376,7 @@
             grouped.set(key, day);
         });
         const content = upcoming.length
-            ? `<div class="calendar-agenda">${[...grouped.values()].map((events) => `<section class="calendar-agenda-day"><h2>${formatScheduledDate(events[0].occurrenceAt, { weekday: "long", day: "numeric", month: "long" })}</h2>${events.map((event) => `<article class="calendar-agenda-event"><time><strong>${formatScheduledDate(event.occurrenceAt, { hour: "2-digit", minute: "2-digit" })}</strong><small>${Number(event.duration_minutes)} ${language === "en" ? "min" : language === "ua" ? "хв" : "мин"}</small></time><div><h3>${escapeHtml(event.title)}</h3><p>${escapeHtml(classes.find((group) => group.id === event.class_id)?.name || text("calendarClass"))}${event.recurrence === "weekly" ? ` · ${text("calendarWeekly")}` : ""}</p></div></article>`).join("")}</section>`).join("")}</div>`
+            ? `<div class="calendar-agenda">${[...grouped.values()].map((events) => `<section class="calendar-agenda-day"><h2>${formatScheduledDate(events[0].occurrenceAt, { weekday: "long", day: "numeric", month: "long" })}</h2>${events.map((event) => `<article class="calendar-agenda-event"><time><strong>${formatScheduledDate(event.occurrenceAt, { hour: "2-digit", minute: "2-digit" })}</strong><small>${Number(event.duration_minutes)} ${language === "en" ? "min" : language === "ua" ? "хв" : "мин"}</small></time><div><h3>${escapeHtml(event.title)}</h3><p>${escapeHtml(classes.find((group) => group.id === event.class_id)?.name || text("calendarClass"))}${calendarRecurrenceLabel(event.recurrence) ? ` · ${calendarRecurrenceLabel(event.recurrence)}` : ""}</p></div></article>`).join("")}</section>`).join("")}</div>`
             : `<div class="panel student-empty"><span class="student-empty-icon">▦</span><h2>${escapeHtml(text("calendarEmpty"))}</h2></div>`;
         return `<div class="section-heading"><div><h1>${escapeHtml(text("calendar"))}</h1><p>${escapeHtml(text("calendarHint"))}</p></div></div>${content}`;
     }
@@ -604,6 +609,14 @@
                     <h3>${escapeHtml(text("homeworkSections"))}</h3><nav class="student-sections-list student-homework-sections-list" aria-label="${escapeHtml(text("homeworkSections"))}">${renderSectionList(homeworkItems, true) || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</nav>
                 </aside>
             </div>`;
+    }
+
+    function scrollToFirstStudentActivity() {
+        window.requestAnimationFrame(() => {
+            const firstActivity = pageContent.querySelector("[data-student-section] .student-activity-list > :first-child");
+            const target = firstActivity || pageContent.querySelector("[data-student-section] > h2");
+            target?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
     }
 
     async function invokeLessonApi(payload) {
@@ -879,7 +892,7 @@
             openedLesson.answeredCount = answeredCountFor(openedLesson, openedLesson.progress);
             activeView = "lessons";
             render();
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            scrollToFirstStudentActivity();
         } catch (error) {
             selectedLessonId = "";
             openedLesson = null;
@@ -960,7 +973,7 @@
                 studentWorkspaceTab = tab;
                 activeStudentSectionId = sectionId;
                 render();
-                window.scrollTo({ top: 0, behavior: "smooth" });
+                scrollToFirstStudentActivity();
             } catch (error) {
                 console.error("Could not save student progress before switching lesson sections.", error);
                 showToast(`${text("draftSaveError")} ${error.message}`, true);
@@ -1059,7 +1072,17 @@
         sidebar.hidden = true;
         document.querySelector(".main-area .topbar").hidden = true;
         pageContent.classList.add("student-auth-content");
-        pageContent.innerHTML = `<section class="student-auth-card"><a class="brand student-auth-brand" href="index.html"><span class="brand-mark">S</span><span>Slova<span class="brand-accent">Sofi</span></span></a><span class="eyebrow">SLOVASOFI</span><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p>${form}</section>`;
+        pageContent.innerHTML = `<section class="student-auth-card"><div class="student-auth-controls"><button class="icon-button theme-toggle" type="button" data-theme-toggle aria-label="Включить тему" aria-pressed="false"><svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/></svg><svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2"/></svg></button></div><a class="brand student-auth-brand" href="index.html"><span class="brand-mark">S</span><span>Slova<span class="brand-accent">Sofi</span></span></a><span class="eyebrow">SLOVASOFI</span><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p>${form}</section>`;
+        const darkTheme = document.documentElement.dataset.theme === "dark";
+        const themeToggleLabel = ({
+            ua: darkTheme ? "Увімкнути світлу тему" : "Увімкнути темну тему",
+            ru: darkTheme ? "Включить светлую тему" : "Включить тёмную тему",
+            en: darkTheme ? "Enable light theme" : "Enable dark theme"
+        })[language];
+        const themeToggle = pageContent.querySelector("[data-theme-toggle]");
+        themeToggle?.setAttribute("aria-pressed", String(darkTheme));
+        themeToggle?.setAttribute("aria-label", themeToggleLabel);
+        if (themeToggle) themeToggle.title = themeToggleLabel;
     }
 
     async function loadDashboard(client, signedInUser) {

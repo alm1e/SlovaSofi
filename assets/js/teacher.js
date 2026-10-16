@@ -197,6 +197,18 @@ Object.assign(translations.ua, {
     "calendar.repeat": "Повтор",
     "calendar.noRepeat": "Не повторювати",
     "calendar.weekly": "Щотижня",
+    "calendar.daily": "Щодня",
+    "calendar.everyOtherDay": "Через день",
+    "calendar.customDays": "Вибрати дні тижня",
+    "calendar.repeatDaysLabel": "Дні проведення занять",
+    "calendar.repeatDaysHint": "Оберіть один або кілька днів.",
+    "calendar.monday": "Понеділок",
+    "calendar.tuesday": "Вівторок",
+    "calendar.wednesday": "Середа",
+    "calendar.thursday": "Четвер",
+    "calendar.friday": "П’ятниця",
+    "calendar.saturday": "Субота",
+    "calendar.sunday": "Неділя",
     "calendar.repeatUntil": "Повторювати до",
     "calendar.save": "Зберегти заняття",
     "calendar.delete": "Видалити заняття",
@@ -216,7 +228,9 @@ Object.assign(translations.ua, {
     "calendar.open": "Відкрити календар →",
     "calendar.invalidDate": "Виберіть коректні дату й час.",
     "calendar.invalidClass": "Виберіть клас зі списку.",
-    "calendar.invalidRepeat": "Дата завершення має бути в межах року від початку."
+    "calendar.invalidRepeat": "Дата завершення має бути в межах року від початку.",
+    "calendar.invalidRepeatDays": "Оберіть щонайменше один день тижня.",
+    "calendar.migrationRequired": "Календар ще не налаштований у базі. Адміністратор має застосувати міграції Supabase командою supabase db push."
 });
 Object.assign(translations.en, {
     "nav.calendar": "Calendar",
@@ -240,6 +254,18 @@ Object.assign(translations.en, {
     "calendar.repeat": "Repeat",
     "calendar.noRepeat": "Does not repeat",
     "calendar.weekly": "Weekly",
+    "calendar.daily": "Every day",
+    "calendar.everyOtherDay": "Every other day",
+    "calendar.customDays": "Choose weekdays",
+    "calendar.repeatDaysLabel": "Class days",
+    "calendar.repeatDaysHint": "Select one or more weekdays.",
+    "calendar.monday": "Monday",
+    "calendar.tuesday": "Tuesday",
+    "calendar.wednesday": "Wednesday",
+    "calendar.thursday": "Thursday",
+    "calendar.friday": "Friday",
+    "calendar.saturday": "Saturday",
+    "calendar.sunday": "Sunday",
     "calendar.repeatUntil": "Repeat until",
     "calendar.save": "Save session",
     "calendar.delete": "Delete session",
@@ -259,7 +285,9 @@ Object.assign(translations.en, {
     "calendar.open": "Open calendar →",
     "calendar.invalidDate": "Choose a valid date and time.",
     "calendar.invalidClass": "Choose a class from the list.",
-    "calendar.invalidRepeat": "The repeat end date must be within one year."
+    "calendar.invalidRepeat": "The repeat end date must be within one year.",
+    "calendar.invalidRepeatDays": "Select at least one weekday.",
+    "calendar.migrationRequired": "The calendar database is not set up yet. An administrator must apply the Supabase migrations with supabase db push."
 });
 Object.assign(translations.ru, { "nav.calendar": "Календарь", "page.calendar": "Календарь" });
 Object.assign(translations.ru, {
@@ -268,7 +296,21 @@ Object.assign(translations.ru, {
     "calendar.open": "Открыть календарь →",
     "calendar.invalidDate": "Выберите корректные дату и время.",
     "calendar.invalidClass": "Выберите класс из списка.",
-    "calendar.invalidRepeat": "Дата повтора должна быть в пределах года после начала."
+    "calendar.invalidRepeat": "Дата повтора должна быть в пределах года после начала.",
+    "calendar.daily": "Каждый день",
+    "calendar.everyOtherDay": "Через день",
+    "calendar.customDays": "Выбрать дни недели",
+    "calendar.repeatDaysLabel": "Дни проведения занятий",
+    "calendar.repeatDaysHint": "Выберите один или несколько дней.",
+    "calendar.monday": "Понедельник",
+    "calendar.tuesday": "Вторник",
+    "calendar.wednesday": "Среда",
+    "calendar.thursday": "Четверг",
+    "calendar.friday": "Пятница",
+    "calendar.saturday": "Суббота",
+    "calendar.sunday": "Воскресенье",
+    "calendar.invalidRepeatDays": "Выберите хотя бы один день недели.",
+    "calendar.migrationRequired": "Календарь ещё не настроен в базе. Администратору нужно применить миграции Supabase командой supabase db push."
 });
 Object.assign(translations.ua, {
     "welcome.morning": "Доброго ранку, {name} ☀️",
@@ -798,7 +840,9 @@ async function loadCurrentUser() {
                 await loadCalendarEvents();
             } catch (calendarError) {
                 console.error("Could not load calendar events.", calendarError);
-                showToast(`${t("calendar.loadError")} ${calendarError.message}`);
+                showToast(isMissingCalendarTable(calendarError)
+                    ? t("calendar.migrationRequired")
+                    : `${t("calendar.loadError")} ${calendarError.message}`);
             }
             subscribeToCalendarChanges(window.supabaseClient, currentUser);
             startPresenceTracking(window.supabaseClient, [
@@ -1402,33 +1446,32 @@ function localDateKey(date) {
 }
 
 function calendarOccurrences(events, rangeStart, rangeEnd) {
-    const occurrences = [];
-    events.forEach((event) => {
-        const start = new Date(event.starts_at);
-        if (Number.isNaN(start.getTime())) return;
-        const lastDate = event.recurrence === "weekly" && event.repeat_until
-            ? new Date(`${event.repeat_until}T23:59:59`)
-            : start;
-        const occurrence = new Date(start);
-        while (occurrence <= lastDate && occurrence <= rangeEnd) {
-            if (occurrence >= rangeStart && occurrence <= rangeEnd) {
-                occurrences.push({ ...event, occurrenceAt: new Date(occurrence) });
-            }
-            if (event.recurrence !== "weekly") break;
-            occurrence.setDate(occurrence.getDate() + 7);
-        }
-    });
-    return occurrences.sort((left, right) => left.occurrenceAt - right.occurrenceAt);
+    return window.SlovaCalendar.occurrences(events, rangeStart, rangeEnd);
+}
+
+function calendarRecurrenceLabel(recurrence) {
+    const labels = {
+        daily: "calendar.daily",
+        every_other_day: "calendar.everyOtherDay",
+        weekly: "calendar.weekly",
+        custom: "calendar.customDays"
+    };
+    return labels[recurrence] ? t(labels[recurrence]) : "";
 }
 
 function calendarLocale() {
     return currentLanguage === "ua" ? "uk-UA" : currentLanguage === "en" ? "en-US" : "ru-RU";
 }
 
+function isMissingCalendarTable(error) {
+    return error.code === "PGRST205" || error.code === "42P01"
+        || /public\.calendar_events.*(schema cache|does not exist)/i.test(error.message || "");
+}
+
 async function loadCalendarEvents() {
     if (!window.supabaseClient || !currentUser?.id) return;
     const { data: events, error } = await window.supabaseClient.from("calendar_events")
-        .select("id,teacher_id,class_id,lesson_id,title,starts_at,duration_minutes,recurrence,repeat_until")
+        .select("id,teacher_id,class_id,lesson_id,title,starts_at,duration_minutes,recurrence,repeat_until,repeat_days")
         .order("starts_at");
     if (error) throw error;
     calendarEvents = events || [];
@@ -1525,6 +1568,15 @@ function localDateTimeValue(date) {
     return local.toISOString().slice(0, 16);
 }
 
+function calendarRepeatDays(event) {
+    const weekdays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    return `<fieldset class="calendar-repeat-days" data-repeat-days ${event?.recurrence === "custom" ? "" : "hidden"}>
+        <legend>${t("calendar.repeatDaysLabel")}</legend>
+        <div class="calendar-weekday-options">${weekdays.map((day, index) => `<label class="calendar-weekday-option"><input type="checkbox" name="repeatDays" value="${index}" ${event?.repeat_days?.includes(index) || (!event && index === new Date().getDay()) ? "checked" : ""}><span>${t(`calendar.${day}`)}</span></label>`).join("")}</div>
+        <small>${t("calendar.repeatDaysHint")}</small>
+    </fieldset>`;
+}
+
 function openCalendarEvent(event = null, selectedDate = new Date()) {
     if (!hasPermission("manage_classes_students")) return;
     if (!data.classes.length) {
@@ -1537,6 +1589,15 @@ function openCalendarEvent(event = null, selectedDate = new Date()) {
     const classOptions = data.classes.map((group) => `<option value="${escapeHtml(group.id)}" ${group.id === selectedClassId ? "selected" : ""}>${escapeHtml(group.name)}</option>`).join("");
     const lessonOptions = data.lessons.map((lesson) => `<option value="${escapeHtml(lesson.id)}" ${lesson.id === event?.lesson_id ? "selected" : ""}>${escapeHtml(lesson.title)}</option>`).join("");
     const repeatUntil = event?.repeat_until || localDateKey(new Date(startAt.getFullYear(), startAt.getMonth(), startAt.getDate() + 56));
+    const recurrence = event?.recurrence || "none";
+    const repeatTypes = [
+        ["none", t("calendar.noRepeat")],
+        ["daily", t("calendar.daily")],
+        ["every_other_day", t("calendar.everyOtherDay")],
+        ["weekly", t("calendar.weekly")],
+        ["custom", t("calendar.customDays")]
+    ];
+    const repeatMax = localDateKey(new Date(startAt.getFullYear(), startAt.getMonth(), startAt.getDate() + 365));
     const title = event ? t("calendar.editEvent") : t("calendar.newEvent");
     openModal(`${modalHeader(title)}
         <form id="calendarEventForm">
@@ -1544,18 +1605,33 @@ function openCalendarEvent(event = null, selectedDate = new Date()) {
             <div class="form-field"><label for="calendarEventClass">${t("calendar.classLabel")}</label><select id="calendarEventClass" name="classId" required>${classOptions}</select></div>
             <div class="form-field"><label for="calendarEventLesson">${t("calendar.lessonLabel")}</label><select id="calendarEventLesson" name="lessonId"><option value="">${t("calendar.noLesson")}</option>${lessonOptions}</select></div>
             <div class="form-grid"><div class="form-field"><label for="calendarEventStartsAt">${t("calendar.dateLabel")}</label><input id="calendarEventStartsAt" name="startsAt" type="datetime-local" required value="${localDateTimeValue(startAt)}"></div><div class="form-field"><label for="calendarEventDuration">${t("calendar.duration")}</label><select id="calendarEventDuration" name="duration" required>${[30, 45, 60, 90, 120].map((minutes) => `<option value="${minutes}" ${Number(event?.duration_minutes || 60) === minutes ? "selected" : ""}>${minutes} ${t("calendar.minutes")}</option>`).join("")}</select></div></div>
-            <div class="form-field"><label for="calendarEventRecurrence">${t("calendar.repeat")}</label><select id="calendarEventRecurrence" name="recurrence"><option value="none" ${event?.recurrence !== "weekly" ? "selected" : ""}>${t("calendar.noRepeat")}</option><option value="weekly" ${event?.recurrence === "weekly" ? "selected" : ""}>${t("calendar.weekly")}</option></select></div>
-            <div class="form-field" data-repeat-until ${event?.recurrence === "weekly" ? "" : "hidden"}><label for="calendarEventRepeatUntil">${t("calendar.repeatUntil")}</label><input id="calendarEventRepeatUntil" name="repeatUntil" type="date" value="${repeatUntil}" min="${localDateKey(startAt)}" max="${localDateKey(new Date(startAt.getFullYear(), startAt.getMonth(), startAt.getDate() + 365))}"></div>
+            <div class="form-field"><label for="calendarEventRecurrence">${t("calendar.repeat")}</label><select id="calendarEventRecurrence" name="recurrence">${repeatTypes.map(([value, label]) => `<option value="${value}" ${recurrence === value ? "selected" : ""}>${label}</option>`).join("")}</select></div>
+            ${calendarRepeatDays(event)}
+            <div class="form-field" data-repeat-until ${recurrence !== "none" ? "" : "hidden"}><label for="calendarEventRepeatUntil">${t("calendar.repeatUntil")}</label><input id="calendarEventRepeatUntil" name="repeatUntil" type="date" value="${repeatUntil}" min="${localDateKey(startAt)}" max="${repeatMax}"></div>
             <div class="modal-actions">${event ? `<button type="button" class="button danger" data-calendar-delete="${escapeHtml(event.id)}">${t("calendar.delete")}</button>` : ""}<button type="button" class="button secondary" data-close>${t("calendar.cancel")}</button><button type="submit" class="button">${t("calendar.save")}</button></div>
         </form>`, true);
+    enhanceSelects(modalCard);
     const form = modalCard.querySelector("#calendarEventForm");
-    const recurrence = form.elements.recurrence;
+    const recurrenceSelect = form.elements.recurrence;
     const repeatUntilField = form.querySelector("[data-repeat-until]");
-    recurrence.addEventListener("change", () => {
-        repeatUntilField.hidden = recurrence.value !== "weekly";
-        form.elements.repeatUntil.required = recurrence.value === "weekly";
+    const repeatDaysField = form.querySelector("[data-repeat-days]");
+    const syncRecurrenceFields = () => {
+        const repeating = recurrenceSelect.value !== "none";
+        repeatUntilField.hidden = !repeating;
+        repeatDaysField.hidden = recurrenceSelect.value !== "custom";
+        form.elements.repeatUntil.required = repeating;
+    };
+    recurrenceSelect.addEventListener("change", syncRecurrenceFields);
+    form.elements.startsAt.addEventListener("change", () => {
+        const startsAt = new Date(form.elements.startsAt.value);
+        if (Number.isNaN(startsAt.getTime())) return;
+        form.elements.repeatUntil.min = localDateKey(startsAt);
+        form.elements.repeatUntil.max = localDateKey(new Date(startsAt.getFullYear(), startsAt.getMonth(), startsAt.getDate() + 365));
+        if (form.elements.repeatUntil.value < form.elements.repeatUntil.min) {
+            form.elements.repeatUntil.value = form.elements.repeatUntil.min;
+        }
     });
-    form.elements.repeatUntil.required = recurrence.value === "weekly";
+    syncRecurrenceFields();
     form.addEventListener("submit", async (submitEvent) => {
         submitEvent.preventDefault();
         const values = new FormData(form);
@@ -1572,7 +1648,9 @@ function openCalendarEvent(event = null, selectedDate = new Date()) {
             showToast(t("calendar.invalidClass"));
             return;
         }
-        const repeating = values.get("recurrence") === "weekly";
+        const recurrenceType = String(values.get("recurrence"));
+        const repeating = recurrenceType !== "none";
+        const repeatDays = values.getAll("repeatDays").map(Number).filter((day) => Number.isInteger(day) && day >= 0 && day <= 6);
         const repeatDate = String(values.get("repeatUntil") || "");
         const startDate = localDateKey(startsAt);
         const maxRepeatDate = localDateKey(new Date(startsAt.getFullYear(), startsAt.getMonth(), startsAt.getDate() + 365));
@@ -1582,6 +1660,11 @@ function openCalendarEvent(event = null, selectedDate = new Date()) {
             return;
         }
         form.elements.repeatUntil.setCustomValidity("");
+        if (recurrenceType === "custom" && !repeatDays.length) {
+            showToast(t("calendar.invalidRepeatDays"));
+            form.querySelector('[name="repeatDays"]')?.focus();
+            return;
+        }
         const payload = {
             ...(event ? { id: event.id } : {}),
             teacher_id: group.teacherId || currentUser.id,
@@ -1590,8 +1673,9 @@ function openCalendarEvent(event = null, selectedDate = new Date()) {
             title: String(values.get("title")).trim(),
             starts_at: startsAt.toISOString(),
             duration_minutes: Number(values.get("duration")),
-            recurrence: repeating ? "weekly" : "none",
+            recurrence: recurrenceType,
             repeat_until: repeating ? repeatDate : null,
+            repeat_days: recurrenceType === "custom" ? repeatDays : [],
             updated_at: new Date().toISOString()
         };
         const submitButton = form.querySelector('[type="submit"]');
@@ -1605,7 +1689,9 @@ function openCalendarEvent(event = null, selectedDate = new Date()) {
             showToast(t(event ? "calendar.updated" : "calendar.saved"));
         } catch (error) {
             console.error("Could not save the calendar event.", error);
-            showToast(`${t("calendar.saveError")} ${error.message}`);
+            showToast(isMissingCalendarTable(error)
+                ? t("calendar.migrationRequired")
+                : `${t("calendar.saveError")} ${error.message}`);
             submitButton.disabled = false;
         }
     });
@@ -1669,7 +1755,7 @@ function renderCalendar() {
     const nextEvents = calendarOccurrences(calendarEvents, new Date(), new Date(Date.now() + 30 * 86_400_000)).slice(0, 8);
     return `<div class="section-heading calendar-heading"><div><h1>${t("calendar.title")}</h1><p>${t("calendar.description")}</p></div>${writable ? `<button class="button" type="button" data-calendar-new>${t("calendar.add")}</button>` : ""}</div>
         <div class="calendar-layout"><section class="panel calendar-panel"><div class="calendar-toolbar"><div><button class="mini-action" type="button" data-calendar-shift="-1" aria-label="←">‹</button><button class="button secondary small" type="button" data-calendar-today>${t("calendar.today")}</button><button class="mini-action" type="button" data-calendar-shift="1" aria-label="→">›</button></div><h2>${escapeHtml(monthLabel)}</h2></div><div class="calendar-weekdays">${weekdays}</div><div class="calendar-grid">${cells}</div></section>
-        <aside class="panel calendar-upcoming"><div class="panel-heading"><div><h2>${t("calendar.upcoming")}</h2><p class="hint">${t("calendar.upcomingHint")}</p></div><span class="calendar-upcoming-count">${nextEvents.length}</span></div>${nextEvents.length ? `<div class="calendar-upcoming-list">${nextEvents.map((event) => `<article class="calendar-upcoming-item" ${writable ? `data-calendar-event="${escapeHtml(event.id)}"` : ""}><time><strong>${formatCalendarDate(event.occurrenceAt, { day: "numeric" })}</strong><small>${formatCalendarDate(event.occurrenceAt, { month: "short" })}</small></time><div><strong>${escapeHtml(event.title)}</strong><small>${formatCalendarDate(event.occurrenceAt, { hour: "2-digit", minute: "2-digit" })} · ${escapeHtml(data.classes.find((item) => item.id === event.class_id)?.name || t("class.noClass"))}${event.recurrence === "weekly" ? ` · ${t("calendar.recurring")}` : ""}</small></div></article>`).join("")}</div>` : `<div class="calendar-empty">${t(calendarEvents.length ? "calendar.empty" : "calendar.noEvents")}${!calendarEvents.length ? `<small>${t("calendar.createFirst")}</small>` : ""}</div>`}</aside></div>`;
+        <aside class="panel calendar-upcoming"><div class="panel-heading"><div><h2>${t("calendar.upcoming")}</h2><p class="hint">${t("calendar.upcomingHint")}</p></div><span class="calendar-upcoming-count">${nextEvents.length}</span></div>${nextEvents.length ? `<div class="calendar-upcoming-list">${nextEvents.map((event) => `<article class="calendar-upcoming-item" ${writable ? `data-calendar-event="${escapeHtml(event.id)}"` : ""}><time><strong>${formatCalendarDate(event.occurrenceAt, { day: "numeric" })}</strong><small>${formatCalendarDate(event.occurrenceAt, { month: "short" })}</small></time><div><strong>${escapeHtml(event.title)}</strong><small>${formatCalendarDate(event.occurrenceAt, { hour: "2-digit", minute: "2-digit" })} · ${escapeHtml(data.classes.find((item) => item.id === event.class_id)?.name || t("class.noClass"))}${calendarRecurrenceLabel(event.recurrence) ? ` · ${calendarRecurrenceLabel(event.recurrence)}` : ""}</small></div></article>`).join("")}</div>` : `<div class="calendar-empty">${t(calendarEvents.length ? "calendar.empty" : "calendar.noEvents")}${!calendarEvents.length ? `<small>${t("calendar.createFirst")}</small>` : ""}</div>`}</aside></div>`;
 }
 
 function renderClasses() {
@@ -2098,6 +2184,7 @@ function openLessonPreview(id) {
     activeLessonSectionId = normalizeLessonSections(lesson)[0].id;
     activeHomeworkSectionId = normalizePreviewHomeworkSections(lesson)[0].id;
     render();
+    scrollToFirstWorkspaceActivity();
 }
 
 function bindSortableActivityCards(container, cardSelector, handleSelector, indexAttribute, onReorder) {
@@ -2195,6 +2282,7 @@ async function savePreviewActivities(lesson, sectionId, activities, successMessa
     if (!await persistWorkspaceChange(previousData)) return false;
     previewActivityEdit = null;
     render();
+    scrollToFirstWorkspaceActivity();
     showToast(successMessage);
     return true;
 }
@@ -2684,7 +2772,7 @@ function openLessonEditor(item, sectionId = "", activityIndex = -1, tab = "lesso
         const activityBlock = pageContent.querySelector(`.builder-block[data-block-index="${activityIndex}"]`);
         activityBlock?.scrollIntoView({ behavior: "smooth", block: "center" });
         activityBlock?.querySelector("[data-field]")?.focus({ preventScroll: true });
-    }
+    } else scrollToFirstWorkspaceActivity();
 }
 
 function switchLessonWorkspaceMode(mode) {
@@ -2697,6 +2785,7 @@ function switchLessonWorkspaceMode(mode) {
             lessonWorkspaceMode = "edit";
             editorReturnToPreview = false;
             render();
+            scrollToFirstWorkspaceActivity();
             return;
         }
         openLessonEditor(lesson, lessonWorkspaceTab === "lesson" ? activeLessonSectionId : activeHomeworkSectionId, -1, lessonWorkspaceTab);
@@ -3161,6 +3250,7 @@ function renderLessonWorkspace() {
         lessonWorkspaceTab = button.dataset.sectionHomework === "true" ? "homework" : "lesson";
         setActiveWorkspaceSectionId(button.dataset.selectSection);
         render();
+        scrollToFirstWorkspaceActivity();
     }));
     pageContent.querySelector("[data-add-section]")?.addEventListener("click", () => {
         lessonWorkspaceTab = pageContent.querySelector("[data-add-section]")?.dataset.addSection === "homework" ? "homework" : "lesson";
@@ -3197,6 +3287,7 @@ function renderLessonWorkspace() {
         if (sections[next]) {
             setActiveWorkspaceSectionId(sections[next].id);
             render();
+            scrollToFirstWorkspaceActivity();
         }
     }));
     pageContent.querySelector("[data-section-title]")?.addEventListener("input", (event) => {
@@ -3218,6 +3309,14 @@ function renderLessonWorkspace() {
     if (isHomework) bindHomeworkCopySource();
     if (isEditing) bindActivityBlockActions();
     else bindLessonPreviewActions(pageContent);
+}
+
+function scrollToFirstWorkspaceActivity() {
+    window.requestAnimationFrame(() => {
+        const activity = pageContent.querySelector("#activityBlocks > .builder-block, .lesson-preview-list > :first-child");
+        const target = activity || pageContent.querySelector(".lesson-workspace-section");
+        target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
 }
 
 function exitLessonWorkspace() {

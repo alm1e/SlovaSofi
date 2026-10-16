@@ -484,7 +484,7 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .class-card, .class-card:nth-child(4n+2), .class-card:nth-child(4n+3), .class-card:nth-child(4n) { background: #edf5ef; }
 .class-mini, .class-mini:nth-child(2n) { background: #edf5ef; }
 .class-dot, .class-mini:nth-child(2n) .class-dot { background: #78a986; }
-.lesson-symbol, .activity-choice span { background: #eaf3ed; color: var(--purple); }
+.lesson-symbol { background: #eaf3ed; color: var(--purple); }
 .lesson-count, .text-link { color: var(--purple); }
 .form-field :focus { border-color: #6b9d78; box-shadow: 0 0 0 3px #34724d1c; }
 .block-tab.active { border-color: var(--purple); background: var(--purple-light); color: var(--purple); }
@@ -608,6 +608,8 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .lesson-workspace-layout { display: grid; grid-template-columns: minmax(0,1fr) 250px; align-items: start; gap: 15px; }
 .lesson-workspace-main { min-width: 0; }
 .lesson-workspace-section { min-height: 370px; border: 1px solid var(--line); border-radius: 17px; padding: 22px; background: #fff; box-shadow: 0 7px 20px #2544320a; }
+.lesson-workspace-section .builder-block:first-child,
+.lesson-workspace-section .lesson-preview-list > :first-child { scroll-margin-top: 20px; }
 .lesson-workspace-section > h2 { margin: 0 0 20px; color: #68866e; font-size: 17px; }
 .section-name-field { max-width: 450px; }
 .lesson-workspace-section .builder-heading { margin-top: 22px; }
@@ -936,6 +938,34 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 :root[data-theme="dark"] .toast { background: #294a34; color: #f0f6f1; }
 :root[data-theme="dark"] .activity-choice:focus-visible, :root[data-theme="dark"] :focus-visible { outline-color: #8fc997; }
 :root[data-theme="dark"] .sidebar-backdrop { background: #0009; }
+:root[data-theme="dark"] .pair-slot,
+:root[data-theme="dark"] .pair-bank,
+:root[data-theme="dark"] .pair-chip,
+:root[data-theme="dark"] .preview-match-row,
+:root[data-theme="dark"] .preview-word-bank,
+:root[data-theme="dark"] .preview-dropzone,
+:root[data-theme="dark"] .preview-inline-input:focus,
+:root[data-theme="dark"] .preview-correct-answer,
+:root[data-theme="dark"] .preview-activity-group .preview-question-activity,
+:root[data-theme="dark"] .student-platform .student-word-bank,
+:root[data-theme="dark"] .student-platform .student-answer-zone {
+    border-color: #3a5140;
+    background-color: #18231c;
+    color: #dce9df;
+}
+:root[data-theme="dark"] .pair-chip { border-color: #49644e; background: #26352b; }
+:root[data-theme="dark"] .pair-chip:hover:not(.is-used),
+:root[data-theme="dark"] .pair-slot.is-active,
+:root[data-theme="dark"] .pair-slot.is-filled,
+:root[data-theme="dark"] .preview-word:hover { border-color: #6b9d78; background: #304a38; color: #e8f2e9; }
+:root[data-theme="dark"] .pair-slot.is-correct-hint { background: #202c23; color: #aebdaf; }
+:root[data-theme="dark"] .preview-correct-answer { border-left-color: #49644e; }
+:root[data-theme="dark"] .preview-question-activity { border-bottom-color: #34483a; }
+:root[data-theme="dark"] .preview-q-prompt { color: #e0eae3; }
+:root[data-theme="dark"] .preview-inline-input:focus { background: #202c23; }
+:root[data-theme="dark"] .live-answer-inline { color: #b9d8bf; }
+:root[data-theme="dark"] .live-answer-inline .live-answer-response { background: #263b2c; color: #d7ebda; }
+:root[data-theme="dark"] .preview-option.is-correct-option { border-color: #5b8261; background: #263c2d; }
 :root[data-theme="dark"] {
     --ink: #eceef0;
     --muted: #a1a5aa;
@@ -1248,6 +1278,16 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .calendar-notification:hover { border-color: #9fbea3; background: #f3f8f2; }
 .calendar-notification strong { font-size: 12px; }
 .calendar-notification small { color: var(--muted); font-size: 10px; }
+.calendar-repeat-days { min-width: 0; margin: 0 0 15px; border: 1px solid #dce7dc; border-radius: 12px; padding: 12px; }
+.calendar-repeat-days legend { float: none; width: auto; margin: 0; padding: 0 5px; color: #536455; font-size: 12px; font-weight: 700; }
+.calendar-weekday-options { display: flex; flex-wrap: wrap; gap: 7px; }
+.calendar-weekday-option { cursor: pointer; }
+.calendar-weekday-option input { position: absolute; width: 1px; min-height: 0; overflow: hidden; border: 0; padding: 0; clip: rect(0,0,0,0); clip-path: inset(50%); }
+.calendar-weekday-option span { display: block; border: 1px solid #dce7dc; border-radius: 999px; padding: 7px 11px; background: #f7faf7; color: #536455; font-size: 12px; transition: background .16s ease, border-color .16s ease, color .16s ease, box-shadow .16s ease; }
+.calendar-weekday-option:hover span { border-color: #9fbea3; background: #eef6ef; }
+.calendar-weekday-option input:checked + span { border-color: #4c8057; background: #e7f1e8; color: #315d3b; font-weight: 700; }
+.calendar-weekday-option input:focus-visible + span { outline: 3px solid #83b894; outline-offset: 2px; }
+.calendar-repeat-days > small { display: block; margin-top: 9px; color: var(--muted); font-size: 11px; }
 :root[data-theme="dark"] .calendar-day { border-color: #343a36; background: #1a1e1c; color: #e5ece6; }
 :root[data-theme="dark"] .calendar-day.is-outside { background: #171a18; color: #89948c; }
 :root[data-theme="dark"] .calendar-day:not(:disabled):hover, :root[data-theme="dark"] .calendar-day:not(:disabled):focus-visible { border-color: #59775d; background: #222a24; }
@@ -1259,6 +1299,11 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 :root[data-theme="dark"] .calendar-agenda-event > time { border-color: #3b4640; color: #a6d4ae; }
 :root[data-theme="dark"] .calendar-toolbar h2 { color: #e8eee9; }
 :root[data-theme="dark"] .calendar-notification small { color: #b6c1b9; }
+:root[data-theme="dark"] .calendar-repeat-days { border-color: #3b3e42; background: #202225; }
+:root[data-theme="dark"] .calendar-repeat-days legend { color: #d5d7da; }
+:root[data-theme="dark"] .calendar-weekday-option span { border-color: #414449; background: #27292d; color: #d5d7da; }
+:root[data-theme="dark"] .calendar-weekday-option:hover span { border-color: #657d69; background: #303731; }
+:root[data-theme="dark"] .calendar-weekday-option input:checked + span { border-color: #547a5b; background: #2c4934; color: #d6edd9; }
 @media (max-width: 1120px) {
     .calendar-layout { grid-template-columns: 1fr; }
 }

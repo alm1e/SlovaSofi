@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#f3f7f2">
+    <meta name="theme-color" content="#f5f8f5">
     <title>SlovaSofi · Учнівський кабінет</title>
+    <script src="assets/js/theme.js"></script>
     <link rel="stylesheet" href="assets/css/teacher.css">
     <link rel="stylesheet" href="assets/css/student.css">
 </head>
@@ -49,6 +50,10 @@
                     <button class="language-button" type="button" data-lang="ru" aria-label="Русский">RU</button>
                     <button class="language-button" type="button" data-lang="en" aria-label="English">EN</button>
                 </div>
+                <button class="icon-button theme-toggle" id="studentThemeToggle" type="button" data-theme-toggle aria-label="Включить тему" aria-pressed="false">
+                    <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/><path d="M16.5 3.5v4M14.5 5.5h4"/></svg>
+                    <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2"/></svg>
+                </button>
                 <button class="icon-button notification-button popover-trigger" id="studentNotificationButton" type="button" aria-label="Уведомления" aria-haspopup="true" aria-expanded="false">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
                 </button>
@@ -64,6 +69,7 @@
     <div class="popover-root" id="popoverRoot"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase-config.js"></script>
+    <script src="assets/js/calendar-utils.js"></script>
     <script src="assets/js/activity-ui.js"></script>
     <script src="assets/js/student.js"></script>
 </body>
