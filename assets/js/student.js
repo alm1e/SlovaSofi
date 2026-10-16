@@ -14,6 +14,7 @@
             noContent: "Викладач поки не додав вміст до цього завдання.", materials: "Матеріал",
             lessonTab: "Урок", homeworkTab: "Домашня робота", lessonSections: "Розділи уроку",
             homeworkSections: "Розділи домашньої роботи", previousSection: "← Назад", nextSection: "Далі →",
+            openSections: "Відкрити розділи уроку", closeSections: "Закрити розділи",
             profileRole: "Учень", logout: "Вийти з профілю", home: "← На головну", language: "Мова",
             saveError: "Не вдалося зберегти пароль:", loadError: "Не вдалося завантажити кабінет:",
             logoutError: "Не вдалося вийти з профілю. Спробуйте ще раз.", imageAlt: "Зображення до завдання",
@@ -38,6 +39,7 @@
             noContent: "Учитель пока не добавил содержимое этого задания.", materials: "Материал",
             lessonTab: "Урок", homeworkTab: "Домашняя работа", lessonSections: "Разделы урока",
             homeworkSections: "Разделы домашней работы", previousSection: "← Назад", nextSection: "Далее →",
+            openSections: "Открыть разделы урока", closeSections: "Закрыть разделы",
             profileRole: "Ученик", logout: "Выйти из профиля", home: "← На главную", language: "Язык",
             saveError: "Не удалось сохранить пароль:", loadError: "Не удалось загрузить кабинет:",
             logoutError: "Не удалось выйти из профиля. Попробуйте ещё раз.", imageAlt: "Изображение к заданию",
@@ -62,6 +64,7 @@
             noContent: "Your teacher has not added content to this activity yet.", materials: "Material",
             lessonTab: "Lesson", homeworkTab: "Homework", lessonSections: "Lesson sections",
             homeworkSections: "Homework sections", previousSection: "← Previous", nextSection: "Next →",
+            openSections: "Open lesson sections", closeSections: "Close sections",
             profileRole: "Student", logout: "Sign out", home: "← Home", language: "Language",
             saveError: "Could not save the password:", loadError: "Could not load the dashboard:",
             logoutError: "Could not sign out. Please try again.", imageAlt: "Activity image",
@@ -146,6 +149,7 @@
     let openedLesson = null;
     let studentWorkspaceTab = "lesson";
     let activeStudentSectionId = "";
+    let studentSectionsOpen = false;
     let draggedWordButton = null;
     let draftSaveTimers = new Map();
     let pendingDrafts = new Map();
@@ -601,6 +605,9 @@
                 <button type="button" role="tab" aria-selected="${studentWorkspaceTab === "lesson"}" class="${studentWorkspaceTab === "lesson" ? "active" : ""}" data-student-workspace-tab="lesson">${escapeHtml(text("lessonTab"))}</button>
                 <button type="button" role="tab" aria-selected="${studentWorkspaceTab === "homework"}" class="${studentWorkspaceTab === "homework" ? "active" : ""}" data-student-workspace-tab="homework">${escapeHtml(text("homeworkTab"))}</button>
             </nav>
+            <button type="button" class="student-sections-toggle" data-toggle-student-sections aria-label="${escapeHtml(text("openSections"))}" aria-expanded="${studentSectionsOpen}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>${escapeHtml(text("section"))}</span>
+            </button>
             <div class="student-workspace-layout">
                 <main class="student-workspace-main">${section ? `<section class="panel student-section ${section.homework ? "student-homework-section" : ""}" data-student-section>
                     <h2>${escapeHtml(section.title || text("section"))}</h2>
@@ -609,7 +616,9 @@
                 <div class="student-workspace-footer"><button type="button" class="button secondary small" data-student-step="-1" data-student-section-target="${sectionIndex > 0 ? escapeHtml(sectionKey(sections[sectionIndex - 1], sectionIndex - 1, studentWorkspaceTab === "homework")) : ""}" ${sectionIndex <= 0 ? "disabled" : ""}>${escapeHtml(text("previousSection"))}</button><span>${sectionIndex + 1} / ${sections.length}</span><button type="button" class="button secondary small" data-student-step="1" data-student-section-target="${sectionIndex >= 0 && sectionIndex < sections.length - 1 ? escapeHtml(sectionKey(sections[sectionIndex + 1], sectionIndex + 1, studentWorkspaceTab === "homework")) : ""}" ${sectionIndex < 0 || sectionIndex >= sections.length - 1 ? "disabled" : ""}>${escapeHtml(text("nextSection"))}</button></div>`
                     : `<section class="panel student-section"><h2>${escapeHtml(text(studentWorkspaceTab === "homework" ? "homeworkSections" : "lessonSections"))}</h2><p class="student-muted">${escapeHtml(text("noContent"))}</p></section>`}
                 </main>
-                <aside class="student-sections-panel"><h2>${escapeHtml(text("lessonSections"))}</h2><nav class="student-sections-list" aria-label="${escapeHtml(text("lessonSections"))}">${renderSectionList(lessonItems, false) || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</nav>
+                <button type="button" class="student-section-drawer-backdrop ${studentSectionsOpen ? "is-open" : ""}" data-close-student-sections aria-label="${escapeHtml(text("closeSections"))}" ${studentSectionsOpen ? "" : "hidden"}></button>
+                <aside class="student-sections-panel ${studentSectionsOpen ? "is-open" : ""}" id="studentSectionsPanel" aria-label="${escapeHtml(text("openSections"))}">
+                    <div class="student-sections-heading"><h2>${escapeHtml(text("lessonSections"))}</h2><button type="button" data-close-student-sections aria-label="${escapeHtml(text("closeSections"))}">×</button></div><nav class="student-sections-list" aria-label="${escapeHtml(text("lessonSections"))}">${renderSectionList(lessonItems, false) || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</nav>
                     <h3>${escapeHtml(text("homeworkSections"))}</h3><nav class="student-sections-list student-homework-sections-list" aria-label="${escapeHtml(text("homeworkSections"))}">${renderSectionList(homeworkItems, true) || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</nav>
                 </aside>
             </div>`;
@@ -961,6 +970,7 @@
                 await flushDraftSaves();
                 selectedLessonId = "";
                 openedLesson = null;
+                studentSectionsOpen = false;
                 activeView = "lessons";
                 render();
             } catch (error) {
@@ -976,6 +986,7 @@
                 await flushDraftSaves();
                 studentWorkspaceTab = tab;
                 activeStudentSectionId = sectionId;
+                studentSectionsOpen = false;
                 render();
                 scrollToFirstStudentActivity();
             } catch (error) {
@@ -993,6 +1004,21 @@
         }));
         pageContent.querySelectorAll("[data-student-select-section]").forEach((button) => button.addEventListener("click", () => {
             switchWorkspace(button.dataset.studentSectionTab, button.dataset.studentSelectSection);
+        }));
+        pageContent.querySelector("[data-toggle-student-sections]")?.addEventListener("click", (event) => {
+            studentSectionsOpen = !studentSectionsOpen;
+            const isOpen = studentSectionsOpen;
+            pageContent.querySelector(".student-sections-panel")?.classList.toggle("is-open", isOpen);
+            pageContent.querySelector(".student-section-drawer-backdrop")?.classList.toggle("is-open", isOpen);
+            pageContent.querySelector(".student-section-drawer-backdrop")?.toggleAttribute("hidden", !isOpen);
+            event.currentTarget.setAttribute("aria-expanded", String(isOpen));
+        });
+        pageContent.querySelectorAll("[data-close-student-sections]").forEach((button) => button.addEventListener("click", () => {
+            studentSectionsOpen = false;
+            pageContent.querySelector(".student-sections-panel")?.classList.remove("is-open");
+            pageContent.querySelector(".student-section-drawer-backdrop")?.classList.remove("is-open");
+            pageContent.querySelector(".student-section-drawer-backdrop")?.setAttribute("hidden", "");
+            pageContent.querySelector("[data-toggle-student-sections]")?.setAttribute("aria-expanded", "false");
         }));
         pageContent.querySelectorAll("[data-student-section-target]").forEach((button) => button.addEventListener("click", () => {
             if (!button.disabled && button.dataset.studentSectionTarget) switchWorkspace(studentWorkspaceTab, button.dataset.studentSectionTarget);
@@ -1142,6 +1168,7 @@
             selectedClassId = "";
             selectedLessonId = "";
             openedLesson = null;
+            studentSectionsOpen = false;
             render();
         }));
     }
@@ -1277,6 +1304,7 @@
         selectedClassId = "";
         selectedLessonId = "";
         openedLesson = null;
+        studentSectionsOpen = false;
         sidebar.classList.remove("open");
         document.getElementById("studentSidebarBackdrop").classList.remove("open");
         document.getElementById("studentMenuToggle").setAttribute("aria-expanded", "false");
@@ -1310,6 +1338,13 @@
         if (openPopover && !event.target.closest(".popover-root, .profile-trigger, .popover-trigger")) closePopover();
     });
     document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && studentSectionsOpen) {
+            studentSectionsOpen = false;
+            pageContent.querySelector(".student-sections-panel")?.classList.remove("is-open");
+            pageContent.querySelector(".student-section-drawer-backdrop")?.classList.remove("is-open");
+            pageContent.querySelector(".student-section-drawer-backdrop")?.setAttribute("hidden", "");
+            pageContent.querySelector("[data-toggle-student-sections]")?.setAttribute("aria-expanded", "false");
+        }
         if (event.key === "Escape" && openPopover) closePopover(true);
     });
     window.addEventListener("resize", () => closePopover());
