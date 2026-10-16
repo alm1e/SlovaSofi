@@ -353,10 +353,6 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .form-field input, .form-field textarea, .form-field select { width: 100%; min-height: 42px; border: 1px solid #d9e4d9; border-radius: 9px; padding: 10px 12px; outline: none; background: white; color: var(--ink); }
 .form-field textarea { min-height: 92px; resize: vertical; }
 .form-field :focus { border-color: #6b9d78; box-shadow: 0 0 0 3px #34724d1c; }
-.class-student-edit-list { display: grid; gap: 8px; }
-.class-student-edit-row { display: flex; align-items: center; gap: 8px; }
-.class-student-edit-row input { flex: 1; min-width: 0; }
-.class-student-edit-row .mini-action { flex: 0 0 38px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 20px; }
 .block-tabs { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 16px; }
 .block-tab { border: 1px solid #dfe8df; border-radius: 20px; padding: 7px 11px; background: white; color: #718174; font-size: 11px; }
