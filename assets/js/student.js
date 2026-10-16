@@ -79,12 +79,55 @@
         en: { retry: "Try again", unavailable: "The lesson service is temporarily unavailable. Please try again later.", connection: "Could not connect to the lesson service. Check your connection and try again.", profile: "Student profile", dashboardLoading: "Loading dashboard…" }
     };
     Object.keys(recoveryCopy).forEach((lang) => Object.assign(copy[lang], recoveryCopy[lang]));
+    Object.assign(copy.ua, {
+        navCalendar: "Календар",
+        calendar: "Розклад занять",
+        calendarHint: "Дата й час занять для ваших класів.",
+        calendarEmpty: "Занять поки не заплановано.",
+        calendarClass: "Клас",
+        calendarLesson: "Урок",
+        calendarWeekly: "Щотижня",
+        notifications: "Сповіщення",
+        notificationsEmpty: "Найближчих занять немає.",
+        openCalendar: "Відкрити календар →",
+        reminder: "Незабаром заняття:"
+    });
+    Object.assign(copy.ru, {
+        navCalendar: "Календарь",
+        calendar: "Расписание занятий",
+        calendarHint: "Дата и время занятий для ваших классов.",
+        calendarEmpty: "Занятия пока не запланированы.",
+        calendarClass: "Класс",
+        calendarLesson: "Урок",
+        calendarWeekly: "Каждую неделю",
+        notifications: "Уведомления",
+        notificationsEmpty: "Ближайших занятий нет.",
+        openCalendar: "Открыть календарь →",
+        reminder: "Скоро занятие:"
+    });
+    Object.assign(copy.en, {
+        navCalendar: "Calendar",
+        calendar: "Class schedule",
+        calendarHint: "Dates and times for sessions in your classes.",
+        calendarEmpty: "No sessions scheduled yet.",
+        calendarClass: "Class",
+        calendarLesson: "Lesson",
+        calendarWeekly: "Weekly",
+        notifications: "Notifications",
+        notificationsEmpty: "No upcoming sessions.",
+        openCalendar: "Open calendar →",
+        reminder: "Upcoming session:"
+    });
     const languageChoices = ["ua", "ru", "en"];
     let language = languageChoices.includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
     let user = null;
     let presenceChannels = [];
     let classes = [];
     let lessons = [];
+    let calendarEvents = [];
+    let calendarChannel = null;
+    let calendarAudioContext = null;
+    const playedCalendarReminders = new Set();
     let activeView = "classes";
     let selectedClassId = "";
     let selectedLessonId = "";
@@ -122,6 +165,32 @@
             });
             presenceChannels.push(channel);
         });
+    }
+
+    function subscribeToCalendar(client, signedInUser) {
+        if (calendarChannel) {
+            client.removeChannel(calendarChannel).catch((error) => console.error("Could not stop the previous student calendar subscription.", error));
+            calendarChannel = null;
+        }
+        if (!client?.channel || !signedInUser?.id) return;
+        calendarChannel = client.channel(`student-calendar:${signedInUser.id}`)
+            .on("postgres_changes", { event: "*", schema: "public", table: "calendar_events" }, ({ eventType, new: next, old: previous }) => {
+                if (eventType === "DELETE") calendarEvents = calendarEvents.filter((event) => event.id !== previous.id);
+                else {
+                    if (!classes.some((group) => group.id === next.class_id)) return;
+                    const index = calendarEvents.findIndex((event) => event.id === next.id);
+                    if (index < 0) calendarEvents.push(next);
+                    else calendarEvents[index] = next;
+                    if (eventType === "INSERT" && new Date(next.starts_at) > new Date()) {
+                        showToast(`${text("reminder")} ${next.title}`);
+                        playReminderSound();
+                    }
+                }
+                if (activeView === "calendar") render();
+            })
+            .subscribe((status) => {
+                if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") console.error(`Student schedule updates could not be received: ${status}.`);
+            });
     }
     let profileTrigger = null;
     const sidebar = document.getElementById("studentSidebar");
@@ -267,6 +336,86 @@
             : `<div class="panel student-empty"><span class="student-empty-icon">▤</span><h2>${escapeHtml(text("noAssignedLessons"))}</h2></div>`;
         const selectedClass = classes.find((group) => group.id === selectedClassId);
         return `<div class="section-heading"><div><h1>${escapeHtml(selectedClass ? selectedClass.name : text("lessons"))}</h1><p>${escapeHtml(selectedClass ? text("classLessons") : text("lessonsHint"))}</p></div>${selectedClass ? `<button type="button" class="button secondary small" data-clear-class-filter>← ${escapeHtml(text("allLessons"))}</button>` : ""}</div>${content}`;
+    }
+
+    function scheduledOccurrences(from = new Date(), to = new Date(Date.now() + 30 * 86_400_000)) {
+        const occurrences = [];
+        calendarEvents.forEach((event) => {
+            const start = new Date(event.starts_at);
+            if (Number.isNaN(start.getTime())) return;
+            const repeatUntil = event.recurrence === "weekly" && event.repeat_until
+                ? new Date(`${event.repeat_until}T23:59:59`)
+                : start;
+            const occurrence = new Date(start);
+            while (occurrence <= repeatUntil && occurrence <= to) {
+                if (occurrence >= from) occurrences.push({ ...event, occurrenceAt: new Date(occurrence) });
+                if (event.recurrence !== "weekly") break;
+                occurrence.setDate(occurrence.getDate() + 7);
+            }
+        });
+        return occurrences.sort((left, right) => left.occurrenceAt - right.occurrenceAt);
+    }
+
+    function formatScheduledDate(date, options) {
+        const locale = language === "ua" ? "uk-UA" : language === "en" ? "en-US" : "ru-RU";
+        return new Intl.DateTimeFormat(locale, options).format(date);
+    }
+
+    function renderStudentCalendar() {
+        const upcoming = scheduledOccurrences();
+        const grouped = new Map();
+        upcoming.forEach((event) => {
+            const key = `${event.occurrenceAt.getFullYear()}-${event.occurrenceAt.getMonth()}-${event.occurrenceAt.getDate()}`;
+            const day = grouped.get(key) || [];
+            day.push(event);
+            grouped.set(key, day);
+        });
+        const content = upcoming.length
+            ? `<div class="calendar-agenda">${[...grouped.values()].map((events) => `<section class="calendar-agenda-day"><h2>${formatScheduledDate(events[0].occurrenceAt, { weekday: "long", day: "numeric", month: "long" })}</h2>${events.map((event) => `<article class="calendar-agenda-event"><time><strong>${formatScheduledDate(event.occurrenceAt, { hour: "2-digit", minute: "2-digit" })}</strong><small>${Number(event.duration_minutes)} ${language === "en" ? "min" : language === "ua" ? "хв" : "мин"}</small></time><div><h3>${escapeHtml(event.title)}</h3><p>${escapeHtml(classes.find((group) => group.id === event.class_id)?.name || text("calendarClass"))}${event.recurrence === "weekly" ? ` · ${text("calendarWeekly")}` : ""}</p></div></article>`).join("")}</section>`).join("")}</div>`
+            : `<div class="panel student-empty"><span class="student-empty-icon">▦</span><h2>${escapeHtml(text("calendarEmpty"))}</h2></div>`;
+        return `<div class="section-heading"><div><h1>${escapeHtml(text("calendar"))}</h1><p>${escapeHtml(text("calendarHint"))}</p></div></div>${content}`;
+    }
+
+    function playReminderSound() {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        try {
+            calendarAudioContext ||= new AudioContextClass();
+            const audio = calendarAudioContext;
+            if (audio.state === "suspended") audio.resume().catch((error) => console.warn("The browser blocked the student's calendar reminder sound.", error));
+            const oscillator = audio.createOscillator();
+            const gain = audio.createGain();
+            oscillator.type = "sine";
+            oscillator.frequency.value = 880;
+            gain.gain.setValueAtTime(0.0001, audio.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.12, audio.currentTime + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.45);
+            oscillator.connect(gain);
+            gain.connect(audio.destination);
+            oscillator.start();
+            oscillator.stop(audio.currentTime + 0.46);
+        } catch (error) {
+            console.warn("The browser did not allow the student's calendar reminder sound.", error);
+        }
+    }
+
+    function unlockReminderAudio() {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass || calendarAudioContext) return;
+        calendarAudioContext = new AudioContextClass();
+        calendarAudioContext.resume().catch((error) => console.warn("Could not enable student calendar reminder audio.", error));
+    }
+
+    function checkCalendarReminders() {
+        if (!user) return;
+        const now = new Date();
+        scheduledOccurrences(now, new Date(now.getTime() + 15 * 60_000)).forEach((event) => {
+            const key = `${user.id}:${event.id}:${event.occurrenceAt.toISOString()}`;
+            if (playedCalendarReminders.has(key)) return;
+            playedCalendarReminders.add(key);
+            showToast(`${text("reminder")} ${event.title}`);
+            playReminderSound();
+        });
     }
 
     function progressFor(lesson, index) {
@@ -744,14 +893,15 @@
         document.documentElement.lang = language === "ru" ? "ru" : language === "en" ? "en" : "uk";
         document.title = `SlovaSofi · ${escapeHtml(text("profileRole"))}`;
         updateIdentity();
-        const keys = { classes: "navClasses", lessons: "navLessons" };
+        document.getElementById("studentNotificationButton").setAttribute("aria-label", text("notifications"));
+        const keys = { classes: "navClasses", lessons: "navLessons", calendar: "navCalendar" };
         document.querySelectorAll(".nav-item").forEach((button) => {
             button.classList.toggle("active", button.dataset.view === activeView);
             button.querySelector("[data-i18n]").textContent = text(keys[button.dataset.view]);
         });
         document.getElementById("studentBreadcrumb").textContent = selectedLessonId
             ? text("lessons")
-            : text(keys[activeView]);
+            : text(activeView === "calendar" ? "calendar" : keys[activeView]);
         if (dashboardStatus !== "ready") {
             pageContent.innerHTML = dashboardStatus === "loading"
                 ? `<div class="student-message-card" role="status"><p>${escapeHtml(text("dashboardLoading"))}</p></div>`
@@ -762,9 +912,9 @@
             });
             return;
         }
-        pageContent.innerHTML = `${renderWelcome()}${openedLesson && openedLesson.id === selectedLessonId
+        pageContent.innerHTML = `${activeView === "calendar" ? "" : renderWelcome()}${openedLesson && openedLesson.id === selectedLessonId
             ? renderLessonDetail(openedLesson)
-            : activeView === "classes" ? renderClasses() : renderLessons()}`;
+            : activeView === "classes" ? renderClasses() : activeView === "calendar" ? renderStudentCalendar() : renderLessons()}`;
         window.SlovaActivityUI?.enhancePairing(pageContent, { empty: text("choose") });
         pageContent.querySelectorAll("[data-open-lesson]").forEach((button) => {
             button.addEventListener("click", () => openStudentLesson(button.dataset.openLesson));
@@ -926,7 +1076,10 @@
                 if (signingOut) return;
                 classes = result.classes || [];
                 lessons = result.lessons || [];
+                calendarEvents = result.calendarEvents || [];
                 trackPresence(client, result.presenceWorkspaceIds || classes.map((group) => group.teacherId), signedInUser);
+                subscribeToCalendar(client, signedInUser);
+                checkCalendarReminders();
                 dashboardStatus = "ready";
                 if (!lessons.some((lesson) => lesson.id === selectedLessonId)) selectedLessonId = "";
                 if (!lessons.some((lesson) => lesson.id === openedLesson?.id)) openedLesson = null;
@@ -949,13 +1102,30 @@
         openPopoverAt(button, `<div class="popover-user"><span class="avatar">${escapeHtml(initialsFor(name))}</span><div><strong>${escapeHtml(name)}</strong><small>${escapeHtml(text("profileRole"))}</small></div></div>${identity}<div class="popover-divider"></div>${action}`, "profile");
     }
 
+    function showNotifications(button) {
+        const upcoming = scheduledOccurrences(new Date(), new Date(Date.now() + 7 * 86_400_000)).slice(0, 5);
+        const rows = upcoming.length
+            ? `<div class="calendar-notification-list">${upcoming.map((event) => `<button type="button" class="calendar-notification" data-open-student-calendar><strong>${escapeHtml(event.title)}</strong><small>${formatScheduledDate(event.occurrenceAt, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · ${escapeHtml(classes.find((group) => group.id === event.class_id)?.name || text("calendarClass"))}</small></button>`).join("")}<button type="button" class="text-link" data-open-student-calendar>${escapeHtml(text("openCalendar"))}</button></div>`
+            : `<p class="popover-copy">${escapeHtml(text("notificationsEmpty"))}</p>`;
+        openPopoverAt(button, `<div class="popover-heading"><span class="notification-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span><div><strong>${escapeHtml(text("notifications"))}</strong><small>${escapeHtml(upcoming.length ? text("calendar") : text("notificationsEmpty"))}</small></div></div>${rows}`, "notifications");
+        const panel = document.querySelector(".popover-panel");
+        panel?.querySelectorAll("[data-open-student-calendar]").forEach((item) => item.addEventListener("click", () => {
+            closePopover();
+            activeView = "calendar";
+            selectedClassId = "";
+            selectedLessonId = "";
+            openedLesson = null;
+            render();
+        }));
+    }
+
     function initialsFor(name) {
         return String(name).split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toLocaleUpperCase() || "—";
     }
 
     function closePopover(restoreFocus = false) {
         document.getElementById("popoverRoot").innerHTML = "";
-        document.querySelectorAll(".profile-trigger").forEach((button) => button.setAttribute("aria-expanded", "false"));
+        document.querySelectorAll(".profile-trigger, #studentNotificationButton").forEach((button) => button.setAttribute("aria-expanded", "false"));
         openPopover = "";
         if (restoreFocus) profileTrigger?.focus();
     }
@@ -997,6 +1167,12 @@
             presenceChannels = [];
             Promise.all(channelsToRemove.map((channel) => window.supabaseClient.removeChannel(channel)))
                 .catch((error) => console.error("Could not stop the student's presence channels.", error));
+            if (calendarChannel) {
+                const channelToRemove = calendarChannel;
+                calendarChannel = null;
+                window.supabaseClient.removeChannel(channelToRemove)
+                    .catch((error) => console.error("Could not stop the student's calendar subscription.", error));
+            }
             const { error } = await window.supabaseClient.auth.signOut();
             if (error) throw error;
             try {
@@ -1099,8 +1275,12 @@
     
     // Profile menu for student (like teacher)
     document.querySelectorAll(".profile-trigger").forEach((button) => button.addEventListener("click", () => showUserMenu(button)));
+    document.getElementById("studentNotificationButton").addEventListener("click", (event) => showNotifications(event.currentTarget));
+    window.setInterval(checkCalendarReminders, 60_000);
+    document.addEventListener("pointerdown", unlockReminderAudio, { once: true });
+    document.addEventListener("keydown", unlockReminderAudio, { once: true });
     document.addEventListener("click", (event) => {
-        if (openPopover && !event.target.closest(".popover-root, .profile-trigger")) closePopover();
+        if (openPopover && !event.target.closest(".popover-root, .profile-trigger, .popover-trigger")) closePopover();
     });
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && openPopover) closePopover(true);

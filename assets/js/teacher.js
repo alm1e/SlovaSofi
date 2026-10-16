@@ -2,7 +2,8 @@ const STORAGE_KEY = "slovasofiTeacherSpace";
 const LESSON_UNITS = ["A1", "A2", "B1", "B2"];
 const translations = {
     ua: {
-        "nav.overview": "Огляд", "nav.classes": "Класи", "nav.lessons": "Уроки", "nav.materials": "Матеріали", "nav.students": "Учні", "nav.home": "← На головну", "nav.label": "Навігація", "brand.home": "SlovaSofi — на головну", "language.label": "Мова", "menu.open": "Відкрити меню", "header.notifications": "Сповіщення", "modal.close": "Закрити", "teacher.role": "Викладач", "school.profile": "Профіль школи", "profile.open": "Профіль користувача: {name}", "profile.title": "Профіль користувача", "profile.signedOut": "Гість", "profile.notSignedIn": "Ви не ввійшли в обліковий запис", "profile.logout": "Вийти з профілю", "profile.login": "Увійти", "profile.logoutError": "Не вдалося вийти з профілю. Спробуйте ще раз.", "profile.loadError": "Не вдалося завантажити профіль користувача.", "school.title": "Профіль школи", "school.purpose": "Профіль школи — це спільний простір SlovaSofi. Тут зберігаються класи, уроки й навчальні матеріали школи.", "school.workspace": "Навчальний простір", "school.workspaceDetail": "Спільні класи, уроки та матеріали", "notifications.title": "Сповіщення", "notifications.empty": "Поки немає сповіщень", "notifications.description": "Тут з’являтимуться оновлення про класи, уроки та учнів.", "class.noClass": "Без класу",
+        "nav.overview": "Огляд", "nav.classes": "Класи", "nav.lessons": "Уроки", "nav.calendar": "Календар", "nav.materials": "Матеріали", "nav.students": "Учні", "nav.home": "← На головну", "nav.label": "Навігація", "brand.home": "SlovaSofi — на головну", "language.label": "Мова", "menu.open": "Відкрити меню", "header.notifications": "Сповіщення", "modal.close": "Закрити", "teacher.role": "Викладач", "school.profile": "Профіль школи", "profile.open": "Профіль користувача: {name}", "profile.title": "Профіль користувача", "profile.signedOut": "Гість", "profile.notSignedIn": "Ви не ввійшли в обліковий запис", "profile.logout": "Вийти з профілю", "profile.login": "Увійти", "profile.logoutError": "Не вдалося вийти з профілю. Спробуйте ще раз.", "profile.loadError": "Не вдалося завантажити профіль користувача.", "school.title": "Профіль школи", "school.purpose": "Профіль школи — це спільний простір SlovaSofi. Тут зберігаються класи, уроки й навчальні матеріали школи.", "school.workspace": "Навчальний простір", "school.workspaceDetail": "Спільні класи, уроки та матеріали", "notifications.title": "Сповіщення", "notifications.empty": "Поки немає сповіщень", "notifications.description": "Тут з’являтимуться оновлення про класи, уроки та учнів.", "class.noClass": "Без класу",
+        "calendar.title": "Розклад занять", "calendar.description": "Заплануйте заняття для класу. Учні побачать його у своєму кабінеті.", "calendar.add": "＋ Додати заняття", "calendar.today": "Сьогодні", "calendar.empty": "На цей день занять немає", "calendar.noEvents": "Поки немає запланованих занять", "calendar.createFirst": "Додайте заняття — воно з’явиться тут і в розкладі учнів.", "calendar.newEvent": "Нове заняття", "calendar.editEvent": "Редагувати заняття", "calendar.titleLabel": "Тема заняття", "calendar.classLabel": "Клас", "calendar.lessonLabel": "Матеріал уроку (необязательно)", "calendar.noLesson": "Без прив’язки до уроку", "calendar.dateLabel": "Дата і час", "calendar.duration": "Тривалість", "calendar.minutes": "мин.", "calendar.repeat": "Повтор", "calendar.noRepeat": "Не повторять", "calendar.weekly": "Каждую неделю", "calendar.repeatUntil": "Повторять до", "calendar.save": "Сохранить занятие", "calendar.delete": "Удалить занятие", "calendar.cancel": "Отмена", "calendar.saved": "Занятие добавлено в расписание.", "calendar.updated": "Расписание обновлено.", "calendar.deleted": "Занятие удалено.", "calendar.loadError": "Не удалось загрузить расписание.", "calendar.saveError": "Не удалось сохранить занятие:", "calendar.deleteConfirm": "Удалить занятие и все его повторы?", "calendar.recurring": "Еженедельно", "calendar.minutesShort": "мин", "calendar.noClasses": "Сначала создайте класс, чтобы запланировать занятие.", "calendar.soundReminder": "Скоро занятие: {title}",
         "page.overview": "Огляд", "page.classes": "Класи", "page.lessons": "Уроки", "page.materials": "Матеріали", "page.students": "Учні", "pageTitle": "Кабінет викладача", "welcome.badge": "ПАНЕЛЬ ВИКЛАДАЧА · SLOVASOFI", "welcome.title": "Добрий день, {name} 👋", "welcome.text": "Ваші заняття та матеріали в одному місці.", "welcome.storage": "✓ Демо-дані зберігаються у цьому браузері", "action.createLesson": "＋ Створити урок",
         "stat.classes": "Створено класів", "stat.students": "Учнів у класах", "stat.lessons": "Створено уроків", "stat.materials": "Матеріали", "overview.recent": "Останні уроки", "overview.recentHint": "Ваші останні створені уроки", "overview.allLessons": "Усі уроки →", "overview.yourClasses": "Ваші класи", "overview.groups": "Групи учнів", "overview.allClasses": "Усі класи →",
         "classes.title": "Класи", "classes.description": "Створюйте групи та призначайте їм окремі уроки.", "classes.create": "＋ Створити клас", "classes.search": "Пошук класів…", "classes.lessons": "Уроки →", "classes.notFound": "Класи не знайдено", "classes.notFoundHint": "Змініть запит або створіть новий клас.",
@@ -21,6 +22,7 @@ const translations = {
     },
     ru: {
         "nav.overview": "Обзор", "nav.classes": "Классы", "nav.lessons": "Уроки", "nav.materials": "Материалы", "nav.students": "Ученики", "nav.home": "← На главную", "nav.label": "Основная навигация", "brand.home": "SlovaSofi — на главную", "language.label": "Язык", "menu.open": "Открыть меню", "header.notifications": "Уведомления", "modal.close": "Закрыть", "teacher.role": "Преподаватель", "school.profile": "Профиль школы", "profile.open": "Профиль пользователя: {name}", "profile.title": "Профиль пользователя", "profile.signedOut": "Гость", "profile.notSignedIn": "Вы не вошли в учётную запись", "profile.logout": "Выйти из профиля", "profile.login": "Войти", "profile.logoutError": "Не удалось выйти из профиля. Попробуйте ещё раз.", "profile.loadError": "Не удалось загрузить профиль пользователя.", "school.title": "Профиль школы", "school.purpose": "Профиль школы — это общее пространство SlovaSofi. Здесь находятся классы, уроки и учебные материалы школы.", "school.workspace": "Учебное пространство", "school.workspaceDetail": "Общие классы, уроки и материалы", "notifications.title": "Уведомления", "notifications.empty": "Пока нет уведомлений", "notifications.description": "Здесь будут появляться обновления о классах, уроках и учениках.", "class.noClass": "Без класса",
+        "nav.calendar": "Календарь", "calendar.title": "Расписание занятий", "calendar.description": "Планируйте занятия для классов. Ученики увидят расписание в своём кабинете.", "calendar.add": "＋ Добавить занятие", "calendar.today": "Сегодня", "calendar.empty": "На этот день занятий нет", "calendar.noEvents": "Пока нет запланированных занятий", "calendar.createFirst": "Добавьте занятие — оно появится здесь и в расписании учеников.", "calendar.newEvent": "Новое занятие", "calendar.editEvent": "Изменить занятие", "calendar.titleLabel": "Тема занятия", "calendar.classLabel": "Класс", "calendar.lessonLabel": "Урок (необязательно)", "calendar.noLesson": "Без привязки к уроку", "calendar.dateLabel": "Дата и время", "calendar.duration": "Длительность", "calendar.minutes": "мин.", "calendar.repeat": "Повтор", "calendar.noRepeat": "Не повторять", "calendar.weekly": "Каждую неделю", "calendar.repeatUntil": "Повторять до", "calendar.save": "Сохранить занятие", "calendar.delete": "Удалить занятие", "calendar.cancel": "Отмена", "calendar.saved": "Занятие добавлено в расписание.", "calendar.updated": "Расписание обновлено.", "calendar.deleted": "Занятие удалено.", "calendar.loadError": "Не удалось загрузить расписание.", "calendar.saveError": "Не удалось сохранить занятие:", "calendar.deleteConfirm": "Удалить занятие и все его повторы?", "calendar.recurring": "Каждую неделю", "calendar.minutesShort": "мин", "calendar.noClasses": "Сначала создайте класс, чтобы запланировать занятие.", "calendar.soundReminder": "Скоро занятие: {title}",
         "page.overview": "Обзор", "page.classes": "Классы", "page.lessons": "Уроки", "page.materials": "Материалы", "page.students": "Ученики", "pageTitle": "Кабинет преподавателя", "welcome.badge": "ПАНЕЛЬ ПРЕПОДАВАТЕЛЯ · SLOVASOFI", "welcome.title": "Добрый день, {name} 👋", "welcome.text": "Ваши занятия и материалы в одном месте.", "welcome.storage": "✓ Демо-данные сохраняются в этом браузере", "action.createLesson": "＋ Создать урок",
         "stat.classes": "Создано классов", "stat.students": "Учеников в классах", "stat.lessons": "Создано уроков", "stat.materials": "Материалы", "overview.recent": "Последние уроки", "overview.recentHint": "Ваши недавно созданные уроки", "overview.allLessons": "Все уроки →", "overview.yourClasses": "Ваши классы", "overview.groups": "Группы учеников", "overview.allClasses": "Все классы →",
         "classes.title": "Классы", "classes.description": "Создавайте группы и назначайте им отдельные уроки.", "classes.create": "＋ Создать класс", "classes.search": "Поиск классов…", "classes.lessons": "Уроки →", "classes.notFound": "Классы не найдены", "classes.notFoundHint": "Измените запрос или создайте новый класс.",
@@ -174,6 +176,101 @@ Object.assign(translations.en, {
     "classes.noStudents": "No students yet"
 });
 Object.assign(translations.ua, {
+    "nav.calendar": "Календар",
+    "page.calendar": "Календар",
+    "calendar.title": "Розклад занять",
+    "calendar.description": "Плануйте заняття для класів. Учні побачать розклад у своєму кабінеті.",
+    "calendar.add": "＋ Додати заняття",
+    "calendar.today": "Сьогодні",
+    "calendar.empty": "На цей день занять немає",
+    "calendar.noEvents": "Поки немає запланованих занять",
+    "calendar.createFirst": "Додайте заняття — воно з’явиться тут і в розкладі учнів.",
+    "calendar.newEvent": "Нове заняття",
+    "calendar.editEvent": "Редагувати заняття",
+    "calendar.titleLabel": "Тема заняття",
+    "calendar.classLabel": "Клас",
+    "calendar.lessonLabel": "Урок (необов’язково)",
+    "calendar.noLesson": "Без прив’язки до уроку",
+    "calendar.dateLabel": "Дата і час",
+    "calendar.duration": "Тривалість",
+    "calendar.minutes": "хв",
+    "calendar.repeat": "Повтор",
+    "calendar.noRepeat": "Не повторювати",
+    "calendar.weekly": "Щотижня",
+    "calendar.repeatUntil": "Повторювати до",
+    "calendar.save": "Зберегти заняття",
+    "calendar.delete": "Видалити заняття",
+    "calendar.cancel": "Скасувати",
+    "calendar.saved": "Заняття додано до розкладу.",
+    "calendar.updated": "Розклад оновлено.",
+    "calendar.deleted": "Заняття видалено.",
+    "calendar.loadError": "Не вдалося завантажити розклад.",
+    "calendar.saveError": "Не вдалося зберегти заняття:",
+    "calendar.deleteConfirm": "Видалити заняття та всі його повтори?",
+    "calendar.recurring": "Щотижня",
+    "calendar.minutesShort": "хв",
+    "calendar.noClasses": "Спочатку створіть клас, щоб запланувати заняття.",
+    "calendar.soundReminder": "Незабаром заняття: {title}",
+    "calendar.upcoming": "Найближчі заняття",
+    "calendar.upcomingHint": "Наступні 30 днів",
+    "calendar.open": "Відкрити календар →",
+    "calendar.invalidDate": "Виберіть коректні дату й час.",
+    "calendar.invalidClass": "Виберіть клас зі списку.",
+    "calendar.invalidRepeat": "Дата завершення має бути в межах року від початку."
+});
+Object.assign(translations.en, {
+    "nav.calendar": "Calendar",
+    "page.calendar": "Calendar",
+    "calendar.title": "Class schedule",
+    "calendar.description": "Schedule a class session. Students will see it in their dashboard.",
+    "calendar.add": "＋ Add session",
+    "calendar.today": "Today",
+    "calendar.empty": "No sessions on this day",
+    "calendar.noEvents": "No sessions scheduled yet",
+    "calendar.createFirst": "Add a session to show it here and in your students' schedule.",
+    "calendar.newEvent": "New session",
+    "calendar.editEvent": "Edit session",
+    "calendar.titleLabel": "Session topic",
+    "calendar.classLabel": "Class",
+    "calendar.lessonLabel": "Lesson (optional)",
+    "calendar.noLesson": "No linked lesson",
+    "calendar.dateLabel": "Date and time",
+    "calendar.duration": "Duration",
+    "calendar.minutes": "min",
+    "calendar.repeat": "Repeat",
+    "calendar.noRepeat": "Does not repeat",
+    "calendar.weekly": "Weekly",
+    "calendar.repeatUntil": "Repeat until",
+    "calendar.save": "Save session",
+    "calendar.delete": "Delete session",
+    "calendar.cancel": "Cancel",
+    "calendar.saved": "Session added to the schedule.",
+    "calendar.updated": "Schedule updated.",
+    "calendar.deleted": "Session deleted.",
+    "calendar.loadError": "Could not load the schedule.",
+    "calendar.saveError": "Could not save the session:",
+    "calendar.deleteConfirm": "Delete this session and all its repeats?",
+    "calendar.recurring": "Weekly",
+    "calendar.minutesShort": "min",
+    "calendar.noClasses": "Create a class before scheduling a session.",
+    "calendar.soundReminder": "Upcoming session: {title}",
+    "calendar.upcoming": "Upcoming sessions",
+    "calendar.upcomingHint": "Next 30 days",
+    "calendar.open": "Open calendar →",
+    "calendar.invalidDate": "Choose a valid date and time.",
+    "calendar.invalidClass": "Choose a class from the list.",
+    "calendar.invalidRepeat": "The repeat end date must be within one year."
+});
+Object.assign(translations.ru, { "nav.calendar": "Календарь", "page.calendar": "Календарь" });
+Object.assign(translations.ru, {
+    "calendar.upcoming": "Ближайшие занятия",
+    "calendar.upcomingHint": "Следующие 30 дней",
+    "calendar.open": "Открыть календарь →",
+    "calendar.invalidDate": "Выберите корректные дату и время.",
+    "calendar.invalidClass": "Выберите класс из списка.",
+    "calendar.invalidRepeat": "Дата повтора должна быть в пределах года после начала."
+});
+Object.assign(translations.ua, {
     "welcome.morning": "Доброго ранку, {name} ☀️",
     "welcome.day": "Добрий день, {name} 👋",
     "welcome.evening": "Добрий вечір, {name} 🌇",
@@ -258,6 +355,12 @@ let currentTheme = document.documentElement.dataset.theme === "dark" ? "dark" : 
 let themeUpdateTimer = null;
 let currentUser = null;
 let workspaceAccess = { workspaceOwnerId: null, permissions: ownerPermissions, staff: [] };
+let calendarEvents = [];
+let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let calendarReminderTimer = null;
+let calendarChannel = null;
+let calendarAudioContext = null;
+const playedCalendarReminders = new Set();
 let presenceChannels = [];
 let onlineUserIds = new Set();
 let workspaceSaveQueue = Promise.resolve(true);
@@ -682,6 +785,13 @@ async function loadCurrentUser() {
                 permissions: workspace.permissions,
                 staff: workspace.staff
             };
+            try {
+                await loadCalendarEvents();
+            } catch (calendarError) {
+                console.error("Could not load calendar events.", calendarError);
+                showToast(`${t("calendar.loadError")} ${calendarError.message}`);
+            }
+            subscribeToCalendarChanges(window.supabaseClient, currentUser);
             startPresenceTracking(window.supabaseClient, [
                 currentUser.id,
                 ...data.classes.map((item) => item.teacherId),
@@ -770,7 +880,15 @@ async function signOut() {
 }
 
 function showNotifications(button) {
-    openPopoverAt(button, `<div class="popover-heading"><span class="notification-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span><div><strong>${t("header.notifications")}</strong><small>${t("notifications.empty")}</small></div></div><p class="popover-copy">${t("notifications.description")}</p>`, "notifications");
+    const upcoming = calendarOccurrences(calendarEvents, new Date(), new Date(Date.now() + 7 * 86_400_000)).slice(0, 5);
+    const content = upcoming.length
+        ? `<div class="calendar-notification-list">${upcoming.map((event) => `<button type="button" class="calendar-notification" data-open-calendar><strong>${escapeHtml(event.title)}</strong><small>${formatCalendarDate(event.occurrenceAt, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · ${escapeHtml(data.classes.find((item) => item.id === event.class_id)?.name || t("class.noClass"))}</small></button>`).join("")}<button type="button" class="text-link" data-open-calendar>${t("calendar.open")}</button></div>`
+        : `<p class="popover-copy">${t("notifications.empty")}</p>`;
+    openPopoverAt(button, `<div class="popover-heading"><span class="notification-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span><div><strong>${t("header.notifications")}</strong><small>${upcoming.length ? t("calendar.upcoming") : t("notifications.empty")}</small></div></div>${content}`, "notifications");
+    document.querySelectorAll("[data-open-calendar]").forEach((item) => item.addEventListener("click", () => {
+        closePopover();
+        setView("calendar");
+    }));
 }
 
 function className(classId) {
@@ -907,7 +1025,7 @@ function render() {
         renderLessonWorkspace();
         return;
     }
-    const renderers = { overview: renderOverview, classes: renderClasses, lessons: renderLessons, students: renderStudents, staff: renderStaff };
+    const renderers = { overview: renderOverview, classes: renderClasses, lessons: renderLessons, calendar: renderCalendar, students: renderStudents, staff: renderStaff };
     pageContent.innerHTML = renderers[activeView]();
     bindPageActions();
     enhanceSelects(pageContent);
@@ -1270,6 +1388,281 @@ function renderOverview() {
                 <div class="class-preview">${featuredClasses.length ? featuredClasses.map((item) => `<div class="class-mini"><span class="class-dot"></span><div><strong>${escapeHtml(item.name)}</strong><small>${countLabel(item.students.length, "student")} · ${escapeHtml(formatCourse(item.course))}</small></div></div>`).join("") : emptyMessage(t("empty.noClasses"), t("empty.createClass"))}</div>
             </section>
         </div>`;
+}
+
+function localDateKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function calendarOccurrences(events, rangeStart, rangeEnd) {
+    const occurrences = [];
+    events.forEach((event) => {
+        const start = new Date(event.starts_at);
+        if (Number.isNaN(start.getTime())) return;
+        const lastDate = event.recurrence === "weekly" && event.repeat_until
+            ? new Date(`${event.repeat_until}T23:59:59`)
+            : start;
+        const occurrence = new Date(start);
+        while (occurrence <= lastDate && occurrence <= rangeEnd) {
+            if (occurrence >= rangeStart && occurrence <= rangeEnd) {
+                occurrences.push({ ...event, occurrenceAt: new Date(occurrence) });
+            }
+            if (event.recurrence !== "weekly") break;
+            occurrence.setDate(occurrence.getDate() + 7);
+        }
+    });
+    return occurrences.sort((left, right) => left.occurrenceAt - right.occurrenceAt);
+}
+
+function calendarLocale() {
+    return currentLanguage === "ua" ? "uk-UA" : currentLanguage === "en" ? "en-US" : "ru-RU";
+}
+
+async function loadCalendarEvents() {
+    if (!window.supabaseClient || !currentUser?.id) return;
+    const { data: events, error } = await window.supabaseClient.from("calendar_events")
+        .select("id,teacher_id,class_id,lesson_id,title,starts_at,duration_minutes,recurrence,repeat_until")
+        .order("starts_at");
+    if (error) throw error;
+    calendarEvents = events || [];
+    checkCalendarReminders();
+}
+
+function subscribeToCalendarChanges(client, user) {
+    if (calendarChannel) {
+        client.removeChannel(calendarChannel).catch((error) => console.error("Could not stop the previous calendar subscription.", error));
+        calendarChannel = null;
+    }
+    if (!client?.channel || !user?.id) return;
+    const changeOptions = {
+        event: "*",
+        schema: "public",
+        table: "calendar_events",
+        ...(workspaceAccess.role === "admin" ? {} : { filter: `teacher_id=eq.${user.id}` })
+    };
+    calendarChannel = client.channel(`calendar-events:${user.id}`)
+        .on("postgres_changes", changeOptions, ({ eventType, new: next, old: previous }) => {
+            if (eventType === "DELETE") calendarEvents = calendarEvents.filter((event) => event.id !== previous.id);
+            else {
+                const index = calendarEvents.findIndex((event) => event.id === next.id);
+                if (index < 0) calendarEvents.push(next);
+                else calendarEvents[index] = next;
+            }
+            checkCalendarReminders();
+            if (activeView === "calendar") render();
+        })
+        .subscribe((status) => {
+            if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") console.error(`Calendar updates could not be received: ${status}.`);
+        });
+}
+
+function playCalendarReminderSound() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    try {
+        calendarAudioContext ||= new AudioContextClass();
+        const audio = calendarAudioContext;
+        if (audio.state === "suspended") audio.resume().catch((error) => console.warn("The browser blocked the calendar reminder sound.", error));
+        const oscillator = audio.createOscillator();
+        const gain = audio.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.value = 880;
+        gain.gain.setValueAtTime(0.0001, audio.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.12, audio.currentTime + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.45);
+        oscillator.connect(gain);
+        gain.connect(audio.destination);
+        oscillator.start();
+        oscillator.stop(audio.currentTime + 0.46);
+    } catch (error) {
+        console.warn("The browser did not allow the calendar reminder sound.", error);
+    }
+}
+
+function unlockCalendarSound() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass || calendarAudioContext) return;
+    calendarAudioContext = new AudioContextClass();
+    calendarAudioContext.resume().catch((error) => console.warn("Could not enable calendar reminder audio.", error));
+}
+
+function checkCalendarReminders() {
+    if (!currentUser || !calendarEvents.length) return;
+    let savedReminders = [];
+    try {
+        const storedReminders = JSON.parse(localStorage.getItem("slovasofiCalendarReminders") || "[]");
+        savedReminders = Array.isArray(storedReminders) ? storedReminders.filter((item) => typeof item === "string").slice(-100) : [];
+        savedReminders.forEach((key) => playedCalendarReminders.add(key));
+    } catch (error) {
+        console.error("Could not read the calendar reminder state.", error);
+    }
+    const now = new Date();
+    const soon = calendarOccurrences(calendarEvents, now, new Date(now.getTime() + 15 * 60_000));
+    soon.forEach((event) => {
+        const reminderKey = `${currentUser.id}:${event.id}:${event.occurrenceAt.toISOString()}`;
+        if (playedCalendarReminders.has(reminderKey)) return;
+        playedCalendarReminders.add(reminderKey);
+        try {
+            savedReminders.push(reminderKey);
+            localStorage.setItem("slovasofiCalendarReminders", JSON.stringify(savedReminders.slice(-100)));
+        } catch (error) {
+            console.error("Could not save the calendar reminder state.", error);
+        }
+        showToast(t("calendar.soundReminder", { title: event.title }));
+        playCalendarReminderSound();
+    });
+}
+
+function localDateTimeValue(date) {
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+    return local.toISOString().slice(0, 16);
+}
+
+function openCalendarEvent(event = null, selectedDate = new Date()) {
+    if (!hasPermission("manage_classes_students")) return;
+    if (!data.classes.length) {
+        showToast(t("calendar.noClasses"));
+        return;
+    }
+    const startAt = event ? new Date(event.starts_at) : new Date(selectedDate);
+    if (!event) startAt.setHours(10, 0, 0, 0);
+    const selectedClassId = event?.class_id || data.classes[0].id;
+    const classOptions = data.classes.map((group) => `<option value="${escapeHtml(group.id)}" ${group.id === selectedClassId ? "selected" : ""}>${escapeHtml(group.name)}</option>`).join("");
+    const lessonOptions = data.lessons.map((lesson) => `<option value="${escapeHtml(lesson.id)}" ${lesson.id === event?.lesson_id ? "selected" : ""}>${escapeHtml(lesson.title)}</option>`).join("");
+    const repeatUntil = event?.repeat_until || localDateKey(new Date(startAt.getFullYear(), startAt.getMonth(), startAt.getDate() + 56));
+    const title = event ? t("calendar.editEvent") : t("calendar.newEvent");
+    openModal(`${modalHeader(title)}
+        <form id="calendarEventForm">
+            <div class="form-field"><label for="calendarEventTitle">${t("calendar.titleLabel")}</label><input id="calendarEventTitle" name="title" maxlength="120" required value="${escapeHtml(event?.title || "")}"></div>
+            <div class="form-field"><label for="calendarEventClass">${t("calendar.classLabel")}</label><select id="calendarEventClass" name="classId" required>${classOptions}</select></div>
+            <div class="form-field"><label for="calendarEventLesson">${t("calendar.lessonLabel")}</label><select id="calendarEventLesson" name="lessonId"><option value="">${t("calendar.noLesson")}</option>${lessonOptions}</select></div>
+            <div class="form-grid"><div class="form-field"><label for="calendarEventStartsAt">${t("calendar.dateLabel")}</label><input id="calendarEventStartsAt" name="startsAt" type="datetime-local" required value="${localDateTimeValue(startAt)}"></div><div class="form-field"><label for="calendarEventDuration">${t("calendar.duration")}</label><select id="calendarEventDuration" name="duration" required>${[30, 45, 60, 90, 120].map((minutes) => `<option value="${minutes}" ${Number(event?.duration_minutes || 60) === minutes ? "selected" : ""}>${minutes} ${t("calendar.minutes")}</option>`).join("")}</select></div></div>
+            <div class="form-field"><label for="calendarEventRecurrence">${t("calendar.repeat")}</label><select id="calendarEventRecurrence" name="recurrence"><option value="none" ${event?.recurrence !== "weekly" ? "selected" : ""}>${t("calendar.noRepeat")}</option><option value="weekly" ${event?.recurrence === "weekly" ? "selected" : ""}>${t("calendar.weekly")}</option></select></div>
+            <div class="form-field" data-repeat-until ${event?.recurrence === "weekly" ? "" : "hidden"}><label for="calendarEventRepeatUntil">${t("calendar.repeatUntil")}</label><input id="calendarEventRepeatUntil" name="repeatUntil" type="date" value="${repeatUntil}" min="${localDateKey(startAt)}" max="${localDateKey(new Date(startAt.getFullYear(), startAt.getMonth(), startAt.getDate() + 365))}"></div>
+            <div class="modal-actions">${event ? `<button type="button" class="button danger" data-calendar-delete="${escapeHtml(event.id)}">${t("calendar.delete")}</button>` : ""}<button type="button" class="button secondary" data-close>${t("calendar.cancel")}</button><button type="submit" class="button">${t("calendar.save")}</button></div>
+        </form>`, true);
+    const form = modalCard.querySelector("#calendarEventForm");
+    const recurrence = form.elements.recurrence;
+    const repeatUntilField = form.querySelector("[data-repeat-until]");
+    recurrence.addEventListener("change", () => {
+        repeatUntilField.hidden = recurrence.value !== "weekly";
+        form.elements.repeatUntil.required = recurrence.value === "weekly";
+    });
+    form.elements.repeatUntil.required = recurrence.value === "weekly";
+    form.addEventListener("submit", async (submitEvent) => {
+        submitEvent.preventDefault();
+        const values = new FormData(form);
+        const startsAt = new Date(String(values.get("startsAt")));
+        if (Number.isNaN(startsAt.getTime())) {
+            form.elements.startsAt.setCustomValidity(t("calendar.invalidDate"));
+            form.elements.startsAt.reportValidity();
+            return;
+        }
+        form.elements.startsAt.setCustomValidity("");
+        const classId = String(values.get("classId"));
+        const group = data.classes.find((item) => item.id === classId);
+        if (!group) {
+            showToast(t("calendar.invalidClass"));
+            return;
+        }
+        const repeating = values.get("recurrence") === "weekly";
+        const repeatDate = String(values.get("repeatUntil") || "");
+        const startDate = localDateKey(startsAt);
+        const maxRepeatDate = localDateKey(new Date(startsAt.getFullYear(), startsAt.getMonth(), startsAt.getDate() + 365));
+        if (repeating && (!repeatDate || repeatDate < startDate || repeatDate > maxRepeatDate)) {
+            form.elements.repeatUntil.setCustomValidity(t("calendar.invalidRepeat"));
+            form.elements.repeatUntil.reportValidity();
+            return;
+        }
+        form.elements.repeatUntil.setCustomValidity("");
+        const payload = {
+            ...(event ? { id: event.id } : {}),
+            teacher_id: group.teacherId || currentUser.id,
+            class_id: classId,
+            lesson_id: String(values.get("lessonId") || "") || null,
+            title: String(values.get("title")).trim(),
+            starts_at: startsAt.toISOString(),
+            duration_minutes: Number(values.get("duration")),
+            recurrence: repeating ? "weekly" : "none",
+            repeat_until: repeating ? repeatDate : null,
+            updated_at: new Date().toISOString()
+        };
+        const submitButton = form.querySelector('[type="submit"]');
+        submitButton.disabled = true;
+        try {
+            const { error } = await window.supabaseClient.from("calendar_events").upsert(payload);
+            if (error) throw error;
+            await loadCalendarEvents();
+            closeModal();
+            render();
+            showToast(t(event ? "calendar.updated" : "calendar.saved"));
+        } catch (error) {
+            console.error("Could not save the calendar event.", error);
+            showToast(`${t("calendar.saveError")} ${error.message}`);
+            submitButton.disabled = false;
+        }
+    });
+    modalCard.querySelector("[data-calendar-delete]")?.addEventListener("click", async (clickEvent) => {
+        const deleteButton = clickEvent.currentTarget;
+        if (!window.confirm(t("calendar.deleteConfirm"))) return;
+        deleteButton.disabled = true;
+        try {
+            const { error } = await window.supabaseClient.from("calendar_events").delete().eq("id", event.id);
+            if (error) throw error;
+            await loadCalendarEvents();
+            closeModal();
+            render();
+            showToast(t("calendar.deleted"));
+        } catch (error) {
+            console.error("Could not delete the calendar event.", error);
+            showToast(`${t("calendar.saveError")} ${error.message}`);
+            deleteButton.disabled = false;
+        }
+    });
+}
+
+function formatCalendarDate(date, options = { day: "numeric", month: "short" }) {
+    return new Intl.DateTimeFormat(calendarLocale(), options).format(date);
+}
+
+function calendarEventLabel(event) {
+    const group = data.classes.find((item) => item.id === event.class_id);
+    return `${group?.name || t("class.noClass")} · ${event.title}`;
+}
+
+function renderCalendar() {
+    const writable = hasPermission("manage_classes_students");
+    const monthStart = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+    const gridStart = new Date(monthStart);
+    gridStart.setDate(gridStart.getDate() - ((gridStart.getDay() + 6) % 7));
+    const gridEnd = new Date(gridStart);
+    gridEnd.setDate(gridEnd.getDate() + 41);
+    gridEnd.setHours(23, 59, 59, 999);
+    const occurrences = calendarOccurrences(calendarEvents, gridStart, gridEnd);
+    const eventsByDate = new Map();
+    occurrences.forEach((event) => {
+        const key = localDateKey(event.occurrenceAt);
+        const dayEvents = eventsByDate.get(key) || [];
+        dayEvents.push(event);
+        eventsByDate.set(key, dayEvents);
+    });
+    const weekdays = Array.from({ length: 7 }, (_, index) => {
+        const day = new Date(2024, 0, 1 + index);
+        return `<span>${escapeHtml(new Intl.DateTimeFormat(calendarLocale(), { weekday: "short" }).format(day))}</span>`;
+    }).join("");
+    const cells = Array.from({ length: 42 }, (_, index) => {
+        const date = new Date(gridStart);
+        date.setDate(gridStart.getDate() + index);
+        const key = localDateKey(date);
+        const isCurrentMonth = date.getMonth() === calendarMonth.getMonth();
+        const events = eventsByDate.get(key) || [];
+        return `<button type="button" class="calendar-day ${isCurrentMonth ? "" : "is-outside"} ${key === localDateKey(new Date()) ? "is-today" : ""}" data-calendar-day="${key}" ${writable ? `aria-label="${escapeHtml(formatCalendarDate(date, { dateStyle: "full" }))}"` : "disabled"}><span class="calendar-day-number">${date.getDate()}</span><span class="calendar-day-events">${events.slice(0, 3).map((event) => `<span class="calendar-event-chip" ${writable ? `data-calendar-event="${escapeHtml(event.id)}"` : ""}><time>${formatCalendarDate(event.occurrenceAt, { hour: "2-digit", minute: "2-digit" })}</time><span>${escapeHtml(calendarEventLabel(event))}</span></span>`).join("")}${events.length > 3 ? `<span class="calendar-more">+${events.length - 3}</span>` : ""}</span></button>`;
+    }).join("");
+    const monthLabel = new Intl.DateTimeFormat(calendarLocale(), { month: "long", year: "numeric" }).format(calendarMonth);
+    const nextEvents = calendarOccurrences(calendarEvents, new Date(), new Date(Date.now() + 30 * 86_400_000)).slice(0, 8);
+    return `<div class="section-heading calendar-heading"><div><h1>${t("calendar.title")}</h1><p>${t("calendar.description")}</p></div>${writable ? `<button class="button" type="button" data-calendar-new>${t("calendar.add")}</button>` : ""}</div>
+        <div class="calendar-layout"><section class="panel calendar-panel"><div class="calendar-toolbar"><div><button class="mini-action" type="button" data-calendar-shift="-1" aria-label="←">‹</button><button class="button secondary small" type="button" data-calendar-today>${t("calendar.today")}</button><button class="mini-action" type="button" data-calendar-shift="1" aria-label="→">›</button></div><h2>${escapeHtml(monthLabel)}</h2></div><div class="calendar-weekdays">${weekdays}</div><div class="calendar-grid">${cells}</div></section>
+        <aside class="panel calendar-upcoming"><div class="panel-heading"><div><h2>${t("calendar.upcoming")}</h2><p class="hint">${t("calendar.upcomingHint")}</p></div><span class="calendar-upcoming-count">${nextEvents.length}</span></div>${nextEvents.length ? `<div class="calendar-upcoming-list">${nextEvents.map((event) => `<article class="calendar-upcoming-item" ${writable ? `data-calendar-event="${escapeHtml(event.id)}"` : ""}><time><strong>${formatCalendarDate(event.occurrenceAt, { day: "numeric" })}</strong><small>${formatCalendarDate(event.occurrenceAt, { month: "short" })}</small></time><div><strong>${escapeHtml(event.title)}</strong><small>${formatCalendarDate(event.occurrenceAt, { hour: "2-digit", minute: "2-digit" })} · ${escapeHtml(data.classes.find((item) => item.id === event.class_id)?.name || t("class.noClass"))}${event.recurrence === "weekly" ? ` · ${t("calendar.recurring")}` : ""}</small></div></article>`).join("")}</div>` : `<div class="calendar-empty">${t(calendarEvents.length ? "calendar.empty" : "calendar.noEvents")}${!calendarEvents.length ? `<small>${t("calendar.createFirst")}</small>` : ""}</div>`}</aside></div>`;
 }
 
 function renderClasses() {
@@ -1991,6 +2384,28 @@ function emptyMessage(title, description) {
 }
 
 function bindPageActions() {
+    pageContent.querySelector("[data-calendar-new]")?.addEventListener("click", () => openCalendarEvent());
+    pageContent.querySelectorAll("[data-calendar-shift]").forEach((button) => button.addEventListener("click", () => {
+        calendarMonth.setMonth(calendarMonth.getMonth() + Number(button.dataset.calendarShift));
+        render();
+    }));
+    pageContent.querySelector("[data-calendar-today]")?.addEventListener("click", () => {
+        calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        render();
+    });
+    pageContent.querySelectorAll("[data-calendar-day]").forEach((button) => button.addEventListener("click", (event) => {
+        const existing = event.target.closest("[data-calendar-event]");
+        if (existing) {
+            const calendarEvent = calendarEvents.find((item) => item.id === existing.dataset.calendarEvent);
+            if (calendarEvent) openCalendarEvent(calendarEvent);
+            return;
+        }
+        openCalendarEvent(null, new Date(`${button.dataset.calendarDay}T10:00:00`));
+    }));
+    pageContent.querySelectorAll(".calendar-upcoming-item[data-calendar-event]").forEach((item) => item.addEventListener("click", () => {
+        const calendarEvent = calendarEvents.find((event) => event.id === item.dataset.calendarEvent);
+        if (calendarEvent) openCalendarEvent(calendarEvent);
+    }));
     pageContent.querySelectorAll("[data-open-class-id]").forEach((card) => card.addEventListener("click", (event) => {
         if (event.target.closest("[data-action],button,a,input,select,textarea,[role='button']")) return;
         handleAction("class-lessons", card.dataset.openClassId);
@@ -3125,6 +3540,8 @@ document.getElementById("sidebarBackdrop").addEventListener("click", () => {
 });
 document.querySelectorAll(".language-button").forEach((button) => button.addEventListener("click", () => setLanguage(button.dataset.lang)));
 document.getElementById("themeToggle").addEventListener("click", () => setTheme(currentTheme === "dark" ? "light" : "dark"));
+document.addEventListener("pointerdown", unlockCalendarSound, { once: true });
+document.addEventListener("keydown", unlockCalendarSound, { once: true });
 document.addEventListener("visibilitychange", () => {
     if (!document.hidden) updateThemeFromTime();
     scheduleThemeUpdate();
@@ -3160,6 +3577,7 @@ window.setInterval(() => {
         welcomeHeading.textContent = profileGreeting(currentUser);
     }
 }, 60_000);
+calendarReminderTimer = window.setInterval(checkCalendarReminders, 60_000);
 
 translateStaticUI();
 syncThemeToggle();

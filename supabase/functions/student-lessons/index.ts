@@ -392,7 +392,19 @@ Deno.serve(async (request: Request) => {
     }));
     const presenceWorkspaceIds = [...new Set(memberRows.map((row) => String(row.group.teacher_id || "")).filter(Boolean))];
     const classIds = [...new Set(memberRows.map((row) => row.classId))];
-    if (!classIds.length) return jsonResponse(200, { classes: [], lessons: [], presenceWorkspaceIds }, allowedOrigin);
+    if (!classIds.length) return jsonResponse(200, { classes: [], lessons: [], presenceWorkspaceIds, calendarEvents: [] }, allowedOrigin);
+
+    const { data: calendarEvents, error: calendarError } = action === "list"
+        ? await admin.from("calendar_events")
+            .select("id,class_id,title,starts_at,duration_minutes,recurrence,repeat_until")
+            .in("class_id", classIds)
+            .gte("starts_at", new Date(Date.now() - 366 * 86_400_000).toISOString())
+            .order("starts_at")
+        : { data: [], error: null };
+    if (calendarError) {
+        console.error("Could not load the student's class schedule.", calendarError);
+        return jsonResponse(500, { error: "Could not load the class schedule." }, allowedOrigin);
+    }
 
     const { data: assignments, error: assignmentsError } = await admin.from("class_lesson_assignments")
         .select("class_id,lesson_id,teacher_lessons(id,title,unit,activities)")
@@ -459,7 +471,7 @@ Deno.serve(async (request: Request) => {
                 ...progressSummary(activities, progress?.answers)
             }];
         })).values()];
-        return jsonResponse(200, { classes, lessons, presenceWorkspaceIds }, allowedOrigin);
+        return jsonResponse(200, { classes, lessons, presenceWorkspaceIds, calendarEvents: calendarEvents || [] }, allowedOrigin);
     }
 
     const assignment = assignmentRows.find((row) => String(row.lesson.id) === lessonId);

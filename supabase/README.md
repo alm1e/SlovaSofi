@@ -19,3 +19,5 @@ The student-directory migration backfills existing linked students. Apply it bef
 Add the deployed `teacher.html` and `student.html` URLs to Supabase Auth's allowed redirect URLs so invitation links can return to the correct dashboard.
 
 The migration preserves existing class ownership and lesson records, removes the previous shared-workspace membership table, and enforces access in PostgreSQL row-level security in addition to the dashboard UI.
+
+The calendar migration adds free in-app class scheduling with optional lesson links and weekly recurrence. Apply the migration and redeploy `student-lessons` so students can load their class schedules. Calendar changes are delivered through Supabase Realtime; reminder sounds play only while the relevant dashboard is open and the browser allows audio. This calendar does not connect to Google Calendar or create Google Meet links.
