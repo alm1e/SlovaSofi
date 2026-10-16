@@ -254,6 +254,10 @@
 
     function renderActivity(activity) {
         const index = activity.index;
+        if (activity.type === "text") {
+            const note = window.SlovaActivityUI?.renderNote(activity.content, activity.prompt);
+            if (note) return note;
+        }
         if (Array.isArray(activity.questions) && activity.questions.length) {
             const canSubmit = activity.questions.some((question) => question.gradable || question.reviewRequired);
             return `<section class="student-activity-group">
@@ -291,7 +295,12 @@
             controls = `<input type="hidden" data-answer-kind="blanks">`;
         } else if (activity.type === "multiple-choice" || activity.type === "one-of-many") {
             const options = Array.isArray(activity.options) ? activity.options : [];
-            body = `<div class="student-answer-options">${options.map((option) => `<label class="student-answer-option"><input type="radio" name="${radioName}" value="${escapeHtml(option)}" ${savedResponse === option ? "checked" : ""}><span>${escapeHtml(option)}</span></label>`).join("")}</div>`;
+            if (activity.type === "one-of-many" && String(options[0] || "").includes("___")) {
+                const [sentence, ...choices] = options;
+                const select = `<select class="student-inline-select" data-choice-select aria-label="${escapeHtml(text("choose"))}"><option value="">---</option>${choices.map((option) => `<option value="${escapeHtml(option)}" ${savedResponse === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>`;
+                const [before, ...after] = sentence.split("___");
+                body = `<p class="student-activity-content">${escapeHtml(before)}${select}${escapeHtml(after.join("___"))}</p>`;
+            } else body = `<div class="student-answer-options">${options.map((option) => `<label class="student-answer-option"><input type="radio" name="${radioName}" value="${escapeHtml(option)}" ${savedResponse === option ? "checked" : ""}><span>${escapeHtml(option)}</span></label>`).join("")}</div>`;
             controls = `<input type="hidden" data-answer-kind="choice">`;
         } else if (activity.type === "true-false") {
             body = `<p class="student-activity-content">${escapeHtml(activity.content || "")}</p><div class="student-answer-options">${[["true", text("true")], ["false", text("false")]].map(([value, label]) => `<label class="student-answer-option"><input type="radio" name="${radioName}" value="${value}" ${savedResponse === value ? "checked" : ""}><span>${escapeHtml(label)}</span></label>`).join("")}</div>`;
@@ -305,7 +314,7 @@
             const rows = activity.type === "match" ? activity.pairs || [] : activity.items || [];
             const options = activity.type === "match" ? activity.options || [] : activity.categories || [];
             const savedChoices = Array.isArray(savedResponse) ? savedResponse : [];
-            body = `<div class="student-match-list">${rows.map((item, itemIndex) => `<label class="student-match-row"><span>${escapeHtml(item)}</span><select data-match-answer aria-label="${escapeHtml(item)}"><option value="">${escapeHtml(text("choose"))}</option>${options.map((option) => `<option value="${escapeHtml(option)}" ${savedChoices[itemIndex] === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select></label>`).join("")}</div>`;
+            body = `<div class="student-match-list" data-pair-board ${activity.type === "columns" ? "data-pair-reuse" : ""}>${rows.map((item, itemIndex) => `<div class="student-match-row" data-pair-row><span>${escapeHtml(item)}</span><select data-match-answer aria-label="${escapeHtml(item)}"><option value="">${escapeHtml(text("choose"))}</option>${options.map((option) => `<option value="${escapeHtml(option)}" ${savedChoices[itemIndex] === option ? "selected" : ""}>${escapeHtml(option)}            </option>`).join("")}</select></div>`).join("")}</div>`;
             controls = `<input type="hidden" data-answer-kind="matches">`;
         } else if (activity.type === "table") {
             const savedParts = Array.isArray(savedResponse) ? savedResponse : [];
@@ -353,9 +362,9 @@
 
     function renderLessonDetail(lesson) {
         const sections = lessonSections(lesson);
-        return `<button class="text-link student-back-link" type="button" data-back-to-lessons>← ${escapeHtml(text("back"))}</button>
+        return `<button class="button secondary student-back-link" type="button" data-back-to-lessons>← ${escapeHtml(text("back"))}</button>
             <section class="student-lesson-hero"><span class="eyebrow">${escapeHtml(lesson.className || "")}</span><h1>${escapeHtml(lesson.title)}</h1><p>${escapeHtml(lesson.unit || "")} · ${escapeHtml(countLabel(activityCount(lesson), "activity"))}</p>${progressBadge(lesson)}</section>
-            <div class="student-section-list">${sections.map((section) => `<section class="panel student-section ${section.homework ? "student-homework-section" : ""}"><h2>${section.homework ? `${escapeHtml(text("homework"))} · ` : ""}${escapeHtml(section.title || text("section"))}</h2><div class="student-activity-list">${(Array.isArray(section.activities) ? section.activities : []).map((activity) => renderActivity(activity)).join("") || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</div></section>`).join("")}</div>`;
+            <div class="student-section-list">${sections.map((section) => `<section class="panel student-section ${section.homework ? "student-homework-section" : ""}" data-student-section><h2>${section.homework ? `${escapeHtml(text("homework"))} · ` : ""}${escapeHtml(section.title || text("section"))}</h2><div class="student-activity-list">${(Array.isArray(section.activities) ? section.activities : []).map((activity) => renderActivity(activity)).join("") || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</div></section>`).join("")}</div>`;
     }
 
     async function invokeLessonApi(payload) {
@@ -398,7 +407,7 @@
             return [...element.querySelectorAll("[data-word-answer] [data-remove-word]")].map((button) => button.dataset.removeWord);
         }
         if (kind === "blanks") return [...element.querySelectorAll("[data-blank-answer]")].map((input) => input.value.trim());
-        if (kind === "choice") return element.querySelector('input[type="radio"]:checked')?.value || "";
+        if (kind === "choice") return element.querySelector('input[type="radio"]:checked')?.value || element.querySelector("[data-choice-select]")?.value || "";
         if (kind === "order") return [...element.querySelectorAll("[data-order-item]")].map((item) => item.dataset.orderItem);
         if (kind === "matches") return [...element.querySelectorAll("[data-match-answer]")].map((select) => select.value);
         if (kind === "table") return [...element.querySelectorAll("[data-table-answer]")].map((input) => input.value.trim());
@@ -664,6 +673,7 @@
         pageContent.innerHTML = `${renderWelcome()}${openedLesson && openedLesson.id === selectedLessonId
             ? renderLessonDetail(openedLesson)
             : activeView === "classes" ? renderClasses() : renderLessons()}`;
+        window.SlovaActivityUI?.enhancePairing(pageContent, { empty: text("choose") });
         pageContent.querySelectorAll("[data-open-lesson]").forEach((button) => {
             button.addEventListener("click", () => openStudentLesson(button.dataset.openLesson));
         });
@@ -712,6 +722,15 @@
         });
     }
 
+    document.addEventListener("keydown", (event) => {
+        if (!["ArrowLeft", "ArrowRight"].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
+        if (event.target.closest("input, textarea, select, [contenteditable]")) return;
+        const sections = [...pageContent.querySelectorAll("[data-student-section]")];
+        if (!sections.length) return;
+        const current = sections.findIndex((section) => section.getBoundingClientRect().bottom > 120);
+        const target = sections[Math.max(0, Math.min(sections.length - 1, (current < 0 ? 0 : current) + (event.key === "ArrowRight" ? 1 : -1)))];
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
     pageContent.addEventListener("click", (event) => {
         const button = event.target.closest("[data-word-token], [data-remove-word]");
         if (!button) return;

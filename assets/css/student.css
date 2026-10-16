@@ -128,3 +128,31 @@
     .student-platform .student-auth-content { padding: 16px; }
     .student-platform .student-auth-brand { margin-bottom: 30px; }
 }
+
+/* Unified interactive activity look */
+.student-platform .student-word-token { border: 1px solid #b6cbbb; border-radius: 999px; padding: 8px 16px; font-weight: 600; transition: transform .15s ease, background .15s ease, border-color .15s ease; }
+.student-platform .student-word-token:hover { transform: translateY(-2px); }
+.student-platform .student-answer-zone { min-height: 56px; border-width: 2px; border-radius: 12px; }
+.student-platform .student-word-bank { border: 1px solid #dce7dc; border-radius: 12px; padding: 10px; background: #f6f9f6; }
+.student-platform .student-inline-answer { border: 0; border-bottom: 2px solid #9cbda5; border-radius: 6px 6px 0 0; background: #e6efe5; font-weight: 600; text-align: center; transition: background .18s ease, border-color .18s ease; }
+.student-platform .student-inline-answer:focus { outline: 0; border-bottom-color: #2b6446; background: #fff; }
+.student-platform .student-answer-option, .student-platform .student-order-list li { transition: border-color .18s ease, box-shadow .18s ease, background .18s ease; }
+.student-platform .student-answer-option:hover, .student-platform .student-order-list li:hover { border-color: #77a181; box-shadow: 0 2px 10px #2544320f; }
+.student-platform .student-answer-option:has(input:checked) { border-color: #6b9d78; background: #f2f8f4; }
+.student-platform .student-match-row { border-radius: 12px; }
+.activity-note { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; margin: 6px 0; padding: 14px 16px; border-radius: 14px; border: 1px solid #cfe2d6; background: #eef6f1; color: #1f4634; line-height: 1.5; }
+.activity-note-star { border-color: #ecd9a8; background: #fbf5e3; }
+.activity-note-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #2b6446; color: #fff; font: 700 15px/1 Georgia, serif; font-style: italic; }
+.activity-note-star .activity-note-icon { background: #d9ae58; color: #3b2f0e; font-style: normal; }
+.activity-note-body h4 { margin: 4px 0 6px; font-size: 16px; }
+.activity-note-body p { margin: 0 0 6px; }
+.activity-note-body ol { margin: 4px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+.activity-note-body em { font-style: italic; }
+.preview-inline-select, .student-inline-select { appearance: none; min-width: 110px; margin: 0 4px; padding: 4px 28px 4px 12px; border: 1px solid #b9d0be; border-radius: 10px; background: #f2f8f4 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%232b6446' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center; color: #1f4634; font: inherit; font-weight: 600; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.preview-inline-select:hover, .student-inline-select:hover, .preview-inline-select:focus, .student-inline-select:focus { border-color: #2b6446; box-shadow: 0 0 0 3px #2b644622; outline: none; }
+.preview-note-card { position: relative; padding: 0; border: 0; background: none; box-shadow: none; }
+.preview-note-card .note-actions { position: absolute; top: 8px; right: 8px; }
+.lesson-nav-buttons, .student-lesson-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+.lesson-nav-buttons .button, .student-lesson-nav .button { flex: 1 1 200px; }
+
+.student-platform .student-back-link { padding: 10px 20px; border-radius: 999px; font-weight: 700; }
