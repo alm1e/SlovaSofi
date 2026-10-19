@@ -29,15 +29,21 @@
         }).filter((image) => image.url);
     }
 
+    const chevron = (direction) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="${direction < 0 ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
     function html(images, fallbackAlt, imageClass) {
         if (!images.length) return "";
         const many = images.length > 1;
         const slides = images.map((image, index) => `<img class="slova-gallery-image ${escape(imageClass || "")}" src="${escape(image.url)}" alt="${escape(image.alt || fallbackAlt || "")}" title="${escape(label("zoom"))}" data-gallery-zoom ${index ? "hidden" : ""}>`).join("");
-        const nav = many ? `<div class="slova-gallery-nav">
-            <button type="button" class="slova-gallery-arrow" data-gallery-step="-1" aria-label="${escape(label("prev"))}">‹</button>
-            <span class="slova-gallery-count"><b data-gallery-current>1</b> ${escape(label("of"))} ${images.length}</span>
-            <button type="button" class="slova-gallery-arrow" data-gallery-step="1" aria-label="${escape(label("next"))}">›</button></div>` : "";
-        return `<figure class="slova-gallery" data-gallery data-gallery-index="0">${slides}${nav}</figure>`;
+        if (!many) return `<figure class="slova-gallery" data-gallery data-gallery-index="0">${slides}</figure>`;
+        const peek = (step, name) => `<button type="button" class="slova-gallery-peek slova-gallery-peek-${name}" data-gallery-step="${step}" aria-label="${escape(label(step < 0 ? "prev" : "next"))}"><img alt="" aria-hidden="true" draggable="false"></button>`;
+        return `<figure class="slova-gallery is-multiple" data-gallery data-gallery-index="0">
+            <div class="slova-gallery-stage">${peek(-1, "prev")}<div class="slova-gallery-slides">${slides}</div>${peek(1, "next")}</div>
+            <div class="slova-gallery-nav">
+                <button type="button" class="slova-gallery-arrow" data-gallery-step="-1" aria-label="${escape(label("prev"))}">${chevron(-1)}</button>
+                <span class="slova-gallery-count"><b data-gallery-current>1</b> ${escape(label("of"))} ${images.length}</span>
+                <button type="button" class="slova-gallery-arrow" data-gallery-step="1" aria-label="${escape(label("next"))}">${chevron(1)}</button>
+            </div></figure>`;
     }
 
     function showSlide(gallery, index) {
@@ -47,8 +53,25 @@
         gallery.dataset.galleryIndex = String(next);
         const counter = gallery.querySelector("[data-gallery-current]");
         if (counter) counter.textContent = String(next + 1);
+        [["prev", next - 1], ["next", next + 1]].forEach(([name, target]) => {
+            const peek = gallery.querySelector(`.slova-gallery-peek-${name}`);
+            if (!peek) return;
+            const exists = target >= 0 && target < slides.length;
+            peek.style.visibility = exists ? "visible" : "hidden";
+            if (exists) peek.querySelector("img").src = slides[target].src;
+        });
         return next;
     }
+
+    function initGalleries(root) {
+        (root || document).querySelectorAll("[data-gallery].is-multiple:not([data-gallery-ready])").forEach((gallery) => {
+            gallery.dataset.galleryReady = "true";
+            showSlide(gallery, 0);
+        });
+    }
+
+    new MutationObserver(() => initGalleries(document)).observe(document.documentElement, { childList: true, subtree: true });
+    initGalleries(document);
 
     function ensureLightbox() {
         if (lightbox) return lightbox;
