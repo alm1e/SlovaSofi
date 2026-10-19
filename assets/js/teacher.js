@@ -435,6 +435,40 @@ const imageUploadMessages = {
     en: { uploading: "Uploading image…", done: "Image added.", failed: "Could not upload the image:", login: "Sign in to upload images.", type: "Paste an image file." }
 };
 
+function readRawPixels(bitmap) {
+    const gl = document.createElement("canvas").getContext("webgl", { premultipliedAlpha: false, preserveDrawingBuffer: true });
+    if (!gl) return null;
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+    const framebuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+    const pixels = new Uint8ClampedArray(bitmap.width * bitmap.height * 4);
+    gl.readPixels(0, 0, bitmap.width, bitmap.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+    return pixels;
+}
+
+// Windows screenshots can arrive with zero alpha everywhere; the colours are intact, so rebuild an opaque image.
+async function recoverTransparentImage(file) {
+    const bitmap = await createImageBitmap(file, { premultiplyAlpha: "none", colorSpaceConversion: "none" });
+    const pixels = readRawPixels(bitmap);
+    if (!pixels) return null;
+    let hasColor = false;
+    for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i + 3] === 0 && (pixels[i] || pixels[i + 1] || pixels[i + 2])) hasColor = true;
+        pixels[i + 3] = 255;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext("2d").putImageData(new ImageData(pixels, bitmap.width, bitmap.height), 0, 0);
+    bitmap.close?.();
+    return hasColor ? canvas : null;
+}
+
 async function resizeImageForUpload(file) {
     if (file.type === "image/gif") return file;
     const bitmap = await createImageBitmap(file);
@@ -444,9 +478,18 @@ async function resizeImageForUpload(file) {
     canvas.width = Math.max(1, Math.round(bitmap.width * scale));
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     const context = canvas.getContext("2d");
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const sample = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    let visible = false;
+    for (let i = 3; i < sample.length; i += 4) if (sample[i] > 0) { visible = true; break; }
+    context.globalCompositeOperation = "destination-over";
     context.fillStyle = "#ffffff";
     context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    context.globalCompositeOperation = "source-over";
+    if (!visible) {
+        const recovered = await recoverTransparentImage(file);
+        if (recovered) context.drawImage(recovered, 0, 0, canvas.width, canvas.height);
+    }
     bitmap.close?.();
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.88));
     if (!blob || blob.size < 100) throw new Error("Could not read the image");
