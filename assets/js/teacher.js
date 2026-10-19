@@ -549,7 +549,7 @@ async function attachImageToBlock(file, textarea, block, sourceUrl = "") {
         let url = "";
         if (file) {
             url = await uploadLessonImage(file);
-        } else if (/^https:\/\/media-a\.edvibe\.com\/files\/LessonExerciseImages\//i.test(sourceUrl)) {
+        } else if (/^https:\/\//i.test(sourceUrl)) {
             try {
                 const { data, error } = await window.supabaseClient.functions.invoke("import-lesson-image", { body: { url: sourceUrl } });
                 if (error || !data?.base64 || !data?.contentType?.startsWith("image/")) throw error || new Error("Import failed");
