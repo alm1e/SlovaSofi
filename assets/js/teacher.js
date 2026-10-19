@@ -460,6 +460,23 @@ async function uploadLessonImage(file) {
     return window.supabaseClient.storage.from("lesson-images").getPublicUrl(path).data.publicUrl;
 }
 
+let lastImageBlockElement = null;
+
+// Ctrl+V anywhere on the page inserts a copied image into the open "image" block.
+document.addEventListener("paste", (event) => {
+    const items = [...(event.clipboardData?.items || [])];
+    const file = items.find((item) => item.type?.startsWith("image/"))?.getAsFile?.();
+    if (!file) return;
+    const target = lastImageBlockElement?.isConnected ? lastImageBlockElement
+        : document.querySelector('.builder-block .builder-block-fields:not([hidden]) > .form-field > textarea[data-image-block="true"]')?.closest(".builder-block");
+    const field = target?.querySelector(':scope > .builder-block-fields > .form-field > textarea[data-field="content"]');
+    if (!field || field.disabled || field.dataset.imageBlock !== "true") return;
+    event.preventDefault();
+    const activities = activeDraftSection?.()?.activities;
+    const block = activities?.[Number(target.dataset.blockIndex)];
+    if (block) attachImageToBlock(file, field, block);
+});
+
 async function attachImageToBlock(file, textarea, block) {
     const messages = imageUploadMessages[currentLanguage] || imageUploadMessages.ru;
     textarea.disabled = true;
@@ -3614,14 +3631,11 @@ function bindActivityBlockActions() {
         const currentBlock = () => activeDraftSection().activities[Number(blockElement.dataset.blockIndex)];
         const contentField = blockElement.querySelector(':scope > .builder-block-fields > .form-field > textarea[data-field="content"]');
         if (contentField && currentBlock()?.type === "image") {
+            contentField.dataset.imageBlock = "true";
             const imageFrom = (files) => [...(files || [])].find((item) => item.type?.startsWith("image/"));
-            contentField.addEventListener("paste", (event) => {
-                const fromItems = [...(event.clipboardData?.items || [])].map((item) => item.getAsFile?.()).filter(Boolean);
-                const file = imageFrom(event.clipboardData?.files) || imageFrom(fromItems);
-                if (!file) return;
-                event.preventDefault();
-                attachImageToBlock(file, contentField, currentBlock());
-            });
+            blockElement.addEventListener("pointerdown", () => { lastImageBlockElement = blockElement; });
+            blockElement.addEventListener("focusin", () => { lastImageBlockElement = blockElement; });
+            if (!lastImageBlockElement && !blockElement.querySelector(".builder-block-fields")?.hidden) lastImageBlockElement = blockElement;
             contentField.addEventListener("dragover", (event) => {
                 if ([...(event.dataTransfer?.types || [])].includes("Files")) event.preventDefault();
             });
