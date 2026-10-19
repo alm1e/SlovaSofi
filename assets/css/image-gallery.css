@@ -1,0 +1,26 @@
+.slova-gallery { margin: 0; text-align: center; }
+.slova-gallery-image { display: block; max-width: 100%; max-height: 460px; margin: 0 auto; border-radius: 10px; object-fit: contain; cursor: zoom-in; }
+.slova-gallery-image[hidden] { display: none; }
+.slova-gallery-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 10px; }
+.slova-gallery-count { min-width: 54px; font-size: 14px; opacity: .8; }
+.slova-gallery-count b { color: #2f9e6b; }
+.slova-gallery-arrow { width: 32px; height: 32px; padding: 0; border: 1px solid rgba(128, 150, 135, .4); border-radius: 50%; background: transparent; color: inherit; font-size: 20px; line-height: 1; cursor: pointer; }
+.slova-gallery-arrow:hover { background: rgba(47, 158, 107, .16); border-color: #2f9e6b; }
+
+.slova-lightbox { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 56px 72px; background: rgba(6, 10, 8, .88); }
+.slova-lightbox[hidden] { display: none; }
+.slova-lightbox-image { max-width: 100%; max-height: 100%; border-radius: 8px; object-fit: contain; background: #fff; box-shadow: 0 20px 60px rgba(0, 0, 0, .5); }
+.slova-lightbox-close, .slova-lightbox-arrow { position: absolute; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .14); color: #fff; font-size: 28px; line-height: 1; cursor: pointer; }
+.slova-lightbox-close:hover, .slova-lightbox-arrow:hover { background: rgba(255, 255, 255, .26); }
+.slova-lightbox-close { top: 14px; right: 16px; }
+.slova-lightbox-arrow { top: 50%; transform: translateY(-50%); }
+.slova-lightbox-arrow[hidden] { display: none; }
+.slova-lightbox-prev { left: 14px; }
+.slova-lightbox-next { right: 14px; }
+.slova-lightbox-count { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 14px; }
+html.slova-lightbox-open { overflow: hidden; }
+
+@media (max-width: 700px) {
+    .slova-lightbox { padding: 56px 8px; }
+    .slova-lightbox-arrow { top: auto; bottom: 8px; transform: none; }
+}

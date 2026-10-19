@@ -223,8 +223,11 @@ function safeActivity(activity: Activity) {
                 }).filter((item) => item.front && item.back)
             };
         case "image": {
-            const markdownImage = activity.content.match(/!\[([^\]]*)\]\(([^)]+)\)/);
-            return { type: activity.type, prompt, content: markdownImage?.[2] || activity.content, alt: markdownImage?.[1] || prompt };
+            const images = contentLines.slice(0, 20).map((line) => {
+                const markdown = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+                return { url: markdown ? markdown[2] : line, alt: markdown ? markdown[1] : "" };
+            });
+            return { type: activity.type, prompt, content: images.map((image) => image.url).join("\n"), alt: images[0]?.alt || prompt };
         }
         case "audio":
         case "video":

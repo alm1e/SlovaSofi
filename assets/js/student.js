@@ -550,8 +550,8 @@
         } else if (activity.type === "flashcards") {
             body = `<div class="student-flashcard-list">${(activity.cards || []).map((item) => `<button class="student-flashcard" type="button" data-front="${escapeHtml(item.front)}" data-back="${escapeHtml(item.back)}"><strong>${escapeHtml(item.front)}</strong><small>${escapeHtml(text("flip"))}</small></button>`).join("")}</div>`;
         } else if (activity.type === "image") {
-            const source = mediaUrl(activity.content);
-            body = source ? `<img class="student-activity-image" src="${escapeHtml(source)}" alt="${escapeHtml(activity.alt || activity.prompt || text("imageAlt"))}">` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
+            const images = window.slovaGallery.parse(activity.content);
+            body = images.length ? window.slovaGallery.html(images, activity.alt || activity.prompt || text("imageAlt"), "student-activity-image") : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         } else if (activity.type === "audio" || activity.type === "video") {
             const embed = activity.type === "video" ? youtubeEmbedUrl(activity.content) : "";
             const source = mediaUrl(activity.content);
