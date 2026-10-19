@@ -2079,7 +2079,7 @@ function renderStaff() {
     const members = workspaceAccess.staff || [];
     return `<div class="section-heading"><div><h1>${staffText("title")}</h1><p>${staffText("description")}</p></div><button class="button" data-action="add-teacher">${staffText("add")}</button></div>
         <div class="staff-grid">
-            ${members.length ? members.map((member) => `<article class="staff-card"><span class="avatar">${escapeHtml(initialsFor(member.email))}</span><div class="staff-card-main"><strong>${escapeHtml(member.email)}</strong><small>${staffText("memberRole")}</small>${presenceBadge(member.id)}<span class="staff-permissions">${permissionLabels.filter(([key]) => member.permissions?.[key]).map(([, label]) => staffText(label)).join(" · ") || staffText("noEditor")}</span></div>
+            ${members.length ? members.map((member) => `<article class="staff-card"><span class="avatar">${escapeHtml(initialsFor(member.name || member.email))}</span><div class="staff-card-main"><strong>${escapeHtml(member.name || member.email)}</strong>${member.name ? `<small class="staff-card-email">${escapeHtml(member.email)}</small>` : ""}<small>${staffText("memberRole")}</small>${presenceBadge(member.id)}<span class="staff-permissions">${permissionLabels.filter(([key]) => member.permissions?.[key]).map(([, label]) => staffText(label)).join(" · ") || staffText("noEditor")}</span></div>
                 <div class="staff-card-actions"><button type="button" class="button secondary small" data-action="edit-teacher" data-id="${escapeHtml(member.id)}">${staffText("edit")}</button><button type="button" class="mini-action" data-action="remove-teacher" data-id="${escapeHtml(member.id)}" aria-label="${staffText("remove")}" title="${staffText("remove")}">×</button></div></article>`).join("") : emptyMessage(staffText("empty"), staffText("emptyHint"))}
         </div>`;
 }
@@ -2135,7 +2135,7 @@ function openTeacherForm(member = null) {
 
 async function removeTeacher(memberId) {
     const member = workspaceAccess.staff.find((item) => item.id === memberId);
-    if (!member || !window.confirm(staffText("removeConfirm", { email: member.email }))) return;
+    if (!member || !window.confirm(staffText("removeConfirm", { email: member.name || member.email }))) return;
     try {
         await window.teacherWorkspaceApi.manageTeacher(window.supabaseClient, { action: "remove", memberId });
         const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, currentUser.id);

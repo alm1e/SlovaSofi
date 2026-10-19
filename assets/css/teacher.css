@@ -345,6 +345,7 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .staff-card { display: flex; align-items: center; gap: 13px; border: 1px solid var(--line); border-radius: 14px; padding: 15px; background: white; box-shadow: 0 4px 14px #23452e0a; }
 .staff-card > .avatar { flex: 0 0 auto; width: 44px; height: 44px; }
 .staff-card-main { min-width: 0; flex: 1; }
+.staff-card-main .staff-card-email { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .staff-card strong, .staff-card small, .staff-permissions { display: block; overflow-wrap: anywhere; }
 .staff-card strong { font-size: 15px; }
 .staff-card small { margin-top: 4px; color: var(--muted); font-size: 12px; }
