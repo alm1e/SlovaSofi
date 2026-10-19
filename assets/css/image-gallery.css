@@ -2,22 +2,21 @@
 .slova-gallery-image { display: block; max-width: 100%; max-height: 460px; margin: 0 auto; border-radius: 10px; object-fit: contain; cursor: zoom-in; }
 
 /* Stacked cards: every image shares one grid cell and is offset by its distance (--o) from the active one. */
-.slova-gallery-stage { display: grid; align-items: start; justify-items: center; padding: 0 16%; perspective: 1400px; overflow: hidden; }
+.slova-gallery-stage { display: grid; align-items: start; justify-items: center; padding: 0 clamp(60px, 14%, 200px); perspective: 1400px; overflow: hidden; }
 .slova-gallery-stage .slova-gallery-image {
     grid-area: 1 / 1; margin: 0; transform-origin: center; cursor: pointer;
-    --d: max(var(--o), 0);
-    transform: translateX(calc(var(--d) * 24%)) scale(calc(1 - var(--d) * .06)) rotateY(calc(var(--d) * -4deg));
+    --x: 0px; --s: 1; --r: 0deg;
+    --d: max(var(--o), calc(var(--o) * -1));
+    transform: translateX(var(--x)) scale(var(--s)) rotateY(var(--r));
     opacity: calc(1 - var(--d) * .42);
     z-index: calc(20 - var(--d));
     filter: brightness(calc(1 - var(--d) * .12));
     transition: transform .5s cubic-bezier(.22, 1, .36, 1), opacity .4s ease, filter .4s ease;
 }
 .slova-gallery-stage .slova-gallery-image[data-slot="0"] { cursor: zoom-in; }
-.slova-gallery-stage .slova-gallery-image[data-slot="-1"] { transform: translateX(-24%) scale(.94) rotateY(4deg); opacity: .58; filter: brightness(.88); z-index: 19; }
-.slova-gallery-stage .slova-gallery-image[data-slot="-1"]:hover { opacity: .85; }
-.slova-gallery-stage .slova-gallery-image[data-slot="past"] { transform: translateX(-40%) scale(.88); opacity: 0; pointer-events: none; }
-.slova-gallery-stage .slova-gallery-image[data-slot="far"] { opacity: 0; pointer-events: none; }
-.slova-gallery-stage .slova-gallery-image:is([data-slot="1"], [data-slot="2"]):hover { opacity: .85; }
+.slova-gallery-stage .slova-gallery-image[data-slot="-1"] { opacity: .58; }
+.slova-gallery-stage .slova-gallery-image:is([data-slot="-1"], [data-slot="1"], [data-slot="2"]):hover { opacity: .85; }
+.slova-gallery-stage .slova-gallery-image:is([data-slot="past"], [data-slot="far"]) { opacity: 0; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .slova-gallery-stage .slova-gallery-image { transition: none; } }
 .slova-gallery-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 10px; }
 .slova-gallery-count { min-width: 54px; font-size: 14px; line-height: 1; opacity: .8; }

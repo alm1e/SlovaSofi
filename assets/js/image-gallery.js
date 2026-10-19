@@ -46,7 +46,27 @@
             </div></figure>`;
     }
 
-    // Each card sits at --o steps from the active one: 0 is in front, positive ones peek out behind it.
+    const PEEK = 56;
+
+    // Peeking edges are placed from the active card's edges so both sides show the same strip regardless of image widths.
+    function layout(gallery) {
+        const slides = [...gallery.querySelectorAll(".slova-gallery-stage .slova-gallery-image")];
+        const active = slides[Number(gallery.dataset.galleryIndex)];
+        if (!active) return;
+        const half = active.offsetWidth / 2;
+        slides.forEach((slide, position) => {
+            const offset = position - Number(gallery.dataset.galleryIndex);
+            const steps = Math.min(Math.abs(offset), 3);
+            const scale = 1 - steps * 0.06;
+            const sign = Math.sign(offset);
+            const x = sign * (half + PEEK * steps - (slide.offsetWidth * scale) / 2);
+            slide.style.setProperty("--x", `${offset === 0 ? 0 : x}px`);
+            slide.style.setProperty("--s", String(scale));
+            slide.style.setProperty("--r", `${-sign * 4}deg`);
+        });
+    }
+
+    // Each card sits at --o steps from the active one: 0 is in front, others peek out on both sides.
     function showSlide(gallery, index) {
         const slides = [...gallery.querySelectorAll(".slova-gallery-image")];
         const next = (index + slides.length) % slides.length;
@@ -55,6 +75,7 @@
             slide.dataset.slot = slotFor(position - next);
         });
         gallery.dataset.galleryIndex = String(next);
+        layout(gallery);
         const counter = gallery.querySelector("[data-gallery-current]");
         if (counter) counter.textContent = String(next + 1);
         return next;
@@ -137,6 +158,15 @@
         if (event.key === "Escape") closeLightbox();
         else if (event.key === "ArrowLeft") stepLightbox(-1);
         else if (event.key === "ArrowRight") stepLightbox(1);
+    });
+
+    document.addEventListener("load", (event) => {
+        const gallery = event.target instanceof Element && event.target.closest(".is-multiple[data-gallery]");
+        if (gallery) layout(gallery);
+    }, true);
+
+    window.addEventListener("resize", () => {
+        document.querySelectorAll(".is-multiple[data-gallery]").forEach(layout);
     });
 
     window.slovaGallery = { parse, html };
