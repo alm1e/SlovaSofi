@@ -436,16 +436,21 @@ const imageUploadMessages = {
 };
 
 async function resizeImageForUpload(file) {
-    if (file.type === "image/gif" || file.size < 400_000) return file;
+    if (file.type === "image/gif") return file;
     const bitmap = await createImageBitmap(file);
+    if (!bitmap.width || !bitmap.height) throw new Error("Empty image");
     const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement("canvas");
-    canvas.width = Math.round(bitmap.width * scale);
-    canvas.height = Math.round(bitmap.height * scale);
-    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     bitmap.close?.();
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.85));
-    return blob || file;
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.88));
+    if (!blob || blob.size < 100) throw new Error("Could not read the image");
+    return blob;
 }
 
 async function uploadLessonImage(file) {
