@@ -508,7 +508,7 @@ async function resizeImageForUpload(file, strict = false) {
     return blob;
 }
 
-async function uploadLessonImage(source) {
+async function uploadLessonImage(source, preserveOriginal = false) {
     const messages = imageUploadMessages[currentLanguage] || imageUploadMessages.ru;
     const candidates = (Array.isArray(source) ? source : [source]).filter((file) => file?.type?.startsWith("image/"));
     if (!candidates.length) throw new Error(messages.type);
@@ -518,7 +518,7 @@ async function uploadLessonImage(source) {
     let lastError = null;
     for (const candidate of candidates) {
         try {
-            prepared = await resizeImageForUpload(candidate, strict);
+            prepared = preserveOriginal ? candidate : await resizeImageForUpload(candidate, strict);
             break;
         } catch (error) {
             lastError = error;
@@ -562,7 +562,12 @@ async function attachImageToBlock(file, textarea, block, sourceUrl = "") {
     showToast(messages.uploading);
     try {
         let url = "";
-        if (sourceUrl) {
+        if (/^https:\/\/media-a\.edvibe\.com\/files\/LessonExerciseImages\//i.test(sourceUrl)) {
+            const { data, error } = await window.supabaseClient.functions.invoke("import-lesson-image", { body: { url: sourceUrl } });
+            if (error || !data?.base64 || !data?.contentType?.startsWith("image/")) throw error || new Error(messages.copyFailed);
+            const bytes = Uint8Array.from(atob(data.base64), (character) => character.charCodeAt(0));
+            url = await uploadLessonImage(new Blob([bytes], { type: data.contentType }), true);
+        } else if (sourceUrl) {
             try {
                 const response = await fetch(sourceUrl);
                 const blob = await response.blob();
