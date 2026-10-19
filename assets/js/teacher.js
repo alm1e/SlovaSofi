@@ -510,11 +510,18 @@ async function uploadLessonImage(file) {
 
 let lastImageBlockElement = null;
 
+function clipboardImageSource(event) {
+    const data = event.clipboardData;
+    const html = data?.getData("text/html") || "";
+    const htmlSrc = html ? new DOMParser().parseFromString(html, "text/html").querySelector("img")?.getAttribute("src") : "";
+    const file = [...(data?.items || [])].find((item) => item.type?.startsWith("image/"))?.getAsFile?.() || null;
+    return { file, src: /^(https?:|data:image\/)/i.test(htmlSrc || "") ? htmlSrc : "" };
+}
+
 // Ctrl+V anywhere on the page inserts a copied image into the open "image" block.
 document.addEventListener("paste", (event) => {
-    const items = [...(event.clipboardData?.items || [])];
-    const file = items.find((item) => item.type?.startsWith("image/"))?.getAsFile?.();
-    if (!file) return;
+    const { file, src } = clipboardImageSource(event);
+    if (!file && !src) return;
     const target = lastImageBlockElement?.isConnected ? lastImageBlockElement
         : document.querySelector('.builder-block .builder-block-fields:not([hidden]) > .form-field > textarea[data-image-block="true"]')?.closest(".builder-block");
     const field = target?.querySelector(':scope > .builder-block-fields > .form-field > textarea[data-field="content"]');
@@ -522,15 +529,27 @@ document.addEventListener("paste", (event) => {
     event.preventDefault();
     const activities = activeDraftSection?.()?.activities;
     const block = activities?.[Number(target.dataset.blockIndex)];
-    if (block) attachImageToBlock(file, field, block);
+    if (block) attachImageToBlock(file, field, block, src);
 });
 
-async function attachImageToBlock(file, textarea, block) {
+async function attachImageToBlock(file, textarea, block, sourceUrl = "") {
     const messages = imageUploadMessages[currentLanguage] || imageUploadMessages.ru;
     textarea.disabled = true;
     showToast(messages.uploading);
     try {
-        const url = await uploadLessonImage(file);
+        let url = "";
+        if (sourceUrl) {
+            try {
+                const response = await fetch(sourceUrl);
+                const blob = await response.blob();
+                if (response.ok && blob.type.startsWith("image/")) url = await uploadLessonImage(blob);
+            } catch (error) {
+                console.warn("Could not copy the image, using its address instead.", error);
+            }
+            if (!url && /^https?:/i.test(sourceUrl)) url = sourceUrl;
+        }
+        if (!url && file) url = await uploadLessonImage(file);
+        if (!url) throw new Error(messages.type);
         block.content = url;
         textarea.value = url;
         showToast(messages.done);
