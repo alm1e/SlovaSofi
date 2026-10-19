@@ -499,7 +499,7 @@ async function resizeImageForUpload(file, strict = false) {
         const final = context.getImageData(0, 0, canvas.width, canvas.height).data;
         let varied = false;
         for (let i = 4; i < final.length; i += 4) {
-            if (final[i] !== final[0] || final[i + 1] !== final[1] || final[i + 2] !== final[2]) { varied = true; break; }
+            if (Math.abs(final[i] - final[0]) > 12 || Math.abs(final[i + 1] - final[1]) > 12 || Math.abs(final[i + 2] - final[2]) > 12) { varied = true; break; }
         }
         if (!varied) throw new Error("Blank image");
     }
@@ -571,7 +571,7 @@ async function attachImageToBlock(file, textarea, block, sourceUrl = "") {
             try {
                 const response = await fetch(sourceUrl);
                 const blob = await response.blob();
-                if (response.ok && blob.type.startsWith("image/")) url = await uploadLessonImage(blob);
+                if (response.ok && blob.type.startsWith("image/")) url = await uploadLessonImage([blob]);
             } catch (error) {
                 console.warn("Could not fetch the image source; trying clipboard image data.", error);
             }
@@ -580,9 +580,11 @@ async function attachImageToBlock(file, textarea, block, sourceUrl = "") {
             const candidates = Array.isArray(file) ? [...file] : file;
             if (Array.isArray(candidates) && navigator.clipboard?.read) {
                 try {
+                    const fromClipboard = [];
                     for (const entry of await navigator.clipboard.read()) {
-                        for (const type of entry.types.filter((name) => name.startsWith("image/"))) candidates.push(await entry.getType(type));
+                        for (const type of entry.types.filter((name) => name.startsWith("image/"))) fromClipboard.push(await entry.getType(type));
                     }
+                    candidates.unshift(...fromClipboard);
                 } catch (error) {
                     console.warn("Clipboard API is not available.", error);
                 }
