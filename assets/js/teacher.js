@@ -435,6 +435,10 @@ const imageUploadMessages = {
     en: { uploading: "Uploading image…", done: "Image added.", failed: "Could not upload the image:", login: "Sign in to upload images.", type: "Paste an image file." }
 };
 
+imageUploadMessages.ua.copyFailed = "Копію не збережено. Скопіюйте саме зображення або завантажте файл і перетягніть його в поле.";
+imageUploadMessages.ru.copyFailed = "Копия не сохранена. Скопируйте само изображение или скачайте файл и перетащите его в поле.";
+imageUploadMessages.en.copyFailed = "No copy was saved. Copy the image itself, or download the file and drop it into the field.";
+
 function readRawPixels(bitmap) {
     const gl = document.createElement("canvas").getContext("webgl", { premultipliedAlpha: false, preserveDrawingBuffer: true });
     if (!gl) return null;
@@ -469,7 +473,7 @@ async function recoverTransparentImage(file) {
     return hasColor ? canvas : null;
 }
 
-async function resizeImageForUpload(file) {
+async function resizeImageForUpload(file, strict = false) {
     if (file.type === "image/gif") return file;
     const bitmap = await createImageBitmap(file);
     if (!bitmap.width || !bitmap.height) throw new Error("Empty image");
@@ -491,16 +495,36 @@ async function resizeImageForUpload(file) {
         if (recovered) context.drawImage(recovered, 0, 0, canvas.width, canvas.height);
     }
     bitmap.close?.();
+    if (strict) {
+        const final = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        let varied = false;
+        for (let i = 4; i < final.length; i += 4) {
+            if (final[i] !== final[0] || final[i + 1] !== final[1] || final[i + 2] !== final[2]) { varied = true; break; }
+        }
+        if (!varied) throw new Error("Blank image");
+    }
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.88));
     if (!blob || blob.size < 100) throw new Error("Could not read the image");
     return blob;
 }
 
-async function uploadLessonImage(file) {
+async function uploadLessonImage(source) {
     const messages = imageUploadMessages[currentLanguage] || imageUploadMessages.ru;
-    if (!file?.type?.startsWith("image/")) throw new Error(messages.type);
+    const candidates = (Array.isArray(source) ? source : [source]).filter((file) => file?.type?.startsWith("image/"));
+    if (!candidates.length) throw new Error(messages.type);
     if (!currentUser || !window.supabaseClient) throw new Error(messages.login);
-    const prepared = await resizeImageForUpload(file);
+    const strict = Array.isArray(source);
+    let prepared = null;
+    let lastError = null;
+    for (const candidate of candidates) {
+        try {
+            prepared = await resizeImageForUpload(candidate, strict);
+            break;
+        } catch (error) {
+            lastError = error;
+        }
+    }
+    if (!prepared) throw lastError || new Error(messages.type);
     const extension = ({ "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" })[prepared.type] || "webp";
     const path = `${currentUser.id}/${crypto.randomUUID()}.${extension}`;
     const { error } = await window.supabaseClient.storage.from("lesson-images").upload(path, prepared, { contentType: prepared.type, cacheControl: "31536000", upsert: false });
@@ -529,7 +553,7 @@ document.addEventListener("paste", (event) => {
     event.preventDefault();
     const activities = activeDraftSection?.()?.activities;
     const block = activities?.[Number(target.dataset.blockIndex)];
-    if (block) attachImageToBlock(file, field, block, src);
+    if (block) attachImageToBlock(file ? [file] : null, field, block, src);
 });
 
 async function attachImageToBlock(file, textarea, block, sourceUrl = "") {
@@ -544,12 +568,23 @@ async function attachImageToBlock(file, textarea, block, sourceUrl = "") {
                 const blob = await response.blob();
                 if (response.ok && blob.type.startsWith("image/")) url = await uploadLessonImage(blob);
             } catch (error) {
-                console.warn("Could not copy the image, using its address instead.", error);
+                console.warn("Could not fetch the image source; trying clipboard image data.", error);
             }
-            if (!url && /^https?:/i.test(sourceUrl)) url = sourceUrl;
         }
-        if (!url && file) url = await uploadLessonImage(file);
-        if (!url) throw new Error(messages.type);
+        if (!url && file) {
+            const candidates = Array.isArray(file) ? [...file] : file;
+            if (Array.isArray(candidates) && navigator.clipboard?.read) {
+                try {
+                    for (const entry of await navigator.clipboard.read()) {
+                        for (const type of entry.types.filter((name) => name.startsWith("image/"))) candidates.push(await entry.getType(type));
+                    }
+                } catch (error) {
+                    console.warn("Clipboard API is not available.", error);
+                }
+            }
+            url = await uploadLessonImage(candidates);
+        }
+        if (!url) throw new Error(messages.copyFailed || messages.type);
         block.content = url;
         textarea.value = url;
         showToast(messages.done);
