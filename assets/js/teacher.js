@@ -3727,9 +3727,11 @@ function bindActivityBlockActions() {
             const imageFrom = (files) => [...(files || [])].find((item) => item.type?.startsWith("image/"));
             const importAddress = () => {
                 const address = contentField.value.trim();
+                if (contentField.dataset.importing === address) return;
                 if (/^https?:\/\/\S+$/i.test(address) && !ownImageUrlPattern.test(address)) {
+                    contentField.dataset.importing = address;
                     currentBlock().content = address;
-                    attachImageToBlock(null, contentField, currentBlock(), address);
+                    attachImageToBlock(null, contentField, currentBlock(), address).finally(() => { delete contentField.dataset.importing; });
                 }
             };
             contentField.addEventListener("paste", () => setTimeout(importAddress));
