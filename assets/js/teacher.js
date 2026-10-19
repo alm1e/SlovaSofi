@@ -435,9 +435,15 @@ const imageUploadMessages = {
     en: { uploading: "Uploading image…", done: "Image added.", failed: "Could not upload the image:", login: "Sign in to upload images.", type: "Paste an image file." }
 };
 
-imageUploadMessages.ua.copyFailed = "Копію не збережено. Скопіюйте саме зображення або завантажте файл і перетягніть його в поле.";
-imageUploadMessages.ru.copyFailed = "Копия не сохранена. Скопируйте само изображение или скачайте файл и перетащите его в поле.";
-imageUploadMessages.en.copyFailed = "No copy was saved. Copy the image itself, or download the file and drop it into the field.";
+imageUploadMessages.ua.copyFailed = "Копію не збережено.";
+imageUploadMessages.ru.copyFailed = "Копия не сохранена.";
+imageUploadMessages.en.copyFailed = "No copy was saved.";
+imageUploadMessages.ua.chooseFile = "Завантажити з комп’ютера";
+imageUploadMessages.ru.chooseFile = "Загрузить с компьютера";
+imageUploadMessages.en.chooseFile = "Upload from computer";
+imageUploadMessages.ua.linkOnly = "Сайт не дозволяє зберегти копію, використано посилання. Завантажте файл з комп’ютера, щоб зображення не зникло.";
+imageUploadMessages.ru.linkOnly = "Сайт не разрешает сохранить копию, использована ссылка. Загрузите файл с компьютера, чтобы изображение не пропало.";
+imageUploadMessages.en.linkOnly = "The site does not allow saving a copy, so the link is used. Upload the file from your computer to keep the image.";
 
 function readRawPixels(bitmap) {
     const gl = document.createElement("canvas").getContext("webgl", { premultipliedAlpha: false, preserveDrawingBuffer: true });
@@ -532,66 +538,43 @@ async function uploadLessonImage(source, preserveOriginal = false) {
     return window.supabaseClient.storage.from("lesson-images").getPublicUrl(path).data.publicUrl;
 }
 
-let lastImageBlockElement = null;
+const ownImageUrlPattern = /\/storage\/v1\/object\/public\/lesson-images\//;
 
-function clipboardImageSource(event) {
-    const data = event.clipboardData;
-    const html = data?.getData("text/html") || "";
-    const htmlSrc = html ? new DOMParser().parseFromString(html, "text/html").querySelector("img")?.getAttribute("src") : "";
-    const file = [...(data?.items || [])].find((item) => item.type?.startsWith("image/"))?.getAsFile?.() || null;
-    return { file, src: /^(https?:|data:image\/)/i.test(htmlSrc || "") ? htmlSrc : "" };
-}
-
-// Ctrl+V anywhere on the page inserts a copied image into the open "image" block.
-document.addEventListener("paste", (event) => {
-    const { file, src } = clipboardImageSource(event);
-    if (!file && !src) return;
-    const target = lastImageBlockElement?.isConnected ? lastImageBlockElement
-        : document.querySelector('.builder-block .builder-block-fields:not([hidden]) > .form-field > textarea[data-image-block="true"]')?.closest(".builder-block");
-    const field = target?.querySelector(':scope > .builder-block-fields > .form-field > textarea[data-field="content"]');
-    if (!field || field.disabled || field.dataset.imageBlock !== "true") return;
-    event.preventDefault();
-    const activities = activeDraftSection?.()?.activities;
-    const block = activities?.[Number(target.dataset.blockIndex)];
-    if (block) attachImageToBlock(file ? [file] : null, field, block, src);
-});
-
+// Pasting or typing an image address copies the picture into our own storage so it outlives the source site.
 async function attachImageToBlock(file, textarea, block, sourceUrl = "") {
     const messages = imageUploadMessages[currentLanguage] || imageUploadMessages.ru;
     textarea.disabled = true;
     showToast(messages.uploading);
     try {
         let url = "";
-        if (/^https:\/\/media-a\.edvibe\.com\/files\/LessonExerciseImages\//i.test(sourceUrl)) {
-            const { data, error } = await window.supabaseClient.functions.invoke("import-lesson-image", { body: { url: sourceUrl } });
-            if (error || !data?.base64 || !data?.contentType?.startsWith("image/")) throw error || new Error(messages.copyFailed);
-            const bytes = Uint8Array.from(atob(data.base64), (character) => character.charCodeAt(0));
-            url = await uploadLessonImage(new Blob([bytes], { type: data.contentType }), true);
-        } else if (sourceUrl) {
+        if (file) {
+            url = await uploadLessonImage(file);
+        } else if (/^https:\/\/media-a\.edvibe\.com\/files\/LessonExerciseImages\//i.test(sourceUrl)) {
+            try {
+                const { data, error } = await window.supabaseClient.functions.invoke("import-lesson-image", { body: { url: sourceUrl } });
+                if (error || !data?.base64 || !data?.contentType?.startsWith("image/")) throw error || new Error("Import failed");
+                const bytes = Uint8Array.from(atob(data.base64), (character) => character.charCodeAt(0));
+                url = await uploadLessonImage(new Blob([bytes], { type: data.contentType }), true);
+            } catch (error) {
+                console.warn("Could not import the image through the server.", error);
+            }
+        }
+        if (!url && sourceUrl) {
             try {
                 const response = await fetch(sourceUrl);
                 const blob = await response.blob();
-                if (response.ok && blob.type.startsWith("image/")) url = await uploadLessonImage([blob]);
+                if (response.ok && blob.type.startsWith("image/")) url = await uploadLessonImage(blob, true);
             } catch (error) {
-                console.warn("Could not fetch the image source; trying clipboard image data.", error);
+                console.warn("Could not fetch the image source.", error);
             }
         }
-        if (!url && file) {
-            const candidates = Array.isArray(file) ? [...file] : file;
-            if (Array.isArray(candidates) && navigator.clipboard?.read) {
-                try {
-                    const fromClipboard = [];
-                    for (const entry of await navigator.clipboard.read()) {
-                        for (const type of entry.types.filter((name) => name.startsWith("image/"))) fromClipboard.push(await entry.getType(type));
-                    }
-                    candidates.unshift(...fromClipboard);
-                } catch (error) {
-                    console.warn("Clipboard API is not available.", error);
-                }
-            }
-            url = await uploadLessonImage(candidates);
+        if (!url && /^https?:\/\//i.test(sourceUrl)) {
+            block.content = sourceUrl;
+            textarea.value = sourceUrl;
+            showToast(messages.linkOnly);
+            return;
         }
-        if (!url) throw new Error(messages.copyFailed || messages.type);
+        if (!url) throw new Error(messages.type);
         block.content = url;
         textarea.value = url;
         showToast(messages.done);
@@ -3656,7 +3639,8 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
                 <div class="form-field"><label>${hasQuestions ? activityQuestionText("commonPrompt") : t("field.instruction")}</label><input data-field="prompt" value="${escapeHtml(block.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
                 ${hasQuestions
                     ? renderActivityQuestionEditor(block)
-                    : `<div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(block.type))}</span></label><textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea></div>
+                    : `<div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(block.type))}</span></label>
+                    <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea>${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-image-file hidden></div>` : ""}</div>
                     ${block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
                     ${renderActivityQuestionEditor(block)}`}
             </div>
@@ -3740,11 +3724,23 @@ function bindActivityBlockActions() {
         const currentBlock = () => activeDraftSection().activities[Number(blockElement.dataset.blockIndex)];
         const contentField = blockElement.querySelector(':scope > .builder-block-fields > .form-field > textarea[data-field="content"]');
         if (contentField && currentBlock()?.type === "image") {
-            contentField.dataset.imageBlock = "true";
             const imageFrom = (files) => [...(files || [])].find((item) => item.type?.startsWith("image/"));
-            blockElement.addEventListener("pointerdown", () => { lastImageBlockElement = blockElement; });
-            blockElement.addEventListener("focusin", () => { lastImageBlockElement = blockElement; });
-            if (!lastImageBlockElement && !blockElement.querySelector(".builder-block-fields")?.hidden) lastImageBlockElement = blockElement;
+            const importAddress = () => {
+                const address = contentField.value.trim();
+                if (/^https?:\/\/\S+$/i.test(address) && !ownImageUrlPattern.test(address)) {
+                    currentBlock().content = address;
+                    attachImageToBlock(null, contentField, currentBlock(), address);
+                }
+            };
+            contentField.addEventListener("paste", () => setTimeout(importAddress));
+            contentField.addEventListener("change", importAddress);
+            const filePicker = blockElement.querySelector("[data-image-file]");
+            blockElement.querySelector("[data-pick-image]")?.addEventListener("click", () => filePicker?.click());
+            filePicker?.addEventListener("change", () => {
+                const file = imageFrom(filePicker.files);
+                filePicker.value = "";
+                if (file) attachImageToBlock(file, contentField, currentBlock());
+            });
             contentField.addEventListener("dragover", (event) => {
                 if ([...(event.dataTransfer?.types || [])].includes("Files")) event.preventDefault();
             });
