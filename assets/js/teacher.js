@@ -429,6 +429,54 @@ let onlineUserIds = new Set();
 let workspaceSaveQueue = Promise.resolve(true);
 let openPopover = "";
 
+const imageUploadMessages = {
+    ua: { uploading: "Завантаження зображення…", done: "Зображення додано.", failed: "Не вдалося завантажити зображення:", login: "Увійдіть у кабінет, щоб завантажувати зображення.", type: "Вставте файл зображення." },
+    ru: { uploading: "Загрузка изображения…", done: "Изображение добавлено.", failed: "Не удалось загрузить изображение:", login: "Войдите в кабинет, чтобы загружать изображения.", type: "Вставьте файл изображения." },
+    en: { uploading: "Uploading image…", done: "Image added.", failed: "Could not upload the image:", login: "Sign in to upload images.", type: "Paste an image file." }
+};
+
+async function resizeImageForUpload(file) {
+    if (file.type === "image/gif" || file.size < 400_000) return file;
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close?.();
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.85));
+    return blob || file;
+}
+
+async function uploadLessonImage(file) {
+    const messages = imageUploadMessages[currentLanguage] || imageUploadMessages.ru;
+    if (!file?.type?.startsWith("image/")) throw new Error(messages.type);
+    if (!currentUser || !window.supabaseClient) throw new Error(messages.login);
+    const prepared = await resizeImageForUpload(file);
+    const extension = ({ "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" })[prepared.type] || "webp";
+    const path = `${currentUser.id}/${crypto.randomUUID()}.${extension}`;
+    const { error } = await window.supabaseClient.storage.from("lesson-images").upload(path, prepared, { contentType: prepared.type, cacheControl: "31536000", upsert: false });
+    if (error) throw error;
+    return window.supabaseClient.storage.from("lesson-images").getPublicUrl(path).data.publicUrl;
+}
+
+async function attachImageToBlock(file, textarea, block) {
+    const messages = imageUploadMessages[currentLanguage] || imageUploadMessages.ru;
+    textarea.disabled = true;
+    showToast(messages.uploading);
+    try {
+        const url = await uploadLessonImage(file);
+        block.content = url;
+        textarea.value = url;
+        showToast(messages.done);
+    } catch (error) {
+        console.error("Could not upload the lesson image.", error);
+        showToast(`${messages.failed} ${error.message || error}`);
+    } finally {
+        textarea.disabled = false;
+    }
+}
+
 function t(key, values = {}) {
     const text = translations[currentLanguage][key] || translations.ru[key] || key;
     return text.replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ""));
@@ -3563,6 +3611,27 @@ function bindActivityBlockActions() {
                 block[input.dataset.field] = input.value;
             }
         }));
+        const currentBlock = () => activeDraftSection().activities[Number(blockElement.dataset.blockIndex)];
+        const contentField = blockElement.querySelector(':scope > .builder-block-fields > .form-field > textarea[data-field="content"]');
+        if (contentField && currentBlock()?.type === "image") {
+            const imageFrom = (files) => [...(files || [])].find((item) => item.type?.startsWith("image/"));
+            contentField.addEventListener("paste", (event) => {
+                const fromItems = [...(event.clipboardData?.items || [])].map((item) => item.getAsFile?.()).filter(Boolean);
+                const file = imageFrom(event.clipboardData?.files) || imageFrom(fromItems);
+                if (!file) return;
+                event.preventDefault();
+                attachImageToBlock(file, contentField, currentBlock());
+            });
+            contentField.addEventListener("dragover", (event) => {
+                if ([...(event.dataTransfer?.types || [])].includes("Files")) event.preventDefault();
+            });
+            contentField.addEventListener("drop", (event) => {
+                const file = imageFrom(event.dataTransfer?.files);
+                if (!file) return;
+                event.preventDefault();
+                attachImageToBlock(file, contentField, currentBlock());
+            });
+        }
     });
 
     if (blocksContainer) bindSortableActivityCards(blocksContainer, ".builder-block", ".builder-block-drag", "blockIndex", (order) => {
