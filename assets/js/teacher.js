@@ -783,8 +783,17 @@ const initialData = {
 };
 
 let data = loadData();
-let activeView = "overview";
-let selectedLessonUnit = "";
+const viewStateKey = "slovasofiTeacherView";
+const savedViewState = (() => {
+    try {
+        const saved = JSON.parse(sessionStorage.getItem(viewStateKey) || "{}");
+        return ["overview", "classes", "lessons", "calendar", "students", "staff"].includes(saved.view) ? saved : {};
+    } catch {
+        return {};
+    }
+})();
+let activeView = savedViewState.view || "overview";
+let selectedLessonUnit = ["A1", "B1"].includes(savedViewState.unit) ? savedViewState.unit : "";
 let activeClassFilter = "";
 let searchQuery = "";
 let selectedActivityCategory = "all";
@@ -1258,6 +1267,12 @@ function setView(view) {
 }
 
 function render() {
+    try {
+        sessionStorage.setItem(viewStateKey, JSON.stringify({ view: activeView, unit: selectedLessonUnit }));
+    } catch {
+        // Session storage may be unavailable; the view just won't survive a reload.
+    }
+    document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === activeView));
     if (lessonWorkspaceMode) {
         renderLessonWorkspace();
         return;

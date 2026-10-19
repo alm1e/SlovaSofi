@@ -1232,6 +1232,9 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 :root[data-theme="dark"] .student-row small,
 :root[data-theme="dark"] .staff-card small { color: #b6c1b9; }
 :root[data-theme="dark"] .staff-permissions { color: #a9c2ae; }
+:root[data-theme="dark"] .staff-permission-field legend { color: #b6c1b9; }
+:root[data-theme="dark"] .staff-permission-choice:focus-within { border-color: #71757a; background: #2b2d31; }
+:root[data-theme="dark"] .staff-permission-choice input { accent-color: #55c77b; }
 :root[data-theme="dark"] .student-row .class-label { color: #b7d5bc; }
 :root[data-theme="dark"] .presence-status { color: #b4beb6; }
 :root[data-theme="dark"] .presence-status.is-online { color: #9bd7aa; }
