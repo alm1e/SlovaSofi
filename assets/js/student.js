@@ -23,7 +23,8 @@
             completed: "Урок завершено!", homework: "Домашня робота", progress: "відповідей", progressSaved: "Чернетку збережено.",
             choose: "Виберіть відповідь", true: "Так", false: "Ні",
             addWords: "Перетягуйте слова або натискайте на них, щоб скласти відповідь", yourAnswer: "Ваша відповідь", emptyAnswer: "Спочатку введіть відповідь.",
-            moveUp: "Вище", moveDown: "Нижче", flip: "Показати переклад", hint: "Підказка", locked: "Закріплене слово", loading: "Завантаження уроку…"
+            moveUp: "Вище", moveDown: "Нижче", flip: "Показати переклад", hint: "Підказка", locked: "Закріплене слово", loading: "Завантаження уроку…",
+            seekBack: "−5 с", seekForward: "+5 с", loopA: "Точка A", loopB: "Точка B", clearLoop: "Скасувати повтор", speed: "Швидкість", transcript: "Транскрипція"
         },
         ru: {
             loading: "Загрузка…", activate: "Создайте пароль", activateHint: "Приглашение принято. Создайте пароль для входа в личный кабинет.",
@@ -48,7 +49,8 @@
             completed: "Урок завершён!", homework: "Домашняя работа", progress: "ответов", progressSaved: "Черновик сохранён.",
             choose: "Выберите ответ", true: "Да", false: "Нет",
             addWords: "Перетаскивайте слова или нажимайте на них, чтобы составить ответ", yourAnswer: "Ваш ответ", emptyAnswer: "Сначала введите ответ.",
-            moveUp: "Выше", moveDown: "Ниже", flip: "Показать перевод", hint: "Подсказка", locked: "Закреплённое слово", loading: "Загрузка урока…"
+            moveUp: "Выше", moveDown: "Ниже", flip: "Показать перевод", hint: "Подсказка", locked: "Закреплённое слово", loading: "Загрузка урока…",
+            seekBack: "−5 с", seekForward: "+5 с", loopA: "Точка A", loopB: "Точка B", clearLoop: "Сбросить повтор", speed: "Скорость", transcript: "Транскрипция"
         },
         en: {
             loading: "Loading…", activate: "Create a password", activateHint: "Invitation accepted. Create a password to access your account.",
@@ -73,7 +75,8 @@
             completed: "Lesson completed!", homework: "Homework", progress: "answered", progressSaved: "Draft saved.",
             choose: "Choose an answer", true: "True", false: "False",
             addWords: "Drag or click words to build your answer", yourAnswer: "Your answer", emptyAnswer: "Enter an answer first.",
-            moveUp: "Move up", moveDown: "Move down", flip: "Show translation", hint: "Hint", locked: "Locked word", loading: "Loading lesson…"
+            moveUp: "Move up", moveDown: "Move down", flip: "Show translation", hint: "Hint", locked: "Locked word", loading: "Loading lesson…",
+            seekBack: "−5 sec", seekForward: "+5 sec", loopA: "Set A", loopB: "Set B", clearLoop: "Clear loop", speed: "Speed", transcript: "Transcript"
         }
     };
     const recoveryCopy = {
@@ -151,6 +154,7 @@
     let activeStudentSectionId = "";
     let studentSectionsOpen = false;
     let draggedWordButton = null;
+    let draggedOrderItem = null;
     let draftSaveTimers = new Map();
     let pendingDrafts = new Map();
     let draftSaveQueue = Promise.resolve();
@@ -530,9 +534,15 @@
         return "";
     }
 
-    function youtubeEmbedUrl(value) {
+    function videoEmbedUrl(value) {
         try {
             const url = new URL(value);
+            if (["drive.google.com", "www.drive.google.com"].includes(url.hostname.toLowerCase())) {
+                const fileId = url.pathname.match(/^\/file\/d\/([A-Za-z0-9_-]+)/)?.[1] || url.searchParams.get("id");
+                return fileId && /^[A-Za-z0-9_-]{10,200}$/.test(fileId)
+                    ? `https://drive.google.com/file/d/${fileId}/preview`
+                    : "";
+            }
             if (!["youtube.com", "www.youtube.com", "m.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com", "youtu.be", "www.youtu.be"].includes(url.hostname.toLowerCase())) return "";
             const videoId = url.hostname.endsWith("youtu.be")
                 ? url.pathname.split("/").filter(Boolean)[0]
@@ -552,6 +562,8 @@
         if (activity.type === "text") {
             const note = window.SlovaActivityUI?.renderNote(activity.content, activity.prompt);
             if (note) return note;
+            const richText = window.SlovaActivityUI?.renderRichText(activity.content);
+            if (richText) return richText;
         }
         if (Array.isArray(activity.questions) && activity.questions.length) {
             const canSubmit = activity.questions.some((question) => question.gradable || question.reviewRequired);
@@ -613,7 +625,7 @@
         } else if (activity.type === "order-items" || activity.type === "sentence-order") {
             const savedItems = Array.isArray(savedResponse) ? savedResponse.map(String) : [];
             const items = savedItems.length ? savedItems.map((text) => ({ text, media: "" })) : (activity.items || []).map((item) => typeof item === "string" ? { text: item, media: "" } : item);
-            body = `<ol class="student-order-list">${items.map((item, itemIndex) => `<li data-order-item="${escapeHtml(item.text)}"><span>${optionMediaMarkup(item.media)}${escapeHtml(item.text)}</span><span><button type="button" data-move-item="-1" ${itemIndex === 0 ? "disabled" : ""} aria-label="${escapeHtml(text("moveUp"))}">↑</button><button type="button" data-move-item="1" ${itemIndex === items.length - 1 ? "disabled" : ""} aria-label="${escapeHtml(text("moveDown"))}">↓</button></span></li>`).join("")}</ol>`;
+            body = `<ol class="student-order-list">${items.map((item, itemIndex) => `<li draggable="true" data-order-item="${escapeHtml(item.text)}"><span>${optionMediaMarkup(item.media)}${escapeHtml(item.text)}</span><span><button type="button" data-move-item="-1" ${itemIndex === 0 ? "disabled" : ""} aria-label="${escapeHtml(text("moveUp"))}">↑</button><button type="button" data-move-item="1" ${itemIndex === items.length - 1 ? "disabled" : ""} aria-label="${escapeHtml(text("moveDown"))}">↓</button></span></li>`).join("")}</ol>`;
             controls = `<input type="hidden" data-answer-kind="order">`;
         } else if (activity.type === "match" || activity.type === "columns") {
             const rows = activity.type === "match" ? activity.pairs || [] : activity.items || [];
@@ -657,11 +669,14 @@
             const images = window.slovaGallery.parse(activity.content);
             body = images.length ? window.slovaGallery.html(images, activity.alt || activity.prompt || text("imageAlt"), "student-activity-image") : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         } else if (activity.type === "audio" || activity.type === "video") {
-            const embed = activity.type === "video" ? youtubeEmbedUrl(activity.content) : "";
+            const embed = activity.type === "video" ? videoEmbedUrl(activity.content) : "";
             const source = mediaUrl(activity.content);
-            body = embed
+            const mediaPlayer = embed
                 ? `<iframe class="student-activity-video" src="${escapeHtml(embed)}" title="${escapeHtml(activity.prompt || text("activity"))}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`
-                : source ? `<${activity.type} class="student-activity-media" controls preload="metadata"><source src="${escapeHtml(source)}"></${activity.type}>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
+                : source ? `<${activity.type} class="student-activity-media" controls preload="metadata" data-enhanced-media data-media-position-key="${escapeHtml(`${user?.id || ""}:${openedLesson?.id || ""}:${index}`)}"><source src="${escapeHtml(source)}"></${activity.type}>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
+            const transcript = typeof activity.settings?.transcript === "string" ? activity.settings.transcript.trim() : "";
+            const mediaTools = source ? `<div class="student-activity-actions"><button class="button secondary small" type="button" data-media-seek="-5">${escapeHtml(text("seekBack"))}</button><button class="button secondary small" type="button" data-media-seek="5">${escapeHtml(text("seekForward"))}</button><label>${escapeHtml(text("speed"))} <select data-media-speed><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select></label><button class="button secondary small" type="button" data-media-loop="a">${escapeHtml(text("loopA"))}</button><button class="button secondary small" type="button" data-media-loop="b">${escapeHtml(text("loopB"))}</button><button class="button secondary small" type="button" data-media-loop="clear">${escapeHtml(text("clearLoop"))}</button></div>` : "";
+            body = `${mediaPlayer}${mediaTools}${transcript ? `<details class="student-media-transcript" ${activity.settings?.hideTranscript === false ? "open" : ""}><summary>${escapeHtml(text("transcript"))}</summary><p>${escapeHtml(transcript).replace(/\n/g, "<br>")}</p></details>` : ""}`;
         } else {
             body = activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         }
@@ -1148,6 +1163,73 @@
                     row.querySelector('[data-move-item="-1"]').disabled = index === 0;
                     row.querySelector('[data-move-item="1"]').disabled = index === rows.length - 1;
                 });
+                pageContent.querySelectorAll("[data-media-seek]").forEach((button) => {
+                    button.addEventListener("click", () => {
+                        const media = button.closest("[data-activity-index]")?.querySelector("[data-enhanced-media]");
+                        if (media) media.currentTime = Math.max(0, Math.min(media.duration || Infinity, media.currentTime + Number(button.dataset.mediaSeek)));
+                    });
+                });
+                pageContent.querySelectorAll("[data-media-speed]").forEach((select) => {
+                    select.addEventListener("change", () => {
+                        const media = select.closest("[data-activity-index]")?.querySelector("[data-enhanced-media]");
+                        if (media) media.playbackRate = Number(select.value);
+                    });
+                });
+                pageContent.querySelectorAll("[data-enhanced-media]").forEach((media) => {
+                    const key = `slovasofiStudentMediaPosition:${media.dataset.mediaPositionKey}`;
+                    const savePosition = () => {
+                        try {
+                            if (!Number.isFinite(media.currentTime) || media.currentTime < 1 || (media.duration && media.currentTime >= media.duration)) {
+                                localStorage.removeItem(key);
+                                return;
+                            }
+                            localStorage.setItem(key, String(Math.floor(media.currentTime)));
+                        } catch (error) {
+                            console.warn("Could not save media playback position.", error);
+                        }
+                    };
+                    const restorePosition = () => {
+                        try {
+                            const saved = Number(localStorage.getItem(key));
+                            if (Number.isFinite(saved) && saved > 0 && saved < media.duration - 1) media.currentTime = saved;
+                        } catch (error) {
+                            console.warn("Could not restore media playback position.", error);
+                        }
+                    };
+                    media.addEventListener("loadedmetadata", restorePosition, { once: true });
+                    media.addEventListener("pause", savePosition);
+                    let positionTimer = 0;
+                    media.addEventListener("timeupdate", () => {
+                        clearTimeout(positionTimer);
+                        positionTimer = setTimeout(savePosition, 1000);
+                    });
+                    media.addEventListener("ended", () => {
+                        try { localStorage.removeItem(key); } catch (error) { console.warn("Could not clear media playback position.", error); }
+                    }, { once: true });
+                });
+                pageContent.querySelectorAll("[data-media-loop]").forEach((button) => {
+                    button.addEventListener("click", () => {
+                        const media = button.closest("[data-activity-index]")?.querySelector("[data-enhanced-media]");
+                        if (!media) return;
+                        const point = button.dataset.mediaLoop;
+                        if (point === "clear") {
+                            delete media.dataset.loopStart;
+                            delete media.dataset.loopEnd;
+                            return;
+                        }
+                        media.dataset[point === "a" ? "loopStart" : "loopEnd"] = String(media.currentTime);
+                        if (!media.dataset.loopListener) {
+                            media.dataset.loopListener = "true";
+                            media.addEventListener("timeupdate", () => {
+                                const start = Number(media.dataset.loopStart);
+                                const end = Number(media.dataset.loopEnd);
+                                if (Number.isFinite(start) && Number.isFinite(end) && end > start && media.currentTime >= end) {
+                                    media.currentTime = start;
+                                }
+                            });
+                        }
+                    });
+                });
                 scheduleDraftSave(item.closest("[data-activity-index]"));
             });
         });
@@ -1257,12 +1339,27 @@
     pageContent.addEventListener("dragstart", (event) => {
         draggedWordButton = event.target.closest("[data-word-token], [data-remove-word]");
         if (draggedWordButton) event.dataTransfer.setData("text/plain", "word");
+        draggedOrderItem = event.target.closest("[data-order-item]");
+        if (draggedOrderItem) event.dataTransfer.setData("text/plain", "order-item");
     });
-    pageContent.addEventListener("dragend", () => { draggedWordButton = null; });
+    pageContent.addEventListener("dragend", () => { draggedWordButton = null; draggedOrderItem = null; });
     pageContent.addEventListener("dragover", (event) => {
         if (draggedWordButton && event.target.closest("[data-word-bank], [data-word-answer]")) event.preventDefault();
+        if (draggedOrderItem && event.target.closest("[data-order-item]")) event.preventDefault();
     });
     pageContent.addEventListener("drop", (event) => {
+        const orderTarget = event.target.closest("[data-order-item]");
+        if (draggedOrderItem && orderTarget && orderTarget.parentElement === draggedOrderItem.parentElement) {
+            event.preventDefault();
+            if (orderTarget !== draggedOrderItem) {
+                const bounds = orderTarget.getBoundingClientRect();
+                orderTarget.parentElement.insertBefore(draggedOrderItem,
+                    event.clientY < bounds.top + bounds.height / 2 ? orderTarget : orderTarget.nextElementSibling);
+                scheduleDraftSave(draggedOrderItem.closest("[data-activity-index]"));
+            }
+            draggedOrderItem = null;
+            return;
+        }
         const destinationZone = event.target.closest("[data-word-bank], [data-word-answer]");
         if (!draggedWordButton || !destinationZone) return;
         event.preventDefault();

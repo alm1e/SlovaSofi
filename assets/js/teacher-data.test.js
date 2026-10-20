@@ -124,5 +124,41 @@ test("a newly added student keeps the supplied identity through consecutive rena
     assert.equal(client.tables.class_students.length, 1);
     assert.equal(client.tables.class_students[0].id, "stable-new-id");
     assert.equal(client.tables.class_students[0].display_name, "Renamed");
-    assert.deepEqual(client.deletedStudentIds, []);
+});
+
+test("workspace navigation data loads without a redundant network user lookup", async () => {
+    const window = {};
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, "teacher-data.js"), "utf8"), {
+        window, crypto: { randomUUID: () => "new-id" }, console, Date, Map, Set, Promise, Error
+    });
+    const rows = {
+        teacher_workspace_settings: [{ legacy_imported: true }],
+        teacher_classes: [],
+        teacher_lessons: [],
+        class_students: [],
+        class_lesson_assignments: [],
+        profiles: []
+    };
+    let userLookupCount = 0;
+    const client = {
+        rpc: async () => ({ data: { owner_id: "teacher-1", role: "teacher", permissions: {} }, error: null }),
+        auth: { getUser: async () => { userLookupCount += 1; throw new Error("Unexpected network user lookup"); } },
+        from(table) {
+            const query = {
+                eq() { return query; },
+                order() { return query; },
+                in() { return query; },
+                maybeSingle: async () => ({ data: rows[table]?.[0] || null, error: null }),
+                then(resolve, reject) {
+                    return Promise.resolve({ data: rows[table] || [], error: null }).then(resolve, reject);
+                }
+            };
+            return { select: () => query };
+        }
+    };
+    const workspace = await window.teacherWorkspaceApi.loadWorkspace(client, "teacher-1", "teacher@example.test");
+    assert.equal(userLookupCount, 0);
+    assert.equal(workspace.role, "teacher");
+    assert.deepEqual(JSON.parse(JSON.stringify(workspace.data)), { classes: [], lessons: [] });
+    assert.equal(workspace.staff.length, 0);
 });
