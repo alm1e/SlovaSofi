@@ -10,6 +10,11 @@
             throw new Error("Не удалось определить школьный кабинет и права доступа.");
         }
         const isAdmin = context.role === "admin";
+        if (!["teacher", "admin"].includes(context.role)) {
+            const error = new Error("Этот кабинет доступен только преподавателям.");
+            error.code = "WORKSPACE_FORBIDDEN";
+            throw error;
+        }
         const permissions = context.permissions;
         const [settingsResult, classesResult, lessonsResult, rosterResult, assignmentsResult] = await Promise.all([
             client.from("teacher_workspace_settings").select("legacy_imported").eq("user_id", userId).maybeSingle(),
