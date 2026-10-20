@@ -23,7 +23,7 @@
             completed: "Урок завершено!", homework: "Домашня робота", progress: "відповідей", progressSaved: "Чернетку збережено.",
             choose: "Виберіть відповідь", true: "Так", false: "Ні",
             addWords: "Перетягуйте слова або натискайте на них, щоб скласти відповідь", yourAnswer: "Ваша відповідь", emptyAnswer: "Спочатку введіть відповідь.",
-            moveUp: "Вище", moveDown: "Нижче", flip: "Показати переклад", loading: "Завантаження уроку…"
+            moveUp: "Вище", moveDown: "Нижче", flip: "Показати переклад", hint: "Підказка", locked: "Закріплене слово", loading: "Завантаження уроку…"
         },
         ru: {
             loading: "Загрузка…", activate: "Создайте пароль", activateHint: "Приглашение принято. Создайте пароль для входа в личный кабинет.",
@@ -48,7 +48,7 @@
             completed: "Урок завершён!", homework: "Домашняя работа", progress: "ответов", progressSaved: "Черновик сохранён.",
             choose: "Выберите ответ", true: "Да", false: "Нет",
             addWords: "Перетаскивайте слова или нажимайте на них, чтобы составить ответ", yourAnswer: "Ваш ответ", emptyAnswer: "Сначала введите ответ.",
-            moveUp: "Выше", moveDown: "Ниже", flip: "Показать перевод", loading: "Загрузка урока…"
+            moveUp: "Выше", moveDown: "Ниже", flip: "Показать перевод", hint: "Подсказка", locked: "Закреплённое слово", loading: "Загрузка урока…"
         },
         en: {
             loading: "Loading…", activate: "Create a password", activateHint: "Invitation accepted. Create a password to access your account.",
@@ -73,7 +73,7 @@
             completed: "Lesson completed!", homework: "Homework", progress: "answered", progressSaved: "Draft saved.",
             choose: "Choose an answer", true: "True", false: "False",
             addWords: "Drag or click words to build your answer", yourAnswer: "Your answer", emptyAnswer: "Enter an answer first.",
-            moveUp: "Move up", moveDown: "Move down", flip: "Show translation", loading: "Loading lesson…"
+            moveUp: "Move up", moveDown: "Move down", flip: "Show translation", hint: "Hint", locked: "Locked word", loading: "Loading lesson…"
         }
     };
     const recoveryCopy = {
@@ -219,7 +219,7 @@
     const activitiesFor = (lesson) => lessonSections(lesson).flatMap((section) => Array.isArray(section.activities) ? section.activities : []);
     const answerableActivityTypes = new Set([
         "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
-        "sentence-order", "true-false", "table", "match", "columns", "open-answer"
+        "sentence-order", "true-false", "table", "match", "columns", "open-answer", "flashcards"
     ]);
     const progressActivitiesFor = (lesson) => activitiesFor(lesson).flatMap((activity) => {
         if (!answerableActivityTypes.has(activity.type)) return [];
@@ -240,14 +240,26 @@
     }
     function hasAnswerResponse(response) {
         if (typeof response === "string") return response.trim().length > 0;
+        if (response && typeof response === "object" && !Array.isArray(response)) {
+            const text = String(response.text || "").trim();
+            const attachments = Array.isArray(response.attachments)
+                ? response.attachments.some((item) => typeof item === "string" && item.trim())
+                : false;
+            return Boolean(text) || attachments;
+        }
         return Array.isArray(response) && response.some((part) => typeof part === "string" && part.trim().length > 0);
     }
     function answeredCountFor(lesson, answers = lesson.progress) {
         if (Array.isArray(lesson.sections)) {
             return progressActivitiesFor(lesson).filter(({ activity, questionId, questionIndex }) => {
                 if (!Number.isInteger(activity.index)) return false;
-                const key = questionId ? `a${activity.index}.q${questionId}` : `a${activity.index}`;
-                const answer = answers?.[key] || (questionIndex === 0 ? answers?.[`a${activity.index}`] : null);
+                const key = questionId
+                    ? `${activityProgressKey(activity, activity.index)}.q${questionId}`
+                    : activityProgressKey(activity, activity.index);
+                const legacyKey = legacyActivityProgressKey(activity, activity.index);
+                const answer = answers?.[key]
+                    || (questionId && legacyKey ? answers?.[`${legacyKey}.q${questionId}`] : null)
+                    || ((questionIndex === 0 || !questionId) && legacyKey ? answers?.[legacyKey] : null);
                 return hasAnswerResponse(answer?.response);
             }).length;
         }
@@ -435,14 +447,56 @@
         return lesson.progress?.[`a${index}`] || null;
     }
 
-    function progressForQuestion(lesson, index, questionId, questionIndex) {
-        return lesson.progress?.[`a${index}.q${questionId}`]
-            || (questionIndex === 0 ? lesson.progress?.[`a${index}`] : null);
+    function activityProgressKey(activity, index) {
+        const id = typeof activity.id === "string" ? activity.id : "";
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
+            ? `b${id}`
+            : `a${index}`;
+    }
+
+    function legacyActivityProgressKey(activity, index) {
+        const id = typeof activity.id === "string" ? activity.id : "";
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return `a${index}`;
+        return Number.isInteger(activity.legacyProgressIndex) && activity.legacyProgressIndex >= 0
+            ? `a${activity.legacyProgressIndex}`
+            : null;
+    }
+
+    function progressForActivity(lesson, activity) {
+        const index = activity.index;
+        const legacyKey = legacyActivityProgressKey(activity, index);
+        return lesson.progress?.[activityProgressKey(activity, index)] || (legacyKey ? lesson.progress?.[legacyKey] : null) || null;
+    }
+
+    function progressForQuestion(lesson, activity, index, questionId, questionIndex) {
+        const key = activityProgressKey(activity, index);
+        const legacyKey = legacyActivityProgressKey(activity, index);
+        return lesson.progress?.[`${key}.q${questionId}`]
+            || (legacyKey ? lesson.progress?.[`${legacyKey}.q${questionId}`] : null)
+            || ((questionIndex === 0 && legacyKey) ? lesson.progress?.[legacyKey] : null);
     }
 
     function questionItemLabel(index) {
         const labels = { ua: "Пункт", ru: "Пункт", en: "Item" };
         return `${labels[language] || labels.en} ${index + 1}`;
+    }
+
+    function flashcardChoiceText(key) {
+        const labels = {
+            ua: { know: "Знаю", repeat: "Повторити", hard: "Складні картки" },
+            ru: { know: "Знаю", repeat: "Повторить", hard: "Сложные карточки" },
+            en: { know: "Know", repeat: "Review", hard: "Difficult cards" }
+        };
+        return labels[language]?.[key] || labels.en[key];
+    }
+
+    function openAnswerText(key) {
+        const labels = {
+            ua: { attachments: "Вкладення", addAttachment: "Додати посилання", attachmentUrl: "https://...", removeAttachment: "Видалити" },
+            ru: { attachments: "Вложения", addAttachment: "Добавить ссылку", attachmentUrl: "https://...", removeAttachment: "Удалить" },
+            en: { attachments: "Attachments", addAttachment: "Add link", attachmentUrl: "https://...", removeAttachment: "Remove" }
+        };
+        return labels[language]?.[key] || labels.en[key];
     }
 
     function mediaUrl(value) {
@@ -452,6 +506,28 @@
         } catch {
             return "";
         }
+    }
+
+    function flashcardSideMarkup(value) {
+        const url = mediaUrl(value);
+        if (!url) return escapeHtml(value).replace(/\n/g, "<br>");
+        const pathname = new URL(url).pathname.toLowerCase();
+        if (/\.(png|jpe?g|webp|gif|avif)$/.test(pathname)) {
+            return `<img class="student-flashcard-media" src="${escapeHtml(url)}" alt="">`;
+        }
+        if (/\.(mp3|wav|m4a|ogg|aac|flac)$/.test(pathname)) {
+            return `<audio class="student-flashcard-media" controls preload="none" src="${escapeHtml(url)}"></audio>`;
+        }
+        return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(value)}</a>`;
+    }
+
+    function optionMediaMarkup(value) {
+        const url = mediaUrl(value);
+        if (!url) return "";
+        const pathname = new URL(url).pathname.toLowerCase();
+        if (/\.(png|jpe?g|webp|gif|avif)$/.test(pathname)) return `<img class="student-choice-media" src="${escapeHtml(url)}" alt="" loading="lazy">`;
+        if (/\.(mp3|wav|m4a|ogg|aac|flac)$/.test(pathname)) return `<audio class="student-choice-media" controls preload="none" src="${escapeHtml(url)}"></audio>`;
+        return "";
     }
 
     function youtubeEmbedUrl(value) {
@@ -485,12 +561,12 @@
                     question,
                     index,
                     questionIndex,
-                    progressForQuestion(openedLesson, index, question.questionId || `legacy-${questionIndex}`, questionIndex)
+                    progressForQuestion(openedLesson, activity, index, question.questionId || `legacy-${questionIndex}`, questionIndex)
                 )).join("")}</div>
                 ${canSubmit ? `<div class="student-activity-group-actions"><button class="button small" type="button" data-submit-activity-group>${escapeHtml(text("checkAnswers"))}</button></div>` : ""}
             </section>`;
         }
-        return renderActivityItem(activity, index, null, progressFor(openedLesson, index));
+        return renderActivityItem(activity, index, null, progressForActivity(openedLesson, activity));
     }
 
     function renderActivityItem(activity, index, questionIndex, saved) {
@@ -499,56 +575,84 @@
         let body = "";
         let controls = "";
         if (activity.type === "drag-words") {
-            const selected = Array.isArray(savedResponse) ? savedResponse.map(String) : [];
+            const lockedWords = Array.isArray(activity.settings?.lockedWords) ? activity.settings.lockedWords.map(String) : [];
+            const selected = Array.isArray(savedResponse) ? savedResponse.map(String) : [...lockedWords];
             const remaining = [...activity.tokens];
             selected.forEach((word) => {
                 const tokenIndex = remaining.indexOf(word);
                 if (tokenIndex >= 0) remaining.splice(tokenIndex, 1);
             });
-            body = `<p class="student-muted">${escapeHtml(text("addWords"))}</p><div class="student-word-bank" data-word-bank>${remaining.map((word) => `<button class="student-word-token" type="button" draggable="true" data-word-token="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}</div><div class="student-answer-zone" data-word-answer aria-label="${escapeHtml(text("yourAnswer"))}">${selected.map((word) => `<button class="student-word-token selected" type="button" draggable="true" data-remove-word="${escapeHtml(word)}">${escapeHtml(word)} ×</button>`).join("")}</div>`;
+            body = `<p class="student-muted">${escapeHtml(text("addWords"))}</p><div class="student-word-bank" data-word-bank>${remaining.map((word) => `<button class="student-word-token" type="button" draggable="true" data-word-token="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}</div><div class="student-answer-zone" data-word-answer aria-label="${escapeHtml(text("yourAnswer"))}">${selected.map((word) => lockedWords.includes(word) ? `<span class="student-word-token selected is-locked" aria-label="${escapeHtml(text("locked"))}">${escapeHtml(word)} 🔒</span>` : `<button class="student-word-token selected" type="button" draggable="true" data-remove-word="${escapeHtml(word)}">${escapeHtml(word)} ×</button>`).join("")}</div>`;
             controls = `<input type="hidden" data-answer-kind="words">`;
         } else if (activity.type === "fill-blank") {
             const savedParts = Array.isArray(savedResponse) ? [...savedResponse] : [];
             const parts = String(activity.content || "").split("___");
-            body = `<p class="student-activity-content">${parts.map((part, partIndex) => `${escapeHtml(part)}${partIndex < parts.length - 1 ? `<input class="student-inline-answer" data-blank-answer value="${escapeHtml(savedParts.shift() || "")}" aria-label="${escapeHtml(text("yourAnswer"))}" autocomplete="off">` : ""}`).join("")}</p>`;
+            const blankCount = Math.max(parts.length - 1, Number(activity.blankCount) || 0);
+            const hints = Array.isArray(activity.settings?.hints) ? activity.settings.hints : activity.hints || [];
+            body = `<p class="student-activity-content">${Array.from({ length: blankCount }, (_, partIndex) => `${escapeHtml(parts[partIndex] || "")}<input class="student-inline-answer" data-blank-answer value="${escapeHtml(savedParts.shift() || "")}" aria-label="${escapeHtml(text("yourAnswer"))}" autocomplete="off">`).join("")}${escapeHtml(parts.slice(blankCount).join("___"))}</p>${hints.map((hint, hintIndex) => `<div><button type="button" class="student-hint" data-show-hint="${hintIndex}">${escapeHtml(text("hint"))} ${hintIndex + 1}</button><span data-hint-content hidden>${escapeHtml(hint)}</span></div>`).join("")}${activity.wordBank?.length ? `<div class="student-word-bank">${activity.wordBank.map((word) => `<button class="student-word-token" type="button" data-word-bank-answer="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}</div>` : ""}`;
             controls = `<input type="hidden" data-answer-kind="blanks">`;
         } else if (activity.type === "multiple-choice" || activity.type === "one-of-many") {
-            const options = Array.isArray(activity.options) ? activity.options : [];
-            if (activity.type === "one-of-many" && String(options[0] || "").includes("___")) {
-                const [sentence, ...choices] = options;
-                const select = `<select class="student-inline-select" data-choice-select aria-label="${escapeHtml(text("choose"))}"><option value="">---</option>${choices.map((option) => `<option value="${escapeHtml(option)}" ${savedResponse === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>`;
-                const [before, ...after] = sentence.split("___");
-                body = `<p class="student-activity-content">${escapeHtml(before)}${select}${escapeHtml(after.join("___"))}</p>`;
-            } else body = `<div class="student-answer-options">${options.map((option) => `<label class="student-answer-option"><input type="radio" name="${radioName}" value="${escapeHtml(option)}" ${savedResponse === option ? "checked" : ""}><span>${escapeHtml(option)}</span></label>`).join("")}</div>`;
-            controls = `<input type="hidden" data-answer-kind="choice">`;
+            const rawOptions = Array.isArray(activity.options) ? activity.options : [];
+            const options = rawOptions.map((option) => typeof option === "string" ? { text: option, media: "", explanation: "" } : option);
+            const multiple = activity.type === "multiple-choice" && activity.multipleAnswers === true;
+            const savedValues = Array.isArray(savedResponse) ? savedResponse.map(String) : [String(savedResponse || "")];
+            if (activity.type === "one-of-many" && String(options[0]?.text || "").includes("___")) {
+                const sentence = options[0].text;
+                const choicesByBlank = Array.isArray(activity.choicesByBlank) ? activity.choicesByBlank : [];
+                let blankIndex = 0;
+                body = `<p class="student-activity-content">${sentence.split("___").map((part, index, items) => `${escapeHtml(part)}${index < items.length - 1 ? `<select class="student-inline-select" data-choice-select aria-label="${escapeHtml(text("choose"))}"><option value="">---</option>${(choicesByBlank[blankIndex] || options.slice(1).map((item) => item.text)).map((option) => `<option value="${escapeHtml(option)}" ${savedValues[blankIndex] === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>${blankIndex++, ""}` : ""}`).join("")}</p>`;
+                controls = `<input type="hidden" data-answer-kind="choice-list">`;
+            } else {
+                body = `<div class="student-answer-options">${options.map((option) => `<label class="student-answer-option"><input type="${multiple ? "checkbox" : "radio"}" name="${radioName}" value="${escapeHtml(option.text)}" ${savedValues.includes(option.text) ? "checked" : ""}><span>${optionMediaMarkup(option.media)}${escapeHtml(option.text)}</span></label>`).join("")}</div>`;
+                controls = `<input type="hidden" data-answer-kind="${multiple ? "choices" : "choice"}">`;
+            }
         } else if (activity.type === "true-false") {
-            body = `<p class="student-activity-content">${escapeHtml(activity.content || "")}</p><div class="student-answer-options">${[["true", text("true")], ["false", text("false")]].map(([value, label]) => `<label class="student-answer-option"><input type="radio" name="${radioName}" value="${value}" ${savedResponse === value ? "checked" : ""}><span>${escapeHtml(label)}</span></label>`).join("")}</div>`;
+            const options = Array.isArray(activity.options) ? activity.options : [{ value: "true", label: text("true") }, { value: "false", label: text("false") }];
+            body = `<p class="student-activity-content">${escapeHtml(activity.content || "")}</p><div class="student-answer-options">${options.map(({ value, label }) => `<label class="student-answer-option"><input type="radio" name="${radioName}" value="${escapeHtml(value)}" ${savedResponse === value ? "checked" : ""}><span>${escapeHtml(value === "true" ? text("true") : value === "false" ? text("false") : label)}</span></label>`).join("")}</div>`;
             controls = `<input type="hidden" data-answer-kind="choice">`;
         } else if (activity.type === "order-items" || activity.type === "sentence-order") {
             const savedItems = Array.isArray(savedResponse) ? savedResponse.map(String) : [];
-            const items = savedItems.length ? savedItems : activity.items || [];
-            body = `<ol class="student-order-list">${items.map((item, itemIndex) => `<li data-order-item="${escapeHtml(item)}"><span>${escapeHtml(item)}</span><span><button type="button" data-move-item="-1" ${itemIndex === 0 ? "disabled" : ""} aria-label="${escapeHtml(text("moveUp"))}">↑</button><button type="button" data-move-item="1" ${itemIndex === items.length - 1 ? "disabled" : ""} aria-label="${escapeHtml(text("moveDown"))}">↓</button></span></li>`).join("")}</ol>`;
+            const items = savedItems.length ? savedItems.map((text) => ({ text, media: "" })) : (activity.items || []).map((item) => typeof item === "string" ? { text: item, media: "" } : item);
+            body = `<ol class="student-order-list">${items.map((item, itemIndex) => `<li data-order-item="${escapeHtml(item.text)}"><span>${optionMediaMarkup(item.media)}${escapeHtml(item.text)}</span><span><button type="button" data-move-item="-1" ${itemIndex === 0 ? "disabled" : ""} aria-label="${escapeHtml(text("moveUp"))}">↑</button><button type="button" data-move-item="1" ${itemIndex === items.length - 1 ? "disabled" : ""} aria-label="${escapeHtml(text("moveDown"))}">↓</button></span></li>`).join("")}</ol>`;
             controls = `<input type="hidden" data-answer-kind="order">`;
         } else if (activity.type === "match" || activity.type === "columns") {
             const rows = activity.type === "match" ? activity.pairs || [] : activity.items || [];
             const options = activity.type === "match" ? activity.options || [] : activity.categories || [];
             const savedChoices = Array.isArray(savedResponse) ? savedResponse : [];
-            body = `<div class="student-match-list" data-pair-board ${activity.type === "columns" ? "data-pair-reuse" : ""}>${rows.map((item, itemIndex) => `<div class="student-match-row" data-pair-row><span>${escapeHtml(item)}</span><select data-match-answer aria-label="${escapeHtml(item)}"><option value="">${escapeHtml(text("choose"))}</option>${options.map((option) => `<option value="${escapeHtml(option)}" ${savedChoices[itemIndex] === option ? "selected" : ""}>${escapeHtml(option)}            </option>`).join("")}</select></div>`).join("")}</div>`;
+            body = `<div class="student-match-list" data-pair-board ${activity.type === "columns" ? "data-pair-reuse" : ""}>${rows.map((rawItem, itemIndex) => {
+                const item = typeof rawItem === "string" ? { text: rawItem, media: "" } : rawItem;
+                const choiceOptions = options.map((rawOption) => typeof rawOption === "string" ? { text: rawOption, media: "" } : rawOption);
+                return `<div class="student-match-row" data-pair-row><span>${optionMediaMarkup(item.media)}${escapeHtml(item.text)}</span><select data-match-answer aria-label="${escapeHtml(item.text)}"><option value="">${escapeHtml(text("choose"))}</option>${choiceOptions.map((option) => `<option value="${escapeHtml(option.text)}" ${savedChoices[itemIndex] === option.text ? "selected" : ""}>${escapeHtml(option.text)}</option>`).join("")}</select></div>`;
+            }).join("")}</div>`;
             controls = `<input type="hidden" data-answer-kind="matches">`;
         } else if (activity.type === "table") {
             const savedParts = Array.isArray(savedResponse) ? savedResponse : [];
             body = `<div class="student-table-wrap"><table class="student-answer-table"><tbody>${(activity.rows || []).map((row) => `<tr>${row.map((cell) => `<td>${String(cell).split(/(\{\{blank:\d+\}\})/g).map((part) => {
                 const blank = part.match(/^\{\{blank:(\d+)\}\}$/);
                 if (!blank) return escapeHtml(part);
-                const value = escapeHtml(savedParts[Number(blank[1])] || "");
-                return `<input class="student-inline-answer" data-table-answer value="${value}" aria-label="${escapeHtml(text("yourAnswer"))}" autocomplete="off">`;
+                const blankIndex = Number(blank[1]);
+                const value = escapeHtml(savedParts[blankIndex] || "");
+                const options = activity.cellOptions?.[String(blankIndex)];
+                return Array.isArray(options) && options.length
+                    ? `<select class="student-inline-select" data-table-answer aria-label="${escapeHtml(text("yourAnswer"))}"><option value="">${escapeHtml(text("choose"))}</option>${options.map((option) => `<option value="${escapeHtml(option)}" ${savedParts[blankIndex] === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>`
+                    : `<input class="student-inline-answer" data-table-answer value="${value}" aria-label="${escapeHtml(text("yourAnswer"))}" autocomplete="off">`;
             }).join("")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
             controls = `<input type="hidden" data-answer-kind="table">`;
         } else if (activity.type === "open-answer") {
-            body = `${activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : ""}<textarea class="student-open-answer" data-open-answer maxlength="10000" placeholder="${escapeHtml(text("yourAnswer"))}">${escapeHtml(savedResponse || "")}</textarea>`;
+            const openSaved = savedResponse && typeof savedResponse === "object" && !Array.isArray(savedResponse)
+                ? savedResponse
+                : { text: savedResponse || "", attachments: [] };
+            const attachments = Array.isArray(openSaved.attachments)
+                ? openSaved.attachments.filter((item) => typeof item === "string").slice(0, 8)
+                : [];
+            body = `${activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : ""}<textarea class="student-open-answer" data-open-answer maxlength="10000" placeholder="${escapeHtml(text("yourAnswer"))}">${escapeHtml(openSaved.text || "")}</textarea><div class="student-open-attachments"><strong>${escapeHtml(openAnswerText("attachments"))}</strong><div data-open-attachments>${attachments.map((url) => `<div class="student-open-attachment"><input class="student-inline-answer" data-open-attachment value="${escapeHtml(url)}" placeholder="${escapeHtml(openAnswerText("attachmentUrl"))}" autocomplete="off"><button type="button" class="button secondary small" data-remove-open-attachment>${escapeHtml(openAnswerText("removeAttachment"))}</button></div>`).join("")}</div><button class="button secondary small" type="button" data-add-open-attachment>${escapeHtml(openAnswerText("addAttachment"))}</button></div>`;
             controls = `<input type="hidden" data-answer-kind="open">`;
         } else if (activity.type === "flashcards") {
-            body = `<div class="student-flashcard-list">${(activity.cards || []).map((item) => `<button class="student-flashcard" type="button" data-front="${escapeHtml(item.front)}" data-back="${escapeHtml(item.back)}"><strong>${escapeHtml(item.front)}</strong><small>${escapeHtml(text("flip"))}</small></button>`).join("")}</div>`;
+            const ratings = Array.isArray(savedResponse) ? savedResponse : [];
+            body = `<button class="button secondary small student-flashcard-hard-toggle" type="button" data-flashcards-hard-only aria-pressed="false">${escapeHtml(flashcardChoiceText("hard"))}</button><div class="student-flashcard-list">${(activity.cards || []).map((item) => {
+                const rating = ratings[item.cardIndex] || "";
+                return `<div class="student-flashcard-card" data-flashcard-card data-card-index="${item.cardIndex}" data-rating="${escapeHtml(rating)}"><div class="student-flashcard"><strong class="student-flashcard-face">${flashcardSideMarkup(item.front)}</strong><button class="student-flashcard-flip" type="button" data-front="${escapeHtml(item.front)}" data-back="${escapeHtml(item.back)}">${escapeHtml(text("flip"))}</button></div><div class="student-flashcard-rating"><button class="button secondary small" type="button" data-flashcard-rating="know" data-card-index="${item.cardIndex}" aria-pressed="${rating === "know"}">${escapeHtml(flashcardChoiceText("know"))}</button><button class="button secondary small" type="button" data-flashcard-rating="repeat" data-card-index="${item.cardIndex}" aria-pressed="${rating === "repeat"}">${escapeHtml(flashcardChoiceText("repeat"))}</button></div></div>`;
+            }).join("")}</div>`;
         } else if (activity.type === "image") {
             const images = window.slovaGallery.parse(activity.content);
             body = images.length ? window.slovaGallery.html(images, activity.alt || activity.prompt || text("imageAlt"), "student-activity-image") : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
@@ -567,10 +671,10 @@
                     : saved?.correct === null ? text("submitted") : "";
         const isQuestion = Number.isInteger(questionIndex);
         const canSubmit = Boolean(activity.gradable || activity.reviewRequired);
-        const feedbackMarkup = canSubmit
-            ? `<p class="student-answer-feedback ${saved?.correct === true ? "is-correct" : saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml(feedback)}</p>`
+        const feedbackMarkup = canSubmit || activity.type === "flashcards"
+            ? `<p class="student-answer-feedback ${saved?.correct === true ? "is-correct" : saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml([feedback, saved?.feedback].filter(Boolean).join(" "))}</p>`
             : "";
-        const submitMarkup = !canSubmit ? ""
+        const submitMarkup = !canSubmit ? feedbackMarkup
             : isQuestion ? controls
                 : `<div class="student-activity-actions">${controls}<button class="button small" type="button" data-submit-answer>${escapeHtml(text("checkAnswer"))}</button></div>${feedbackMarkup}`;
         const questionId = isQuestion ? String(activity.questionId || `legacy-${questionIndex}`) : "";
@@ -672,11 +776,16 @@
             return [...element.querySelectorAll("[data-word-answer] [data-remove-word]")].map((button) => button.dataset.removeWord);
         }
         if (kind === "blanks") return [...element.querySelectorAll("[data-blank-answer]")].map((input) => input.value.trim());
+        if (kind === "choice-list") return [...element.querySelectorAll("[data-choice-select]")].map((select) => select.value);
+        if (kind === "choices") return [...element.querySelectorAll('input[type="checkbox"]:checked')].map((input) => input.value);
         if (kind === "choice") return element.querySelector('input[type="radio"]:checked')?.value || element.querySelector("[data-choice-select]")?.value || "";
         if (kind === "order") return [...element.querySelectorAll("[data-order-item]")].map((item) => item.dataset.orderItem);
         if (kind === "matches") return [...element.querySelectorAll("[data-match-answer]")].map((select) => select.value);
         if (kind === "table") return [...element.querySelectorAll("[data-table-answer]")].map((input) => input.value.trim());
-        if (kind === "open") return element.querySelector("[data-open-answer]")?.value || "";
+        if (kind === "open") return {
+            text: element.querySelector("[data-open-answer]")?.value || "",
+            attachments: [...element.querySelectorAll("[data-open-attachment]")].map((input) => input.value.trim()).filter(Boolean)
+        };
         return "";
     }
 
@@ -857,8 +966,8 @@
             const result = await submission;
             pendingDrafts.delete(draftKey);
             updateLessonProgress(lessonId, result.answers, result.completed);
-            feedback.textContent = result.reviewRequired ? text("submitted")
-                : result.correct ? text("correct") : text("incorrect");
+            feedback.textContent = [result.reviewRequired ? text("submitted")
+                : result.correct ? text("correct") : text("incorrect"), result.feedback].filter(Boolean).join(" ");
             feedback.className = `student-answer-feedback ${result.reviewRequired ? "" : result.correct ? "is-correct" : "is-incorrect"}`;
             if (result.completed) showToast(text("completed"));
             if (renderAfterSubmit) render();
@@ -1042,11 +1151,81 @@
                 scheduleDraftSave(item.closest("[data-activity-index]"));
             });
         });
+        pageContent.querySelectorAll("[data-show-hint]").forEach((button) => {
+            button.addEventListener("click", () => {
+                button.parentElement.querySelector("[data-hint-content]")?.removeAttribute("hidden");
+                button.disabled = true;
+            });
+        });
+        pageContent.querySelectorAll("[data-word-bank-answer]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const activity = button.closest("[data-activity-index]");
+                const blank = activity?.querySelector("[data-blank-answer]:not(:focus)");
+                if (blank) {
+                    blank.value = button.dataset.wordBankAnswer;
+                    scheduleDraftSave(activity);
+                }
+            });
+        });
+        pageContent.querySelectorAll("[data-add-open-attachment]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const activity = button.closest("[data-activity-index]");
+                const wrap = activity?.querySelector("[data-open-attachments]");
+                if (!activity || !wrap || wrap.children.length >= 8) return;
+                const row = document.createElement("div");
+                row.className = "student-open-attachment";
+                row.innerHTML = `<input class="student-inline-answer" data-open-attachment placeholder="${escapeHtml(openAnswerText("attachmentUrl"))}" autocomplete="off"><button type="button" class="button secondary small" data-remove-open-attachment>${escapeHtml(openAnswerText("removeAttachment"))}</button>`;
+                wrap.append(row);
+                row.querySelector("[data-open-attachment]")?.focus();
+                scheduleDraftSave(activity);
+            });
+        });
+        pageContent.querySelectorAll("[data-remove-open-attachment]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const activity = button.closest("[data-activity-index]");
+                button.closest(".student-open-attachment")?.remove();
+                if (activity) scheduleDraftSave(activity);
+            });
+        });
         pageContent.querySelectorAll("[data-front][data-back]").forEach((button) => {
             button.addEventListener("click", () => {
                 const flipped = button.classList.toggle("is-flipped");
-                button.querySelector("strong").textContent = flipped ? button.dataset.back : button.dataset.front;
-                button.querySelector("small").textContent = flipped ? button.dataset.front : text("flip");
+                button.closest("[data-flashcard-card]")?.querySelector(".student-flashcard-face")
+                    ?.replaceChildren(document.createRange().createContextualFragment(flashcardSideMarkup(flipped ? button.dataset.back : button.dataset.front)));
+            });
+        });
+        pageContent.querySelectorAll("[data-flashcards-hard-only]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const hardOnly = button.getAttribute("aria-pressed") !== "true";
+                button.setAttribute("aria-pressed", String(hardOnly));
+                button.closest("[data-activity-index]")?.querySelectorAll("[data-flashcard-card]").forEach((card) => {
+                    card.hidden = hardOnly && card.dataset.rating === "know";
+                });
+            });
+        });
+        pageContent.querySelectorAll("[data-flashcard-rating]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const activity = button.closest("[data-activity-index]");
+                const card = button.closest("[data-flashcard-card]");
+                if (!openedLesson || !activity || !card) return;
+                const activityIndex = Number(activity.dataset.activityIndex);
+                const cardIndex = Number(button.dataset.cardIndex);
+                const rating = button.dataset.flashcardRating;
+                if (!Number.isInteger(activityIndex) || !Number.isInteger(cardIndex) || !["know", "repeat"].includes(rating)) return;
+                card.dataset.rating = rating;
+                card.querySelectorAll("[data-flashcard-rating]").forEach((choice) => {
+                    choice.setAttribute("aria-pressed", String(choice.dataset.flashcardRating === rating));
+                });
+                const cardElements = [...activity.querySelectorAll("[data-flashcard-card]")];
+                const ratings = Array.from({ length: cardElements.length }, () => "");
+                cardElements.forEach((item) => {
+                    const index = Number(item.dataset.cardIndex);
+                    if (Number.isInteger(index)) ratings[index] = item.dataset.rating || "";
+                });
+                ratings[cardIndex] = rating;
+                const hardOnly = activity.querySelector("[data-flashcards-hard-only]")?.getAttribute("aria-pressed") === "true";
+                card.hidden = hardOnly && rating === "know";
+                queueDraftSave(openedLesson.id, activityDraftKey(activityIndex, null), activityIndex, null, ratings);
             });
         });
     }
