@@ -1022,7 +1022,7 @@ async function persistWorkspaceChange(previousData, deletedLessonIds = []) {
     // snapshot could delete newly invited students and their cascading progress.
     try {
         if (currentUser && window.teacherWorkspaceApi) {
-            const loaded = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, currentUser.id);
+            const loaded = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, currentUser.id, currentUser.email || "");
             data = loaded.data;
         }
     } catch (error) {
@@ -1128,7 +1128,7 @@ async function loadCurrentUser() {
 
         // Load workspace in background (don't block UI)
         try {
-            const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, user.id);
+            const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, user.id, user.email || "");
             data = workspace.data;
             workspaceAccess = {
                 workspaceOwnerId: workspace.workspaceOwnerId,
@@ -1136,25 +1136,38 @@ async function loadCurrentUser() {
                 permissions: workspace.permissions,
                 staff: workspace.staff
             };
-            try {
-                await loadCalendarEvents();
-            } catch (calendarError) {
-                console.error("Could not load calendar events.", calendarError);
-                showToast(isMissingCalendarTable(calendarError)
-                    ? t("calendar.migrationRequired")
-                    : `${t("calendar.loadError")} ${calendarError.message}`);
-            }
-            subscribeToCalendarChanges(window.supabaseClient, currentUser);
             startPresenceTracking(window.supabaseClient, [
                 currentUser.id,
-                ...data.classes.map((item) => item.teacherId),
-                ...workspace.staff.map((member) => member.id)
+                ...data.classes.map((item) => item.teacherId)
             ], currentUser);
             translateStaticUI();
             render();
             const storageNote = document.querySelector(".storage-note");
             if (storageNote) storageNote.textContent = t("welcome.database");
-            if (workspace.staffLoadError) showToast(`${t("toast.staffLoadError")} ${workspace.staffLoadError}`);
+
+            loadCalendarEvents().then(() => {
+                if (activeView === "calendar" && !lessonWorkspaceMode) render();
+            }).catch((calendarError) => {
+                console.error("Could not load calendar events.", calendarError);
+                showToast(isMissingCalendarTable(calendarError)
+                    ? t("calendar.migrationRequired")
+                    : `${t("calendar.loadError")} ${calendarError.message}`);
+            });
+            subscribeToCalendarChanges(window.supabaseClient, currentUser);
+            if (workspace.permissions.manage_teachers && window.teacherWorkspaceApi.loadStaff) {
+                window.teacherWorkspaceApi.loadStaff(window.supabaseClient).then((staff) => {
+                    workspaceAccess.staff = staff;
+                    startPresenceTracking(window.supabaseClient, [
+                        currentUser.id,
+                        ...data.classes.map((item) => item.teacherId),
+                        ...staff.map((member) => member.id)
+                    ], currentUser);
+                    if (activeView === "staff" && !lessonWorkspaceMode) render();
+                }).catch((error) => {
+                    console.error("Could not load teacher accounts; the rest of the dashboard is still available.", error);
+                    showToast(`${t("toast.staffLoadError")} ${error.message || ""}`);
+                });
+            }
         } catch (workspaceError) {
             console.error("Could not load the teacher workspace from Supabase.", workspaceError);
             if (workspaceError.code === "WORKSPACE_FORBIDDEN") {

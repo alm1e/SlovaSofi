@@ -3,7 +3,7 @@
         if (error) throw new Error(`${operation}: ${error.message || error.details || "Неизвестная ошибка базы данных."}`);
     }
 
-    async function loadWorkspace(client, userId) {
+    async function loadWorkspace(client, userId, userEmail = "") {
         const { data: context, error: contextError } = await client.rpc("teacher_workspace_context");
         fail(contextError, "Не удалось определить школьный кабинет и права доступа");
         if (!context?.owner_id || !context?.permissions) {
@@ -36,8 +36,6 @@
         fail(assignmentsResult.error, "Не удалось загрузить назначения уроков");
 
         const teacherIds = [...new Set(classesResult.data.map((group) => group.teacher_id))];
-        const { data: { user }, error: userError } = await client.auth.getUser();
-        fail(userError, "Не удалось загрузить текущий аккаунт");
         const { data: profiles, error: profilesError } = teacherIds.length
             ? await client.from("profiles").select("id,first_name,last_name").in("id", teacherIds)
             : { data: [], error: null };
@@ -49,7 +47,7 @@
             course: group.course,
             teacherId: group.teacher_id,
             teacherName: [profileById.get(group.teacher_id)?.first_name, profileById.get(group.teacher_id)?.last_name]
-                .filter(Boolean).join(" ") || (group.teacher_id === userId ? user?.email : "Преподаватель"),
+                .filter(Boolean).join(" ") || (group.teacher_id === userId ? userEmail : "Преподаватель"),
             studentRecords: rosterResult.data.filter((student) => student.class_id === group.id),
             students: rosterResult.data.filter((student) => student.class_id === group.id).map((student) => student.display_name)
         }));
@@ -80,16 +78,9 @@
         });
         const settings = settingsResult.data;
 
-        if (!settingsResult.data?.legacy_imported) await saveSettings(client, userId, true);
-        let staff = [];
-        let staffLoadError = "";
-        if (permissions.manage_teachers) {
-            try {
-                staff = (await manageTeacher(client, { action: "list" })).staff;
-            } catch (error) {
-                console.error("Could not load teacher accounts; the rest of the dashboard is still available.", error);
-                staffLoadError = error.message || "Не удалось загрузить список преподавателей.";
-            }
+        if (!settingsResult.data?.legacy_imported) {
+            saveSettings(client, userId, true).catch((error) =>
+                console.error("Could not initialize teacher workspace settings.", error));
         }
         return {
             data: { classes, lessons },
@@ -97,9 +88,13 @@
             workspaceOwnerId: userId,
             role: context.role,
             permissions,
-            staff,
-            staffLoadError
+            staff: []
         };
+    }
+
+    async function loadStaff(client) {
+        const result = await manageTeacher(client, { action: "list" });
+        return result.staff;
     }
 
     async function saveSettings(client, userId, legacyImported) {
@@ -351,6 +346,7 @@
 
     window.teacherWorkspaceApi = {
         loadWorkspace,
+        loadStaff,
         saveWorkspace,
         inviteStudent,
         listExistingStudents,
