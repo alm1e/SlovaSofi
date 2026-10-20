@@ -541,6 +541,25 @@ async function uploadLessonImage(source, preserveOriginal = false) {
     return window.supabaseClient.storage.from("lesson-images").getPublicUrl(path).data.publicUrl;
 }
 
+async function uploadLessonMedia(file) {
+    const allowedTypes = new Set([
+        "audio/mpeg", "audio/mp4", "audio/wav", "audio/x-wav", "audio/ogg", "audio/aac", "audio/webm",
+        "video/mp4", "video/webm", "video/quicktime"
+    ]);
+    if (!allowedTypes.has(file?.type)) throw new Error("Поддерживаются MP3, M4A, WAV, OGG, AAC, MP4, WebM и MOV.");
+    if (file.size > 50 * 1024 * 1024) throw new Error("Размер аудио- или видеофайла не должен превышать 50 МБ.");
+    if (!currentUser || !window.supabaseClient) throw new Error("Войдите в кабинет преподавателя, чтобы загрузить файл.");
+    const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
+    const path = `${currentUser.id}/${crypto.randomUUID()}.${extension}`;
+    const { error } = await window.supabaseClient.storage.from("lesson-media").upload(path, file, {
+        contentType: file.type,
+        cacheControl: "31536000",
+        upsert: false
+    });
+    if (error) throw error;
+    return window.supabaseClient.storage.from("lesson-media").getPublicUrl(path).data.publicUrl;
+}
+
 const ownImageUrlPattern = /\/storage\/v1\/object\/public\/lesson-images\//;
 
 // Pasting or typing an image address copies the picture into our own storage so it outlives the source site.
@@ -1022,7 +1041,7 @@ async function persistWorkspaceChange(previousData, deletedLessonIds = []) {
     // snapshot could delete newly invited students and their cascading progress.
     try {
         if (currentUser && window.teacherWorkspaceApi) {
-            const loaded = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, currentUser.id);
+            const loaded = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, currentUser.id, currentUser.email || "");
             data = loaded.data;
         }
     } catch (error) {
@@ -1128,7 +1147,7 @@ async function loadCurrentUser() {
 
         // Load workspace in background (don't block UI)
         try {
-            const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, user.id);
+            const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, user.id, user.email || "");
             data = workspace.data;
             workspaceAccess = {
                 workspaceOwnerId: workspace.workspaceOwnerId,
@@ -1136,25 +1155,38 @@ async function loadCurrentUser() {
                 permissions: workspace.permissions,
                 staff: workspace.staff
             };
-            try {
-                await loadCalendarEvents();
-            } catch (calendarError) {
-                console.error("Could not load calendar events.", calendarError);
-                showToast(isMissingCalendarTable(calendarError)
-                    ? t("calendar.migrationRequired")
-                    : `${t("calendar.loadError")} ${calendarError.message}`);
-            }
-            subscribeToCalendarChanges(window.supabaseClient, currentUser);
             startPresenceTracking(window.supabaseClient, [
                 currentUser.id,
-                ...data.classes.map((item) => item.teacherId),
-                ...workspace.staff.map((member) => member.id)
+                ...data.classes.map((item) => item.teacherId)
             ], currentUser);
             translateStaticUI();
             render();
             const storageNote = document.querySelector(".storage-note");
             if (storageNote) storageNote.textContent = t("welcome.database");
-            if (workspace.staffLoadError) showToast(`${t("toast.staffLoadError")} ${workspace.staffLoadError}`);
+
+            loadCalendarEvents().then(() => {
+                if (activeView === "calendar" && !lessonWorkspaceMode) render();
+            }).catch((calendarError) => {
+                console.error("Could not load calendar events.", calendarError);
+                showToast(isMissingCalendarTable(calendarError)
+                    ? t("calendar.migrationRequired")
+                    : `${t("calendar.loadError")} ${calendarError.message}`);
+            });
+            subscribeToCalendarChanges(window.supabaseClient, currentUser);
+            if (workspace.permissions.manage_teachers && window.teacherWorkspaceApi.loadStaff) {
+                window.teacherWorkspaceApi.loadStaff(window.supabaseClient).then((staff) => {
+                    workspaceAccess.staff = staff;
+                    startPresenceTracking(window.supabaseClient, [
+                        currentUser.id,
+                        ...data.classes.map((item) => item.teacherId),
+                        ...staff.map((member) => member.id)
+                    ], currentUser);
+                    if (activeView === "staff" && !lessonWorkspaceMode) render();
+                }).catch((error) => {
+                    console.error("Could not load teacher accounts; the rest of the dashboard is still available.", error);
+                    showToast(`${t("toast.staffLoadError")} ${error.message || ""}`);
+                });
+            }
         } catch (workspaceError) {
             console.error("Could not load the teacher workspace from Supabase.", workspaceError);
             if (workspaceError.code === "WORKSPACE_FORBIDDEN") {
@@ -2389,9 +2421,15 @@ function previewFlashcardSideMarkup(value) {
     return escapeHtml(value).replace(/\n/g, "<br>");
 }
 
-function previewYoutubeEmbedUrl(value) {
+function previewVideoEmbedUrl(value) {
     try {
         const url = new URL(String(value || "").trim());
+        if (["drive.google.com", "www.drive.google.com"].includes(url.hostname.toLowerCase())) {
+            const fileId = url.pathname.match(/^\/file\/d\/([A-Za-z0-9_-]+)/)?.[1] || url.searchParams.get("id");
+            return fileId && /^[A-Za-z0-9_-]{10,200}$/.test(fileId)
+                ? `https://drive.google.com/file/d/${fileId}/preview`
+                : "";
+        }
         if (!["youtube.com", "www.youtube.com", "m.youtube.com", "youtube-nocookie.com", "www.youtube-nocookie.com", "youtu.be", "www.youtu.be"].includes(url.hostname.toLowerCase())) return "";
         const videoId = url.hostname.endsWith("youtu.be")
             ? url.pathname.split("/").filter(Boolean)[0]
@@ -2524,7 +2562,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         body = images.length ? window.slovaGallery.html(images, activity.prompt || "", "preview-image") : `<p class="preview-material">${escapeHtml(displayContent || previewText("imageError"))}</p>`;
         checkable = false;
     } else if (type === "audio" || type === "video") {
-        const embed = type === "video" ? previewYoutubeEmbedUrl(content) : "";
+        const embed = type === "video" ? previewVideoEmbedUrl(content) : "";
         const source = previewMediaUrl(content);
         body = `${embed ? `<iframe class="preview-video-embed" src="${escapeHtml(embed)}" title="${escapeHtml(prompt || previewText("mediaError"))}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>` : source ? `<${type} class="preview-media" controls preload="metadata" data-preview-media><source src="${escapeHtml(source)}"></${type}>` : `<p class="preview-material">${escapeHtml(displayContent || previewText("mediaError"))}</p>`}`;
         checkable = false;
@@ -2540,7 +2578,8 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
             const noteEditTools = canEdit ? `<div class="preview-activity-actions note-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : "";
             return `<article class="preview-activity preview-note-card" data-preview-activity="${index}">${noteEditTools}${note}</article>`;
         }
-        body = displayContent ? `<div class="preview-material">${escapeHtml(displayContent).replace(/\n/g, "<br>")}</div>` : "";
+        const richText = window.SlovaActivityUI?.renderRichText(content);
+        body = richText || (displayContent ? `<div class="preview-material">${escapeHtml(displayContent).replace(/\n/g, "<br>")}</div>` : "");
         checkable = false;
     } else {
         body = displayContent ? `<div class="preview-material">${escapeHtml(displayContent).replace(/\n/g, "<br>")}</div>` : "";
@@ -3974,7 +4013,8 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
                 ${hasQuestions
                     ? renderActivityQuestionEditor(block)
                     : `<div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(block.type))}</span></label>
-                    <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea>${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div><small class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</small>` : ""}</div>
+                    ${block.type === "text" ? richTextToolbar() : ""}
+                    <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea>${block.type === "fill-blank" ? `<button type="button" class="button secondary small" data-hide-selected-word>${currentLanguage === "ru" ? "Скрыть выделенное слово" : currentLanguage === "ua" ? "Приховати виділене слово" : "Hide selected word"}</button>` : ""}${block.type === "text" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-rich-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-rich-image-file hidden></div>` : ""}${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div><small class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</small>` : ""}${["audio", "video"].includes(block.type) ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-media>${currentLanguage === "ru" ? "Загрузить файл" : currentLanguage === "ua" ? "Завантажити файл" : "Upload file"}</button><input type="file" accept="${block.type}/*" data-media-file hidden></div><small class="hint">${currentLanguage === "ru" ? "До 50 МБ; поддерживаются MP3/M4A/WAV/OGG/AAC и MP4/WebM/MOV." : currentLanguage === "ua" ? "До 50 МБ; підтримуються MP3/M4A/WAV/OGG/AAC і MP4/WebM/MOV." : "Up to 50 MB; MP3/M4A/WAV/OGG/AAC and MP4/WebM/MOV supported."}</small>` : ""}</div>
                     ${block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
                     ${renderActivityQuestionEditor(block)}`}
                         ${activitySettingsField(block)}
@@ -3990,6 +4030,15 @@ function contentHint(type) {
         return `${hints.flashcards} · ${delimiterHint} (URL изображений/аудио допустимы)`;
     }
     return hints[type] || "";
+}
+
+function richTextToolbar() {
+    const labels = currentLanguage === "ru"
+        ? [["H1", "# "], ["H2", "## "], ["H3", "### "], ["Жирный", "**"], ["Курсив", "*"], ["Список", "- "], ["Ссылка", "[текст](https://)"], ["Изображение", "![описание](https://)"], ["Цвет", "[color=#d14]текст[/color]"]]
+        : currentLanguage === "ua"
+            ? [["H1", "# "], ["H2", "## "], ["H3", "### "], ["Жирний", "**"], ["Курсив", "*"], ["Список", "- "], ["Посилання", "[текст](https://)"], ["Зображення", "![опис](https://)"], ["Колір", "[color=#d14]текст[/color]"]]
+            : [["H1", "# "], ["H2", "## "], ["H3", "### "], ["Bold", "**"], ["Italic", "*"], ["List", "- "], ["Link", "[text](https://)"], ["Image", "![alt](https://)"], ["Color", "[color=#d14]text[/color]"]];
+    return `<div class="block-tabs" aria-label="${currentLanguage === "ru" ? "Форматирование текста" : currentLanguage === "ua" ? "Форматування тексту" : "Text formatting"}">${labels.map(([label, format]) => `<button class="block-tab" type="button" data-rich-format="${escapeHtml(format)}">${escapeHtml(label)}</button>`).join("")}</div>`;
 }
 
 function contentPlaceholder(type) {
@@ -4022,7 +4071,9 @@ function activitySettingsPlaceholder(type) {
         match: { distractors: ["nesprávna možnosť"] },
         columns: { categories: ["Slovesá", "Podstatné mená"], cards: [{ text: "ísť", category: "Slovesá", media: "https://example.com/picture.jpg" }] },
         "open-answer": { allowAttachments: ["image", "audio"] },
-        flashcards: { shuffle: true, cards: [{ front: "Ahoj", back: "https://example.com/audio.mp3" }] }
+        flashcards: { shuffle: true, cards: [{ front: "Ahoj", back: "https://example.com/audio.mp3" }] },
+        audio: { transcript: "Prepis hovoreného textu.", hideTranscript: true },
+        video: { transcript: "Video transcript.", hideTranscript: true }
     };
     return JSON.stringify(examples[type] || {}, null, 2);
 }
@@ -4113,15 +4164,118 @@ function bindActivityBlockActions() {
             const questionElement = input.closest("[data-question-index]");
             if (questionElement && Array.isArray(block.questions)) {
                 const question = block.questions[Number(questionElement.dataset.questionIndex)];
-                if (question) question[input.dataset.field] = input.value;
+                if (question) {
+                    question[input.dataset.field] = input.value;
+                    scheduleLessonDraftAutosave();
+                }
             } else if (input.dataset.field === "settings") {
                 if (updateActivitySettings(block, input)) scheduleLessonDraftAutosave();
             } else {
                 block[input.dataset.field] = input.value;
+                scheduleLessonDraftAutosave();
             }
         }));
         const currentBlock = () => activeDraftSection().activities[Number(blockElement.dataset.blockIndex)];
         const contentField = blockElement.querySelector(':scope > .builder-block-fields > .form-field > textarea[data-field="content"]');
+        blockElement.querySelectorAll("[data-rich-format]").forEach((button) => button.addEventListener("click", () => {
+            const textarea = contentField;
+            if (!textarea) return;
+            const format = button.dataset.richFormat;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selected = textarea.value.slice(start, end);
+            let replacement;
+            let selectionStart = 0;
+            let selectionEnd = 0;
+            if (format === "**" || format === "*") {
+                const content = selected || (currentLanguage === "ru" ? "текст" : "text");
+                replacement = `${format}${content}${format}`;
+                selectionStart = format.length;
+                selectionEnd = selectionStart + content.length;
+            } else if (format.startsWith("#") || format === "- ") {
+                replacement = `${format}${selected}`;
+                selectionStart = selectionEnd = format.length + selected.length;
+            } else if (format.startsWith("[color=")) {
+                const content = selected || (currentLanguage === "ru" ? "текст" : "text");
+                replacement = `[color=#d14]${content}[/color]`;
+                selectionStart = "[color=#d14]".length;
+                selectionEnd = selectionStart + content.length;
+            } else {
+                const content = selected || (currentLanguage === "ru" ? "текст" : "text");
+                replacement = format.replace(/^\[[^\]]+\]/, `[${content}]`);
+                selectionStart = replacement.indexOf(`[${content}]`) + 1;
+                selectionEnd = selectionStart + content.length;
+            }
+            textarea.setRangeText(replacement, start, end, "select");
+            textarea.focus();
+            textarea.setSelectionRange(start + selectionStart, start + selectionEnd);
+            currentBlock().content = textarea.value;
+            scheduleLessonDraftAutosave();
+        }));
+        blockElement.querySelector("[data-hide-selected-word]")?.addEventListener("click", () => {
+            if (!contentField) return;
+            const start = contentField.selectionStart;
+            const end = contentField.selectionEnd;
+            const selected = contentField.value.slice(start, end).trim();
+            if (!selected || selected.includes("___")) {
+                showToast(currentLanguage === "ru" ? "Сначала выделите слово в тексте." : "Select a word in the text first.");
+                return;
+            }
+            const blankIndex = (contentField.value.slice(0, start).match(/___/g) || []).length;
+            contentField.setRangeText("___", start, end, "select");
+            currentBlock().content = contentField.value;
+            const answerField = blockElement.querySelector('[data-field="answer"]');
+            const answers = String(answerField?.value || currentBlock().answer || "").split(/\s*\/\s*|\r?\n/);
+            while (answers.length <= blankIndex) answers.push("");
+            if (!answers[blankIndex].trim()) answers[blankIndex] = selected;
+            currentBlock().answer = answers.filter(Boolean).join(" / ");
+            if (answerField) answerField.value = currentBlock().answer;
+            scheduleLessonDraftAutosave();
+        });
+        const richImageInput = blockElement.querySelector("[data-rich-image-file]");
+        blockElement.querySelector("[data-pick-rich-image]")?.addEventListener("click", () => richImageInput?.click());
+        richImageInput?.addEventListener("change", async () => {
+            const files = [...(richImageInput.files || [])].filter((file) => file.type?.startsWith("image/"));
+            richImageInput.value = "";
+            if (!files.length || !contentField) return;
+            let position = contentField.selectionStart;
+            try {
+                richImageInput.disabled = true;
+                for (const file of files) {
+                    const url = await uploadLessonImage(file);
+                    const image = `![${file.name.replace(/[\[\]()]/g, "").slice(0, 100) || "Image"}](${url})`;
+                    contentField.setRangeText(`${position > 0 && contentField.value[position - 1] !== "\n" ? "\n" : ""}${image}\n`, position, position, "end");
+                    position = contentField.selectionStart;
+                }
+                currentBlock().content = contentField.value;
+                scheduleLessonDraftAutosave();
+            } catch (error) {
+                console.error("Could not upload an inline lesson image.", error);
+                showToast(error.message || (currentLanguage === "ru" ? "Не удалось загрузить изображение." : "Could not upload the image."));
+            } finally {
+                richImageInput.disabled = false;
+            }
+        });
+        const mediaFileInput = blockElement.querySelector("[data-media-file]");
+        blockElement.querySelector("[data-pick-media]")?.addEventListener("click", () => mediaFileInput?.click());
+        mediaFileInput?.addEventListener("change", async () => {
+            const file = mediaFileInput.files?.[0];
+            mediaFileInput.value = "";
+            if (!file || !contentField) return;
+            try {
+                mediaFileInput.disabled = true;
+                showToast(currentLanguage === "ru" ? "Загружаю медиафайл…" : "Uploading media…");
+                const url = await uploadLessonMedia(file);
+                contentField.value = url;
+                currentBlock().content = url;
+                scheduleLessonDraftAutosave();
+            } catch (error) {
+                console.error("Could not upload lesson media.", error);
+                showToast(error.message || (currentLanguage === "ru" ? "Не удалось загрузить медиафайл." : "Could not upload media."));
+            } finally {
+                mediaFileInput.disabled = false;
+            }
+        });
         if (contentField && currentBlock()?.type === "image") {
             const imagesFrom = (files) => [...(files || [])].filter((item) => item.type?.startsWith("image/"));
             const skipped = new Set();

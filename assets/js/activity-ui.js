@@ -79,24 +79,72 @@
     }
 
     const escapeNote = (value) => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
-    const noteInline = (value) => escapeNote(value).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>");
+    const noteInline = (value) => escapeNote(value)
+        .replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/gi, '<img src="$2" alt="$1" loading="lazy">')
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/gi, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+        .replace(/\[color=(#[\da-f]{3,8})\]([\s\S]+?)\[\/color\]/gi, '<span style="color:$1">$2</span>')
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.+?)\*/g, "<em>$1</em>");
+
+    function renderRichText(content) {
+        const source = String(content || "");
+        if (!source.trim()) return "";
+        const lines = source.replace(/\r/g, "").split("\n");
+        const blocks = [];
+        let listItems = [];
+        let tableRows = [];
+        const flushList = () => {
+            if (listItems.length) blocks.push(`<ul>${listItems.map((item) => `<li>${noteInline(item)}</li>`).join("")}</ul>`);
+            listItems = [];
+        };
+        const flushTable = () => {
+            if (tableRows.length) blocks.push(`<div class="preview-table-wrap"><table><tbody>${tableRows.map((row) => `<tr>${row.map((cell) => `<td>${noteInline(cell.trim())}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`);
+            tableRows = [];
+        };
+        for (const rawLine of lines) {
+            const line = rawLine.trim();
+            if (!line) {
+                flushList();
+                flushTable();
+                continue;
+            }
+            const cells = line.startsWith("|") && line.endsWith("|")
+                ? line.slice(1, -1).split("|")
+                : null;
+            if (cells) {
+                flushList();
+                if (!cells.every((cell) => /^[-:\s]+$/.test(cell))) tableRows.push(cells);
+                continue;
+            }
+            flushTable();
+            const heading = line.match(/^(#{1,3})\s+(.+)$/);
+            if (heading) {
+                flushList();
+                const level = heading[1].length;
+                blocks.push(`<h${level}>${noteInline(heading[2])}</h${level}>`);
+                continue;
+            }
+            const item = line.match(/^(?:\d+[.)]|[-•])\s+(.*)$/);
+            if (item) {
+                listItems.push(item[1]);
+                continue;
+            }
+            flushList();
+            blocks.push(`<p>${noteInline(line)}</p>`);
+        }
+        flushList();
+        flushTable();
+        return `<div class="activity-rich-text">${blocks.join("")}</div>`;
+    }
 
     // A text block becomes a note when its content starts with [info] or [star].
     function renderNote(content, title) {
         const match = String(content || "").match(/^\s*\[(info|star)\]\s*\n?([\s\S]*)$/i);
         if (!match) return "";
         const kind = match[1].toLowerCase();
-        const lines = match[2].split("\n").map((line) => line.trim()).filter(Boolean);
-        let items = "";
-        let paragraphs = "";
-        lines.forEach((line) => {
-            const item = line.match(/^(?:\d+[.)]|[-•])\s+(.*)$/);
-            if (item) items += `<li>${noteInline(item[1])}</li>`;
-            else paragraphs += `<p>${noteInline(line)}</p>`;
-        });
         const icon = kind === "info" ? "i" : "★";
-        return `<aside class="activity-note activity-note-${kind}"><span class="activity-note-icon" aria-hidden="true">${icon}</span><div class="activity-note-body">${title ? `<h4>${noteInline(title)}</h4>` : ""}${paragraphs}${items ? `<ol>${items}</ol>` : ""}</div></aside>`;
+        return `<aside class="activity-note activity-note-${kind}"><span class="activity-note-icon" aria-hidden="true">${icon}</span><div class="activity-note-body">${title ? `<h4>${noteInline(title)}</h4>` : ""}${renderRichText(match[2])}</div></aside>`;
     }
 
-    window.SlovaActivityUI = { enhancePairing, renderNote };
+    window.SlovaActivityUI = { enhancePairing, renderNote, renderRichText };
 })();

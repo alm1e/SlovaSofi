@@ -100,7 +100,9 @@ function publicActivitySettings(type: string, settings: JsonRecord | undefined):
         "true-false": ["allowNotStated", "explanation"],
         table: ["cellOptions", "hints"],
         columns: ["categories"],
-        "open-answer": ["allowAttachments"]
+        "open-answer": ["allowAttachments"],
+        audio: ["transcript", "hideTranscript"],
+        video: ["transcript", "hideTranscript"]
     };
     const result: JsonRecord = {};
     for (const key of keysByType[type] || []) {
@@ -165,7 +167,8 @@ function activityForQuestion(activity: Activity, question: ActivityQuestion): Ac
         type: activity.type,
         prompt: question.prompt,
         content: question.content,
-        answer: question.answer
+        answer: question.answer,
+        ...(activity.settings ? { settings: activity.settings } : {})
     };
 }
 
@@ -220,6 +223,33 @@ function shuffle<T>(items: T[]): T[] {
         const other = crypto.getRandomValues(new Uint32Array(1))[0] % (index + 1);
         [result[index], result[other]] = [result[other], result[index]];
     }
+    return result;
+}
+
+function groupItems(items: Array<string | { text: string; media: string }>, rawGroups: unknown) {
+    if (!Array.isArray(rawGroups)) return items;
+    const grouped = new Map<number, number[]>();
+    const groupedIndexes = new Set<number>();
+    for (const rawGroup of rawGroups.slice(0, 100)) {
+        if (!Array.isArray(rawGroup)) continue;
+        const indexes = [...new Set(rawGroup.filter((index): index is number =>
+            Number.isInteger(index) && index >= 0 && index < items.length))].sort((a, b) => a - b);
+        if (indexes.length < 2 || indexes.some((index) => groupedIndexes.has(index))) continue;
+        indexes.forEach((index) => groupedIndexes.add(index));
+        grouped.set(indexes[0], indexes);
+    }
+    if (!grouped.size) return items;
+    const result: typeof items = [];
+    items.forEach((item, index) => {
+        const indexes = grouped.get(index);
+        if (!indexes) {
+            if (!groupedIndexes.has(index)) result.push(item);
+            return;
+        }
+        const members = indexes.map((memberIndex) => items[memberIndex]);
+        const text = members.map((member) => typeof member === "string" ? member : member.text).join(" ");
+        result.push(typeof item === "string" ? text : { ...item, text });
+    });
     return result;
 }
 
@@ -371,7 +401,10 @@ function safeActivity(activity: Activity): Record<string, unknown> {
             const items = activity.type === "sentence-order" && settings?.autoSplitSentences === true
                 ? source.flatMap((item) => item.text.match(/[^.!?]+[.!?]+|[^.!?]+$/g)?.map((text) => ({ ...item, text: text.trim() })) || [])
                 : source;
-            return { type: activity.type, prompt, items: shuffle(items.map((item, sourceIndex) => ({ ...item, sourceIndex }))), acceptedOrders: settings?.acceptedOrders || [], groups: settings?.groups || [], gradable: activity.answer.trim().length > 0 || items.length > 0 };
+            const groupedItems = activity.type === "sentence-order"
+                ? groupItems(items, settings?.groups).map((item) => typeof item === "string" ? { text: item, media: "" } : item)
+                : items;
+            return { type: activity.type, prompt, items: shuffle(groupedItems.map((item, sourceIndex) => ({ ...item, sourceIndex }))), acceptedOrders: settings?.acceptedOrders || [], groups: settings?.groups || [], gradable: activity.answer.trim().length > 0 || groupedItems.length > 0 };
         }
         case "match": {
             const configuredPairs = Array.isArray(settings?.pairs) ? settings.pairs.map((raw) => record(raw))
@@ -531,6 +564,9 @@ function isCorrect(activity: Activity, response: unknown): boolean {
         let source = configuredItems.length ? configuredItems : contentLines.map((line) => line.replace(/^\d+[.)]\s*/, ""));
         if (activity.type === "sentence-order" && settings?.autoSplitSentences === true) {
             source = source.flatMap((item) => item.match(/[^.!?]+[.!?]+|[^.!?]+$/g)?.map((sentence) => sentence.trim()) || []);
+        }
+        if (activity.type === "sentence-order") {
+            source = groupItems(source, settings?.groups).map((item) => typeof item === "string" ? item : item.text);
         }
         const acceptedOrders = Array.isArray(settings?.acceptedOrders) ? settings.acceptedOrders.filter(Array.isArray) : [];
         if (acceptedOrders.some((order) => {

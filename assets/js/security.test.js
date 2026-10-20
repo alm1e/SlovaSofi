@@ -60,3 +60,15 @@ test('lesson note renderer escapes stored HTML, event attributes and script tags
     assert.ok(!/<(?:img|script|svg)\b/i.test(html));
     assert.ok(html.includes('&lt;script&gt;'));
 });
+
+test('rich lesson text supports formatting while keeping raw HTML and unsafe links inert', () => {
+    const window = {};
+    vm.runInNewContext(read('activity-ui.js'), {window});
+    const html = window.SlovaActivityUI.renderRichText('# Heading\n**bold** *italic* [unsafe](javascript:alert(1))\n![photo](https://example.test/photo.jpg)\n<script>alert(1)</script>');
+    assert.ok(html.includes('<h1>Heading</h1>'));
+    assert.ok(html.includes('<strong>bold</strong>'));
+    assert.ok(html.includes('<em>italic</em>'));
+    assert.ok(html.includes('<img src="https://example.test/photo.jpg"'));
+    assert.ok(!/<script\b/i.test(html));
+    assert.ok(!/href="javascript:/i.test(html));
+});
