@@ -802,6 +802,19 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .live-answer-inline > strong { font-weight: 700; }
 .live-answer-inline .live-answer-response { width: auto; max-width: 100%; padding: 4px 9px; background: #edf5ee; color: #254d33; font-size: 14px; font-weight: 600; }
 .live-answer-inline .live-answer-status { font-size: 10px; }
+.live-answer-inline .student-recording-playback { width: min(100%, 360px); height: 34px; }
+.preview-recording-placeholder { display: inline-flex; align-items: center; gap: 6px; border: 1px dashed #a9c6ae; border-radius: 9px; padding: 7px 10px; background: #f5f9f5; color: #45644a; font-size: 12px; }
+.preview-find-error { line-height: 2.4; }
+.preview-error-word { border-bottom: 1px dashed #a33e35; }
+.preview-find-error .preview-inline-input:disabled { opacity: .75; }
+.preview-hotspot-image { position: relative; width: fit-content; max-width: 100%; margin: 10px 0; }
+.preview-hotspot-image img { display: block; max-width: 100%; max-height: 400px; border-radius: 10px; object-fit: contain; }
+.preview-hotspot-pin { position: absolute; display: grid; place-items: center; width: 28px; height: 28px; border: 2px solid #fff; border-radius: 50%; background: #2b6446; box-shadow: 0 2px 8px #17251b55; color: #fff; font-weight: 800; transform: translate(-50%, -50%); }
+.preview-hotspot-list, .preview-vocabulary-list { display: grid; gap: 7px; margin-top: 9px; }
+.preview-hotspot-list > div, .preview-vocabulary-list > details { border: 1px solid #dce7dc; border-radius: 9px; padding: 9px 11px; background: #f7faf7; }
+.preview-hotspot-list p, .preview-vocabulary-list p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+.preview-vocabulary-list summary { cursor: pointer; font-weight: 700; }
+.preview-vocabulary-list audio { display: block; width: min(100%, 340px); margin-top: 7px; }
 .live-answer-teacher-feedback { width: 100%; color: #415c49; font-size: 12px; white-space: pre-wrap; }
 .live-answer-review { width: 100%; border-top: 1px dashed #d6e2d8; padding-top: 6px; }
 .live-answer-review summary { cursor: pointer; color: #2f5b3f; font-weight: 600; }

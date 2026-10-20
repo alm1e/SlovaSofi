@@ -79,6 +79,27 @@
             playbackSpeed: "Speed", transcript: "Transcript", captions: "Captions", setA: "Set A", setB: "Set B", loopOff: "A–B loop: off", loopOn: "A–B loop: on", loopSet: "A/B"
         }
     };
+    Object.assign(copy.ua, {
+        recordPronunciation: "Записати вимову", stopRecording: "Зупинити запис", recordingReady: "Запис готовий до надсилання викладачу.",
+        recordingUploading: "Зберігаємо аудіозапис…", microphoneError: "Не вдалося почати запис. Перевірте дозвіл на мікрофон.",
+        recordingLimit: "Досягнуто максимальної тривалості запису.", playbackLimit: "Вичерпано дозволену кількість прослуховувань.",
+        transcriptLocked: "Транскрипцію буде відкрито після відповідей на всі запитання.", hotspotPrompt: "Натисніть точку на зображенні, щоб дізнатися більше.",
+        vocabularyEmpty: "Слова ще не додані.", correctTheWords: "Виберіть позначені слова та введіть виправлення."
+    });
+    Object.assign(copy.ru, {
+        recordPronunciation: "Записать произношение", stopRecording: "Остановить запись", recordingReady: "Запись готова к отправке преподавателю.",
+        recordingUploading: "Сохраняем аудиозапись…", microphoneError: "Не удалось начать запись. Проверьте разрешение на микрофон.",
+        recordingLimit: "Достигнута максимальная длительность записи.", playbackLimit: "Лимит прослушиваний исчерпан.",
+        transcriptLocked: "Транскрипция откроется после ответов на все вопросы.", hotspotPrompt: "Нажмите на точку изображения, чтобы узнать больше.",
+        vocabularyEmpty: "Слова ещё не добавлены.", correctTheWords: "Выберите отмеченные слова и введите исправления."
+    });
+    Object.assign(copy.en, {
+        recordPronunciation: "Record pronunciation", stopRecording: "Stop recording", recordingReady: "Your recording is ready to send to the teacher.",
+        recordingUploading: "Saving your recording…", microphoneError: "Could not start recording. Check microphone permissions.",
+        recordingLimit: "The maximum recording length has been reached.", playbackLimit: "The allowed number of listens has been reached.",
+        transcriptLocked: "The transcript will unlock after you answer all questions.", hotspotPrompt: "Select a point on the image to learn more.",
+        vocabularyEmpty: "No words have been added yet.", correctTheWords: "Select the marked words and enter the corrections."
+    });
     const recoveryCopy = {
         ua: { retry: "Спробувати знову", unavailable: "Сервіс уроків тимчасово недоступний. Спробуйте ще раз пізніше.", connection: "Не вдалося з’єднатися із сервісом уроків. Перевірте інтернет і спробуйте знову.", profile: "Профіль учня", dashboardLoading: "Завантаження кабінету…" },
         ru: { retry: "Попробовать снова", unavailable: "Сервис уроков временно недоступен. Попробуйте ещё раз позже.", connection: "Не удалось связаться с сервисом уроков. Проверьте интернет и попробуйте снова.", profile: "Профиль ученика", dashboardLoading: "Загрузка кабинета…" },
@@ -146,6 +167,7 @@
     let calendarChannel = null;
     let calendarAudioContext = null;
     const playedCalendarReminders = new Set();
+    const pronunciationRecordings = new Map();
     let activeView = "classes";
     let selectedClassId = "";
     let selectedLessonId = "";
@@ -222,7 +244,8 @@
     const activitiesFor = (lesson) => lessonSections(lesson).flatMap((section) => Array.isArray(section.activities) ? section.activities : []);
     const answerableActivityTypes = new Set([
         "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
-        "sentence-order", "true-false", "table", "match", "columns", "open-answer", "flashcards"
+        "sentence-order", "true-false", "table", "match", "columns", "open-answer", "flashcards",
+        "pronunciation", "listening", "find-error"
     ]);
     const progressActivitiesFor = (lesson) => activitiesFor(lesson).flatMap((activity) => {
         if (!answerableActivityTypes.has(activity.type)) return [];
@@ -248,7 +271,7 @@
             const attachments = Array.isArray(response.attachments)
                 ? response.attachments.some((item) => typeof item === "string" && item.trim())
                 : false;
-            return Boolean(text) || attachments;
+            return Boolean(text) || attachments || Boolean(String(response.recordingPath || "").trim());
         }
         return Array.isArray(response) && response.some((part) => typeof part === "string" && part.trim().length > 0);
     }
@@ -572,10 +595,22 @@
         }
         if (Array.isArray(activity.questions) && activity.questions.length) {
             const canSubmit = activity.questions.some((question) => question.gradable || question.reviewRequired);
-            return `<section class="student-activity-group">
+            const listening = activity.type === "listening";
+            const listeningSettings = activity.settings || {};
+            const allListeningAnswersSubmitted = listening && activity.questions.every((question, questionIndex) => {
+                const savedAnswer = progressForQuestion(openedLesson, activity, index, question.questionId || `legacy-${questionIndex}`, questionIndex);
+                return Boolean(savedAnswer && !savedAnswer.draft && hasAnswerResponse(savedAnswer.response));
+            });
+            const audioSource = listening ? mediaUrl(activity.content) : "";
+            const listeningMarkup = listening
+                ? `${audioSource ? `<div class="student-listening-player"><audio class="student-activity-media" controls preload="metadata" src="${escapeHtml(audioSource)}" data-media-player data-listening-player data-media-key="${escapeHtml(`${openedLesson?.id || "lesson"}:${activity.id || index}`)}" data-listening-max="${Math.max(0, Math.min(100, Number(listeningSettings.maxPlays) || 0))}" data-listening-key="${escapeHtml(`${openedLesson?.id || "lesson"}:${activity.id || index}`)}"></audio><div class="student-media-tools"><label>${escapeHtml(text("playbackSpeed"))}<select data-media-speed aria-label="${escapeHtml(text("playbackSpeed"))}"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select></label>${Number(listeningSettings.maxPlays) > 0 ? `<small data-listening-count></small>` : ""}</div></div>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}
+                    ${listeningSettings.transcript ? `<details class="student-media-transcript" ${listeningSettings.hideTranscriptUntilComplete && !allListeningAnswersSubmitted ? "data-listening-transcript hidden" : ""} ${listeningSettings.hideTranscriptUntilComplete && allListeningAnswersSubmitted ? "open" : ""}><summary>${escapeHtml(text("transcript"))}</summary><p>${escapeHtml(listeningSettings.transcript).replace(/\n/g, "<br>")}</p></details>${listeningSettings.hideTranscriptUntilComplete && !allListeningAnswersSubmitted ? `<small class="student-transcript-locked">${escapeHtml(text("transcriptLocked"))}</small>` : ""}` : ""}`
+                : "";
+            return `<section class="student-activity-group" ${listening ? "data-listening-group" : ""}>
                 <header class="student-activity-group-heading"><span class="student-activity-number">${index + 1}</span><h3>${escapeHtml(activity.prompt || text("activity"))}</h3></header>
+                ${listeningMarkup}
                 <div class="student-activity-subitems">${activity.questions.map((question, questionIndex) => renderActivityItem(
-                    question,
+                    { ...question, type: question.type || activity.type },
                     index,
                     questionIndex,
                     progressForQuestion(openedLesson, activity, index, question.questionId || `legacy-${questionIndex}`, questionIndex)
@@ -664,6 +699,28 @@
                 : [];
             body = `${activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : ""}<textarea class="student-open-answer" data-open-answer maxlength="10000" placeholder="${escapeHtml(text("yourAnswer"))}">${escapeHtml(openSaved.text || "")}</textarea><div class="student-open-attachments"><strong>${escapeHtml(openAnswerText("attachments"))}</strong><div data-open-attachments>${attachments.map((url) => `<div class="student-open-attachment"><input class="student-inline-answer" data-open-attachment value="${escapeHtml(url)}" placeholder="${escapeHtml(openAnswerText("attachmentUrl"))}" autocomplete="off"><button type="button" class="button secondary small" data-remove-open-attachment>${escapeHtml(openAnswerText("removeAttachment"))}</button></div>`).join("")}</div><button class="button secondary small" type="button" data-add-open-attachment>${escapeHtml(openAnswerText("addAttachment"))}</button></div>`;
             controls = `<input type="hidden" data-answer-kind="open">`;
+        } else if (activity.type === "pronunciation") {
+            const recording = savedResponse && typeof savedResponse === "object" ? String(savedResponse.recordingPath || "") : "";
+            const settings = activity.settings || {};
+            body = `<div class="student-pronunciation-recording"><button class="button secondary small" type="button" data-toggle-recording data-max-duration="${Math.max(5, Math.min(120, Number(settings.maxDurationSeconds) || 60))}">${escapeHtml(text("recordPronunciation"))}</button><span data-recording-status aria-live="polite">${recording ? escapeHtml(text("recordingReady")) : ""}</span><input type="hidden" data-recording-path value="${escapeHtml(recording)}"><audio controls data-pronunciation-player ${recording ? `data-private-recording-path="${escapeHtml(recording)}"` : "hidden"}></audio></div>`;
+            controls = `<input type="hidden" data-answer-kind="pronunciation">`;
+        } else if (activity.type === "find-error") {
+            const answers = Array.isArray(savedResponse) ? savedResponse : [];
+            body = `<p class="student-error-correction-hint">${escapeHtml(text("correctTheWords"))}</p><p class="student-find-error-text">${(activity.segments || []).map((segment) => segment.errorIndex === undefined
+                ? escapeHtml(segment.text)
+                : `<span class="student-error-target" data-error-target="${segment.errorIndex}"><button type="button" data-error-word="${segment.errorIndex}">${escapeHtml(segment.text)}</button><span data-error-input-wrap ${answers[segment.errorIndex] ? "" : "hidden"}><input class="student-inline-answer" data-error-answer="${segment.errorIndex}" value="${escapeHtml(answers[segment.errorIndex] || "")}" aria-label="${escapeHtml(segment.text)}" autocomplete="off"></span></span>`
+            ).join("")}</p>`;
+            controls = `<input type="hidden" data-answer-kind="corrections">`;
+        } else if (activity.type === "image-hotspots") {
+            const image = mediaUrl(activity.image);
+            body = image
+                ? `<div class="student-hotspot-image" data-hotspot-image><img src="${escapeHtml(image)}" alt="${escapeHtml(activity.prompt || text("imageAlt"))}">${(activity.hotspots || []).map((hotspot, hotspotIndex) => `<button type="button" class="student-hotspot-pin" data-hotspot-index="${hotspotIndex}" data-hotspot-label="${escapeHtml(hotspot.label)}" data-hotspot-definition="${escapeHtml(hotspot.definition || "")}" data-hotspot-audio="${escapeHtml(hotspot.audio || "")}" style="left:${hotspot.x}%;top:${hotspot.y}%" aria-label="${escapeHtml(hotspot.label)}">${hotspotIndex + 1}</button>`).join("")}</div><p class="student-hotspot-help">${escapeHtml(text("hotspotPrompt"))}</p><div class="student-hotspot-detail" data-hotspot-detail aria-live="polite"></div>`
+                : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
+        } else if (activity.type === "vocabulary") {
+            const words = Array.isArray(activity.words) ? activity.words : [];
+            body = words.length
+                ? `<div class="student-vocabulary-list">${words.map((word, wordIndex) => `<article class="student-vocabulary-card"><button type="button" class="student-vocabulary-word" data-vocabulary-flip aria-expanded="false" data-translation="${escapeHtml(word.translation || "")}"><strong>${escapeHtml(word.word)}</strong><span data-vocabulary-translation hidden>${escapeHtml(word.translation || "")}</span></button>${word.example ? `<p>${escapeHtml(word.example)}</p>` : ""}${word.audio && mediaUrl(word.audio) ? `<audio controls preload="none" src="${escapeHtml(mediaUrl(word.audio))}" aria-label="${escapeHtml(word.word)}"></audio>` : ""}</article>`).join("")}</div>`
+                : `<p class="student-muted">${escapeHtml(text("vocabularyEmpty"))}</p>`;
         } else if (activity.type === "flashcards") {
             const ratings = Array.isArray(savedResponse) ? savedResponse : [];
             body = `<button class="button secondary small student-flashcard-hard-toggle" type="button" data-flashcards-hard-only aria-pressed="false">${escapeHtml(flashcardChoiceText("hard"))}</button><div class="student-flashcard-list">${(activity.cards || []).map((item) => {
@@ -701,6 +758,7 @@
                     : saved?.correct === null ? text("submitted") : "";
         const isQuestion = Number.isInteger(questionIndex);
         const canSubmit = Boolean(activity.gradable || activity.reviewRequired);
+        const answerSubmitted = Boolean(saved && !saved.draft && saved.submitted_at);
         const feedbackMarkup = canSubmit || activity.type === "flashcards"
             ? `<p class="student-answer-feedback ${saved?.correct === true ? "is-correct" : saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml([feedback, saved?.feedback].filter(Boolean).join(" "))}</p>`
             : "";
@@ -709,7 +767,7 @@
                 : `<div class="student-activity-actions">${controls}<button class="button small" type="button" data-submit-answer>${escapeHtml(text("checkAnswer"))}</button></div>${feedbackMarkup}`;
         const questionId = isQuestion ? String(activity.questionId || `legacy-${questionIndex}`) : "";
         const questionAttributes = isQuestion
-            ? `data-question-id="${escapeHtml(questionId)}" data-question-index="${questionIndex}" data-submittable="${canSubmit}"`
+            ? `data-question-id="${escapeHtml(questionId)}" data-question-index="${questionIndex}" data-submittable="${canSubmit}" data-answer-submitted="${answerSubmitted}"`
             : "";
         const itemNumber = isQuestion ? `${index + 1}.${questionIndex + 1}` : String(index + 1);
         const title = activity.prompt || (isQuestion ? questionItemLabel(questionIndex) : text("activity"));
@@ -816,7 +874,19 @@
             text: element.querySelector("[data-open-answer]")?.value || "",
             attachments: [...element.querySelectorAll("[data-open-attachment]")].map((input) => input.value.trim()).filter(Boolean)
         };
+        if (kind === "pronunciation") return { recordingPath: element.querySelector("[data-recording-path]")?.value.trim() || "" };
+        if (kind === "corrections") return [...element.querySelectorAll("[data-error-answer]")].map((input) => input.value.trim());
         return "";
+    }
+
+    function isEmptyActivityResponse(response) {
+        if (Array.isArray(response)) return !response.length || response.some((part) => !String(part).trim());
+        if (response && typeof response === "object") {
+            const textResponse = String(response.text || "").trim();
+            const attachments = Array.isArray(response.attachments) && response.attachments.length > 0;
+            return !textResponse && !attachments && !String(response.recordingPath || "").trim();
+        }
+        return !String(response || "").trim();
     }
 
     function syncProgressDisplay(lessonId) {
@@ -920,6 +990,145 @@
         }, 500));
     }
 
+    function setRecordingStatus(activity, message, isError = false) {
+        const status = activity?.querySelector("[data-recording-status]");
+        if (!status) return;
+        status.textContent = message;
+        status.classList.toggle("is-error", isError);
+    }
+
+    async function savePronunciationRecording(button, state) {
+        const { activity, chunks } = state;
+        const recorder = state.recorder;
+        const stream = state.stream;
+        const oldPath = activity.querySelector("[data-recording-path]")?.value || "";
+        let uploadedPath = "";
+        let draftSaved = false;
+        button.disabled = true;
+        clearTimeout(state.timer);
+        stream.getTracks().forEach((track) => track.stop());
+        pronunciationRecordings.delete(activity);
+        const resetButton = () => {
+            if (button.isConnected) {
+                button.disabled = false;
+                button.textContent = text("recordPronunciation");
+            }
+        };
+        try {
+            const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+            if (!blob.size) throw new Error(text("microphoneError"));
+            if (blob.size > 15 * 1024 * 1024) throw new Error(text("recordingLimit"));
+            if (!user?.id || !openedLesson?.id || openedLesson.id !== state.lessonId) throw new Error(text("loadError"));
+            const currentActivity = activitiesFor(openedLesson).find((item) => Number(item.index) === Number(activity.dataset.activityIndex));
+            if (!currentActivity) throw new Error(text("loadError"));
+            const answerKey = `${activityProgressKey(currentActivity, Number(activity.dataset.activityIndex))}${activity.dataset.questionId ? `.q${activity.dataset.questionId}` : ""}`;
+            const extension = blob.type.includes("ogg") ? "ogg" : blob.type.includes("mp4") ? "mp4" : "webm";
+            const path = `${user.id}/${openedLesson.id}/${answerKey}-${crypto.randomUUID()}.${extension}`;
+            const storage = window.supabaseClient.storage.from("lesson-recordings");
+            setRecordingStatus(activity, text("recordingUploading"));
+            const { error: uploadError } = await storage.upload(path, blob, {
+                cacheControl: "3600",
+                contentType: blob.type.split(";")[0] || `audio/${extension}`,
+                upsert: false
+            });
+            if (uploadError) throw uploadError;
+            uploadedPath = path;
+            activity.querySelector("[data-recording-path]").value = path;
+            scheduleDraftSave(activity);
+            await flushDraftSaves();
+            draftSaved = true;
+            if (oldPath && oldPath !== path && oldPath.startsWith(`${user.id}/`)) {
+                const { error: removeError } = await storage.remove([oldPath]);
+                if (removeError) console.warn("The previous pronunciation recording could not be removed.", removeError);
+            }
+            const player = activity.querySelector("[data-pronunciation-player]");
+            player?.removeAttribute("hidden");
+            if (player) {
+                player.dataset.privateRecordingPath = path;
+                player.removeAttribute("src");
+                player.load();
+                const { data: signed, error: signedError } = await storage.createSignedUrl(path, 3600);
+                if (signedError) console.warn("Could not create a playback link for the newly saved recording.", signedError);
+                else player.src = signed.signedUrl;
+            }
+            setRecordingStatus(activity, [text("recordingReady"), state.limitReached ? text("recordingLimit") : ""].filter(Boolean).join(" "));
+        } catch (error) {
+            console.error("Could not save the pronunciation recording.", error);
+            if (uploadedPath && !draftSaved) {
+                const draftKey = activityDraftKey(Number(activity.dataset.activityIndex), activity.dataset.questionId || null);
+                clearTimeout(draftSaveTimers.get(draftKey));
+                draftSaveTimers.delete(draftKey);
+                pendingDrafts.delete(draftKey);
+                activity.querySelector("[data-recording-path]").value = oldPath;
+                try {
+                    const { error: removeError } = await window.supabaseClient.storage.from("lesson-recordings").remove([uploadedPath]);
+                    if (removeError) console.warn("The failed pronunciation upload could not be removed.", removeError);
+                } catch (removeError) {
+                    console.warn("The failed pronunciation upload could not be removed.", removeError);
+                }
+            }
+            setRecordingStatus(activity, error.message || text("microphoneError"), true);
+        } finally {
+            resetButton();
+        }
+    }
+
+    async function togglePronunciationRecording(button) {
+        const activity = button.closest("[data-activity-index]");
+        if (!activity || !window.supabaseClient) return;
+        const active = pronunciationRecordings.get(activity);
+        if (active) {
+            if (active.recorder.state === "recording") {
+                button.disabled = true;
+                setRecordingStatus(activity, text("recordingUploading"));
+                active.recorder.stop();
+            }
+            return;
+        }
+        let stream = null;
+        try {
+            if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+                throw new Error(text("microphoneError"));
+            }
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const preferredMime = ["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4"]
+                .find((type) => MediaRecorder.isTypeSupported?.(type));
+            const recorder = preferredMime ? new MediaRecorder(stream, { mimeType: preferredMime }) : new MediaRecorder(stream);
+            const state = { activity, stream, recorder, chunks: [], timer: 0, lessonId: openedLesson.id };
+            pronunciationRecordings.set(activity, state);
+            recorder.addEventListener("dataavailable", (event) => {
+                if (event.data?.size) state.chunks.push(event.data);
+            });
+            recorder.addEventListener("stop", () => { void savePronunciationRecording(button, state); }, { once: true });
+            recorder.start();
+            button.textContent = text("stopRecording");
+            setRecordingStatus(activity, "");
+            state.timer = setTimeout(() => {
+                if (recorder.state === "recording") {
+                    state.limitReached = true;
+                    setRecordingStatus(activity, text("recordingLimit"));
+                    recorder.stop();
+                }
+            }, Math.max(5, Number(button.dataset.maxDuration) || 60) * 1000);
+        } catch (error) {
+            console.error("Could not start microphone recording.", error);
+            setRecordingStatus(activity, error.message || text("microphoneError"), true);
+            pronunciationRecordings.delete(activity);
+            stream?.getTracks().forEach((track) => track.stop());
+        }
+    }
+
+    function unlockListeningTranscript(group) {
+        if (!group || ![...group.querySelectorAll('.student-activity[data-submittable="true"]')]
+            .every((activity) => activity.dataset.answerSubmitted === "true")) return;
+        const transcript = group.querySelector("[data-listening-transcript]");
+        if (transcript) {
+            transcript.hidden = false;
+            transcript.open = true;
+        }
+        group.querySelector(".student-transcript-locked")?.remove();
+    }
+
     async function flushDraftSaves() {
         if (!openedLesson || !user) return;
         const lessonId = openedLesson.id;
@@ -938,7 +1147,7 @@
     }
 
     function lockLessonControls() {
-        const controls = [...pageContent.querySelectorAll('.student-activity input:not([type="hidden"]), .student-activity select, .student-activity textarea, .student-activity [data-word-token], .student-activity [data-remove-word], .student-activity [data-move-item], .student-activity [data-submit-answer], [data-submit-activity-group]')];
+        const controls = [...pageContent.querySelectorAll('.student-activity input:not([type="hidden"]), .student-activity select, .student-activity textarea, .student-activity [data-word-token], .student-activity [data-remove-word], .student-activity [data-move-item], .student-activity [data-error-word], .student-activity [data-toggle-recording], .student-activity [data-submit-answer], [data-submit-activity-group]')];
         const previousStates = controls.map((control) => control.disabled);
         controls.forEach((control) => { control.disabled = true; });
         return () => controls.forEach((control, index) => {
@@ -976,8 +1185,7 @@
         try {
             await flushDraftSaves();
             const response = responseForActivity(element);
-            const isEmpty = Array.isArray(response) ? response.some((part) => !part.trim()) || !response.length : !response.trim();
-            if (isEmpty) {
+            if (isEmptyActivityResponse(response)) {
                 feedback.textContent = text("emptyAnswer");
                 feedback.className = "student-answer-feedback is-incorrect";
                 unlockControls();
@@ -996,6 +1204,8 @@
             const result = await submission;
             pendingDrafts.delete(draftKey);
             updateLessonProgress(lessonId, result.answers, result.completed);
+            element.dataset.answerSubmitted = "true";
+            unlockListeningTranscript(element.closest("[data-listening-group]"));
             feedback.textContent = [result.reviewRequired ? text("submitted")
                 : result.correct ? text("correct") : text("incorrect"), result.feedback].filter(Boolean).join(" ");
             feedback.className = `student-answer-feedback ${result.reviewRequired ? "" : result.correct ? "is-correct" : "is-incorrect"}`;
@@ -1168,9 +1378,86 @@
         pageContent.querySelectorAll("[data-submit-activity-group]").forEach((button) => {
             button.addEventListener("click", () => submitActivityGroup(button.closest(".student-activity-group")));
         });
+        pageContent.querySelectorAll("[data-toggle-recording]").forEach((button) => button.addEventListener("click", () => {
+            void togglePronunciationRecording(button);
+        }));
+        pageContent.querySelectorAll("[data-private-recording-path]").forEach(async (player) => {
+            const path = player.dataset.privateRecordingPath;
+            try {
+                const { data, error } = await window.supabaseClient.storage.from("lesson-recordings").createSignedUrl(path, 3600);
+                if (error) throw error;
+                if (data?.signedUrl) player.src = data.signedUrl;
+            } catch (error) {
+                console.error("Could not load the student's saved pronunciation recording.", error);
+                setRecordingStatus(player.closest("[data-activity-index]"), error.message || text("loadError"), true);
+            }
+        });
+        pageContent.querySelectorAll("[data-listening-player]").forEach((player) => {
+            const maxPlays = Number(player.dataset.listeningMax) || 0;
+            if (!maxPlays) return;
+            const key = `slova-listening-plays:${player.dataset.listeningKey}`;
+            const status = player.parentElement.querySelector("[data-listening-count]");
+            const displayCount = (count) => {
+                if (status) status.textContent = `${count}/${maxPlays}`;
+            };
+            let playCount = 0;
+            try {
+                playCount = Number(localStorage.getItem(key)) || 0;
+            } catch (error) {
+                console.warn("Could not read listening playback count.", error);
+            }
+            displayCount(playCount);
+            player.addEventListener("play", () => {
+                if (playCount >= maxPlays) {
+                    player.pause();
+                    player.currentTime = 0;
+                    if (status) status.textContent = text("playbackLimit");
+                    return;
+                }
+                playCount += 1;
+                displayCount(playCount);
+                try {
+                    localStorage.setItem(key, String(playCount));
+                } catch (error) {
+                    console.warn("Could not save listening playback count.", error);
+                }
+            });
+        });
+        pageContent.querySelectorAll("[data-error-word]").forEach((button) => button.addEventListener("click", () => {
+            const wrap = button.closest("[data-error-target]")?.querySelector("[data-error-input-wrap]");
+            wrap?.removeAttribute("hidden");
+            wrap?.querySelector("input")?.focus();
+        }));
+        pageContent.querySelectorAll("[data-hotspot-index]").forEach((button) => button.addEventListener("click", () => {
+            const detail = button.closest(".student-activity-main")?.querySelector("[data-hotspot-detail]");
+            if (!detail) return;
+            const title = document.createElement("strong");
+            title.textContent = button.dataset.hotspotLabel || "";
+            const description = document.createElement("p");
+            description.textContent = button.dataset.hotspotDefinition || "";
+            detail.replaceChildren(title);
+            if (description.textContent) detail.append(description);
+            const audioUrl = mediaUrl(button.dataset.hotspotAudio);
+            if (audioUrl) {
+                const audio = document.createElement("audio");
+                audio.controls = true;
+                audio.preload = "none";
+                audio.src = audioUrl;
+                detail.append(audio);
+            }
+            button.closest("[data-hotspot-image]")?.querySelectorAll("[data-hotspot-index]").forEach((pin) => {
+                pin.setAttribute("aria-pressed", String(pin === button));
+            });
+        }));
+        pageContent.querySelectorAll("[data-vocabulary-flip]").forEach((button) => button.addEventListener("click", () => {
+            const translation = button.querySelector("[data-vocabulary-translation]");
+            const expanded = button.getAttribute("aria-expanded") !== "true";
+            button.setAttribute("aria-expanded", String(expanded));
+            if (translation) translation.hidden = !expanded;
+        }));
         pageContent.querySelectorAll("[data-media-speed]").forEach((select) => {
             select.addEventListener("change", () => {
-                const player = select.closest(".student-activity-main")?.querySelector("[data-media-player]");
+                const player = select.closest(".student-activity-main, .student-activity-group")?.querySelector("[data-media-player]");
                 if (player) player.playbackRate = Number(select.value);
             });
         });

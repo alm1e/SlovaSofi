@@ -669,6 +669,28 @@ function startPresenceTracking(client, workspaceIds, user) {
     });
 }
 
+Object.assign(translations.ru, {
+    "activity.pronunciation": "Запись произношения", "activity.pronunciationDesc": "Ученик записывает произношение и отправляет запись преподавателю.",
+    "activity.listening": "Аудирование с вопросами", "activity.listeningDesc": "Добавьте аудио и вопросы к нему.",
+    "activity.findError": "Найти ошибку в тексте", "activity.findErrorDesc": "Выделите ошибочные слова и укажите исправления.",
+    "activity.hotspots": "Интерактивная картинка", "activity.hotspotsDesc": "Разместите на изображении точки с пояснениями и произношением.",
+    "activity.vocabulary": "Словарь урока", "activity.vocabularyDesc": "Соберите слова с переводом, примерами и аудио."
+});
+Object.assign(translations.ua, {
+    "activity.pronunciation": "Запис вимови", "activity.pronunciationDesc": "Учень записує вимову та надсилає запис викладачу.",
+    "activity.listening": "Аудіювання із запитаннями", "activity.listeningDesc": "Додайте аудіо та запитання до нього.",
+    "activity.findError": "Знайти помилку в тексті", "activity.findErrorDesc": "Позначте помилкові слова й укажіть виправлення.",
+    "activity.hotspots": "Інтерактивне зображення", "activity.hotspotsDesc": "Додайте до зображення точки з поясненнями та вимовою.",
+    "activity.vocabulary": "Словник уроку", "activity.vocabularyDesc": "Додайте слова з перекладом, прикладами й аудіо."
+});
+Object.assign(translations.en, {
+    "activity.pronunciation": "Record pronunciation", "activity.pronunciationDesc": "Students record a word or sentence and send it to the teacher.",
+    "activity.listening": "Listening with questions", "activity.listeningDesc": "Add audio and questions about it.",
+    "activity.findError": "Find the error", "activity.findErrorDesc": "Mark incorrect words and enter their corrections.",
+    "activity.hotspots": "Interactive image", "activity.hotspotsDesc": "Add image hotspots with explanations and pronunciation.",
+    "activity.vocabulary": "Lesson vocabulary", "activity.vocabularyDesc": "Build a vocabulary list with translations, examples, and audio."
+});
+
 const activityTypes = [
     { id: "drag-words", nameKey: "activity.drag", descKey: "activity.dragDesc", icon: "↔", category: "tests" },
     { id: "fill-blank", nameKey: "activity.blank", descKey: "activity.blankDesc", icon: "▱", category: "tests" },
@@ -681,7 +703,12 @@ const activityTypes = [
     { id: "match", nameKey: "activity.match", descKey: "activity.matchDesc", icon: "⟷", category: "tests" },
     { id: "columns", nameKey: "activity.columns", descKey: "activity.columnsDesc", icon: "▥", category: "tests" },
     { id: "open-answer", nameKey: "activity.open", descKey: "activity.openDesc", icon: "✎", category: "tests" },
+    { id: "pronunciation", nameKey: "activity.pronunciation", descKey: "activity.pronunciationDesc", icon: "◉", category: "tests" },
+    { id: "listening", nameKey: "activity.listening", descKey: "activity.listeningDesc", icon: "♫", category: "tests" },
+    { id: "find-error", nameKey: "activity.findError", descKey: "activity.findErrorDesc", icon: "⌕", category: "tests" },
     { id: "flashcards", nameKey: "activity.cards", descKey: "activity.cardsDesc", icon: "▤", category: "tests" },
+    { id: "image-hotspots", nameKey: "activity.hotspots", descKey: "activity.hotspotsDesc", icon: "⌖", category: "other" },
+    { id: "vocabulary", nameKey: "activity.vocabulary", descKey: "activity.vocabularyDesc", icon: "Aa", category: "other" },
     { id: "text", nameKey: "activity.text", descKey: "activity.textDesc", icon: "T", category: "other" },
     { id: "video", nameKey: "activity.video", descKey: "activity.videoDesc", icon: "▶", category: "media" },
     { id: "audio", nameKey: "activity.audio", descKey: "activity.audioDesc", icon: "♫", category: "media" },
@@ -695,7 +722,8 @@ const activityQuestionLabels = {
 };
 const liveAnswerActivityTypes = new Set([
     "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
-    "sentence-order", "true-false", "table", "match", "columns", "open-answer"
+    "sentence-order", "true-false", "table", "match", "columns", "open-answer",
+    "pronunciation", "listening", "find-error"
 ]);
 
 function activityQuestionText(key) {
@@ -773,6 +801,16 @@ function duplicateBlockButton(attribute, index) {
 
 function addActivityQuestion(activity) {
     if (!Array.isArray(activity.questions) || !activity.questions.length) {
+        if (activity.type === "listening") {
+            activity.questions = [{
+                id: createActivityQuestionId(),
+                prompt: "",
+                content: "",
+                answer: "",
+                type: "multiple-choice"
+            }];
+            return 0;
+        }
         activity.questions = [{
             id: createActivityQuestionId(),
             prompt: "",
@@ -790,7 +828,13 @@ function addActivityQuestion(activity) {
     }
     if (activity.questions.length >= MAX_ACTIVITY_QUESTIONS) return -1;
     ensureActivityQuestionIds(activity);
-    activity.questions.push({ id: createActivityQuestionId(), prompt: "", content: "", answer: "" });
+    activity.questions.push({
+        id: createActivityQuestionId(),
+        prompt: "",
+        content: "",
+        answer: "",
+        ...(activity.type === "listening" ? { type: "multiple-choice" } : {})
+    });
     return activity.questions.length - 1;
 }
 
@@ -802,12 +846,13 @@ function renderActivityQuestionEditor(activity, preview = false) {
     const addAttribute = preview ? "data-add-preview-question" : "data-add-question";
     const removeAttribute = preview ? "data-preview-remove-question" : "data-remove-question";
     const type = activityTypes.find((item) => item.id === activity.type);
-    const hasAnswer = !["text", "image", "video", "audio"].includes(activity.type);
+    const isListening = activity.type === "listening";
     const items = questions.map((question, index) => `<section class="activity-question-editor-item" ${indexAttribute}="${index}">
         <header class="activity-question-editor-heading"><strong>${activityQuestionText("item")} ${index + 1}</strong><button type="button" class="mini-action activity-question-remove" ${removeAttribute} aria-label="${activityQuestionText("remove")}" title="${activityQuestionText("remove")}" ${questions.length <= 1 ? "disabled" : ""}>×</button></header>
+        ${isListening ? `<div class="form-field"><label>${currentLanguage === "ru" ? "Тип вопроса" : currentLanguage === "ua" ? "Тип запитання" : "Question type"}</label><select ${fieldAttribute}="type"><option value="multiple-choice" ${question.type !== "fill-blank" ? "selected" : ""}>${t("activity.choice")}</option><option value="fill-blank" ${question.type === "fill-blank" ? "selected" : ""}>${t("activity.blank")}</option></select></div>` : ""}
         <div class="form-field"><label>${activityQuestionText("itemPrompt")}</label><input ${fieldAttribute}="prompt" value="${escapeHtml(question.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
-        <div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(activity.type))}</span></label><textarea ${fieldAttribute}="content" placeholder="${escapeHtml(contentPlaceholder(activity.type))}">${escapeHtml(question.content || "")}</textarea></div>
-        ${hasAnswer ? `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(activity.type))}</span></label><input ${fieldAttribute}="answer" value="${escapeHtml(question.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(activity.type))}"></div>` : ""}
+        <div class="form-field"><label>${isListening && question.type !== "fill-blank" ? (currentLanguage === "ru" ? "Варианты ответа (по одному на строку)" : "Answer options (one per line)") : type?.category === "media" ? t("field.mediaContent") : t("field.taskText")}${isListening ? "" : ` <span class="hint">${escapeHtml(contentHint(activity.type))}</span>`}</label><textarea ${fieldAttribute}="content" placeholder="${isListening && question.type !== "fill-blank" ? "..." : escapeHtml(contentPlaceholder(activity.type))}">${escapeHtml(question.content || "")}</textarea></div>
+        ${isListening || !["text", "image", "video", "audio"].includes(activity.type) ? `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(isListening && question.type === "multiple-choice" ? (currentLanguage === "ru" ? "точный вариант или его номер начиная с 0" : "exact option text or its zero-based index") : answerHint(activity.type))}</span></label><input ${fieldAttribute}="answer" value="${escapeHtml(question.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(activity.type))}"></div>` : ""}
     </section>`).join("");
     return `<div class="activity-question-editor">${items}<button type="button" class="button secondary small activity-question-add" ${addAttribute} ${questions.length >= MAX_ACTIVITY_QUESTIONS ? "disabled" : ""} title="${activityQuestionText("limit")}">${activityQuestionText("add")}</button></div>`;
 }
@@ -2508,13 +2553,17 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
     if (!isQuestion && Array.isArray(activity.questions) && activity.questions.length) {
         const questionAnswers = Array.isArray(liveAnswerMarkup) ? liveAnswerMarkup : [];
         const questionsMarkup = activity.questions.map((question, itemIndex) => renderPreviewActivity({
-            type,
+            type: question.type || type,
             prompt: String(question.prompt || ""),
             content: String(question.content || ""),
             answer: String(question.answer || "")
         }, index, false, false, questionAnswers[itemIndex] || "", itemIndex)).join("");
+        const listeningMedia = type === "listening" && previewMediaUrl(content)
+            ? `<div class="preview-media-group"><audio class="preview-media" controls preload="metadata" data-preview-media src="${escapeHtml(previewMediaUrl(content))}"></audio><div class="preview-media-tools"><label>${currentLanguage === "ru" ? "Скорость" : currentLanguage === "ua" ? "Швидкість" : "Speed"}<select data-preview-speed><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select></label></div>${activity.settings?.transcript ? `<details class="preview-media-transcript"><summary>${currentLanguage === "ru" ? "Транскрипция" : "Transcript"}</summary><p>${escapeHtml(activity.settings.transcript).replace(/\n/g, "<br>")}</p></details>` : ""}</div>`
+            : "";
         return `<article class="preview-activity preview-activity-group ${canEdit ? "preview-activity-editable" : ""}" data-preview-activity="${index}">
             <header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}<h3>${index + 1}. ${escapeHtml(activity.prompt || t(activityTypes.find((item) => item.id === type)?.nameKey || "activity.task"))}</h3>${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>
+            ${listeningMedia}
             <div class="preview-question-list">${questionsMarkup}</div>
             ${liveAnswerActivityTypes.has(type) ? `<div class="preview-actions"><button class="button preview-check" type="button" data-check-activity-group>${previewGroupCheckLabels[currentLanguage]}</button></div>` : ""}
         </article>`;
@@ -2573,6 +2622,25 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
     } else if (type === "open-answer") {
         body = `${displayContent ? `<p class="preview-material">${escapeHtml(displayContent)}</p>` : ""}<textarea class="preview-text-answer" data-open-answer placeholder="${previewText("typeAnswer")}"></textarea>`;
         if (!answer) checkable = false;
+    } else if (type === "pronunciation") {
+        body = `<p class="preview-material">${escapeHtml(displayContent || (currentLanguage === "ru" ? "Ученик запишет ответ с микрофона." : currentLanguage === "ua" ? "Учень запише відповідь через мікрофон." : "The student will record an answer using their microphone."))}</p><span class="preview-recording-placeholder">🎙 ${currentLanguage === "ru" ? "Запись ученика будет доступна преподавателю" : currentLanguage === "ua" ? "Запис учня буде доступний викладачу" : "The student's recording will be available to the teacher"}</span>`;
+        checkable = false;
+    } else if (type === "find-error") {
+        body = `<p class="preview-material preview-find-error">${escapeHtml(content).replace(/\[\[([^\]|]{1,300})\|([^\]]{1,300})\]\]/g, (_, wrong) => `<span class="preview-error-word">${escapeHtml(wrong)}</span><input class="preview-inline-input" disabled aria-label="${previewText("typeAnswer")}">`)}</p>`;
+        checkable = false;
+    } else if (type === "image-hotspots") {
+        const image = previewMediaUrl(content);
+        const hotspots = Array.isArray(activity.settings?.hotspots) ? activity.settings.hotspots : [];
+        body = image
+            ? `<div class="preview-hotspot-image"><img src="${escapeHtml(image)}" alt="${escapeHtml(prompt)}">${hotspots.map((item, hotspotIndex) => `<span class="preview-hotspot-pin" style="left:${Math.max(0, Math.min(100, Number(item.x) || 0))}%;top:${Math.max(0, Math.min(100, Number(item.y) || 0))}%">${hotspotIndex + 1}</span>`).join("")}</div><div class="preview-hotspot-list">${hotspots.map((item) => `<div><strong>${escapeHtml(item.label || "")}</strong>${item.definition ? `<p>${escapeHtml(item.definition)}</p>` : ""}</div>`).join("")}</div>`
+            : `<p class="preview-material">${escapeHtml(displayContent || previewText("imageError"))}</p>`;
+        checkable = false;
+    } else if (type === "vocabulary") {
+        const words = Array.isArray(activity.settings?.words) ? activity.settings.words : [];
+        body = words.length
+            ? `<div class="preview-vocabulary-list">${words.map((word) => `<details><summary>${escapeHtml(word.word || "")}</summary><p><strong>${escapeHtml(word.translation || "")}</strong></p>${word.example ? `<p>${escapeHtml(word.example)}</p>` : ""}${previewMediaUrl(word.audio) ? `<audio controls preload="none" src="${escapeHtml(previewMediaUrl(word.audio))}"></audio>` : ""}</details>`).join("")}</div>`
+            : `<p class="preview-material">${escapeHtml(currentLanguage === "ru" ? "Добавьте слова в редакторе." : currentLanguage === "ua" ? "Додайте слова в редакторі." : "Add words in the editor.")}</p>`;
+        checkable = false;
     } else if (type === "flashcards") {
         body = `<div class="preview-flashcards">${lines.map((line) => {
             const delimiter = line.includes("|") ? "|" : ":";
@@ -2809,6 +2877,36 @@ async function savePreviewActivities(lesson, sectionId, activities, successMessa
 
 function bindLessonPreviewActions(container = pageContent, lesson = null, section = null, isHomework = false) {
     window.SlovaActivityUI?.enhancePairing(container, { empty: previewText("choose") });
+    container.querySelectorAll("[data-play-student-recording]").forEach((button) => button.addEventListener("click", async () => {
+        if (!window.supabaseClient) return;
+        const path = button.dataset.recordingPath;
+        button.disabled = true;
+        try {
+            const { data, error } = await window.supabaseClient.storage.from("lesson-recordings").createSignedUrl(path, 3600);
+            if (error) throw error;
+            if (!data?.signedUrl) throw new Error("Could not create a playback link.");
+            let player = button.parentElement.querySelector("[data-student-recording-player]");
+            if (!player) {
+                player = document.createElement("audio");
+                player.controls = true;
+                player.dataset.studentRecordingPlayer = "";
+                player.className = "student-recording-playback";
+                button.insertAdjacentElement("afterend", player);
+            }
+            player.src = data.signedUrl;
+            try {
+                await player.play();
+            } catch (playError) {
+                console.info("The browser requires the teacher to start recording playback manually.", playError);
+                player.focus();
+            }
+        } catch (error) {
+            console.error("Could not load the student's pronunciation recording.", error);
+            showToast(`${currentLanguage === "ru" ? "Не удалось открыть аудиозапись." : "Could not open the recording."} ${error.message || error}`);
+        } finally {
+            if (button.isConnected) button.disabled = false;
+        }
+    }));
     container.querySelectorAll("[data-preview-speed]").forEach((select) => select.addEventListener("change", () => {
         const player = select.closest(".preview-activity")?.querySelector("[data-preview-media]");
         if (player) player.playbackRate = Number(select.value);
@@ -3699,11 +3797,17 @@ function renderLiveAnswerPanel(student, activity, progressIndex, questionId = nu
         || (questionId && legacyKey ? studentAnswers[`${legacyKey}.q${questionId}`] : null)
         || ((questionIndex === 0 || !questionId) && legacyKey ? studentAnswers[legacyKey] : null);
     const response = formatLiveResponse(activity, answer?.response);
+    const recordingPath = activity.type === "pronunciation" && answer?.response && typeof answer.response === "object"
+        ? String(answer.response.recordingPath || "")
+        : "";
+    const recordingButton = recordingPath
+        ? `<button type="button" class="button secondary small" data-play-student-recording data-recording-path="${escapeHtml(recordingPath)}">${currentLanguage === "ru" ? "▶ Прослушать запись" : currentLanguage === "ua" ? "▶ Прослухати запис" : "▶ Play recording"}</button>`
+        : "";
     const answerStatus = answer
         ? `<span class="live-answer-status ${answer.draft ? "is-draft" : "is-submitted"}">${answer.draft ? lessonSectionText("liveDraft") : lessonSectionText("liveSubmitted")}</span>`
         : "";
     const name = student?.name ? `${liveStudentText("answer")} · ${student.name}` : lessonSectionText("liveNoStudents");
-    const reviewForm = activity.type === "open-answer" && reviewContext?.lessonId && reviewContext?.classId && student?.id && hasPermission("edit_lessons")
+    const reviewForm = ["open-answer", "pronunciation"].includes(activity.type) && reviewContext?.lessonId && reviewContext?.classId && student?.id && hasPermission("edit_lessons")
         ? `<details class="live-answer-review"><summary>${liveReviewText("title")}</summary>
             <div class="form-field"><label>${liveReviewText("feedback")}</label><textarea data-live-review-feedback rows="2">${escapeHtml(answer?.teacher_feedback || "")}</textarea></div>
             <div class="form-field"><label>${liveReviewText("correction")}</label><textarea data-live-review-correction rows="2">${escapeHtml(answer?.teacher_correction || "")}</textarea></div>
@@ -3716,7 +3820,7 @@ function renderLiveAnswerPanel(student, activity, progressIndex, questionId = nu
         </details>`
         : "";
     const teacherFeedback = answer?.teacher_feedback ? `<small class="live-answer-teacher-feedback">${escapeHtml(answer.teacher_feedback)}</small>` : "";
-    return `<div class="live-answer-inline" aria-label="${escapeHtml(name)}"><strong>${escapeHtml(name)}</strong>${answerStatus}<span class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</span>${teacherFeedback}${reviewForm}</div>`;
+    return `<div class="live-answer-inline" aria-label="${escapeHtml(name)}"><strong>${escapeHtml(name)}</strong>${answerStatus}${response ? `<span class="live-answer-response">${escapeHtml(response)}</span>` : !recordingButton ? `<span class="live-answer-response">${escapeHtml(lessonSectionText("liveWait"))}</span>` : ""}${recordingButton}${teacherFeedback}${reviewForm}</div>`;
 }
 
 function renderLiveMonitor(lesson, progressIndexes) {
@@ -3818,7 +3922,7 @@ function renderLessonWorkspace() {
             const liveAnswerMarkup = liveGroup && liveAnswerActivityTypes.has(activity.type) && progressIndex !== undefined
                 ? Array.isArray(activity.questions) && activity.questions.length
                     ? activity.questions.map((question, questionIndex) => renderLiveAnswerPanel(liveStudent, {
-                        type: activity.type,
+                        type: question.type || activity.type,
                         prompt: String(question.prompt || ""),
                         content: String(question.content || ""),
                         answer: String(question.answer || "")
@@ -4121,6 +4225,70 @@ function renderMediaContentEditor(block) {
         <label class="media-transcript-toggle"><input type="checkbox" data-media-setting="hideTranscriptUntilPlayed" ${settings.hideTranscriptUntilPlayed ? "checked" : ""}> ${labels.hidden}</label>`;
 }
 
+function renderPronunciationEditor(block) {
+    const settings = block.settings || {};
+    const labels = currentLanguage === "ru" ? ["Фраза или слово для произношения", "Максимальная длительность записи (сек.)"]
+        : currentLanguage === "ua" ? ["Слово або фраза для вимови", "Максимальна тривалість запису (сек.)"]
+            : ["Word or sentence to pronounce", "Maximum recording length (sec.)"];
+    return `<div class="form-field"><label>${labels[0]}</label><textarea data-field="content" rows="3" placeholder="${currentLanguage === "ru" ? "Например: Dobrý deň!" : "For example: Dobrý deň!"}">${escapeHtml(block.content || "")}</textarea></div>
+        <div class="form-field"><label>${labels[1]}</label><input type="number" min="5" max="120" step="1" data-media-setting="maxDurationSeconds" value="${Number(settings.maxDurationSeconds) || 60}"></div>
+        <small class="hint">${currentLanguage === "ru" ? "Записи будут приватными и доступны ученику и преподавателям назначенного класса." : "Recordings are private and accessible to the student and assigned class teachers."}</small>`;
+}
+
+function renderListeningEditor(block) {
+    const settings = block.settings || {};
+    const settingsLabels = currentLanguage === "ru"
+        ? { audio: "Аудио URL", plays: "Максимум прослушиваний (0 — без ограничения)", transcript: "Транскрипция", hidden: "Открыть транскрипцию после ответа на все вопросы" }
+        : currentLanguage === "ua"
+            ? { audio: "Посилання на аудіо", plays: "Максимум прослуховувань (0 — без обмеження)", transcript: "Транскрипція", hidden: "Відкрити транскрипцію після відповідей на всі запитання" }
+            : { audio: "Audio URL", plays: "Maximum plays (0 = unlimited)", transcript: "Transcript", hidden: "Reveal transcript after all questions are answered" };
+    return `<div class="form-field"><label>${settingsLabels.audio}</label><textarea data-field="content" rows="2" placeholder="https://...">${escapeHtml(block.content || "")}</textarea></div>
+        <div class="form-field"><label>${settingsLabels.plays}</label><input type="number" min="0" max="100" step="1" data-media-setting="maxPlays" value="${Number(settings.maxPlays) || 0}"></div>
+        <div class="form-field"><label>${settingsLabels.transcript}</label><textarea data-media-setting="transcript" rows="4">${escapeHtml(settings.transcript || "")}</textarea></div>
+        <label class="media-transcript-toggle"><input type="checkbox" data-media-setting="hideTranscriptUntilComplete" ${settings.hideTranscriptUntilComplete ? "checked" : ""}> ${settingsLabels.hidden}</label>
+        ${renderActivityQuestionEditor(block)}`;
+}
+
+function renderFindErrorEditor(block) {
+    const label = currentLanguage === "ru" ? "Текст: отметьте ошибочное слово как [[ошибка|исправление]]"
+        : currentLanguage === "ua" ? "Текст: позначте помилкове слово як [[помилка|виправлення]]"
+            : "Text: mark an incorrect word as [[mistake|correction]]";
+    return `<div class="form-field"><label>${label}</label><textarea data-field="content" rows="5" placeholder="Ja [[bývaš|bývam]] v Bratislave.">${escapeHtml(block.content || "")}</textarea></div>`;
+}
+
+function renderHotspotsEditor(block) {
+    const settings = block.settings || {};
+    const imageUrl = block.content || "";
+    const hotspots = Array.isArray(settings.hotspots) ? settings.hotspots : [];
+    const chooseLabel = currentLanguage === "ru" ? "Выбрать изображение" : currentLanguage === "ua" ? "Вибрати зображення" : "Choose image";
+    const help = currentLanguage === "ru" ? "Нажмите на изображение, чтобы добавить точку; затем заполните слово и пояснение."
+        : currentLanguage === "ua" ? "Натисніть на зображення, щоб додати точку; заповніть слово та пояснення."
+            : "Click the image to add a hotspot, then enter its word and explanation.";
+    return `<div class="form-field"><label>${currentLanguage === "ru" ? "Изображение" : currentLanguage === "ua" ? "Зображення" : "Image"}</label><div class="image-upload-row"><button type="button" class="button secondary small" data-hotspot-pick-image>${chooseLabel}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-hotspot-image-file hidden><input type="url" data-field="content" value="${escapeHtml(imageUrl)}" placeholder="https://..."></div></div>
+        ${imageUrl ? `<div class="hotspot-editor-stage" data-hotspot-stage><img src="${escapeHtml(imageUrl)}" alt="">${hotspots.map((item, index) => `<button type="button" class="hotspot-editor-pin" style="left:${Math.max(0, Math.min(100, Number(item.x) || 0))}%;top:${Math.max(0, Math.min(100, Number(item.y) || 0))}%" aria-label="${index + 1}">${index + 1}</button>`).join("")}</div>` : ""}
+        <small class="hint">${help}</small>
+        <div class="hotspot-editor-list">${hotspots.map((item, index) => `<div class="hotspot-editor-item" data-hotspot-index="${index}">
+            <strong>${index + 1}. ${Math.round(item.x)}%, ${Math.round(item.y)}%</strong>
+            <input type="text" data-hotspot-field="label" value="${escapeHtml(item.label || "")}" placeholder="${currentLanguage === "ru" ? "Слово" : currentLanguage === "ua" ? "Слово" : "Word"}">
+            <textarea data-hotspot-field="definition" rows="2" placeholder="${currentLanguage === "ru" ? "Перевод или пояснение" : currentLanguage === "ua" ? "Переклад або пояснення" : "Translation or explanation"}">${escapeHtml(item.definition || "")}</textarea>
+            <input type="url" data-hotspot-field="audio" value="${escapeHtml(item.audio || "")}" placeholder="${currentLanguage === "ru" ? "Аудио URL (необязательно)" : "Audio URL (optional)"}">
+            <button type="button" class="mini-action" data-hotspot-remove aria-label="${lessonSectionText("remove")}">×</button>
+        </div>`).join("")}</div>`;
+}
+
+function renderVocabularyEditor(block) {
+    const words = Array.isArray(block.settings?.words) ? block.settings.words : [];
+    const rows = words.map((word, index) => `<div class="vocabulary-editor-row" data-vocabulary-index="${index}">
+        <input type="text" data-vocabulary-field="word" value="${escapeHtml(word.word || "")}" placeholder="${currentLanguage === "ru" ? "Слово" : currentLanguage === "ua" ? "Слово" : "Word"}">
+        <input type="text" data-vocabulary-field="translation" value="${escapeHtml(word.translation || "")}" placeholder="${currentLanguage === "ru" ? "Перевод" : currentLanguage === "ua" ? "Переклад" : "Translation"}">
+        <input type="text" data-vocabulary-field="example" value="${escapeHtml(word.example || "")}" placeholder="${currentLanguage === "ru" ? "Пример" : currentLanguage === "ua" ? "Приклад" : "Example"}">
+        <input type="url" data-vocabulary-field="audio" value="${escapeHtml(word.audio || "")}" placeholder="Audio URL">
+        <button type="button" class="mini-action" data-vocabulary-remove aria-label="${lessonSectionText("remove")}">×</button>
+    </div>`).join("");
+    return `<small class="hint">${currentLanguage === "ru" ? "Добавляйте слова, перевод, пример и при необходимости ссылку на произношение." : currentLanguage === "ua" ? "Додавайте слова, переклад, приклад і за потреби посилання на вимову." : "Add words, translations, examples, and optional pronunciation audio."}</small>
+        <div class="vocabulary-editor-list">${rows}</div><button type="button" class="button secondary small" data-vocabulary-add>＋ ${currentLanguage === "ru" ? "Добавить слово" : currentLanguage === "ua" ? "Додати слово" : "Add word"}</button>`;
+}
+
 function renderActivityBlocks(activities = activeDraftSection()?.activities || []) {
     if (!activities.length) return `<div class="empty-state"><strong>${t("lesson.firstActivity")}</strong>${t("lesson.firstActivityHint")}</div>`;
     return activities.map((block, index) => {
@@ -4129,15 +4297,25 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
         const hasQuestions = Array.isArray(block.questions) && block.questions.length > 0;
         const summary = activitySummary(block);
         const meta = activityEditorMeta(block);
-        const contentEditor = hasQuestions
-            ? renderActivityQuestionEditor(block)
-            : block.type === "text"
+        const contentEditor = block.type === "listening"
+            ? renderListeningEditor(block)
+            : block.type === "pronunciation"
+                ? renderPronunciationEditor(block)
+                : block.type === "find-error"
+                    ? renderFindErrorEditor(block)
+                    : block.type === "image-hotspots"
+                        ? renderHotspotsEditor(block)
+                        : block.type === "vocabulary"
+                            ? renderVocabularyEditor(block)
+                            : hasQuestions
+                                ? renderActivityQuestionEditor(block)
+                                : block.type === "text"
                 ? renderRichTextEditor(block)
                 : block.type === "video" || block.type === "audio"
                     ? renderMediaContentEditor(block)
                     : `<div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(block.type))}</span></label>
                     <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea>${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><button type="button" class="button secondary small" data-import-image-url>${currentLanguage === "ru" ? "Добавить по URL" : currentLanguage === "ua" ? "Додати за URL" : "Add from URL"}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div>${renderImageGalleryEditor(block)}</div>` : ""}</div>`;
-        const answerEditor = hasQuestions || ["text", "image", "video", "audio"].includes(block.type)
+        const answerEditor = hasQuestions || ["text", "image", "video", "audio", "pronunciation", "listening", "find-error", "image-hotspots", "vocabulary"].includes(block.type)
             ? ""
             : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`;
         return `<article class="builder-block ${isExpanded ? "is-expanded" : ""}" data-block-index="${index}">
@@ -4154,14 +4332,14 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
                 <div class="form-field"><label>${hasQuestions ? activityQuestionText("commonPrompt") : t("field.instruction")}</label><input data-field="prompt" value="${escapeHtml(block.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
                 ${contentEditor}
                 ${answerEditor}
-                ${activitySettingsField(block)}
+                ${["pronunciation", "listening", "image-hotspots", "vocabulary"].includes(block.type) ? "" : activitySettingsField(block)}
             </div>
         </article>`;
     }).join("");
 }
 
 function contentHint(type) {
-    const hints = { "drag-words": t("hint.drag"), "fill-blank": t("hint.blank"), "multiple-choice": t("hint.options"), "order-items": t("hint.order"), "sentence-order": t("hint.sentences"), match: t("hint.match"), columns: t("hint.columns"), table: t("hint.table"), "one-of-many": t("hint.select"), "true-false": t("hint.trueFalse"), flashcards: t("hint.cards"), text: "[info] / [star] + *italic* **bold** 1. list" };
+    const hints = { "drag-words": t("hint.drag"), "fill-blank": t("hint.blank"), "multiple-choice": t("hint.options"), "order-items": t("hint.order"), "sentence-order": t("hint.sentences"), match: t("hint.match"), columns: t("hint.columns"), table: t("hint.table"), "one-of-many": t("hint.select"), "true-false": t("hint.trueFalse"), flashcards: t("hint.cards"), text: "[info] / [star] + *italic* **bold** 1. list", "find-error": "[[неверное слово|исправление]]" };
     if (type === "flashcards") {
         const delimiterHint = currentLanguage === "ru" ? "лицевая сторона | обратная сторона" : currentLanguage === "ua" ? "лицева сторона | зворот" : "front | back";
         return `${hints.flashcards} · ${delimiterHint} (URL изображений/аудио допустимы)`;
@@ -4171,9 +4349,9 @@ function contentHint(type) {
 
 function contentPlaceholder(type) {
     const examples = {
-        ua: { match: "dom = дім\nškola = школа", columns: "Дієслова: ísť\nІменники: dom" },
-        ru: { match: "dom = дом\nškola = школа", columns: "Глаголы: ísť\nСуществительные: dom" },
-        en: { match: "dom = house\nškola = school", columns: "Verbs: ísť\nNouns: dom" }
+        ua: { match: "dom = дім\nškola = школа", columns: "Дієслова: ísť\nІменники: dom", "find-error": "Ja [[bývaš|bývam]] v Bratislave." },
+        ru: { match: "dom = дом\nškola = школа", columns: "Глаголы: ísť\nСуществительные: dom", "find-error": "Ja [[bývaš|bývam]] v Bratislave." },
+        en: { match: "dom = house\nškola = school", columns: "Verbs: ísť\nNouns: dom", "find-error": "Ja [[bývaš|bývam]] v Bratislave." }
     };
     return examples[currentLanguage][type] || ({ "drag-words": "Napríklad: Ja bývam v Bratislave.", "fill-blank": "Ja ___ v Bratislave.", "multiple-choice": "Bratislava\nKošice\nŽilina", "order-items": "1. ráno\n2. popoludní\n3. večer" })[type] || t("field.enterText");
 }
@@ -4498,6 +4676,78 @@ function bindActivityBlockActions() {
                 showToast(`${currentLanguage === "ru" ? "Не удалось загрузить файл." : "Could not upload media."} ${error.message || error}`);
             }
         });
+        const ensureSettings = () => {
+            const block = currentBlock();
+            if (!block.settings || typeof block.settings !== "object" || Array.isArray(block.settings)) block.settings = {};
+            return block.settings;
+        };
+        const hotspotStage = blockElement.querySelector("[data-hotspot-stage]");
+        hotspotStage?.addEventListener("click", (event) => {
+            if (event.target.closest(".hotspot-editor-pin")) return;
+            const bounds = hotspotStage.getBoundingClientRect();
+            const settings = ensureSettings();
+            settings.hotspots = Array.isArray(settings.hotspots) ? settings.hotspots : [];
+            settings.hotspots.push({
+                x: Math.round(Math.max(0, Math.min(100, (event.clientX - bounds.left) / bounds.width * 100)) * 10) / 10,
+                y: Math.round(Math.max(0, Math.min(100, (event.clientY - bounds.top) / bounds.height * 100)) * 10) / 10,
+                label: "",
+                definition: "",
+                audio: ""
+            });
+            scheduleLessonDraftAutosave();
+            render();
+        });
+        blockElement.querySelector("[data-hotspot-pick-image]")?.addEventListener("click", () => blockElement.querySelector("[data-hotspot-image-file]")?.click());
+        blockElement.querySelector("[data-hotspot-image-file]")?.addEventListener("change", async (event) => {
+            const file = event.currentTarget.files?.[0];
+            event.currentTarget.value = "";
+            if (!file) return;
+            try {
+                currentBlock().content = await uploadLessonImage(file);
+                scheduleLessonDraftAutosave();
+                render();
+            } catch (error) {
+                console.error("Could not upload the interactive image.", error);
+                showToast(`${(imageUploadMessages[currentLanguage] || imageUploadMessages.ru).failed} ${error.message || error}`);
+            }
+        });
+        blockElement.querySelectorAll("[data-hotspot-field]").forEach((input) => input.addEventListener("input", () => {
+            const index = Number(input.closest("[data-hotspot-index]")?.dataset.hotspotIndex);
+            const hotspots = ensureSettings().hotspots;
+            if (!hotspots?.[index]) return;
+            hotspots[index][input.dataset.hotspotField] = input.value;
+            scheduleLessonDraftAutosave();
+        }));
+        blockElement.querySelectorAll("[data-hotspot-remove]").forEach((button) => button.addEventListener("click", () => {
+            const index = Number(button.closest("[data-hotspot-index]")?.dataset.hotspotIndex);
+            ensureSettings().hotspots?.splice(index, 1);
+            scheduleLessonDraftAutosave();
+            render();
+        }));
+        blockElement.querySelectorAll("[data-vocabulary-field]").forEach((input) => input.addEventListener("input", () => {
+            const index = Number(input.closest("[data-vocabulary-index]")?.dataset.vocabularyIndex);
+            const words = ensureSettings().words;
+            if (!words?.[index]) return;
+            words[index][input.dataset.vocabularyField] = input.value;
+            scheduleLessonDraftAutosave();
+        }));
+        blockElement.querySelector("[data-vocabulary-add]")?.addEventListener("click", () => {
+            const words = ensureSettings().words || (ensureSettings().words = []);
+            if (words.length >= 200) return;
+            words.push({ word: "", translation: "", example: "", audio: "" });
+            scheduleLessonDraftAutosave();
+            render();
+        });
+        blockElement.querySelectorAll("[data-vocabulary-remove]").forEach((button) => button.addEventListener("click", () => {
+            const index = Number(button.closest("[data-vocabulary-index]")?.dataset.vocabularyIndex);
+            ensureSettings().words?.splice(index, 1);
+            scheduleLessonDraftAutosave();
+            render();
+        }));
+        if (currentBlock()?.type === "image-hotspots") {
+            const imageUrlInput = blockElement.querySelector('input[data-field="content"]');
+            imageUrlInput?.addEventListener("change", () => render());
+        }
     });
 
     if (blocksContainer) bindSortableActivityCards(blocksContainer, ".builder-block", ".builder-block-drag", "blockIndex", (order) => {

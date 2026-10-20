@@ -20,11 +20,37 @@ function loadApi() {
     return window.teacherWorkspaceApi;
 }
 
-function progressClient(rows) {
+function progressClient(rows, recordingFiles = []) {
     const filtersSeen = [];
+    const recordingsRemoved = [];
+    let recordingListCalls = 0;
     return {
         filtersSeen,
+        recordingsRemoved,
+        get recordingListCalls() { return recordingListCalls; },
         from(table) {
+            if (table === "class_students") {
+                return {
+                    select(columns) {
+                        assert.equal(columns, "linked_user_id");
+                        const filters = [];
+                        const query = {
+                            eq(column, value) {
+                                filters.push([column, value]);
+                                return query;
+                            },
+                            maybeSingle() {
+                                const studentId = filters.find(([column]) => column === "id")?.[1];
+                                return Promise.resolve({
+                                    data: studentId === "student-1" ? { linked_user_id: "user-1" } : null,
+                                    error: null
+                                });
+                            }
+                        };
+                        return query;
+                    }
+                };
+            }
             assert.equal(table, "student_lesson_progress");
             return {
                 delete(options) {
@@ -46,6 +72,29 @@ function progressClient(rows) {
                     return query;
                 }
             };
+        },
+        storage: {
+            from(bucket) {
+                assert.equal(bucket, "lesson-recordings");
+                return {
+                    list(prefix, options) {
+                        assert.equal(prefix, "user-1/lesson-1");
+                        assert.equal(options.limit, 100);
+                        assert.equal(options.offset, 0);
+                        recordingListCalls += 1;
+                        return Promise.resolve({ data: recordingFiles.slice(options.offset, options.offset + options.limit), error: null });
+                    },
+                    remove(paths) {
+                        recordingsRemoved.push(...paths);
+                        paths.forEach((path) => {
+                            const filename = path.split("/").at(-1);
+                            const index = recordingFiles.findIndex((file) => file.name === filename);
+                            if (index >= 0) recordingFiles.splice(index, 1);
+                        });
+                        return Promise.resolve({ error: null });
+                    }
+                };
+            }
         }
     };
 }
@@ -98,7 +147,7 @@ test("resetLessonProgress deletes only the matching student's lesson record", as
         { student_id: "student-1", class_id: "class-1", lesson_id: "lesson-1", answers: { a0: { response: "saved" } } },
         { student_id: "student-2", class_id: "class-1", lesson_id: "lesson-1", answers: { a0: { response: "keep" } } }
     ];
-    const client = progressClient(rows);
+    const client = progressClient(rows, [{ name: "bactivity-recording.webm" }]);
     await loadApi().resetLessonProgress(client, "class-1", "lesson-1", "student-1");
 
     assert.deepEqual(rows.map(({ student_id }) => student_id), ["student-2"]);
@@ -107,6 +156,7 @@ test("resetLessonProgress deletes only the matching student's lesson record", as
         ["lesson_id", "lesson-1"],
         ["student_id", "student-1"]
     ]);
+    assert.deepEqual(client.recordingsRemoved, ["user-1/lesson-1/bactivity-recording.webm"]);
 });
 
 test("resetLessonProgress reports when no authorized progress row was deleted", async () => {
@@ -116,6 +166,17 @@ test("resetLessonProgress reports when no authorized progress row was deleted", 
         loadApi().resetLessonProgress(client, "class-1", "lesson-1", "student-1"),
         /запись не найдена или недостаточно прав/
     );
+});
+
+test("resetLessonProgress removes recordings in batches without skipping files", async () => {
+    const rows = [{ student_id: "student-1", class_id: "class-1", lesson_id: "lesson-1", answers: {} }];
+    const recordingFiles = Array.from({ length: 101 }, (_, index) => ({ name: `recording-${index}.webm` }));
+    const client = progressClient(rows, recordingFiles);
+    await loadApi().resetLessonProgress(client, "class-1", "lesson-1", "student-1");
+
+    assert.equal(client.recordingsRemoved.length, 101);
+    assert.equal(client.recordingListCalls, 3);
+    assert.equal(recordingFiles.length, 0);
 });
 
 test("saveLessonAnswerReview stores teacher feedback/correction/score for an answer key", async () => {

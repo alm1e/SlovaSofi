@@ -251,6 +251,42 @@
 }
 :root[data-theme="dark"] .student-platform .student-sections-heading > button { border-color: #435c48; }
 
+.student-platform .student-pronunciation-recording { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 12px; }
+.student-platform .student-pronunciation-recording audio { flex: 1 1 260px; width: min(100%, 460px); }
+.student-platform [data-recording-status] { color: var(--muted); font-size: 12px; }
+.student-platform [data-recording-status].is-error { color: #a33e35; }
+.student-platform .student-listening-player { margin: 8px 0 12px; }
+.student-platform .student-listening-player audio { width: min(100%, 640px); }
+.student-platform .student-listening-player .student-media-tools { margin-bottom: 0; }
+.student-platform .student-listening-player [data-listening-count] { color: var(--muted); font-size: 12px; }
+.student-platform .student-transcript-locked { display: block; margin: 8px 0; color: var(--muted); font-size: 12px; }
+.student-platform .student-error-correction-hint { margin: 8px 0; color: var(--muted); font-size: 12px; }
+.student-platform .student-find-error-text { line-height: 2; }
+.student-platform .student-error-target { display: inline-flex; align-items: center; gap: 3px; }
+.student-platform .student-error-target > button { border: 0; border-bottom: 1px dashed #a33e35; padding: 0 1px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.student-platform .student-error-target > span[hidden] { display: none; }
+.student-platform .student-error-target .student-inline-answer { margin: 0 3px; }
+.student-platform .student-hotspot-image { position: relative; width: fit-content; max-width: 100%; margin-top: 12px; }
+.student-platform .student-hotspot-image > img { display: block; max-width: 100%; max-height: 520px; border-radius: 12px; object-fit: contain; }
+.student-platform .student-hotspot-pin { position: absolute; display: grid; place-items: center; width: 34px; height: 34px; border: 2px solid #fff; border-radius: 50%; padding: 0; background: #2b6446; box-shadow: 0 2px 9px #17251b55; color: #fff; font: inherit; font-weight: 800; cursor: pointer; transform: translate(-50%, -50%); }
+.student-platform .student-hotspot-pin[aria-pressed="true"] { background: #c1842a; }
+.student-platform .student-hotspot-help { margin: 8px 0; color: var(--muted); font-size: 12px; }
+.student-platform .student-hotspot-detail { display: grid; gap: 6px; width: fit-content; max-width: 100%; border: 1px solid #dce7dc; border-radius: 10px; padding: 10px 12px; background: #f6f9f6; }
+.student-platform .student-hotspot-detail:empty { display: none; }
+.student-platform .student-hotspot-detail p { margin: 0; line-height: 1.55; }
+.student-platform .student-hotspot-detail audio { width: min(100%, 320px); }
+.student-platform .student-vocabulary-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: 10px; margin-top: 12px; }
+.student-platform .student-vocabulary-card { display: grid; align-content: start; gap: 8px; border: 1px solid #dce7dc; border-radius: 12px; padding: 12px; background: #f7faf7; }
+.student-platform .student-vocabulary-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.student-platform .student-vocabulary-card audio { width: 100%; }
+.student-platform .student-vocabulary-word { display: grid; justify-items: start; gap: 7px; border: 0; padding: 0; background: transparent; color: var(--ink); text-align: left; font: inherit; cursor: pointer; }
+.student-platform .student-vocabulary-word > strong { font-size: 16px; }
+.student-platform .student-vocabulary-word > span { border-radius: 7px; padding: 4px 8px; background: #e8f1e9; font-size: 13px; }
+:root[data-theme="dark"] .student-platform .student-hotspot-detail,
+:root[data-theme="dark"] .student-platform .student-vocabulary-card { border-color: #34483a; background: #202a23; }
+:root[data-theme="dark"] .student-platform .student-vocabulary-word { color: #e0eae3; }
+:root[data-theme="dark"] .student-platform .student-vocabulary-word > span { background: #293b2f; }
+
 :root[data-theme="dark"] .student-platform .student-hero {
     border-color: #35483a;
     background: radial-gradient(circle at 91% 15%, #294331 0, transparent 33%), linear-gradient(115deg, #1a241d, #202c23);

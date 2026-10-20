@@ -193,6 +193,25 @@
     }
 
     async function resetLessonProgress(client, classId, lessonId, studentId) {
+        const { data: student, error: studentError } = await client.from("class_students")
+            .select("linked_user_id")
+            .eq("id", studentId)
+            .eq("class_id", classId)
+            .maybeSingle();
+        fail(studentError, "Не удалось проверить учётную запись ученика");
+        if (student?.linked_user_id) {
+            const storage = client.storage.from("lesson-recordings");
+            const prefix = `${student.linked_user_id}/${lessonId}`;
+            for (;;) {
+                const { data: files, error: listError } = await storage.list(prefix, { limit: 100, offset: 0 });
+                fail(listError, "Не удалось найти аудиозаписи ученика");
+                if (!files?.length) break;
+                const paths = files.filter((file) => file.name).map((file) => `${prefix}/${file.name}`);
+                if (!paths.length) throw new Error("Не удалось определить пути аудиозаписей ученика.");
+                const { error: removeError } = await storage.remove(paths);
+                fail(removeError, "Не удалось удалить аудиозаписи ученика");
+            }
+        }
         const { count, error } = await client.from("student_lesson_progress")
             .delete({ count: "exact" })
             .eq("class_id", classId)
