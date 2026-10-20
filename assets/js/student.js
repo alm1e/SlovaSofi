@@ -14,6 +14,7 @@
             noContent: "Викладач поки не додав вміст до цього завдання.", materials: "Матеріал",
             lessonTab: "Урок", homeworkTab: "Домашня робота", lessonSections: "Розділи уроку",
             homeworkSections: "Розділи домашньої роботи", previousSection: "← Назад", nextSection: "Далі →",
+            openSections: "Відкрити розділи уроку", closeSections: "Закрити розділи",
             profileRole: "Учень", logout: "Вийти з профілю", home: "← На головну", language: "Мова",
             saveError: "Не вдалося зберегти пароль:", loadError: "Не вдалося завантажити кабінет:",
             logoutError: "Не вдалося вийти з профілю. Спробуйте ще раз.", imageAlt: "Зображення до завдання",
@@ -22,7 +23,7 @@
             completed: "Урок завершено!", homework: "Домашня робота", progress: "відповідей", progressSaved: "Чернетку збережено.",
             choose: "Виберіть відповідь", true: "Так", false: "Ні",
             addWords: "Перетягуйте слова або натискайте на них, щоб скласти відповідь", yourAnswer: "Ваша відповідь", emptyAnswer: "Спочатку введіть відповідь.",
-            moveUp: "Вище", moveDown: "Нижче", flip: "Показати переклад", loading: "Завантаження уроку…"
+            moveUp: "Вище", moveDown: "Нижче", flip: "Показати переклад", hint: "Підказка", locked: "Закріплене слово", loading: "Завантаження уроку…"
         },
         ru: {
             loading: "Загрузка…", activate: "Создайте пароль", activateHint: "Приглашение принято. Создайте пароль для входа в личный кабинет.",
@@ -38,6 +39,7 @@
             noContent: "Учитель пока не добавил содержимое этого задания.", materials: "Материал",
             lessonTab: "Урок", homeworkTab: "Домашняя работа", lessonSections: "Разделы урока",
             homeworkSections: "Разделы домашней работы", previousSection: "← Назад", nextSection: "Далее →",
+            openSections: "Открыть разделы урока", closeSections: "Закрыть разделы",
             profileRole: "Ученик", logout: "Выйти из профиля", home: "← На главную", language: "Язык",
             saveError: "Не удалось сохранить пароль:", loadError: "Не удалось загрузить кабинет:",
             logoutError: "Не удалось выйти из профиля. Попробуйте ещё раз.", imageAlt: "Изображение к заданию",
@@ -46,7 +48,7 @@
             completed: "Урок завершён!", homework: "Домашняя работа", progress: "ответов", progressSaved: "Черновик сохранён.",
             choose: "Выберите ответ", true: "Да", false: "Нет",
             addWords: "Перетаскивайте слова или нажимайте на них, чтобы составить ответ", yourAnswer: "Ваш ответ", emptyAnswer: "Сначала введите ответ.",
-            moveUp: "Выше", moveDown: "Ниже", flip: "Показать перевод", loading: "Загрузка урока…"
+            moveUp: "Выше", moveDown: "Ниже", flip: "Показать перевод", hint: "Подсказка", locked: "Закреплённое слово", loading: "Загрузка урока…"
         },
         en: {
             loading: "Loading…", activate: "Create a password", activateHint: "Invitation accepted. Create a password to access your account.",
@@ -62,6 +64,7 @@
             noContent: "Your teacher has not added content to this activity yet.", materials: "Material",
             lessonTab: "Lesson", homeworkTab: "Homework", lessonSections: "Lesson sections",
             homeworkSections: "Homework sections", previousSection: "← Previous", nextSection: "Next →",
+            openSections: "Open lesson sections", closeSections: "Close sections",
             profileRole: "Student", logout: "Sign out", home: "← Home", language: "Language",
             saveError: "Could not save the password:", loadError: "Could not load the dashboard:",
             logoutError: "Could not sign out. Please try again.", imageAlt: "Activity image",
@@ -70,7 +73,7 @@
             completed: "Lesson completed!", homework: "Homework", progress: "answered", progressSaved: "Draft saved.",
             choose: "Choose an answer", true: "True", false: "False",
             addWords: "Drag or click words to build your answer", yourAnswer: "Your answer", emptyAnswer: "Enter an answer first.",
-            moveUp: "Move up", moveDown: "Move down", flip: "Show translation", loading: "Loading lesson…"
+            moveUp: "Move up", moveDown: "Move down", flip: "Show translation", hint: "Hint", locked: "Locked word", loading: "Loading lesson…"
         }
     };
     const recoveryCopy = {
@@ -79,17 +82,74 @@
         en: { retry: "Try again", unavailable: "The lesson service is temporarily unavailable. Please try again later.", connection: "Could not connect to the lesson service. Check your connection and try again.", profile: "Student profile", dashboardLoading: "Loading dashboard…" }
     };
     Object.keys(recoveryCopy).forEach((lang) => Object.assign(copy[lang], recoveryCopy[lang]));
+    Object.assign(copy.ua, {
+        navCalendar: "Календар",
+        calendar: "Розклад занять",
+        calendarHint: "Дата й час занять для ваших класів.",
+        calendarEmpty: "Занять поки не заплановано.",
+        calendarClass: "Клас",
+        calendarLesson: "Урок",
+        calendarWeekly: "Щотижня",
+        calendarDaily: "Щодня",
+        calendarEveryOtherDay: "Через день",
+        calendarCustom: "За вибраними днями",
+        calendarSelectedDates: "У вибрані дати",
+        notifications: "Сповіщення",
+        notificationsEmpty: "Найближчих занять немає.",
+        openCalendar: "Відкрити календар →",
+        reminder: "Незабаром заняття:"
+    });
+    Object.assign(copy.ru, {
+        navCalendar: "Календарь",
+        calendar: "Расписание занятий",
+        calendarHint: "Дата и время занятий для ваших классов.",
+        calendarEmpty: "Занятия пока не запланированы.",
+        calendarClass: "Класс",
+        calendarLesson: "Урок",
+        calendarWeekly: "Каждую неделю",
+        calendarDaily: "Каждый день",
+        calendarEveryOtherDay: "Через день",
+        calendarCustom: "В выбранные дни",
+        calendarSelectedDates: "В выбранные даты",
+        notifications: "Уведомления",
+        notificationsEmpty: "Ближайших занятий нет.",
+        openCalendar: "Открыть календарь →",
+        reminder: "Скоро занятие:"
+    });
+    Object.assign(copy.en, {
+        navCalendar: "Calendar",
+        calendar: "Class schedule",
+        calendarHint: "Dates and times for sessions in your classes.",
+        calendarEmpty: "No sessions scheduled yet.",
+        calendarClass: "Class",
+        calendarLesson: "Lesson",
+        calendarWeekly: "Weekly",
+        calendarDaily: "Daily",
+        calendarEveryOtherDay: "Every other day",
+        calendarCustom: "On selected days",
+        calendarSelectedDates: "On selected dates",
+        notifications: "Notifications",
+        notificationsEmpty: "No upcoming sessions.",
+        openCalendar: "Open calendar →",
+        reminder: "Upcoming session:"
+    });
     const languageChoices = ["ua", "ru", "en"];
     let language = languageChoices.includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
     let user = null;
+    let presenceChannels = [];
     let classes = [];
     let lessons = [];
+    let calendarEvents = [];
+    let calendarChannel = null;
+    let calendarAudioContext = null;
+    const playedCalendarReminders = new Set();
     let activeView = "classes";
     let selectedClassId = "";
     let selectedLessonId = "";
     let openedLesson = null;
     let studentWorkspaceTab = "lesson";
     let activeStudentSectionId = "";
+    let studentSectionsOpen = false;
     let draggedWordButton = null;
     let draftSaveTimers = new Map();
     let pendingDrafts = new Map();
@@ -99,6 +159,55 @@
     let dashboardErrorKey = "connection";
     let dashboardRequest = null;
     let signingOut = false;
+
+    function trackPresence(client, workspaceIds, signedInUser) {
+        presenceChannels.forEach((channel) => {
+            client.removeChannel(channel).catch((error) => console.error("Could not stop the previous presence channel.", error));
+        });
+        presenceChannels = [];
+        if (!client?.channel || !signedInUser?.id) return;
+
+        [...new Set(workspaceIds.filter(Boolean))].forEach((workspaceId) => {
+            const channel = client.channel(`workspace-presence:${workspaceId}`, {
+                config: { presence: { key: signedInUser.id } }
+            });
+            channel.subscribe(async (status) => {
+                if (status === "SUBSCRIBED") {
+                    const { error } = await channel.track({ userId: signedInUser.id });
+                    if (error) console.error("Could not publish the student's online status.", error);
+                } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+                    console.error(`Student presence channel failed: ${status}.`);
+                }
+            });
+            presenceChannels.push(channel);
+        });
+    }
+
+    function subscribeToCalendar(client, signedInUser) {
+        if (calendarChannel) {
+            client.removeChannel(calendarChannel).catch((error) => console.error("Could not stop the previous student calendar subscription.", error));
+            calendarChannel = null;
+        }
+        if (!client?.channel || !signedInUser?.id) return;
+        calendarChannel = client.channel(`student-calendar:${signedInUser.id}`)
+            .on("postgres_changes", { event: "*", schema: "public", table: "calendar_events" }, ({ eventType, new: next, old: previous }) => {
+                if (eventType === "DELETE") calendarEvents = calendarEvents.filter((event) => event.id !== previous.id);
+                else {
+                    if (!classes.some((group) => group.id === next.class_id)) return;
+                    const index = calendarEvents.findIndex((event) => event.id === next.id);
+                    if (index < 0) calendarEvents.push(next);
+                    else calendarEvents[index] = next;
+                    if (eventType === "INSERT" && new Date(next.starts_at) > new Date()) {
+                        showToast(`${text("reminder")} ${next.title}`);
+                        playReminderSound();
+                    }
+                }
+                if (activeView === "calendar") render();
+            })
+            .subscribe((status) => {
+                if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") console.error(`Student schedule updates could not be received: ${status}.`);
+            });
+    }
     let profileTrigger = null;
     const sidebar = document.getElementById("studentSidebar");
     const pageContent = document.getElementById("studentPageContent");
@@ -110,7 +219,7 @@
     const activitiesFor = (lesson) => lessonSections(lesson).flatMap((section) => Array.isArray(section.activities) ? section.activities : []);
     const answerableActivityTypes = new Set([
         "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
-        "sentence-order", "true-false", "table", "match", "columns", "open-answer"
+        "sentence-order", "true-false", "table", "match", "columns", "open-answer", "flashcards"
     ]);
     const progressActivitiesFor = (lesson) => activitiesFor(lesson).flatMap((activity) => {
         if (!answerableActivityTypes.has(activity.type)) return [];
@@ -131,14 +240,26 @@
     }
     function hasAnswerResponse(response) {
         if (typeof response === "string") return response.trim().length > 0;
+        if (response && typeof response === "object" && !Array.isArray(response)) {
+            const text = String(response.text || "").trim();
+            const attachments = Array.isArray(response.attachments)
+                ? response.attachments.some((item) => typeof item === "string" && item.trim())
+                : false;
+            return Boolean(text) || attachments;
+        }
         return Array.isArray(response) && response.some((part) => typeof part === "string" && part.trim().length > 0);
     }
     function answeredCountFor(lesson, answers = lesson.progress) {
         if (Array.isArray(lesson.sections)) {
             return progressActivitiesFor(lesson).filter(({ activity, questionId, questionIndex }) => {
                 if (!Number.isInteger(activity.index)) return false;
-                const key = questionId ? `a${activity.index}.q${questionId}` : `a${activity.index}`;
-                const answer = answers?.[key] || (questionIndex === 0 ? answers?.[`a${activity.index}`] : null);
+                const key = questionId
+                    ? `${activityProgressKey(activity, activity.index)}.q${questionId}`
+                    : activityProgressKey(activity, activity.index);
+                const legacyKey = legacyActivityProgressKey(activity, activity.index);
+                const answer = answers?.[key]
+                    || (questionId && legacyKey ? answers?.[`${legacyKey}.q${questionId}`] : null)
+                    || ((questionIndex === 0 || !questionId) && legacyKey ? answers?.[legacyKey] : null);
                 return hasAnswerResponse(answer?.response);
             }).length;
         }
@@ -212,8 +333,8 @@
         const studentCount = lessons.length;
         return `<section class="student-hero"><div class="student-hero-copy"><span class="eyebrow">✦ SLOVASOFI · ${escapeHtml(text("profileRole").toLocaleUpperCase())}</span><h1>${escapeHtml(text("welcome"))}</h1><p>${escapeHtml(text("welcomeHint"))}</p></div><span class="student-hero-mark" aria-hidden="true">S</span></section>
             <div class="stats-grid student-stats">
-                <article class="stat-card"><span class="stat-icon">▣</span><span>${escapeHtml(text("classes"))}</span><strong>${classes.length}</strong></article>
-                <article class="stat-card"><span class="stat-icon blue">▤</span><span>${escapeHtml(text("lessons"))}</span><strong>${studentCount}</strong></article>
+                <article class="stat-card"><span class="stat-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3.5" y="4.5" width="17" height="15" rx="3"></rect><path d="M8 9h8M8 13h5"></path></svg></span><span>${escapeHtml(text("classes"))}</span><strong>${classes.length}</strong></article>
+                <article class="stat-card"><span class="stat-icon blue" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 3.5h10l4 4v13H5z"></path><path d="M14.5 3.5v4h4M8 12h8M8 16h8"></path></svg></span><span>${escapeHtml(text("lessons"))}</span><strong>${studentCount}</strong></article>
             </div>`;
     }
 
@@ -245,18 +366,137 @@
         return `<div class="section-heading"><div><h1>${escapeHtml(selectedClass ? selectedClass.name : text("lessons"))}</h1><p>${escapeHtml(selectedClass ? text("classLessons") : text("lessonsHint"))}</p></div>${selectedClass ? `<button type="button" class="button secondary small" data-clear-class-filter>← ${escapeHtml(text("allLessons"))}</button>` : ""}</div>${content}`;
     }
 
+    function scheduledOccurrences(from = new Date(), to = new Date(Date.now() + 30 * 86_400_000)) {
+        return window.SlovaCalendar.occurrences(calendarEvents, from, to);
+    }
+
+    function calendarRecurrenceLabel(recurrence) {
+        const labels = {
+            daily: "calendarDaily",
+            every_other_day: "calendarEveryOtherDay",
+            weekly: "calendarWeekly",
+            custom: "calendarCustom",
+            selected_dates: "calendarSelectedDates"
+        };
+        return labels[recurrence] ? text(labels[recurrence]) : "";
+    }
+
+    function formatScheduledDate(date, options) {
+        const locale = language === "ua" ? "uk-UA" : language === "en" ? "en-US" : "ru-RU";
+        return new Intl.DateTimeFormat(locale, options).format(date);
+    }
+
+    function renderStudentCalendar() {
+        const upcoming = scheduledOccurrences();
+        const grouped = new Map();
+        upcoming.forEach((event) => {
+            const key = `${event.occurrenceAt.getFullYear()}-${event.occurrenceAt.getMonth()}-${event.occurrenceAt.getDate()}`;
+            const day = grouped.get(key) || [];
+            day.push(event);
+            grouped.set(key, day);
+        });
+        const content = upcoming.length
+            ? `<div class="calendar-agenda">${[...grouped.values()].map((events) => `<section class="calendar-agenda-day"><h2>${formatScheduledDate(events[0].occurrenceAt, { weekday: "long", day: "numeric", month: "long" })}</h2>${events.map((event) => `<article class="calendar-agenda-event"><time><strong>${formatScheduledDate(event.occurrenceAt, { hour: "2-digit", minute: "2-digit" })}</strong><small>${Number(event.duration_minutes)} ${language === "en" ? "min" : language === "ua" ? "хв" : "мин"}</small></time><div><h3>${escapeHtml(event.title)}</h3><p>${escapeHtml(classes.find((group) => group.id === event.class_id)?.name || text("calendarClass"))}${calendarRecurrenceLabel(event.recurrence) ? ` · ${calendarRecurrenceLabel(event.recurrence)}` : ""}</p></div></article>`).join("")}</section>`).join("")}</div>`
+            : `<div class="panel student-empty"><span class="student-empty-icon">▦</span><h2>${escapeHtml(text("calendarEmpty"))}</h2></div>`;
+        return `<div class="section-heading"><div><h1>${escapeHtml(text("calendar"))}</h1><p>${escapeHtml(text("calendarHint"))}</p></div></div>${content}`;
+    }
+
+    function playReminderSound() {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        try {
+            calendarAudioContext ||= new AudioContextClass();
+            const audio = calendarAudioContext;
+            if (audio.state === "suspended") audio.resume().catch((error) => console.warn("The browser blocked the student's calendar reminder sound.", error));
+            const oscillator = audio.createOscillator();
+            const gain = audio.createGain();
+            oscillator.type = "sine";
+            oscillator.frequency.value = 880;
+            gain.gain.setValueAtTime(0.0001, audio.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.12, audio.currentTime + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.45);
+            oscillator.connect(gain);
+            gain.connect(audio.destination);
+            oscillator.start();
+            oscillator.stop(audio.currentTime + 0.46);
+        } catch (error) {
+            console.warn("The browser did not allow the student's calendar reminder sound.", error);
+        }
+    }
+
+    function unlockReminderAudio() {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass || calendarAudioContext) return;
+        calendarAudioContext = new AudioContextClass();
+        calendarAudioContext.resume().catch((error) => console.warn("Could not enable student calendar reminder audio.", error));
+    }
+
+    function checkCalendarReminders() {
+        if (!user) return;
+        const now = new Date();
+        scheduledOccurrences(now, new Date(now.getTime() + 15 * 60_000)).forEach((event) => {
+            const key = `${user.id}:${event.id}:${event.occurrenceAt.toISOString()}`;
+            if (playedCalendarReminders.has(key)) return;
+            playedCalendarReminders.add(key);
+            showToast(`${text("reminder")} ${event.title}`);
+            playReminderSound();
+        });
+    }
+
     function progressFor(lesson, index) {
         return lesson.progress?.[`a${index}`] || null;
     }
 
-    function progressForQuestion(lesson, index, questionId, questionIndex) {
-        return lesson.progress?.[`a${index}.q${questionId}`]
-            || (questionIndex === 0 ? lesson.progress?.[`a${index}`] : null);
+    function activityProgressKey(activity, index) {
+        const id = typeof activity.id === "string" ? activity.id : "";
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
+            ? `b${id}`
+            : `a${index}`;
+    }
+
+    function legacyActivityProgressKey(activity, index) {
+        const id = typeof activity.id === "string" ? activity.id : "";
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return `a${index}`;
+        return Number.isInteger(activity.legacyProgressIndex) && activity.legacyProgressIndex >= 0
+            ? `a${activity.legacyProgressIndex}`
+            : null;
+    }
+
+    function progressForActivity(lesson, activity) {
+        const index = activity.index;
+        const legacyKey = legacyActivityProgressKey(activity, index);
+        return lesson.progress?.[activityProgressKey(activity, index)] || (legacyKey ? lesson.progress?.[legacyKey] : null) || null;
+    }
+
+    function progressForQuestion(lesson, activity, index, questionId, questionIndex) {
+        const key = activityProgressKey(activity, index);
+        const legacyKey = legacyActivityProgressKey(activity, index);
+        return lesson.progress?.[`${key}.q${questionId}`]
+            || (legacyKey ? lesson.progress?.[`${legacyKey}.q${questionId}`] : null)
+            || ((questionIndex === 0 && legacyKey) ? lesson.progress?.[legacyKey] : null);
     }
 
     function questionItemLabel(index) {
         const labels = { ua: "Пункт", ru: "Пункт", en: "Item" };
         return `${labels[language] || labels.en} ${index + 1}`;
+    }
+
+    function flashcardChoiceText(key) {
+        const labels = {
+            ua: { know: "Знаю", repeat: "Повторити", hard: "Складні картки" },
+            ru: { know: "Знаю", repeat: "Повторить", hard: "Сложные карточки" },
+            en: { know: "Know", repeat: "Review", hard: "Difficult cards" }
+        };
+        return labels[language]?.[key] || labels.en[key];
+    }
+
+    function openAnswerText(key) {
+        const labels = {
+            ua: { attachments: "Вкладення", addAttachment: "Додати посилання", attachmentUrl: "https://...", removeAttachment: "Видалити" },
+            ru: { attachments: "Вложения", addAttachment: "Добавить ссылку", attachmentUrl: "https://...", removeAttachment: "Удалить" },
+            en: { attachments: "Attachments", addAttachment: "Add link", attachmentUrl: "https://...", removeAttachment: "Remove" }
+        };
+        return labels[language]?.[key] || labels.en[key];
     }
 
     function mediaUrl(value) {
@@ -266,6 +506,28 @@
         } catch {
             return "";
         }
+    }
+
+    function flashcardSideMarkup(value) {
+        const url = mediaUrl(value);
+        if (!url) return escapeHtml(value).replace(/\n/g, "<br>");
+        const pathname = new URL(url).pathname.toLowerCase();
+        if (/\.(png|jpe?g|webp|gif|avif)$/.test(pathname)) {
+            return `<img class="student-flashcard-media" src="${escapeHtml(url)}" alt="">`;
+        }
+        if (/\.(mp3|wav|m4a|ogg|aac|flac)$/.test(pathname)) {
+            return `<audio class="student-flashcard-media" controls preload="none" src="${escapeHtml(url)}"></audio>`;
+        }
+        return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(value)}</a>`;
+    }
+
+    function optionMediaMarkup(value) {
+        const url = mediaUrl(value);
+        if (!url) return "";
+        const pathname = new URL(url).pathname.toLowerCase();
+        if (/\.(png|jpe?g|webp|gif|avif)$/.test(pathname)) return `<img class="student-choice-media" src="${escapeHtml(url)}" alt="" loading="lazy">`;
+        if (/\.(mp3|wav|m4a|ogg|aac|flac)$/.test(pathname)) return `<audio class="student-choice-media" controls preload="none" src="${escapeHtml(url)}"></audio>`;
+        return "";
     }
 
     function youtubeEmbedUrl(value) {
@@ -299,12 +561,12 @@
                     question,
                     index,
                     questionIndex,
-                    progressForQuestion(openedLesson, index, question.questionId || `legacy-${questionIndex}`, questionIndex)
+                    progressForQuestion(openedLesson, activity, index, question.questionId || `legacy-${questionIndex}`, questionIndex)
                 )).join("")}</div>
                 ${canSubmit ? `<div class="student-activity-group-actions"><button class="button small" type="button" data-submit-activity-group>${escapeHtml(text("checkAnswers"))}</button></div>` : ""}
             </section>`;
         }
-        return renderActivityItem(activity, index, null, progressFor(openedLesson, index));
+        return renderActivityItem(activity, index, null, progressForActivity(openedLesson, activity));
     }
 
     function renderActivityItem(activity, index, questionIndex, saved) {
@@ -313,59 +575,87 @@
         let body = "";
         let controls = "";
         if (activity.type === "drag-words") {
-            const selected = Array.isArray(savedResponse) ? savedResponse.map(String) : [];
+            const lockedWords = Array.isArray(activity.settings?.lockedWords) ? activity.settings.lockedWords.map(String) : [];
+            const selected = Array.isArray(savedResponse) ? savedResponse.map(String) : [...lockedWords];
             const remaining = [...activity.tokens];
             selected.forEach((word) => {
                 const tokenIndex = remaining.indexOf(word);
                 if (tokenIndex >= 0) remaining.splice(tokenIndex, 1);
             });
-            body = `<p class="student-muted">${escapeHtml(text("addWords"))}</p><div class="student-word-bank" data-word-bank>${remaining.map((word) => `<button class="student-word-token" type="button" draggable="true" data-word-token="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}</div><div class="student-answer-zone" data-word-answer aria-label="${escapeHtml(text("yourAnswer"))}">${selected.map((word) => `<button class="student-word-token selected" type="button" draggable="true" data-remove-word="${escapeHtml(word)}">${escapeHtml(word)} ×</button>`).join("")}</div>`;
+            body = `<p class="student-muted">${escapeHtml(text("addWords"))}</p><div class="student-word-bank" data-word-bank>${remaining.map((word) => `<button class="student-word-token" type="button" draggable="true" data-word-token="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}</div><div class="student-answer-zone" data-word-answer aria-label="${escapeHtml(text("yourAnswer"))}">${selected.map((word) => lockedWords.includes(word) ? `<span class="student-word-token selected is-locked" aria-label="${escapeHtml(text("locked"))}">${escapeHtml(word)} 🔒</span>` : `<button class="student-word-token selected" type="button" draggable="true" data-remove-word="${escapeHtml(word)}">${escapeHtml(word)} ×</button>`).join("")}</div>`;
             controls = `<input type="hidden" data-answer-kind="words">`;
         } else if (activity.type === "fill-blank") {
             const savedParts = Array.isArray(savedResponse) ? [...savedResponse] : [];
             const parts = String(activity.content || "").split("___");
-            body = `<p class="student-activity-content">${parts.map((part, partIndex) => `${escapeHtml(part)}${partIndex < parts.length - 1 ? `<input class="student-inline-answer" data-blank-answer value="${escapeHtml(savedParts.shift() || "")}" aria-label="${escapeHtml(text("yourAnswer"))}" autocomplete="off">` : ""}`).join("")}</p>`;
+            const blankCount = Math.max(parts.length - 1, Number(activity.blankCount) || 0);
+            const hints = Array.isArray(activity.settings?.hints) ? activity.settings.hints : activity.hints || [];
+            body = `<p class="student-activity-content">${Array.from({ length: blankCount }, (_, partIndex) => `${escapeHtml(parts[partIndex] || "")}<input class="student-inline-answer" data-blank-answer value="${escapeHtml(savedParts.shift() || "")}" aria-label="${escapeHtml(text("yourAnswer"))}" autocomplete="off">`).join("")}${escapeHtml(parts.slice(blankCount).join("___"))}</p>${hints.map((hint, hintIndex) => `<div><button type="button" class="student-hint" data-show-hint="${hintIndex}">${escapeHtml(text("hint"))} ${hintIndex + 1}</button><span data-hint-content hidden>${escapeHtml(hint)}</span></div>`).join("")}${activity.wordBank?.length ? `<div class="student-word-bank">${activity.wordBank.map((word) => `<button class="student-word-token" type="button" data-word-bank-answer="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}</div>` : ""}`;
             controls = `<input type="hidden" data-answer-kind="blanks">`;
         } else if (activity.type === "multiple-choice" || activity.type === "one-of-many") {
-            const options = Array.isArray(activity.options) ? activity.options : [];
-            if (activity.type === "one-of-many" && String(options[0] || "").includes("___")) {
-                const [sentence, ...choices] = options;
-                const select = `<select class="student-inline-select" data-choice-select aria-label="${escapeHtml(text("choose"))}"><option value="">---</option>${choices.map((option) => `<option value="${escapeHtml(option)}" ${savedResponse === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>`;
-                const [before, ...after] = sentence.split("___");
-                body = `<p class="student-activity-content">${escapeHtml(before)}${select}${escapeHtml(after.join("___"))}</p>`;
-            } else body = `<div class="student-answer-options">${options.map((option) => `<label class="student-answer-option"><input type="radio" name="${radioName}" value="${escapeHtml(option)}" ${savedResponse === option ? "checked" : ""}><span>${escapeHtml(option)}</span></label>`).join("")}</div>`;
-            controls = `<input type="hidden" data-answer-kind="choice">`;
+            const rawOptions = Array.isArray(activity.options) ? activity.options : [];
+            const options = rawOptions.map((option) => typeof option === "string" ? { text: option, media: "", explanation: "" } : option);
+            const multiple = activity.type === "multiple-choice" && activity.multipleAnswers === true;
+            const savedValues = Array.isArray(savedResponse) ? savedResponse.map(String) : [String(savedResponse || "")];
+            if (activity.type === "one-of-many" && String(options[0]?.text || "").includes("___")) {
+                const sentence = options[0].text;
+                const choicesByBlank = Array.isArray(activity.choicesByBlank) ? activity.choicesByBlank : [];
+                let blankIndex = 0;
+                body = `<p class="student-activity-content">${sentence.split("___").map((part, index, items) => `${escapeHtml(part)}${index < items.length - 1 ? `<select class="student-inline-select" data-choice-select aria-label="${escapeHtml(text("choose"))}"><option value="">---</option>${(choicesByBlank[blankIndex] || options.slice(1).map((item) => item.text)).map((option) => `<option value="${escapeHtml(option)}" ${savedValues[blankIndex] === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>${blankIndex++, ""}` : ""}`).join("")}</p>`;
+                controls = `<input type="hidden" data-answer-kind="choice-list">`;
+            } else {
+                body = `<div class="student-answer-options">${options.map((option) => `<label class="student-answer-option"><input type="${multiple ? "checkbox" : "radio"}" name="${radioName}" value="${escapeHtml(option.text)}" ${savedValues.includes(option.text) ? "checked" : ""}><span>${optionMediaMarkup(option.media)}${escapeHtml(option.text)}</span></label>`).join("")}</div>`;
+                controls = `<input type="hidden" data-answer-kind="${multiple ? "choices" : "choice"}">`;
+            }
         } else if (activity.type === "true-false") {
-            body = `<p class="student-activity-content">${escapeHtml(activity.content || "")}</p><div class="student-answer-options">${[["true", text("true")], ["false", text("false")]].map(([value, label]) => `<label class="student-answer-option"><input type="radio" name="${radioName}" value="${value}" ${savedResponse === value ? "checked" : ""}><span>${escapeHtml(label)}</span></label>`).join("")}</div>`;
+            const options = Array.isArray(activity.options) ? activity.options : [{ value: "true", label: text("true") }, { value: "false", label: text("false") }];
+            body = `<p class="student-activity-content">${escapeHtml(activity.content || "")}</p><div class="student-answer-options">${options.map(({ value, label }) => `<label class="student-answer-option"><input type="radio" name="${radioName}" value="${escapeHtml(value)}" ${savedResponse === value ? "checked" : ""}><span>${escapeHtml(value === "true" ? text("true") : value === "false" ? text("false") : label)}</span></label>`).join("")}</div>`;
             controls = `<input type="hidden" data-answer-kind="choice">`;
         } else if (activity.type === "order-items" || activity.type === "sentence-order") {
             const savedItems = Array.isArray(savedResponse) ? savedResponse.map(String) : [];
-            const items = savedItems.length ? savedItems : activity.items || [];
-            body = `<ol class="student-order-list">${items.map((item, itemIndex) => `<li data-order-item="${escapeHtml(item)}"><span>${escapeHtml(item)}</span><span><button type="button" data-move-item="-1" ${itemIndex === 0 ? "disabled" : ""} aria-label="${escapeHtml(text("moveUp"))}">↑</button><button type="button" data-move-item="1" ${itemIndex === items.length - 1 ? "disabled" : ""} aria-label="${escapeHtml(text("moveDown"))}">↓</button></span></li>`).join("")}</ol>`;
+            const items = savedItems.length ? savedItems.map((text) => ({ text, media: "" })) : (activity.items || []).map((item) => typeof item === "string" ? { text: item, media: "" } : item);
+            body = `<ol class="student-order-list">${items.map((item, itemIndex) => `<li data-order-item="${escapeHtml(item.text)}"><span>${optionMediaMarkup(item.media)}${escapeHtml(item.text)}</span><span><button type="button" data-move-item="-1" ${itemIndex === 0 ? "disabled" : ""} aria-label="${escapeHtml(text("moveUp"))}">↑</button><button type="button" data-move-item="1" ${itemIndex === items.length - 1 ? "disabled" : ""} aria-label="${escapeHtml(text("moveDown"))}">↓</button></span></li>`).join("")}</ol>`;
             controls = `<input type="hidden" data-answer-kind="order">`;
         } else if (activity.type === "match" || activity.type === "columns") {
             const rows = activity.type === "match" ? activity.pairs || [] : activity.items || [];
             const options = activity.type === "match" ? activity.options || [] : activity.categories || [];
             const savedChoices = Array.isArray(savedResponse) ? savedResponse : [];
-            body = `<div class="student-match-list" data-pair-board ${activity.type === "columns" ? "data-pair-reuse" : ""}>${rows.map((item, itemIndex) => `<div class="student-match-row" data-pair-row><span>${escapeHtml(item)}</span><select data-match-answer aria-label="${escapeHtml(item)}"><option value="">${escapeHtml(text("choose"))}</option>${options.map((option) => `<option value="${escapeHtml(option)}" ${savedChoices[itemIndex] === option ? "selected" : ""}>${escapeHtml(option)}            </option>`).join("")}</select></div>`).join("")}</div>`;
+            body = `<div class="student-match-list" data-pair-board ${activity.type === "columns" ? "data-pair-reuse" : ""}>${rows.map((rawItem, itemIndex) => {
+                const item = typeof rawItem === "string" ? { text: rawItem, media: "" } : rawItem;
+                const choiceOptions = options.map((rawOption) => typeof rawOption === "string" ? { text: rawOption, media: "" } : rawOption);
+                return `<div class="student-match-row" data-pair-row><span>${optionMediaMarkup(item.media)}${escapeHtml(item.text)}</span><select data-match-answer aria-label="${escapeHtml(item.text)}"><option value="">${escapeHtml(text("choose"))}</option>${choiceOptions.map((option) => `<option value="${escapeHtml(option.text)}" ${savedChoices[itemIndex] === option.text ? "selected" : ""}>${escapeHtml(option.text)}</option>`).join("")}</select></div>`;
+            }).join("")}</div>`;
             controls = `<input type="hidden" data-answer-kind="matches">`;
         } else if (activity.type === "table") {
             const savedParts = Array.isArray(savedResponse) ? savedResponse : [];
             body = `<div class="student-table-wrap"><table class="student-answer-table"><tbody>${(activity.rows || []).map((row) => `<tr>${row.map((cell) => `<td>${String(cell).split(/(\{\{blank:\d+\}\})/g).map((part) => {
                 const blank = part.match(/^\{\{blank:(\d+)\}\}$/);
                 if (!blank) return escapeHtml(part);
-                const value = escapeHtml(savedParts[Number(blank[1])] || "");
-                return `<input class="student-inline-answer" data-table-answer value="${value}" aria-label="${escapeHtml(text("yourAnswer"))}" autocomplete="off">`;
+                const blankIndex = Number(blank[1]);
+                const value = escapeHtml(savedParts[blankIndex] || "");
+                const options = activity.cellOptions?.[String(blankIndex)];
+                return Array.isArray(options) && options.length
+                    ? `<select class="student-inline-select" data-table-answer aria-label="${escapeHtml(text("yourAnswer"))}"><option value="">${escapeHtml(text("choose"))}</option>${options.map((option) => `<option value="${escapeHtml(option)}" ${savedParts[blankIndex] === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>`
+                    : `<input class="student-inline-answer" data-table-answer value="${value}" aria-label="${escapeHtml(text("yourAnswer"))}" autocomplete="off">`;
             }).join("")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
             controls = `<input type="hidden" data-answer-kind="table">`;
         } else if (activity.type === "open-answer") {
-            body = `${activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : ""}<textarea class="student-open-answer" data-open-answer maxlength="10000" placeholder="${escapeHtml(text("yourAnswer"))}">${escapeHtml(savedResponse || "")}</textarea>`;
+            const openSaved = savedResponse && typeof savedResponse === "object" && !Array.isArray(savedResponse)
+                ? savedResponse
+                : { text: savedResponse || "", attachments: [] };
+            const attachments = Array.isArray(openSaved.attachments)
+                ? openSaved.attachments.filter((item) => typeof item === "string").slice(0, 8)
+                : [];
+            body = `${activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : ""}<textarea class="student-open-answer" data-open-answer maxlength="10000" placeholder="${escapeHtml(text("yourAnswer"))}">${escapeHtml(openSaved.text || "")}</textarea><div class="student-open-attachments"><strong>${escapeHtml(openAnswerText("attachments"))}</strong><div data-open-attachments>${attachments.map((url) => `<div class="student-open-attachment"><input class="student-inline-answer" data-open-attachment value="${escapeHtml(url)}" placeholder="${escapeHtml(openAnswerText("attachmentUrl"))}" autocomplete="off"><button type="button" class="button secondary small" data-remove-open-attachment>${escapeHtml(openAnswerText("removeAttachment"))}</button></div>`).join("")}</div><button class="button secondary small" type="button" data-add-open-attachment>${escapeHtml(openAnswerText("addAttachment"))}</button></div>`;
             controls = `<input type="hidden" data-answer-kind="open">`;
         } else if (activity.type === "flashcards") {
-            body = `<div class="student-flashcard-list">${(activity.cards || []).map((item) => `<button class="student-flashcard" type="button" data-front="${escapeHtml(item.front)}" data-back="${escapeHtml(item.back)}"><strong>${escapeHtml(item.front)}</strong><small>${escapeHtml(text("flip"))}</small></button>`).join("")}</div>`;
+            const ratings = Array.isArray(savedResponse) ? savedResponse : [];
+            body = `<button class="button secondary small student-flashcard-hard-toggle" type="button" data-flashcards-hard-only aria-pressed="false">${escapeHtml(flashcardChoiceText("hard"))}</button><div class="student-flashcard-list">${(activity.cards || []).map((item) => {
+                const rating = ratings[item.cardIndex] || "";
+                return `<div class="student-flashcard-card" data-flashcard-card data-card-index="${item.cardIndex}" data-rating="${escapeHtml(rating)}"><div class="student-flashcard"><strong class="student-flashcard-face">${flashcardSideMarkup(item.front)}</strong><button class="student-flashcard-flip" type="button" data-front="${escapeHtml(item.front)}" data-back="${escapeHtml(item.back)}">${escapeHtml(text("flip"))}</button></div><div class="student-flashcard-rating"><button class="button secondary small" type="button" data-flashcard-rating="know" data-card-index="${item.cardIndex}" aria-pressed="${rating === "know"}">${escapeHtml(flashcardChoiceText("know"))}</button><button class="button secondary small" type="button" data-flashcard-rating="repeat" data-card-index="${item.cardIndex}" aria-pressed="${rating === "repeat"}">${escapeHtml(flashcardChoiceText("repeat"))}</button></div></div>`;
+            }).join("")}</div>`;
         } else if (activity.type === "image") {
-            const source = mediaUrl(activity.content);
-            body = source ? `<img class="student-activity-image" src="${escapeHtml(source)}" alt="${escapeHtml(activity.alt || activity.prompt || text("imageAlt"))}">` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
+            const images = window.slovaGallery.parse(activity.content);
+            body = images.length ? window.slovaGallery.html(images, activity.alt || activity.prompt || text("imageAlt"), "student-activity-image") : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         } else if (activity.type === "audio" || activity.type === "video") {
             const embed = activity.type === "video" ? youtubeEmbedUrl(activity.content) : "";
             const source = mediaUrl(activity.content);
@@ -381,10 +671,10 @@
                     : saved?.correct === null ? text("submitted") : "";
         const isQuestion = Number.isInteger(questionIndex);
         const canSubmit = Boolean(activity.gradable || activity.reviewRequired);
-        const feedbackMarkup = canSubmit
-            ? `<p class="student-answer-feedback ${saved?.correct === true ? "is-correct" : saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml(feedback)}</p>`
+        const feedbackMarkup = canSubmit || activity.type === "flashcards"
+            ? `<p class="student-answer-feedback ${saved?.correct === true ? "is-correct" : saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml([feedback, saved?.feedback].filter(Boolean).join(" "))}</p>`
             : "";
-        const submitMarkup = !canSubmit ? ""
+        const submitMarkup = !canSubmit ? feedbackMarkup
             : isQuestion ? controls
                 : `<div class="student-activity-actions">${controls}<button class="button small" type="button" data-submit-answer>${escapeHtml(text("checkAnswer"))}</button></div>${feedbackMarkup}`;
         const questionId = isQuestion ? String(activity.questionId || `legacy-${questionIndex}`) : "";
@@ -419,6 +709,9 @@
                 <button type="button" role="tab" aria-selected="${studentWorkspaceTab === "lesson"}" class="${studentWorkspaceTab === "lesson" ? "active" : ""}" data-student-workspace-tab="lesson">${escapeHtml(text("lessonTab"))}</button>
                 <button type="button" role="tab" aria-selected="${studentWorkspaceTab === "homework"}" class="${studentWorkspaceTab === "homework" ? "active" : ""}" data-student-workspace-tab="homework">${escapeHtml(text("homeworkTab"))}</button>
             </nav>
+            <button type="button" class="student-sections-toggle" data-toggle-student-sections aria-label="${escapeHtml(text("openSections"))}" aria-expanded="${studentSectionsOpen}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>${escapeHtml(text("section"))}</span>
+            </button>
             <div class="student-workspace-layout">
                 <main class="student-workspace-main">${section ? `<section class="panel student-section ${section.homework ? "student-homework-section" : ""}" data-student-section>
                     <h2>${escapeHtml(section.title || text("section"))}</h2>
@@ -427,10 +720,20 @@
                 <div class="student-workspace-footer"><button type="button" class="button secondary small" data-student-step="-1" data-student-section-target="${sectionIndex > 0 ? escapeHtml(sectionKey(sections[sectionIndex - 1], sectionIndex - 1, studentWorkspaceTab === "homework")) : ""}" ${sectionIndex <= 0 ? "disabled" : ""}>${escapeHtml(text("previousSection"))}</button><span>${sectionIndex + 1} / ${sections.length}</span><button type="button" class="button secondary small" data-student-step="1" data-student-section-target="${sectionIndex >= 0 && sectionIndex < sections.length - 1 ? escapeHtml(sectionKey(sections[sectionIndex + 1], sectionIndex + 1, studentWorkspaceTab === "homework")) : ""}" ${sectionIndex < 0 || sectionIndex >= sections.length - 1 ? "disabled" : ""}>${escapeHtml(text("nextSection"))}</button></div>`
                     : `<section class="panel student-section"><h2>${escapeHtml(text(studentWorkspaceTab === "homework" ? "homeworkSections" : "lessonSections"))}</h2><p class="student-muted">${escapeHtml(text("noContent"))}</p></section>`}
                 </main>
-                <aside class="student-sections-panel"><h2>${escapeHtml(text("lessonSections"))}</h2><nav class="student-sections-list" aria-label="${escapeHtml(text("lessonSections"))}">${renderSectionList(lessonItems, false) || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</nav>
+                <button type="button" class="student-section-drawer-backdrop ${studentSectionsOpen ? "is-open" : ""}" data-close-student-sections aria-label="${escapeHtml(text("closeSections"))}" ${studentSectionsOpen ? "" : "hidden"}></button>
+                <aside class="student-sections-panel ${studentSectionsOpen ? "is-open" : ""}" id="studentSectionsPanel" aria-label="${escapeHtml(text("openSections"))}">
+                    <div class="student-sections-heading"><h2>${escapeHtml(text("lessonSections"))}</h2><button type="button" data-close-student-sections aria-label="${escapeHtml(text("closeSections"))}">×</button></div><nav class="student-sections-list" aria-label="${escapeHtml(text("lessonSections"))}">${renderSectionList(lessonItems, false) || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</nav>
                     <h3>${escapeHtml(text("homeworkSections"))}</h3><nav class="student-sections-list student-homework-sections-list" aria-label="${escapeHtml(text("homeworkSections"))}">${renderSectionList(homeworkItems, true) || `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`}</nav>
                 </aside>
             </div>`;
+    }
+
+    function scrollToFirstStudentActivity() {
+        window.requestAnimationFrame(() => {
+            const firstActivity = pageContent.querySelector("[data-student-section] .student-activity-list > :first-child");
+            const target = firstActivity || pageContent.querySelector("[data-student-section] > h2");
+            target?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
     }
 
     async function invokeLessonApi(payload) {
@@ -473,11 +776,16 @@
             return [...element.querySelectorAll("[data-word-answer] [data-remove-word]")].map((button) => button.dataset.removeWord);
         }
         if (kind === "blanks") return [...element.querySelectorAll("[data-blank-answer]")].map((input) => input.value.trim());
+        if (kind === "choice-list") return [...element.querySelectorAll("[data-choice-select]")].map((select) => select.value);
+        if (kind === "choices") return [...element.querySelectorAll('input[type="checkbox"]:checked')].map((input) => input.value);
         if (kind === "choice") return element.querySelector('input[type="radio"]:checked')?.value || element.querySelector("[data-choice-select]")?.value || "";
         if (kind === "order") return [...element.querySelectorAll("[data-order-item]")].map((item) => item.dataset.orderItem);
         if (kind === "matches") return [...element.querySelectorAll("[data-match-answer]")].map((select) => select.value);
         if (kind === "table") return [...element.querySelectorAll("[data-table-answer]")].map((input) => input.value.trim());
-        if (kind === "open") return element.querySelector("[data-open-answer]")?.value || "";
+        if (kind === "open") return {
+            text: element.querySelector("[data-open-answer]")?.value || "",
+            attachments: [...element.querySelectorAll("[data-open-attachment]")].map((input) => input.value.trim()).filter(Boolean)
+        };
         return "";
     }
 
@@ -658,8 +966,8 @@
             const result = await submission;
             pendingDrafts.delete(draftKey);
             updateLessonProgress(lessonId, result.answers, result.completed);
-            feedback.textContent = result.reviewRequired ? text("submitted")
-                : result.correct ? text("correct") : text("incorrect");
+            feedback.textContent = [result.reviewRequired ? text("submitted")
+                : result.correct ? text("correct") : text("incorrect"), result.feedback].filter(Boolean).join(" ");
             feedback.className = `student-answer-feedback ${result.reviewRequired ? "" : result.correct ? "is-correct" : "is-incorrect"}`;
             if (result.completed) showToast(text("completed"));
             if (renderAfterSubmit) render();
@@ -706,7 +1014,7 @@
             openedLesson.answeredCount = answeredCountFor(openedLesson, openedLesson.progress);
             activeView = "lessons";
             render();
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            scrollToFirstStudentActivity();
         } catch (error) {
             selectedLessonId = "";
             openedLesson = null;
@@ -720,14 +1028,15 @@
         document.documentElement.lang = language === "ru" ? "ru" : language === "en" ? "en" : "uk";
         document.title = `SlovaSofi · ${escapeHtml(text("profileRole"))}`;
         updateIdentity();
-        const keys = { classes: "navClasses", lessons: "navLessons" };
+        document.getElementById("studentNotificationButton").setAttribute("aria-label", text("notifications"));
+        const keys = { classes: "navClasses", lessons: "navLessons", calendar: "navCalendar" };
         document.querySelectorAll(".nav-item").forEach((button) => {
             button.classList.toggle("active", button.dataset.view === activeView);
             button.querySelector("[data-i18n]").textContent = text(keys[button.dataset.view]);
         });
         document.getElementById("studentBreadcrumb").textContent = selectedLessonId
             ? text("lessons")
-            : text(keys[activeView]);
+            : text(activeView === "calendar" ? "calendar" : keys[activeView]);
         if (dashboardStatus !== "ready") {
             pageContent.innerHTML = dashboardStatus === "loading"
                 ? `<div class="student-message-card" role="status"><p>${escapeHtml(text("dashboardLoading"))}</p></div>`
@@ -738,9 +1047,9 @@
             });
             return;
         }
-        pageContent.innerHTML = `${renderWelcome()}${openedLesson && openedLesson.id === selectedLessonId
+        pageContent.innerHTML = `${activeView === "calendar" ? "" : renderWelcome()}${openedLesson && openedLesson.id === selectedLessonId
             ? renderLessonDetail(openedLesson)
-            : activeView === "classes" ? renderClasses() : renderLessons()}`;
+            : activeView === "classes" ? renderClasses() : activeView === "calendar" ? renderStudentCalendar() : renderLessons()}`;
         window.SlovaActivityUI?.enhancePairing(pageContent, { empty: text("choose") });
         pageContent.querySelectorAll("[data-open-lesson]").forEach((button) => {
             button.addEventListener("click", () => openStudentLesson(button.dataset.openLesson));
@@ -770,6 +1079,7 @@
                 await flushDraftSaves();
                 selectedLessonId = "";
                 openedLesson = null;
+                studentSectionsOpen = false;
                 activeView = "lessons";
                 render();
             } catch (error) {
@@ -785,8 +1095,9 @@
                 await flushDraftSaves();
                 studentWorkspaceTab = tab;
                 activeStudentSectionId = sectionId;
+                studentSectionsOpen = false;
                 render();
-                window.scrollTo({ top: 0, behavior: "smooth" });
+                scrollToFirstStudentActivity();
             } catch (error) {
                 console.error("Could not save student progress before switching lesson sections.", error);
                 showToast(`${text("draftSaveError")} ${error.message}`, true);
@@ -802,6 +1113,21 @@
         }));
         pageContent.querySelectorAll("[data-student-select-section]").forEach((button) => button.addEventListener("click", () => {
             switchWorkspace(button.dataset.studentSectionTab, button.dataset.studentSelectSection);
+        }));
+        pageContent.querySelector("[data-toggle-student-sections]")?.addEventListener("click", (event) => {
+            studentSectionsOpen = !studentSectionsOpen;
+            const isOpen = studentSectionsOpen;
+            pageContent.querySelector(".student-sections-panel")?.classList.toggle("is-open", isOpen);
+            pageContent.querySelector(".student-section-drawer-backdrop")?.classList.toggle("is-open", isOpen);
+            pageContent.querySelector(".student-section-drawer-backdrop")?.toggleAttribute("hidden", !isOpen);
+            event.currentTarget.setAttribute("aria-expanded", String(isOpen));
+        });
+        pageContent.querySelectorAll("[data-close-student-sections]").forEach((button) => button.addEventListener("click", () => {
+            studentSectionsOpen = false;
+            pageContent.querySelector(".student-sections-panel")?.classList.remove("is-open");
+            pageContent.querySelector(".student-section-drawer-backdrop")?.classList.remove("is-open");
+            pageContent.querySelector(".student-section-drawer-backdrop")?.setAttribute("hidden", "");
+            pageContent.querySelector("[data-toggle-student-sections]")?.setAttribute("aria-expanded", "false");
         }));
         pageContent.querySelectorAll("[data-student-section-target]").forEach((button) => button.addEventListener("click", () => {
             if (!button.disabled && button.dataset.studentSectionTarget) switchWorkspace(studentWorkspaceTab, button.dataset.studentSectionTarget);
@@ -825,11 +1151,81 @@
                 scheduleDraftSave(item.closest("[data-activity-index]"));
             });
         });
+        pageContent.querySelectorAll("[data-show-hint]").forEach((button) => {
+            button.addEventListener("click", () => {
+                button.parentElement.querySelector("[data-hint-content]")?.removeAttribute("hidden");
+                button.disabled = true;
+            });
+        });
+        pageContent.querySelectorAll("[data-word-bank-answer]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const activity = button.closest("[data-activity-index]");
+                const blank = activity?.querySelector("[data-blank-answer]:not(:focus)");
+                if (blank) {
+                    blank.value = button.dataset.wordBankAnswer;
+                    scheduleDraftSave(activity);
+                }
+            });
+        });
+        pageContent.querySelectorAll("[data-add-open-attachment]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const activity = button.closest("[data-activity-index]");
+                const wrap = activity?.querySelector("[data-open-attachments]");
+                if (!activity || !wrap || wrap.children.length >= 8) return;
+                const row = document.createElement("div");
+                row.className = "student-open-attachment";
+                row.innerHTML = `<input class="student-inline-answer" data-open-attachment placeholder="${escapeHtml(openAnswerText("attachmentUrl"))}" autocomplete="off"><button type="button" class="button secondary small" data-remove-open-attachment>${escapeHtml(openAnswerText("removeAttachment"))}</button>`;
+                wrap.append(row);
+                row.querySelector("[data-open-attachment]")?.focus();
+                scheduleDraftSave(activity);
+            });
+        });
+        pageContent.querySelectorAll("[data-remove-open-attachment]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const activity = button.closest("[data-activity-index]");
+                button.closest(".student-open-attachment")?.remove();
+                if (activity) scheduleDraftSave(activity);
+            });
+        });
         pageContent.querySelectorAll("[data-front][data-back]").forEach((button) => {
             button.addEventListener("click", () => {
                 const flipped = button.classList.toggle("is-flipped");
-                button.querySelector("strong").textContent = flipped ? button.dataset.back : button.dataset.front;
-                button.querySelector("small").textContent = flipped ? button.dataset.front : text("flip");
+                button.closest("[data-flashcard-card]")?.querySelector(".student-flashcard-face")
+                    ?.replaceChildren(document.createRange().createContextualFragment(flashcardSideMarkup(flipped ? button.dataset.back : button.dataset.front)));
+            });
+        });
+        pageContent.querySelectorAll("[data-flashcards-hard-only]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const hardOnly = button.getAttribute("aria-pressed") !== "true";
+                button.setAttribute("aria-pressed", String(hardOnly));
+                button.closest("[data-activity-index]")?.querySelectorAll("[data-flashcard-card]").forEach((card) => {
+                    card.hidden = hardOnly && card.dataset.rating === "know";
+                });
+            });
+        });
+        pageContent.querySelectorAll("[data-flashcard-rating]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const activity = button.closest("[data-activity-index]");
+                const card = button.closest("[data-flashcard-card]");
+                if (!openedLesson || !activity || !card) return;
+                const activityIndex = Number(activity.dataset.activityIndex);
+                const cardIndex = Number(button.dataset.cardIndex);
+                const rating = button.dataset.flashcardRating;
+                if (!Number.isInteger(activityIndex) || !Number.isInteger(cardIndex) || !["know", "repeat"].includes(rating)) return;
+                card.dataset.rating = rating;
+                card.querySelectorAll("[data-flashcard-rating]").forEach((choice) => {
+                    choice.setAttribute("aria-pressed", String(choice.dataset.flashcardRating === rating));
+                });
+                const cardElements = [...activity.querySelectorAll("[data-flashcard-card]")];
+                const ratings = Array.from({ length: cardElements.length }, () => "");
+                cardElements.forEach((item) => {
+                    const index = Number(item.dataset.cardIndex);
+                    if (Number.isInteger(index)) ratings[index] = item.dataset.rating || "";
+                });
+                ratings[cardIndex] = rating;
+                const hardOnly = activity.querySelector("[data-flashcards-hard-only]")?.getAttribute("aria-pressed") === "true";
+                card.hidden = hardOnly && rating === "know";
+                queueDraftSave(openedLesson.id, activityDraftKey(activityIndex, null), activityIndex, null, ratings);
             });
         });
     }
@@ -885,7 +1281,17 @@
         sidebar.hidden = true;
         document.querySelector(".main-area .topbar").hidden = true;
         pageContent.classList.add("student-auth-content");
-        pageContent.innerHTML = `<section class="student-auth-card"><a class="brand student-auth-brand" href="index.html"><span class="brand-mark">S</span><span>Slova<span class="brand-accent">Sofi</span></span></a><span class="eyebrow">SLOVASOFI</span><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p>${form}</section>`;
+        pageContent.innerHTML = `<section class="student-auth-card"><div class="student-auth-controls"><button class="icon-button theme-toggle" type="button" data-theme-toggle aria-label="Включить тему" aria-pressed="false"><svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/></svg><svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2"/></svg></button></div><a class="brand student-auth-brand" href="index.html"><span class="brand-mark">S</span><span>Slova<span class="brand-accent">Sofi</span></span></a><span class="eyebrow">SLOVASOFI</span><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p>${form}</section>`;
+        const darkTheme = document.documentElement.dataset.theme === "dark";
+        const themeToggleLabel = ({
+            ua: darkTheme ? "Увімкнути світлу тему" : "Увімкнути темну тему",
+            ru: darkTheme ? "Включить светлую тему" : "Включить тёмную тему",
+            en: darkTheme ? "Enable light theme" : "Enable dark theme"
+        })[language];
+        const themeToggle = pageContent.querySelector("[data-theme-toggle]");
+        themeToggle?.setAttribute("aria-pressed", String(darkTheme));
+        themeToggle?.setAttribute("aria-label", themeToggleLabel);
+        if (themeToggle) themeToggle.title = themeToggleLabel;
     }
 
     async function loadDashboard(client, signedInUser) {
@@ -902,6 +1308,10 @@
                 if (signingOut) return;
                 classes = result.classes || [];
                 lessons = result.lessons || [];
+                calendarEvents = result.calendarEvents || [];
+                trackPresence(client, result.presenceWorkspaceIds || classes.map((group) => group.teacherId), signedInUser);
+                subscribeToCalendar(client, signedInUser);
+                checkCalendarReminders();
                 dashboardStatus = "ready";
                 if (!lessons.some((lesson) => lesson.id === selectedLessonId)) selectedLessonId = "";
                 if (!lessons.some((lesson) => lesson.id === openedLesson?.id)) openedLesson = null;
@@ -924,13 +1334,31 @@
         openPopoverAt(button, `<div class="popover-user"><span class="avatar">${escapeHtml(initialsFor(name))}</span><div><strong>${escapeHtml(name)}</strong><small>${escapeHtml(text("profileRole"))}</small></div></div>${identity}<div class="popover-divider"></div>${action}`, "profile");
     }
 
+    function showNotifications(button) {
+        const upcoming = scheduledOccurrences(new Date(), new Date(Date.now() + 7 * 86_400_000)).slice(0, 5);
+        const rows = upcoming.length
+            ? `<div class="calendar-notification-list">${upcoming.map((event) => `<button type="button" class="calendar-notification" data-open-student-calendar><strong>${escapeHtml(event.title)}</strong><small>${formatScheduledDate(event.occurrenceAt, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · ${escapeHtml(classes.find((group) => group.id === event.class_id)?.name || text("calendarClass"))}</small></button>`).join("")}<button type="button" class="text-link" data-open-student-calendar>${escapeHtml(text("openCalendar"))}</button></div>`
+            : `<p class="popover-copy">${escapeHtml(text("notificationsEmpty"))}</p>`;
+        openPopoverAt(button, `<div class="popover-heading"><span class="notification-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span><div><strong>${escapeHtml(text("notifications"))}</strong><small>${escapeHtml(upcoming.length ? text("calendar") : text("notificationsEmpty"))}</small></div></div>${rows}`, "notifications");
+        const panel = document.querySelector(".popover-panel");
+        panel?.querySelectorAll("[data-open-student-calendar]").forEach((item) => item.addEventListener("click", () => {
+            closePopover();
+            activeView = "calendar";
+            selectedClassId = "";
+            selectedLessonId = "";
+            openedLesson = null;
+            studentSectionsOpen = false;
+            render();
+        }));
+    }
+
     function initialsFor(name) {
         return String(name).split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toLocaleUpperCase() || "—";
     }
 
     function closePopover(restoreFocus = false) {
         document.getElementById("popoverRoot").innerHTML = "";
-        document.querySelectorAll(".profile-trigger").forEach((button) => button.setAttribute("aria-expanded", "false"));
+        document.querySelectorAll(".profile-trigger, #studentNotificationButton").forEach((button) => button.setAttribute("aria-expanded", "false"));
         openPopover = "";
         if (restoreFocus) profileTrigger?.focus();
     }
@@ -968,6 +1396,16 @@
         if (logoutButton) logoutButton.disabled = true;
         try {
             await flushDraftSaves();
+            const channelsToRemove = presenceChannels;
+            presenceChannels = [];
+            Promise.all(channelsToRemove.map((channel) => window.supabaseClient.removeChannel(channel)))
+                .catch((error) => console.error("Could not stop the student's presence channels.", error));
+            if (calendarChannel) {
+                const channelToRemove = calendarChannel;
+                calendarChannel = null;
+                window.supabaseClient.removeChannel(channelToRemove)
+                    .catch((error) => console.error("Could not stop the student's calendar subscription.", error));
+            }
             const { error } = await window.supabaseClient.auth.signOut();
             if (error) throw error;
             try {
@@ -1045,6 +1483,7 @@
         selectedClassId = "";
         selectedLessonId = "";
         openedLesson = null;
+        studentSectionsOpen = false;
         sidebar.classList.remove("open");
         document.getElementById("studentSidebarBackdrop").classList.remove("open");
         document.getElementById("studentMenuToggle").setAttribute("aria-expanded", "false");
@@ -1070,10 +1509,21 @@
     
     // Profile menu for student (like teacher)
     document.querySelectorAll(".profile-trigger").forEach((button) => button.addEventListener("click", () => showUserMenu(button)));
+    document.getElementById("studentNotificationButton").addEventListener("click", (event) => showNotifications(event.currentTarget));
+    window.setInterval(checkCalendarReminders, 60_000);
+    document.addEventListener("pointerdown", unlockReminderAudio, { once: true });
+    document.addEventListener("keydown", unlockReminderAudio, { once: true });
     document.addEventListener("click", (event) => {
-        if (openPopover && !event.target.closest(".popover-root, .profile-trigger")) closePopover();
+        if (openPopover && !event.target.closest(".popover-root, .profile-trigger, .popover-trigger")) closePopover();
     });
     document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && studentSectionsOpen) {
+            studentSectionsOpen = false;
+            pageContent.querySelector(".student-sections-panel")?.classList.remove("is-open");
+            pageContent.querySelector(".student-section-drawer-backdrop")?.classList.remove("is-open");
+            pageContent.querySelector(".student-section-drawer-backdrop")?.setAttribute("hidden", "");
+            pageContent.querySelector("[data-toggle-student-sections]")?.setAttribute("aria-expanded", "false");
+        }
         if (event.key === "Escape" && openPopover) closePopover(true);
     });
     window.addEventListener("resize", () => closePopover());

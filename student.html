@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#f3f7f2">
+    <meta name="theme-color" content="#f5f8f5">
     <title>SlovaSofi · Учнівський кабінет</title>
+    <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+    <script src="assets/js/theme.js"></script>
     <link rel="stylesheet" href="assets/css/teacher.css">
     <link rel="stylesheet" href="assets/css/student.css">
+    <link rel="stylesheet" href="assets/css/image-gallery.css">
 </head>
 <body class="platform student-platform">
     <aside class="sidebar" id="studentSidebar">
@@ -22,6 +25,10 @@
             <button class="nav-item" type="button" data-view="lessons">
                 <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21V5.5Z"/><path d="M4 6h13M8 9.5h8M8 13h7"/></svg></span>
                 <span data-i18n="nav.lessons">Мои уроки</span>
+            </button>
+            <button class="nav-item" type="button" data-view="calendar">
+                <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M7.5 3v4M16.5 3v4M3.5 9.5h17M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01"/></svg></span>
+                <span data-i18n="nav.calendar">Календарь</span>
             </button>
         </nav>
         <div class="sidebar-bottom">
@@ -45,6 +52,13 @@
                     <button class="language-button" type="button" data-lang="ru" aria-label="Русский">RU</button>
                     <button class="language-button" type="button" data-lang="en" aria-label="English">EN</button>
                 </div>
+                <button class="icon-button theme-toggle" id="studentThemeToggle" type="button" data-theme-toggle aria-label="Включить тему" aria-pressed="false">
+                    <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/><path d="M16.5 3.5v4M14.5 5.5h4"/></svg>
+                    <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2"/></svg>
+                </button>
+                <button class="icon-button notification-button popover-trigger" id="studentNotificationButton" type="button" aria-label="Уведомления" aria-haspopup="true" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+                </button>
                 <button class="profile-avatar-trigger profile-trigger" id="studentProfileTopButton" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Профиль ученика">
                     <span class="avatar top-avatar student-avatar">…</span>
                 </button>
@@ -57,7 +71,9 @@
     <div class="popover-root" id="popoverRoot"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase-config.js"></script>
+    <script src="assets/js/calendar-utils.js"></script>
     <script src="assets/js/activity-ui.js"></script>
+    <script src="assets/js/image-gallery.js"></script>
     <script src="assets/js/student.js"></script>
 </body>
 </html>

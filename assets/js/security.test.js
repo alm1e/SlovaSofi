@@ -39,6 +39,8 @@ for (const outcome of ['offline', 'student']) {
             data: { classes: ['cached private class'], lessons: [] }, workspaceAccess: { permissions: { manage_teachers: true } },
             updateUserIdentity() {}, clearWorkspaceCache() {}, translateStaticUI() {},
             render() { renders.push(JSON.parse(JSON.stringify({data: context.data, access:context.workspaceAccess}))); },
+            location: { search: "", hash: "", href: "https://example.test/teacher.html" },
+            URLSearchParams, URL,
             showToast() {}, t: value => value, console: {error() {}}
         };
         vm.createContext(context);

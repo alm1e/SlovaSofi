@@ -127,12 +127,20 @@ Deno.serve(async (request: Request) => {
             users.push(...data.users.filter((candidate) => teacherIds.includes(candidate.id)));
             if (data.users.length < 1000) break;
         }
-        const staff = users.map((candidate) => ({
-            id: candidate.id,
-            email: candidate.email || "",
-            permissions: { edit_lessons: editorIds.has(candidate.id) },
-            created_at: candidate.created_at
-        }));
+        const staff = users.map((candidate) => {
+            const metadata = (candidate.user_metadata || {}) as Record<string, unknown>;
+            const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+            const name = text(metadata.display_name) || text(metadata.displayName)
+                || [text(metadata.first_name), text(metadata.last_name)].filter(Boolean).join(" ")
+                || text(metadata.full_name) || text(metadata.name);
+            return {
+                id: candidate.id,
+                email: candidate.email || "",
+                name,
+                permissions: { edit_lessons: editorIds.has(candidate.id) },
+                created_at: candidate.created_at
+            };
+        });
         return jsonResponse(200, { staff }, configuredOrigin);
     }
 
@@ -152,7 +160,7 @@ Deno.serve(async (request: Request) => {
         }
         let isNewTeacher = false;
         if (!teacher) {
-            const redirectTo = new URL("teacher.html", appBaseUrl).href;
+            const redirectTo = new URL("teacher-setup.html", appBaseUrl).href;
             const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
                 redirectTo,
                 data: { role: "teacher" }
