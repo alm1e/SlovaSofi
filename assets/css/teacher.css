@@ -324,9 +324,11 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .preview-match-row .select-trigger { min-height: 42px; border-radius: 8px; padding: 7px 10px; font-size: 15px; }
 .preview-text-answer { width: 100%; min-height: 90px; border: 1px solid var(--line); border-radius: 9px; padding: 11px; color: var(--ink); font: inherit; resize: vertical; }
 .preview-flashcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
-.preview-flashcard { display: grid; align-content: center; gap: 16px; min-height: 115px; border: 1px solid #c7d9cb; border-radius: 12px; padding: 15px; background: #f1f7f2; color: var(--ink); text-align: center; cursor: pointer; }
+.preview-flashcard { display: grid; align-content: center; gap: 16px; min-height: 115px; border: 1px solid #c7d9cb; border-radius: 12px; padding: 15px; background: #f1f7f2; color: var(--ink); text-align: center; }
 .preview-flashcard strong { font-size: 18px; }
-.preview-flashcard small { color: var(--muted); font-size: 13px; }
+.preview-flashcard-flip { justify-self: center; border: 0; padding: 0; background: transparent; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
+.preview-flashcard-media { display: block; max-width: 100%; max-height: 180px; margin: 0 auto; border-radius: 8px; object-fit: contain; }
+.preview-flashcard-media:is(audio) { width: 100%; }
 .preview-flashcard.flipped { background: #e5f2e8; }
 .preview-image { display: block; max-width: 100%; max-height: 460px; margin: 0 auto; border-radius: 10px; object-fit: contain; }
 .preview-media { display: block; width: 100%; max-height: 460px; border-radius: 10px; background: #17251c; }
@@ -800,6 +802,11 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .live-answer-inline > strong { font-weight: 700; }
 .live-answer-inline .live-answer-response { width: auto; max-width: 100%; padding: 4px 9px; background: #edf5ee; color: #254d33; font-size: 14px; font-weight: 600; }
 .live-answer-inline .live-answer-status { font-size: 10px; }
+.live-answer-teacher-feedback { width: 100%; color: #415c49; font-size: 12px; white-space: pre-wrap; }
+.live-answer-review { width: 100%; border-top: 1px dashed #d6e2d8; padding-top: 6px; }
+.live-answer-review summary { cursor: pointer; color: #2f5b3f; font-weight: 600; }
+.live-answer-review .form-field { margin-top: 6px; }
+.live-answer-review textarea, .live-answer-review input { width: 100%; }
 .preview-inline-input::placeholder, .preview-table input::placeholder { color: #aab8ac; opacity: 1; }
 .preview-answer-ghost { align-self: flex-start; color: #aab8ac; opacity: .65; font-size: 13px; pointer-events: none; }
 .preview-dropzone { position: relative; width: 100%; min-height: 86px; }

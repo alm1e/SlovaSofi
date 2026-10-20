@@ -192,6 +192,50 @@
         return data;
     }
 
+    async function resetLessonProgress(client, classId, lessonId, studentId) {
+        const { count, error } = await client.from("student_lesson_progress")
+            .delete({ count: "exact" })
+            .eq("class_id", classId)
+            .eq("lesson_id", lessonId)
+            .eq("student_id", studentId);
+        fail(error, "Не удалось сбросить ответы ученика");
+        if (count !== 1) {
+            throw new Error("Не удалось сбросить ответы: запись не найдена или недостаточно прав.");
+        }
+    }
+
+    async function saveLessonAnswerReview(client, classId, lessonId, studentId, answerKey, review = {}) {
+        if (!answerKey) throw new Error("Не указан ключ ответа для рецензии.");
+        const { data: row, error: readError } = await client.from("student_lesson_progress")
+            .select("answers")
+            .eq("class_id", classId)
+            .eq("lesson_id", lessonId)
+            .eq("student_id", studentId)
+            .maybeSingle();
+        fail(readError, "Не удалось загрузить ответ для рецензии");
+        if (!row?.answers || typeof row.answers !== "object") {
+            throw new Error("Не удалось найти ответ ученика для рецензии.");
+        }
+        const answers = structuredClone(row.answers);
+        const entry = answers?.[answerKey];
+        if (!entry || typeof entry !== "object") {
+            throw new Error("Ответ ученика для рецензии не найден.");
+        }
+        entry.teacher_feedback = String(review.feedback || "").trim().slice(0, 2000);
+        entry.teacher_correction = String(review.correction || "").trim().slice(0, 2000);
+        const score = String(review.score || "").trim();
+        entry.teacher_score = score ? score.slice(0, 50) : "";
+        entry.reviewed_at = new Date().toISOString();
+        entry.feedback = entry.teacher_feedback;
+        const { error } = await client.from("student_lesson_progress")
+            .update({ answers, updated_at: new Date().toISOString() })
+            .eq("class_id", classId)
+            .eq("lesson_id", lessonId)
+            .eq("student_id", studentId);
+        fail(error, "Не удалось сохранить рецензию преподавателя");
+        return answers;
+    }
+
     function subscribeLessonProgress(client, lessonId, onChange, onStatus) {
         return client.channel(`teacher-live-progress:${lessonId}:${crypto.randomUUID()}`)
             .on("postgres_changes", {
@@ -307,6 +351,8 @@
         listExistingStudents,
         addExistingStudent,
         loadLessonProgress,
+        resetLessonProgress,
+        saveLessonAnswerReview,
         subscribeLessonProgress,
         manageTeacher
     };

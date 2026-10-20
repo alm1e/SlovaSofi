@@ -723,9 +723,28 @@ function ensureActivityQuestionIds(activity) {
     });
 }
 
+function ensureActivityBlockIds(sections) {
+    const ids = new Set();
+    let progressIndex = 0;
+    sections.forEach((section) => section.activities.forEach((activity) => {
+        if (!activity || typeof activity !== "object") return;
+        const isTrackable = activityTypes.some((type) => type.id === activity.type);
+        const id = typeof activity.id === "string" ? activity.id.trim() : "";
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id) || ids.has(id)) {
+            activity.id = crypto.randomUUID();
+            if (isTrackable && !Number.isInteger(activity.legacyProgressIndex)) {
+                activity.legacyProgressIndex = progressIndex;
+            }
+        }
+        ids.add(activity.id);
+        if (isTrackable) progressIndex += 1;
+    }));
+}
+
 function cloneActivityBlock(activity) {
     const copy = structuredClone(activity);
-    if (copy.id) copy.id = crypto.randomUUID();
+    copy.id = crypto.randomUUID();
+    delete copy.legacyProgressIndex;
     if (Array.isArray(copy.questions)) copy.questions.forEach((question) => { if (question && typeof question === "object") delete question.id; });
     ensureActivityQuestionIds(copy);
     return copy;
@@ -778,7 +797,22 @@ function renderActivityQuestionEditor(activity, preview = false) {
 
 function activitySummary(activity) {
     const firstQuestion = Array.isArray(activity.questions) ? activity.questions[0] : null;
-    return String(activity.prompt || firstQuestion?.prompt || activity.content || firstQuestion?.content || "").trim().replace(/\s+/g, " ");
+    return [activity.prompt || firstQuestion?.prompt, activity.content || firstQuestion?.content]
+        .filter((value, index, values) => typeof value === "string" && value.trim() && values.indexOf(value) === index)
+        .map((value) => value.trim().replace(/\s+/g, " "))
+        .join(" / ");
+}
+
+function activityEditorMeta(activity) {
+    const labels = {
+        ua: { editing: "Редагування", answer: "Відповідь:" },
+        ru: { editing: "Редактирование", answer: "Ответ:" },
+        en: { editing: "Editing", answer: "Answer:" }
+    };
+    const text = labels[currentLanguage] || labels.en;
+    const firstQuestion = Array.isArray(activity.questions) ? activity.questions[0] : null;
+    const answer = String(firstQuestion?.answer || activity.answer || "").trim();
+    return answer ? `${text.editing} · ${text.answer} ${answer}` : text.editing;
 }
 
 const initialData = {
@@ -893,6 +927,103 @@ function persist(deletedLessonIds = []) {
         showToast(t("toast.storageError"));
         return false;
     }
+}
+
+let lessonDraftAutosaveTimer = 0;
+let lessonDraftAutosaveRevision = 0;
+
+function lessonDraftStorageKey() {
+    return `${storageKey()}:lesson-editor-draft`;
+}
+
+function lessonAutosaveText(key) {
+    const labels = {
+        ua: { saving: "Збереження…", saved: "Збережено", error: "Помилка збереження" },
+        ru: { saving: "Сохранение…", saved: "Сохранено", error: "Ошибка сохранения" },
+        en: { saving: "Saving…", saved: "Saved", error: "Save failed" }
+    };
+    return labels[currentLanguage]?.[key] || labels.en[key];
+}
+
+function setLessonAutosaveStatus(key) {
+    const status = pageContent.querySelector("[data-lesson-autosave-status]");
+    if (status) status.textContent = lessonAutosaveText(key);
+}
+
+function loadNewLessonDraft() {
+    try {
+        const saved = localStorage.getItem(lessonDraftStorageKey());
+        if (!saved) return null;
+        const draft = JSON.parse(saved);
+        if (!draft || !Array.isArray(draft.sections) || !draft.sections.every((section) =>
+            section && typeof section === "object" && Array.isArray(section.activities))) return null;
+        const homeworkSections = Array.isArray(draft.homeworkSections) && draft.homeworkSections.every((section) =>
+            section && typeof section === "object" && Array.isArray(section.activities))
+            ? draft.homeworkSections
+            : [];
+        return {
+            title: typeof draft.title === "string" ? draft.title : "",
+            unit: LESSON_UNITS.includes(draft.unit) ? draft.unit : "A1",
+            sections: draft.sections,
+            homeworkSections
+        };
+    } catch (error) {
+        console.error("Could not restore the local lesson draft.", error);
+        return null;
+    }
+}
+
+function clearNewLessonDraft() {
+    try {
+        localStorage.removeItem(lessonDraftStorageKey());
+    } catch (error) {
+        console.error("Could not clear the local lesson draft.", error);
+        showToast(t("toast.storageError"));
+    }
+}
+
+function scheduleLessonDraftAutosave() {
+    if (lessonWorkspaceMode !== "edit") return;
+    clearTimeout(lessonDraftAutosaveTimer);
+    const revision = ++lessonDraftAutosaveRevision;
+    const targetLessonId = editingLessonId;
+    const snapshot = {
+        title: pageContent.querySelector("#lessonTitle")?.value ?? lessonFormDraft.title,
+        unit: pageContent.querySelector("#lessonUnit")?.value ?? lessonFormDraft.unit,
+        sections: structuredClone(draftSections),
+        homeworkSections: structuredClone(draftHomeworkSections)
+    };
+    setLessonAutosaveStatus("saving");
+    lessonDraftAutosaveTimer = setTimeout(async () => {
+        if (!targetLessonId) {
+            try {
+                localStorage.setItem(lessonDraftStorageKey(), JSON.stringify(snapshot));
+                if (revision === lessonDraftAutosaveRevision) setLessonAutosaveStatus("saved");
+            } catch (error) {
+                console.error("Could not save the local lesson draft.", error);
+                if (revision === lessonDraftAutosaveRevision) setLessonAutosaveStatus("error");
+                showToast(t("toast.storageError"));
+            }
+            return;
+        }
+        const existingLesson = data.lessons.find((item) => item.id === targetLessonId);
+        if (!existingLesson) {
+            if (revision === lessonDraftAutosaveRevision) setLessonAutosaveStatus("error");
+            return;
+        }
+        const previousData = structuredClone(data);
+        const lesson = {
+            ...existingLesson,
+            title: snapshot.title.trim() || existingLesson.title,
+            unit: LESSON_UNITS.includes(snapshot.unit) ? snapshot.unit : existingLesson.unit,
+            sections: snapshot.sections,
+            homeworkSections: snapshot.homeworkSections,
+            activities: snapshot.sections.flatMap((section) => section.activities)
+        };
+        data.lessons = data.lessons.map((item) => item.id === targetLessonId ? lesson : item);
+        const saved = await persistWorkspaceChange(previousData);
+        if (revision === lessonDraftAutosaveRevision) setLessonAutosaveStatus(saved ? "saved" : "error");
+    }, 650);
 }
 
 async function waitForWorkspaceSave() {
@@ -1456,6 +1587,45 @@ const liveStudentLabels = {
 function liveStudentText(key, values = {}) {
     const text = liveStudentLabels[currentLanguage]?.[key] || liveStudentLabels.ru[key];
     return text.replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ""));
+}
+
+function progressResetText(key) {
+    const labels = {
+        ua: { action: "Скинути відповіді", confirm: "Скинути всі відповіді цього учня за урок?", success: "Відповіді учня скинуто.", error: "Не вдалося скинути відповіді." },
+        ru: { action: "Сбросить ответы", confirm: "Сбросить все ответы этого ученика за урок?", success: "Ответы ученика сброшены.", error: "Не удалось сбросить ответы." },
+        en: { action: "Reset answers", confirm: "Reset all of this student's answers for the lesson?", success: "Student answers were reset.", error: "Could not reset student answers." }
+    };
+    return labels[currentLanguage]?.[key] || labels.en[key];
+}
+
+function liveReviewText(key) {
+    const labels = {
+        ua: {
+            title: "Рецензія викладача",
+            feedback: "Коментар",
+            correction: "Виправлення",
+            score: "Оцінка",
+            save: "Зберегти рецензію",
+            saved: "Рецензію збережено."
+        },
+        ru: {
+            title: "Рецензия преподавателя",
+            feedback: "Комментарий",
+            correction: "Исправление",
+            score: "Оценка",
+            save: "Сохранить рецензию",
+            saved: "Рецензия сохранена."
+        },
+        en: {
+            title: "Teacher review",
+            feedback: "Comment",
+            correction: "Correction",
+            score: "Score",
+            save: "Save review",
+            saved: "Review saved."
+        }
+    };
+    return labels[currentLanguage]?.[key] || labels.en[key];
 }
 
 function normalizeLessonSections(lesson) {
@@ -2241,6 +2411,19 @@ function previewMediaUrl(value) {
     }
 }
 
+function previewFlashcardSideMarkup(value) {
+    const url = previewMediaUrl(value);
+    if (!url) return escapeHtml(value).replace(/\n/g, "<br>");
+    const pathname = new URL(url).pathname.toLowerCase();
+    if (/\.(png|jpe?g|webp|gif|avif)$/.test(pathname)) {
+        return `<img class="preview-flashcard-media" src="${escapeHtml(url)}" alt="" data-preview-image>`;
+    }
+    if (/\.(mp3|wav|m4a|ogg|aac|flac)$/.test(pathname)) {
+        return `<audio class="preview-flashcard-media" controls preload="none" src="${escapeHtml(url)}" data-preview-media></audio>`;
+    }
+    return escapeHtml(value).replace(/\n/g, "<br>");
+}
+
 function previewYoutubeEmbedUrl(value) {
     try {
         const url = new URL(String(value || "").trim());
@@ -2289,6 +2472,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
                     : `<div class="form-field"><label>${activityType?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(type))}</span></label><textarea data-preview-field="content" placeholder="${escapeHtml(contentPlaceholder(type))}">${escapeHtml(activity.content || "")}</textarea></div>
                     ${hasAnswer ? `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(type))}</span></label><input data-preview-field="answer" value="${escapeHtml(activity.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(type))}"></div>` : ""}
                     ${renderActivityQuestionEditor(activity, true)}`}
+                ${activitySettingsField(activity, true)}
             </div>
         </article>`;
     }
@@ -2362,7 +2546,13 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         body = `${displayContent ? `<p class="preview-material">${escapeHtml(displayContent)}</p>` : ""}<textarea class="preview-text-answer" data-open-answer placeholder="${previewText("typeAnswer")}"></textarea>`;
         if (!answer) checkable = false;
     } else if (type === "flashcards") {
-        body = `<div class="preview-flashcards">${lines.map((line) => { const [front, ...back] = line.split(":"); return `<button type="button" class="preview-flashcard" data-front="${escapeHtml(front.trim())}" data-back="${escapeHtml(back.join(":").trim())}"><strong>${escapeHtml(front.trim())}</strong><small>${previewText("flip")}</small></button>`; }).join("") || `<p class="preview-material">${escapeHtml(displayContent)}</p>`}</div>`;
+        body = `<div class="preview-flashcards">${lines.map((line) => {
+            const delimiter = line.includes("|") ? "|" : ":";
+            const separator = line.indexOf(delimiter);
+            const front = (separator < 0 ? line : line.slice(0, separator)).trim();
+            const back = separator < 0 ? "" : line.slice(separator + 1).trim();
+            return `<div class="preview-flashcard" data-front="${escapeHtml(front)}" data-back="${escapeHtml(back)}"><strong>${previewFlashcardSideMarkup(front)}</strong><button type="button" class="preview-flashcard-flip" aria-pressed="false">${previewText("flip")}</button></div>`;
+        }).join("") || `<p class="preview-material">${escapeHtml(displayContent)}</p>`}</div>`;
         checkable = false;
     } else if (type === "image") {
         const images = window.slovaGallery.parse(content, true);
@@ -2571,6 +2761,7 @@ async function savePreviewActivities(lesson, sectionId, activities, successMessa
         ...section,
         activities: section.id === sectionId ? activities : [...section.activities]
     }));
+    ensureActivityBlockIds(sections);
     lesson[sectionProperty] = sections;
     if (!isHomework) lesson.activities = sections.flatMap((section) => section.activities);
     if (!await persistWorkspaceChange(previousData)) return false;
@@ -2605,7 +2796,9 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
             if (previewActivityEdit?.lessonId === lesson.id
                 && previewActivityEdit.sectionId === section.id
                 && previewActivityEdit.isHomework === isHomework) {
-                previewActivityEdit.draft[input.dataset.previewField] = input.value;
+            if (input.dataset.previewField === "settings") {
+                updateActivitySettings(previewActivityEdit.draft, input);
+            } else previewActivityEdit.draft[input.dataset.previewField] = input.value;
             }
         }));
         container.querySelectorAll("[data-preview-question-field]").forEach((input) => input.addEventListener("input", () => {
@@ -2637,6 +2830,11 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
         container.querySelectorAll("[data-save-preview-block]").forEach((button) => button.addEventListener("click", async () => {
             const edit = previewActivityEdit;
             if (!edit || edit.lessonId !== lesson.id || edit.sectionId !== section.id || edit.isHomework !== isHomework) return;
+            const settingsInput = container.querySelector('[data-preview-field="settings"]');
+            if (settingsInput && !updateActivitySettings(edit.draft, settingsInput)) {
+                settingsInput.focus();
+                return;
+            }
             const activities = section.activities.map((activity, index) =>
                 index === edit.activityIndex ? structuredClone(edit.draft) : activity
             );
@@ -2707,11 +2905,16 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
             if (moving && moving !== item) animatePreviewReorder(item.parentElement, () => item.parentElement.insertBefore(moving, item));
         });
     });
-    container.querySelectorAll(".preview-flashcard").forEach((card) => card.addEventListener("click", () => {
+    container.querySelectorAll(".preview-flashcard-flip").forEach((button) => button.addEventListener("click", () => {
+        const card = button.closest(".preview-flashcard");
+        if (!card) return;
         const flipped = card.dataset.flipped === "true";
         card.dataset.flipped = String(!flipped);
-        card.querySelector("strong").textContent = flipped ? card.dataset.front : (card.dataset.back || card.dataset.front);
+        card.querySelector("strong").replaceChildren(document.createRange().createContextualFragment(
+            previewFlashcardSideMarkup(flipped ? card.dataset.front : (card.dataset.back || card.dataset.front))
+        ));
         card.classList.toggle("flipped", !flipped);
+        button.setAttribute("aria-pressed", String(!flipped));
     }));
     container.querySelectorAll("[data-preview-image]").forEach((image) => image.addEventListener("error", () => {
         image.replaceWith(Object.assign(document.createElement("p"), { className: "preview-material", textContent: previewText("imageError") }));
@@ -3048,6 +3251,7 @@ async function deleteClass(id) {
 function openLessonEditor(item, sectionId = "", activityIndex = -1, tab = "lesson") {
     if (!hasPermission("edit_lessons")) return;
     stopLiveProgressSubscription();
+    const recoveredDraft = item ? null : loadNewLessonDraft();
     activeView = "lessons";
     document.getElementById("breadcrumb").textContent = t("page.lessons");
     document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === "lessons"));
@@ -3056,12 +3260,18 @@ function openLessonEditor(item, sectionId = "", activityIndex = -1, tab = "lesso
     lessonWorkspaceMode = "edit";
     editorReturnToPreview = false;
     previewActivityEdit = null;
-    lessonFormDraft = { title: item?.title || "", unit: item?.unit || selectedLessonUnit || inferLessonUnit(item || { title: "", classIds: [] }) };
-    draftSections = item ? structuredClone(normalizeLessonSections(item)) : [{ id: crypto.randomUUID(), title: lessonSectionText("intro"), activities: [] }];
-    const homeworkSections = item ? normalizeHomeworkSections(item) : [];
+    lessonFormDraft = {
+        title: item?.title || recoveredDraft?.title || "",
+        unit: item?.unit || recoveredDraft?.unit || selectedLessonUnit || inferLessonUnit(item || { title: "", classIds: [] })
+    };
+    draftSections = item
+        ? structuredClone(normalizeLessonSections(item))
+        : recoveredDraft?.sections || [{ id: crypto.randomUUID(), title: lessonSectionText("intro"), activities: [] }];
+    const homeworkSections = item ? normalizeHomeworkSections(item) : recoveredDraft?.homeworkSections || [];
     draftHomeworkSections = homeworkSections.length
         ? structuredClone(homeworkSections)
         : [{ id: crypto.randomUUID(), title: lessonSectionText("homework"), activities: [] }];
+    ensureActivityBlockIds([...draftSections, ...draftHomeworkSections]);
     expandedActivityBlocks = new WeakSet();
     activeLessonSectionId = draftSections.some((section) => section.id === sectionId) ? sectionId : draftSections[0].id;
     activeHomeworkSectionId = draftHomeworkSections.some((section) => section.id === sectionId) ? sectionId : draftHomeworkSections[0].id;
@@ -3116,10 +3326,10 @@ function copyHomeworkActivity(index) {
     const activity = homeworkSourceActivities()[index];
     const section = activeDraftSection();
     if (!activity || !section || lessonWorkspaceTab !== "homework") return;
-    const copy = structuredClone(activity);
-    if (copy.id) copy.id = crypto.randomUUID();
+    const copy = cloneActivityBlock(activity);
     section.activities.push(copy);
     expandedActivityBlocks.add(copy);
+    scheduleLessonDraftAutosave();
     render();
 }
 
@@ -3258,6 +3468,21 @@ function ensureLiveProgressSubscription(lesson, group) {
     });
 }
 
+function activityProgressKey(activity, index) {
+    const id = typeof activity?.id === "string" ? activity.id : "";
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
+        ? `b${id}`
+        : `a${index}`;
+}
+
+function legacyActivityProgressKey(activity, index) {
+    const id = typeof activity?.id === "string" ? activity.id : "";
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return `a${index}`;
+    return Number.isInteger(activity.legacyProgressIndex) && activity.legacyProgressIndex >= 0
+        ? `a${activity.legacyProgressIndex}`
+        : null;
+}
+
 function lessonProgressIndexes(lesson) {
     const indexes = new Map();
     let progressIndex = 0;
@@ -3271,6 +3496,13 @@ function lessonProgressIndexes(lesson) {
 }
 
 function formatLiveResponse(activity, response) {
+    if (response && typeof response === "object" && !Array.isArray(response)) {
+        const text = String(response.text || "").trim();
+        const attachments = Array.isArray(response.attachments)
+            ? response.attachments.filter((item) => typeof item === "string" && item.trim()).map((item) => item.trim())
+            : [];
+        return [text, ...attachments.map((url) => `↗ ${url}`)].filter(Boolean).join("\n");
+    }
     if (Array.isArray(response)) {
         const values = response.map((item) => typeof item === "string" ? item.trim() : "");
         if (!values.some(Boolean)) return "";
@@ -3359,8 +3591,13 @@ function liveStudentAnswerProgress(lesson, studentId, progressIndexes) {
             : [{ questionId: null, questionIndex: null }];
         questionEntries.forEach(({ questionId, questionIndex }) => {
             total += 1;
-            const key = questionId ? `a${progressIndex}.q${questionId}` : `a${progressIndex}`;
-            const answer = answers[key] || (questionIndex === 0 ? answers[`a${progressIndex}`] : null);
+            const key = questionId
+                ? `${activityProgressKey(activity, progressIndex)}.q${questionId}`
+                : activityProgressKey(activity, progressIndex);
+            const legacyKey = legacyActivityProgressKey(activity, progressIndex);
+            const answer = answers[key]
+                || (questionId && legacyKey ? answers[`${legacyKey}.q${questionId}`] : null)
+                || ((questionIndex === 0 || !questionId) && legacyKey ? answers[legacyKey] : null);
             const response = answer?.response;
             const hasResponse = Array.isArray(response)
                 ? response.some((item) => typeof item === "string" && item.trim())
@@ -3371,16 +3608,34 @@ function liveStudentAnswerProgress(lesson, studentId, progressIndexes) {
     return { answered, total };
 }
 
-function renderLiveAnswerPanel(student, activity, progressIndex, questionId = null, questionIndex = null) {
-    const answerKey = questionId ? `a${progressIndex}.q${questionId}` : `a${progressIndex}`;
+function renderLiveAnswerPanel(student, activity, progressIndex, questionId = null, questionIndex = null, reviewContext = null) {
+    const answerKey = questionId
+        ? `${activityProgressKey(activity, progressIndex)}.q${questionId}`
+        : activityProgressKey(activity, progressIndex);
     const studentAnswers = student ? liveProgressRows.get(student.id)?.answers || {} : {};
-    const answer = studentAnswers[answerKey] || (questionIndex === 0 ? studentAnswers[`a${progressIndex}`] : null);
+    const legacyKey = legacyActivityProgressKey(activity, progressIndex);
+    const answer = studentAnswers[answerKey]
+        || (questionId && legacyKey ? studentAnswers[`${legacyKey}.q${questionId}`] : null)
+        || ((questionIndex === 0 || !questionId) && legacyKey ? studentAnswers[legacyKey] : null);
     const response = formatLiveResponse(activity, answer?.response);
     const answerStatus = answer
         ? `<span class="live-answer-status ${answer.draft ? "is-draft" : "is-submitted"}">${answer.draft ? lessonSectionText("liveDraft") : lessonSectionText("liveSubmitted")}</span>`
         : "";
     const name = student?.name ? `${liveStudentText("answer")} · ${student.name}` : lessonSectionText("liveNoStudents");
-    return `<div class="live-answer-inline" aria-label="${escapeHtml(name)}"><strong>${escapeHtml(name)}</strong>${answerStatus}<span class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</span></div>`;
+    const reviewForm = activity.type === "open-answer" && reviewContext?.lessonId && reviewContext?.classId && student?.id && hasPermission("edit_lessons")
+        ? `<details class="live-answer-review"><summary>${liveReviewText("title")}</summary>
+            <div class="form-field"><label>${liveReviewText("feedback")}</label><textarea data-live-review-feedback rows="2">${escapeHtml(answer?.teacher_feedback || "")}</textarea></div>
+            <div class="form-field"><label>${liveReviewText("correction")}</label><textarea data-live-review-correction rows="2">${escapeHtml(answer?.teacher_correction || "")}</textarea></div>
+            <div class="form-field"><label>${liveReviewText("score")}</label><input data-live-review-score value="${escapeHtml(answer?.teacher_score || "")}" maxlength="50"></div>
+            <button type="button" class="button secondary small" data-save-live-review
+                data-review-answer-key="${escapeHtml(answerKey)}"
+                data-review-class-id="${escapeHtml(reviewContext.classId)}"
+                data-review-lesson-id="${escapeHtml(reviewContext.lessonId)}"
+                data-review-student-id="${escapeHtml(student.id)}">${liveReviewText("save")}</button>
+        </details>`
+        : "";
+    const teacherFeedback = answer?.teacher_feedback ? `<small class="live-answer-teacher-feedback">${escapeHtml(answer.teacher_feedback)}</small>` : "";
+    return `<div class="live-answer-inline" aria-label="${escapeHtml(name)}"><strong>${escapeHtml(name)}</strong>${answerStatus}<span class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</span>${teacherFeedback}${reviewForm}</div>`;
 }
 
 function renderLiveMonitor(lesson, progressIndexes) {
@@ -3429,7 +3684,10 @@ function renderLiveMonitor(lesson, progressIndexes) {
         statusText = lessonSectionText("liveConnect");
         statusClass = "is-connecting";
     }
-    return `<section class="live-monitor-bar"><div class="live-monitor-heading"><strong>${lessonSectionText("liveHint")}</strong><p>${selectedGroup ? escapeHtml(selectedGroup.name) : lessonSectionText("liveNoClass")}</p></div>${groupPicker}${studentPicker}<p class="live-monitor-status ${statusClass}" role="status" aria-live="polite">${escapeHtml(statusText)}</p></section>`;
+    const resetProgressButton = selectedStudent && selectedGroup && hasPermission("edit_lessons")
+        ? `<button type="button" class="button secondary small" data-reset-lesson-progress="${escapeHtml(selectedStudent.id)}">${progressResetText("action")}</button>`
+        : "";
+    return `<section class="live-monitor-bar"><div class="live-monitor-heading"><strong>${lessonSectionText("liveHint")}</strong><p>${selectedGroup ? escapeHtml(selectedGroup.name) : lessonSectionText("liveNoClass")}</p></div>${groupPicker}${studentPicker}${resetProgressButton}<p class="live-monitor-status ${statusClass}" role="status" aria-live="polite">${escapeHtml(statusText)}</p></section>`;
 }
 
 function renderLessonWorkspace() {
@@ -3442,6 +3700,9 @@ function renderLessonWorkspace() {
     const isHomework = lessonWorkspaceTab === "homework";
     const lessonSections = isEditing ? draftSections : normalizeLessonSections(lesson);
     const homeworkSections = isEditing ? draftHomeworkSections : normalizePreviewHomeworkSections(lesson);
+    if (!isEditing && lesson && hasPermission("edit_lessons")) {
+        ensureActivityBlockIds([...lessonSections, ...homeworkSections]);
+    }
     const sections = isHomework ? homeworkSections : lessonSections;
     const activeSectionId = isEditing
         ? activeWorkspaceSectionId()
@@ -3470,7 +3731,7 @@ function renderLessonWorkspace() {
     const lessonSectionMenu = renderSectionMenu(lessonSections, false);
     const homeworkSectionMenu = renderSectionMenu(homeworkSections, true);
     const sectionBody = isEditing
-        ? `<div class="form-field section-name-field"><label for="sectionTitle">${lessonSectionText("rename")}</label><input id="sectionTitle" data-section-title="${escapeHtml(section.id)}" maxlength="80" value="${escapeHtml(section.title)}"></div><div class="builder-heading"><h3>${isHomework ? lessonSectionText("homeworkActivities") : t("lesson.activities")}</h3><button type="button" class="button secondary small" data-action="choose-activity">${t("activity.addBlock")}</button></div><div id="activityBlocks">${renderActivityBlocks(section.activities)}</div>`
+        ? `<div class="form-field section-name-field"><label for="sectionTitle">${lessonSectionText("rename")}</label><input id="sectionTitle" data-section-title="${escapeHtml(section.id)}" maxlength="80" value="${escapeHtml(section.title)}"></div><div class="builder-heading"><h3>${isHomework ? lessonSectionText("homeworkActivities") : t("lesson.activities")}</h3><span data-lesson-autosave-status role="status" aria-live="polite"></span><button type="button" class="button secondary small" data-action="choose-activity">${t("activity.addBlock")}</button></div><div id="activityBlocks">${renderActivityBlocks(section.activities)}</div>`
         : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map((activity, index) => {
             const progressIndex = progressIndexes.get(`${section.id}:${index}`);
             const liveAnswerMarkup = liveGroup && liveAnswerActivityTypes.has(activity.type) && progressIndex !== undefined
@@ -3480,8 +3741,14 @@ function renderLessonWorkspace() {
                         prompt: String(question.prompt || ""),
                         content: String(question.content || ""),
                         answer: String(question.answer || "")
-                    }, progressIndex, activityQuestionProgressId(question, questionIndex, activity.questions), questionIndex))
-                    : renderLiveAnswerPanel(liveStudent, activity, progressIndex)
+                    }, progressIndex, activityQuestionProgressId(question, questionIndex, activity.questions), questionIndex, {
+                        classId: monitorClassId,
+                        lessonId: lesson.id
+                    }))
+                    : renderLiveAnswerPanel(liveStudent, activity, progressIndex, null, null, {
+                        classId: monitorClassId,
+                        lessonId: lesson.id
+                    })
                 : "";
             return renderPreviewActivity(activity, index, false, false, liveAnswerMarkup);
         }).join("") : emptyMessage(lessonSectionText("empty"), "")}</div>`;
@@ -3535,7 +3802,12 @@ function renderLessonWorkspace() {
     </form></section>`;
     pageContent.querySelector("[data-workspace-back]").addEventListener("click", exitLessonWorkspace);
     pageContent.querySelector("[data-workspace-cancel]")?.addEventListener("click", exitLessonWorkspace);
-    if (isEditing) pageContent.querySelector("#lessonForm").addEventListener("submit", saveLesson);
+    if (isEditing) {
+        const lessonForm = pageContent.querySelector("#lessonForm");
+        lessonForm.addEventListener("submit", saveLesson);
+        lessonForm.addEventListener("input", scheduleLessonDraftAutosave);
+        lessonForm.addEventListener("change", scheduleLessonDraftAutosave);
+    }
     pageContent.querySelector("#lessonTitle")?.addEventListener("input", (event) => { lessonFormDraft.title = event.target.value; });
     pageContent.querySelector("#lessonUnit")?.addEventListener("change", (event) => { lessonFormDraft.unit = event.target.value; });
     pageContent.querySelectorAll("[data-workspace-mode]").forEach((button) => button.addEventListener("click", () => {
@@ -3552,6 +3824,60 @@ function renderLessonWorkspace() {
         if (selectedLiveStudentId === button.dataset.liveStudentId) return;
         selectedLiveStudentId = button.dataset.liveStudentId;
         render();
+    }));
+    pageContent.querySelector("[data-reset-lesson-progress]")?.addEventListener("click", async (event) => {
+        if (!hasPermission("edit_lessons")) return;
+        const button = event.currentTarget;
+        const studentId = button.dataset.resetLessonProgress;
+        if (!lesson || !monitorClassId || !studentId || !window.teacherWorkspaceApi?.resetLessonProgress) {
+            showToast(progressResetText("error"));
+            return;
+        }
+        if (!window.confirm(progressResetText("confirm"))) return;
+        button.disabled = true;
+        try {
+            await window.teacherWorkspaceApi.resetLessonProgress(window.supabaseClient, monitorClassId, lesson.id, studentId);
+            liveProgressRows.delete(studentId);
+            render();
+            showToast(progressResetText("success"));
+        } catch (error) {
+            console.error("Could not reset student lesson progress.", error);
+            showToast(`${progressResetText("error")} ${error.message || ""}`);
+            if (button.isConnected) button.disabled = false;
+        }
+    });
+    pageContent.querySelectorAll("[data-save-live-review]").forEach((button) => button.addEventListener("click", async () => {
+        if (!hasPermission("edit_lessons") || !window.teacherWorkspaceApi?.saveLessonAnswerReview || !window.supabaseClient) return;
+        const panel = button.closest(".live-answer-review");
+        const answerKey = button.dataset.reviewAnswerKey;
+        const classId = button.dataset.reviewClassId;
+        const lessonId = button.dataset.reviewLessonId;
+        const studentId = button.dataset.reviewStudentId;
+        if (!panel || !answerKey || !classId || !lessonId || !studentId) return;
+        const feedback = panel.querySelector("[data-live-review-feedback]")?.value || "";
+        const correction = panel.querySelector("[data-live-review-correction]")?.value || "";
+        const score = panel.querySelector("[data-live-review-score]")?.value || "";
+        button.disabled = true;
+        try {
+            const answers = await window.teacherWorkspaceApi.saveLessonAnswerReview(
+                window.supabaseClient,
+                classId,
+                lessonId,
+                studentId,
+                answerKey,
+                { feedback, correction, score }
+            );
+            const row = liveProgressRows.get(studentId) || { student_id: studentId, class_id: classId, lesson_id: lessonId, answers: {}, completed_at: null, updated_at: new Date().toISOString() };
+            row.answers = answers;
+            row.updated_at = new Date().toISOString();
+            liveProgressRows.set(studentId, row);
+            render();
+            showToast(liveReviewText("saved"));
+        } catch (error) {
+            console.error("Could not save teacher review.", error);
+            showToast(`${liveReviewText("save")} · ${error.message || ""}`);
+            if (button.isConnected) button.disabled = false;
+        }
     }));
     pageContent.querySelector("[data-toggle-live-monitor]")?.addEventListener("click", (event) => {
         liveMonitorOpen = !liveMonitorOpen;
@@ -3580,6 +3906,7 @@ function renderLessonWorkspace() {
         const section = { id: crypto.randomUUID(), title: lessonSectionText("newSection"), activities: [] };
         activeDraftSections().push(section);
         setActiveWorkspaceSectionId(section.id);
+        scheduleLessonDraftAutosave();
         render();
     });
     pageContent.querySelectorAll("[data-move-section]").forEach((button) => button.addEventListener("click", () => {
@@ -3588,6 +3915,7 @@ function renderLessonWorkspace() {
         const to = Number(button.dataset.moveSection);
         if (from < 0 || to < 0 || to >= targetSections.length) return;
         [targetSections[from], targetSections[to]] = [targetSections[to], targetSections[from]];
+        scheduleLessonDraftAutosave();
         render();
     }));
     pageContent.querySelectorAll("[data-delete-section]").forEach((button) => button.addEventListener("click", () => {
@@ -3602,6 +3930,7 @@ function renderLessonWorkspace() {
             if (isHomeworkSection) activeHomeworkSectionId = targetSections[Math.max(0, index - 1)].id;
             else activeLessonSectionId = targetSections[Math.max(0, index - 1)].id;
         }
+        scheduleLessonDraftAutosave();
         render();
     }));
     pageContent.querySelectorAll("[data-section-step]").forEach((button) => button.addEventListener("click", () => {
@@ -3623,9 +3952,10 @@ function renderLessonWorkspace() {
     pageContent.querySelector("[data-copy-activity]")?.addEventListener("click", () => {
         const currentSection = activeDraftSection();
         if (!currentSection?.activities.length) return;
-        const copy = structuredClone(currentSection.activities[currentSection.activities.length - 1]);
+        const copy = cloneActivityBlock(currentSection.activities[currentSection.activities.length - 1]);
         currentSection.activities.push(copy);
         expandedActivityBlocks.add(copy);
+        scheduleLessonDraftAutosave();
         render();
     });
     enhanceSelects(pageContent);
@@ -3665,10 +3995,11 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
         const isExpanded = expandedActivityBlocks.has(block);
         const hasQuestions = Array.isArray(block.questions) && block.questions.length > 0;
         const summary = activitySummary(block);
+        const meta = activityEditorMeta(block);
         return `<article class="builder-block ${isExpanded ? "is-expanded" : ""}" data-block-index="${index}">
             <header class="builder-block-header">
                 <button type="button" class="builder-block-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>
-                <div class="builder-block-title"><strong>${index + 1}. ${escapeHtml(type ? t(type.nameKey) : t("activity.task"))}</strong>${summary ? `<span class="builder-block-summary">${escapeHtml(summary)}</span>` : ""}</div>
+                <div class="builder-block-title"><strong>${index + 1}. ${escapeHtml(type ? t(type.nameKey) : t("activity.task"))}</strong>${summary ? `<span class="builder-block-summary">${escapeHtml(summary)}</span>` : ""}<span class="builder-block-summary">${escapeHtml(meta)}</span></div>
                 <div class="builder-block-actions">
                     ${duplicateBlockButton("data-duplicate-block", index)}
                     <button type="button" class="mini-action builder-block-edit" data-toggle-block="${index}" aria-expanded="${isExpanded}" aria-label="${isExpanded ? lessonSectionText("done") : lessonSectionText("edit")}" title="${isExpanded ? lessonSectionText("done") : lessonSectionText("edit")}">${isExpanded ? "✓" : "✎"}</button>
@@ -3683,13 +4014,19 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
                     <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea>${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div><small class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</small>` : ""}</div>
                     ${block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
                     ${renderActivityQuestionEditor(block)}`}
+                        ${activitySettingsField(block)}
             </div>
         </article>`;
     }).join("");
 }
 
 function contentHint(type) {
-    return ({ "drag-words": t("hint.drag"), "fill-blank": t("hint.blank"), "multiple-choice": t("hint.options"), "order-items": t("hint.order"), "sentence-order": t("hint.sentences"), match: t("hint.match"), columns: t("hint.columns"), table: t("hint.table"), "one-of-many": t("hint.select"), "true-false": t("hint.trueFalse"), flashcards: t("hint.cards"), text: "[info] / [star] + *italic* **bold** 1. list" })[type] || "";
+    const hints = { "drag-words": t("hint.drag"), "fill-blank": t("hint.blank"), "multiple-choice": t("hint.options"), "order-items": t("hint.order"), "sentence-order": t("hint.sentences"), match: t("hint.match"), columns: t("hint.columns"), table: t("hint.table"), "one-of-many": t("hint.select"), "true-false": t("hint.trueFalse"), flashcards: t("hint.cards"), text: "[info] / [star] + *italic* **bold** 1. list" };
+    if (type === "flashcards") {
+        const delimiterHint = currentLanguage === "ru" ? "лицевая сторона | обратная сторона" : currentLanguage === "ua" ? "лицева сторона | зворот" : "front | back";
+        return `${hints.flashcards} · ${delimiterHint} (URL изображений/аудио допустимы)`;
+    }
+    return hints[type] || "";
 }
 
 function contentPlaceholder(type) {
@@ -3709,6 +4046,50 @@ function answerPlaceholder(type) {
     return ({ "drag-words": "Ja / bývam / v / Bratislave", "fill-blank": "bývam", "multiple-choice": "Bratislava", "order-items": "1 / 2 / 3", "one-of-many": t("hint.correctChoice"), "true-false": "True / False" })[type] || t("field.answer");
 }
 
+function activitySettingsPlaceholder(type) {
+    const examples = {
+        "drag-words": { distractors: ["navštevujem"], lockedWords: ["Ja"], acceptedOrders: [["Ja", "bývam", "v", "Bratislave"]] },
+        "fill-blank": { acceptedAnswers: [["bývam", "žijem"]], hints: ["Sloveso bývať"], wordBank: ["bývam", "som"], caseSensitive: false },
+        "multiple-choice": { options: [{ text: "Bratislava", correct: true, explanation: "Je to hlavné mesto." }, { text: "Košice", media: "https://example.com/image.jpg" }], randomizeOptions: true, multipleAnswers: false },
+        "one-of-many": { choicesByBlank: [["bývam", "bývaš"], ["v", "na"]], explanations: ["Správny tvar slovesa", "Predložka"] },
+        "order-items": { items: [{ text: "ráno", media: "https://example.com/audio.mp3" }, { text: "večer" }], acceptedOrders: [[0, 1]] },
+        "sentence-order": { autoSplitSentences: true, groups: [[0, 1]] },
+        "true-false": { allowNotStated: true, explanation: "Informácia v texte chýba." },
+        table: { hiddenCells: [1], cellOptions: { "0": ["dom", "byt"] }, acceptedAnswers: { "1": ["Bratislava", "BA"] } },
+        match: { distractors: ["nesprávna možnosť"] },
+        columns: { categories: ["Slovesá", "Podstatné mená"], cards: [{ text: "ísť", category: "Slovesá", media: "https://example.com/picture.jpg" }] },
+        "open-answer": { allowAttachments: ["image", "audio"] },
+        flashcards: { shuffle: true, cards: [{ front: "Ahoj", back: "https://example.com/audio.mp3" }] }
+    };
+    return JSON.stringify(examples[type] || {}, null, 2);
+}
+
+function activitySettingsField(activity, preview = false) {
+    const field = preview ? "data-preview-field" : "data-field";
+    const settings = activity.settings && typeof activity.settings === "object" && !Array.isArray(activity.settings)
+        ? activity.settings
+        : {};
+    return `<details class="activity-advanced-settings"><summary>${currentLanguage === "ru" ? "Дополнительные параметры" : currentLanguage === "ua" ? "Додаткові параметри" : "Advanced options"}</summary><div class="form-field"><label>${currentLanguage === "ru" ? "Параметры упражнения (JSON)" : currentLanguage === "ua" ? "Параметри вправи (JSON)" : "Exercise settings (JSON)"}</label><textarea ${field}="settings" spellcheck="false" placeholder="${escapeHtml(activitySettingsPlaceholder(activity.type))}">${escapeHtml(JSON.stringify(settings, null, 2))}</textarea><small class="hint">${currentLanguage === "ru" ? "Дополнительно: допустимые ответы, медиа и режим проверки. Оставьте пустым, если не нужно." : currentLanguage === "ua" ? "Додатково: допустимі відповіді, медіа та режим перевірки. Залиште порожнім, якщо не потрібно." : "Optional accepted answers, media, and checking modes. Leave empty if not needed."}</small><small data-settings-error class="hint" role="status"></small></div></details>`;
+}
+
+function updateActivitySettings(activity, input) {
+    const value = input.value.trim();
+    try {
+        const parsed = value ? JSON.parse(value) : {};
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Settings must be a JSON object.");
+        activity.settings = parsed;
+        input.setCustomValidity("");
+        const error = input.closest(".form-field")?.querySelector("[data-settings-error]");
+        if (error) error.textContent = "";
+        return true;
+    } catch (error) {
+        input.setCustomValidity(error.message || "Invalid JSON settings.");
+        const errorLabel = input.closest(".form-field")?.querySelector("[data-settings-error]");
+        if (errorLabel) errorLabel.textContent = error.message || "Invalid JSON settings.";
+        return false;
+    }
+}
+
 function bindActivityBlockActions() {
     const currentSection = activeDraftSection();
     if (!currentSection) return;
@@ -3721,11 +4102,13 @@ function bindActivityBlockActions() {
         const copy = cloneActivityBlock(activities[index]);
         activities.splice(index + 1, 0, copy);
         expandedActivityBlocks.add(copy);
+        scheduleLessonDraftAutosave();
         render();
         showToast(lessonSectionText("duplicated"));
     }));
     pageContent.querySelectorAll("[data-remove-block]").forEach((button) => button.addEventListener("click", () => {
         activities.splice(Number(button.dataset.removeBlock), 1);
+        scheduleLessonDraftAutosave();
         render();
     }));
     pageContent.querySelectorAll("[data-toggle-block]").forEach((button) => button.addEventListener("click", () => {
@@ -3748,6 +4131,7 @@ function bindActivityBlockActions() {
         const questionIndex = addActivityQuestion(block);
         if (questionIndex < 0) return;
         expandedActivityBlocks.add(block);
+        scheduleLessonDraftAutosave();
         render();
         pageContent.querySelector(`.builder-block[data-block-index="${blockIndex}"] [data-question-index="${questionIndex}"] [data-field="content"]`)?.focus();
     }));
@@ -3757,6 +4141,7 @@ function bindActivityBlockActions() {
         const questionIndex = Number(button.closest("[data-question-index]")?.dataset.questionIndex);
         if (!block || !Array.isArray(block.questions) || block.questions.length <= 1) return;
         block.questions.splice(questionIndex, 1);
+        scheduleLessonDraftAutosave();
         render();
     }));
     pageContent.querySelectorAll(".builder-block").forEach((blockElement) => {
@@ -3766,6 +4151,8 @@ function bindActivityBlockActions() {
             if (questionElement && Array.isArray(block.questions)) {
                 const question = block.questions[Number(questionElement.dataset.questionIndex)];
                 if (question) question[input.dataset.field] = input.value;
+            } else if (input.dataset.field === "settings") {
+                if (updateActivitySettings(block, input)) scheduleLessonDraftAutosave();
             } else {
                 block[input.dataset.field] = input.value;
             }
@@ -3777,6 +4164,7 @@ function bindActivityBlockActions() {
             const skipped = new Set();
             const attachFiles = async (files) => {
                 for (const file of files) await attachImageToBlock(file, contentField, currentBlock());
+                scheduleLessonDraftAutosave();
             };
             const importAddresses = async () => {
                 if (contentField.dataset.importing) return;
@@ -3791,6 +4179,7 @@ function bindActivityBlockActions() {
                     }
                 } finally {
                     delete contentField.dataset.importing;
+                    scheduleLessonDraftAutosave();
                 }
             };
             contentField.addEventListener("paste", () => setTimeout(importAddresses));
@@ -3817,6 +4206,7 @@ function bindActivityBlockActions() {
     if (blocksContainer) bindSortableActivityCards(blocksContainer, ".builder-block", ".builder-block-drag", "blockIndex", (order) => {
         const reordered = order.map((index) => activities[index]);
         activities.splice(0, activities.length, ...reordered);
+        scheduleLessonDraftAutosave();
         render();
     });
 }
@@ -3847,9 +4237,10 @@ function openActivityPicker() {
     });
     modalCard.querySelectorAll("[data-add-activity]").forEach((button) => button.addEventListener("click", () => {
         const type = activityTypes.find((entry) => entry.id === button.dataset.addActivity);
-        const activity = { type: type.id, prompt: t(type.nameKey), content: "", answer: "" };
+        const activity = { id: crypto.randomUUID(), type: type.id, prompt: t(type.nameKey), content: "", answer: "" };
         activeDraftSection().activities.push(activity);
         expandedActivityBlocks.add(activity);
+        scheduleLessonDraftAutosave();
         activitySearch = "";
         closeModal();
         render();
@@ -3900,6 +4291,9 @@ function activityIllustration(type) {
 async function saveLesson(event) {
     event.preventDefault();
     if (!hasPermission("edit_lessons")) return;
+    clearTimeout(lessonDraftAutosaveTimer);
+    lessonDraftAutosaveTimer = 0;
+    lessonDraftAutosaveRevision += 1;
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     const title = String(form.get("title")).trim();
@@ -3921,6 +4315,7 @@ async function saveLesson(event) {
         if (submitButton?.isConnected) submitButton.disabled = false;
         return;
     }
+    if (!wasEditing) clearNewLessonDraft();
     stopLiveProgressSubscription();
     lessonWorkspaceMode = "";
     workspaceLessonId = "";

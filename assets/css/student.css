@@ -86,10 +86,12 @@
 .student-platform .student-word-token { max-width: 100%; border: 1px solid #d7e6d8; border-radius: 8px; padding: 7px 11px; background: #fff; color: var(--ink); overflow-wrap: anywhere; white-space: normal; cursor: pointer; }
 .student-platform .student-word-token:hover { border-color: #77a181; background: #f0f7f1; }
 .student-platform .student-word-token.selected { background: #e7f1e8; }
+.student-platform .student-word-token.is-locked { cursor: default; opacity: .86; border-style: dashed; }
 .student-platform .student-inline-answer { display: inline-block; width: min(160px, 38vw); min-height: 34px; margin: 3px 5px; border: 1px solid #cbd9ce; border-radius: 7px; padding: 5px 8px; }
 .student-platform .student-answer-options { display: grid; gap: 8px; margin-top: 12px; }
 .student-platform .student-answer-option { display: flex; align-items: flex-start; gap: 9px; width: fit-content; max-width: 100%; border: 1px solid #e2ebe3; border-radius: 9px; padding: 9px 12px; cursor: pointer; }
 .student-platform .student-answer-option input { margin-top: 4px; accent-color: #477553; }
+.student-platform .student-choice-media { display: block; max-width: 160px; max-height: 110px; margin-bottom: 6px; border-radius: 8px; object-fit: contain; }
 .student-platform .student-order-list { display: grid; gap: 8px; margin: 12px 0 0; padding-left: 30px; }
 .student-platform .student-order-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; border: 1px solid #e2ebe3; border-radius: 9px; padding: 7px 9px; }
 .student-platform .student-order-list li > span:first-child { overflow-wrap: anywhere; }
@@ -104,8 +106,18 @@
 .student-platform .student-answer-table { width: 100%; border-collapse: collapse; }
 .student-platform .student-answer-table td { min-width: 80px; border: 1px solid #dfe8df; padding: 8px; }
 .student-platform .student-open-answer { display: block; width: min(100%,620px); min-height: 120px; margin-top: 12px; border: 1px solid #d4e0d5; border-radius: 9px; padding: 10px; resize: vertical; }
+.student-platform .student-open-attachments { display: grid; gap: 8px; margin-top: 10px; }
+.student-platform .student-open-attachment { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.student-platform .student-open-attachment .student-inline-answer { margin: 0; min-width: min(340px, 100%); }
 .student-platform .student-flashcard { display: grid; gap: 10px; min-width: 140px; min-height: 90px; border: 1px solid #d7e6d8; border-radius: 12px; padding: 14px; background: #f7faf7; color: var(--ink); text-align: left; }
 .student-platform .student-flashcard small { color: var(--muted); }
+.student-platform .student-flashcard-card { display: grid; gap: 8px; }
+.student-platform .student-flashcard-face { display: block; overflow-wrap: anywhere; }
+.student-platform .student-flashcard-media { display: block; max-width: 100%; max-height: 180px; border-radius: 8px; object-fit: contain; }
+.student-platform .student-flashcard-flip { justify-self: start; border: 0; padding: 0; background: transparent; color: var(--muted); cursor: pointer; text-decoration: underline; }
+.student-platform .student-flashcard-rating { display: flex; flex-wrap: wrap; gap: 6px; }
+.student-platform .student-flashcard-hard-toggle { margin-bottom: 10px; }
+.student-platform .student-hint { margin-top: 8px; border: 0; padding: 0; background: transparent; color: #3f6f4c; text-decoration: underline; cursor: pointer; font: inherit; }
 .student-platform .student-activity-image { display: block; max-width: 100%; max-height: 440px; border-radius: 10px; object-fit: contain; }
 .student-platform .student-activity-media { display: block; width: min(100%,640px); }
 .student-platform .student-activity-video { display: block; width: min(100%, 720px); aspect-ratio: 16 / 9; border: 0; border-radius: 12px; background: #17251c; }
