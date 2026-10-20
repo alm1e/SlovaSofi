@@ -100,7 +100,9 @@ function publicActivitySettings(type: string, settings: JsonRecord | undefined):
         "true-false": ["allowNotStated", "explanation"],
         table: ["cellOptions", "hints"],
         columns: ["categories"],
-        "open-answer": ["allowAttachments"]
+        "open-answer": ["allowAttachments"],
+        video: ["poster", "captions", "transcript", "hideTranscriptUntilPlayed"],
+        audio: ["transcript", "hideTranscriptUntilPlayed", "segmentA", "segmentB"]
     };
     const result: JsonRecord = {};
     for (const key of keysByType[type] || []) {

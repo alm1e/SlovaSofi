@@ -35,15 +35,16 @@
 
     function html(images, fallbackAlt, imageClass) {
         if (!images.length) return "";
-        const slides = images.map((image, index) => `<img class="slova-gallery-image ${escape(imageClass || "")}" style="--o:${index}" data-slot="${slotFor(index)}" src="${escape(image.url)}" alt="${escape(image.alt || fallbackAlt || "")}" title="${escape(label("zoom"))}" data-gallery-zoom draggable="false">`).join("");
-        if (images.length === 1) return `<figure class="slova-gallery" data-gallery data-gallery-index="0">${slides}</figure>`;
+        const slides = images.map((image, index) => `<img class="slova-gallery-image ${escape(imageClass || "")}" style="--o:${index}" data-slot="${slotFor(index)}" data-caption="${escape(image.alt || "")}" src="${escape(image.url)}" alt="${escape(image.alt || fallbackAlt || "")}" title="${escape(label("zoom"))}" data-gallery-zoom draggable="false">`).join("");
+        const caption = images[0].alt ? `<figcaption class="slova-gallery-caption">${escape(images[0].alt)}</figcaption>` : "";
+        if (images.length === 1) return `<figure class="slova-gallery" data-gallery data-gallery-index="0">${slides}${caption}</figure>`;
         return `<figure class="slova-gallery is-multiple" data-gallery data-gallery-index="0">
             <div class="slova-gallery-stage">${slides}</div>
             <div class="slova-gallery-nav">
                 <button type="button" class="slova-gallery-arrow" data-gallery-step="-1" aria-label="${escape(label("prev"))}">${chevron(-1)}</button>
                 <span class="slova-gallery-count"><b data-gallery-current>1</b> ${escape(label("of"))} ${images.length}</span>
                 <button type="button" class="slova-gallery-arrow" data-gallery-step="1" aria-label="${escape(label("next"))}">${chevron(1)}</button>
-            </div></figure>`;
+            </div>${caption ? `<figcaption class="slova-gallery-caption" data-gallery-caption>${caption}</figcaption>` : `<figcaption class="slova-gallery-caption" data-gallery-caption hidden></figcaption>`}</figure>`;
     }
 
     const PEEK = 56;
@@ -78,6 +79,11 @@
         layout(gallery);
         const counter = gallery.querySelector("[data-gallery-current]");
         if (counter) counter.textContent = String(next + 1);
+        const caption = gallery.querySelector("[data-gallery-caption]");
+        if (caption) {
+            caption.textContent = slides[next]?.dataset.caption || "";
+            caption.hidden = !caption.textContent;
+        }
         return next;
     }
 

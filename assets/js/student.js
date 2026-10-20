@@ -23,7 +23,8 @@
             completed: "Урок завершено!", homework: "Домашня робота", progress: "відповідей", progressSaved: "Чернетку збережено.",
             choose: "Виберіть відповідь", true: "Так", false: "Ні",
             addWords: "Перетягуйте слова або натискайте на них, щоб скласти відповідь", yourAnswer: "Ваша відповідь", emptyAnswer: "Спочатку введіть відповідь.",
-            moveUp: "Вище", moveDown: "Нижче", flip: "Показати переклад", hint: "Підказка", locked: "Закріплене слово", loading: "Завантаження уроку…"
+            moveUp: "Вище", moveDown: "Нижче", flip: "Показати переклад", hint: "Підказка", locked: "Закріплене слово", loading: "Завантаження уроку…",
+            playbackSpeed: "Швидкість", transcript: "Транскрипція", captions: "Субтитри", setA: "Позначити A", setB: "Позначити B", loopOff: "Повтор фрагмента: вимкнено", loopOn: "Повтор фрагмента: увімкнено", loopSet: "Позначте точки A і B"
         },
         ru: {
             loading: "Загрузка…", activate: "Создайте пароль", activateHint: "Приглашение принято. Создайте пароль для входа в личный кабинет.",
@@ -48,7 +49,8 @@
             completed: "Урок завершён!", homework: "Домашняя работа", progress: "ответов", progressSaved: "Черновик сохранён.",
             choose: "Выберите ответ", true: "Да", false: "Нет",
             addWords: "Перетаскивайте слова или нажимайте на них, чтобы составить ответ", yourAnswer: "Ваш ответ", emptyAnswer: "Сначала введите ответ.",
-            moveUp: "Выше", moveDown: "Ниже", flip: "Показать перевод", hint: "Подсказка", locked: "Закреплённое слово", loading: "Загрузка урока…"
+            moveUp: "Выше", moveDown: "Ниже", flip: "Показать перевод", hint: "Подсказка", locked: "Закреплённое слово", loading: "Загрузка урока…",
+            playbackSpeed: "Скорость", transcript: "Транскрипция", captions: "Субтитры", setA: "Отметить A", setB: "Отметить B", loopOff: "Повтор фрагмента: выкл.", loopOn: "Повтор фрагмента: вкл.", loopSet: "A/B"
         },
         en: {
             loading: "Loading…", activate: "Create a password", activateHint: "Invitation accepted. Create a password to access your account.",
@@ -73,7 +75,8 @@
             completed: "Lesson completed!", homework: "Homework", progress: "answered", progressSaved: "Draft saved.",
             choose: "Choose an answer", true: "True", false: "False",
             addWords: "Drag or click words to build your answer", yourAnswer: "Your answer", emptyAnswer: "Enter an answer first.",
-            moveUp: "Move up", moveDown: "Move down", flip: "Show translation", hint: "Hint", locked: "Locked word", loading: "Loading lesson…"
+            moveUp: "Move up", moveDown: "Move down", flip: "Show translation", hint: "Hint", locked: "Locked word", loading: "Loading lesson…",
+            playbackSpeed: "Speed", transcript: "Transcript", captions: "Captions", setA: "Set A", setB: "Set B", loopOff: "A–B loop: off", loopOn: "A–B loop: on", loopSet: "A/B"
         }
     };
     const recoveryCopy = {
@@ -501,6 +504,7 @@
 
     function mediaUrl(value) {
         try {
+            if (typeof value !== "string" || !value.trim()) return "";
             const url = new URL(value, location.href);
             return ["http:", "https:"].includes(url.protocol) ? url.href : "";
         } catch {
@@ -542,6 +546,19 @@
             const start = Number(url.searchParams.get("start") || url.searchParams.get("t")?.replace(/s$/, ""));
             if (Number.isFinite(start) && start > 0) embed.searchParams.set("start", String(Math.floor(start)));
             return embed.href;
+        } catch {
+            return "";
+        }
+    }
+
+    function driveEmbedUrl(value) {
+        try {
+            const url = new URL(value);
+            if (!["drive.google.com", "www.drive.google.com"].includes(url.hostname.toLowerCase())) return "";
+            const fileId = url.pathname.match(/^\/file\/d\/([A-Za-z0-9_-]+)/)?.[1] || url.searchParams.get("id");
+            return fileId && /^[A-Za-z0-9_-]{10,200}$/.test(fileId)
+                ? `https://drive.google.com/file/d/${fileId}/preview`
+                : "";
         } catch {
             return "";
         }
@@ -656,12 +673,25 @@
         } else if (activity.type === "image") {
             const images = window.slovaGallery.parse(activity.content);
             body = images.length ? window.slovaGallery.html(images, activity.alt || activity.prompt || text("imageAlt"), "student-activity-image") : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
+        } else if (activity.type === "text") {
+            body = window.SlovaActivityUI?.renderRichText(activity.content) || "";
         } else if (activity.type === "audio" || activity.type === "video") {
-            const embed = activity.type === "video" ? youtubeEmbedUrl(activity.content) : "";
+            const embed = activity.type === "video" ? youtubeEmbedUrl(activity.content) || driveEmbedUrl(activity.content) : "";
             const source = mediaUrl(activity.content);
+            const settings = activity.settings || {};
+            const mediaKey = activity.id || `legacy-${activity.index}`;
+            const controls = `<div class="student-media-tools">
+                <label>${escapeHtml(text("playbackSpeed"))}<select data-media-speed aria-label="${escapeHtml(text("playbackSpeed"))}"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select></label>
+                ${activity.type === "audio" ? `<button class="button secondary small" type="button" data-seek="-5">−5s</button><button class="button secondary small" type="button" data-seek="5">+5s</button><button class="button secondary small" type="button" data-loop-marker="A">${escapeHtml(text("setA"))}</button><button class="button secondary small" type="button" data-loop-marker="B">${escapeHtml(text("setB"))}</button><button class="button secondary small" type="button" data-loop-toggle aria-pressed="false">${escapeHtml(text("loopOff"))}</button><span data-loop-status aria-live="polite"></span>` : ""}
+            </div>`;
+            const transcript = settings.transcript
+                ? `<details class="student-media-transcript" ${settings.hideTranscriptUntilPlayed ? "data-transcript-hidden hidden" : ""}><summary>${escapeHtml(text("transcript"))}</summary><p>${escapeHtml(settings.transcript).replace(/\n/g, "<br>")}</p></details>`
+                : "";
+            const hasConfiguredLoop = activity.type === "audio" && settings.segmentA !== undefined && settings.segmentA !== "" && settings.segmentB !== undefined && settings.segmentB !== "" && Number.isFinite(Number(settings.segmentA)) && Number.isFinite(Number(settings.segmentB)) && Number(settings.segmentB) > Number(settings.segmentA);
+            const mediaAttributes = `class="student-activity-media" controls preload="metadata" data-media-player data-media-key="${escapeHtml(`${openedLesson?.id || "lesson"}:${mediaKey}`)}" data-loop-a="${Number(settings.segmentA) || ""}" data-loop-b="${Number(settings.segmentB) || ""}"`;
             body = embed
                 ? `<iframe class="student-activity-video" src="${escapeHtml(embed)}" title="${escapeHtml(activity.prompt || text("activity"))}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`
-                : source ? `<${activity.type} class="student-activity-media" controls preload="metadata"><source src="${escapeHtml(source)}"></${activity.type}>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
+                : source ? `<${activity.type} ${mediaAttributes} ${activity.type === "video" && mediaUrl(settings.poster) ? `poster="${escapeHtml(mediaUrl(settings.poster))}"` : ""}><source src="${escapeHtml(source)}">${activity.type === "video" && mediaUrl(settings.captions) ? `<track kind="captions" src="${escapeHtml(mediaUrl(settings.captions))}" srclang="${escapeHtml(language)}" label="${escapeHtml(text("captions"))}" default>` : ""}</${activity.type}>${controls.replace('aria-pressed="false"', `aria-pressed="${hasConfiguredLoop}"`).replace(escapeHtml(text("loopOff")), escapeHtml(text(hasConfiguredLoop ? "loopOn" : "loopOff")))}${transcript}` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         } else {
             body = activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         }
@@ -1137,6 +1167,90 @@
         });
         pageContent.querySelectorAll("[data-submit-activity-group]").forEach((button) => {
             button.addEventListener("click", () => submitActivityGroup(button.closest(".student-activity-group")));
+        });
+        pageContent.querySelectorAll("[data-media-speed]").forEach((select) => {
+            select.addEventListener("change", () => {
+                const player = select.closest(".student-activity-main")?.querySelector("[data-media-player]");
+                if (player) player.playbackRate = Number(select.value);
+            });
+        });
+        pageContent.querySelectorAll("[data-seek]").forEach((button) => button.addEventListener("click", () => {
+            const player = button.closest(".student-activity-main")?.querySelector("[data-media-player]");
+            if (player) player.currentTime = Math.max(0, Math.min(player.duration || Infinity, player.currentTime + Number(button.dataset.seek)));
+        }));
+        pageContent.querySelectorAll("[data-loop-marker]").forEach((button) => button.addEventListener("click", () => {
+            const player = button.closest(".student-activity-main")?.querySelector("[data-media-player]");
+            if (!player) return;
+            player.dataset[`loop${button.dataset.loopMarker}`] = String(player.currentTime);
+            const status = button.closest(".student-media-tools")?.querySelector("[data-loop-status]");
+            if (status) status.textContent = `${button.dataset.loopMarker} = ${player.currentTime.toFixed(1)}s`;
+        }));
+        pageContent.querySelectorAll("[data-loop-toggle]").forEach((button) => button.addEventListener("click", () => {
+            const player = button.closest(".student-activity-main")?.querySelector("[data-media-player]");
+            if (!player) return;
+            const enabled = button.getAttribute("aria-pressed") !== "true";
+            const start = Number(player.dataset.loopA);
+            const end = Number(player.dataset.loopB);
+            if (enabled && (!Number.isFinite(start) || !Number.isFinite(end) || end <= start)) {
+                const status = button.closest(".student-media-tools")?.querySelector("[data-loop-status]");
+                if (status) status.textContent = text("loopSet");
+                return;
+            }
+            button.setAttribute("aria-pressed", String(enabled));
+            button.textContent = text(enabled ? "loopOn" : "loopOff");
+        }));
+        pageContent.querySelectorAll("[data-media-player]").forEach((player) => {
+            const persistPosition = () => {
+                const time = Number(player.currentTime);
+                if (!Number.isFinite(time) || player.ended) return;
+                try {
+                    localStorage.setItem(`slova-media-position:${player.dataset.mediaKey}`, String(time));
+                } catch (error) {
+                    console.warn("Could not save media playback position.", error);
+                }
+            };
+            player.addEventListener("loadedmetadata", () => {
+                let saved = 0;
+                try {
+                    saved = Number(localStorage.getItem(`slova-media-position:${player.dataset.mediaKey}`));
+                } catch (error) {
+                    console.warn("Could not read saved media playback position.", error);
+                }
+                if (Number.isFinite(saved) && saved > 0 && saved < player.duration - 1) player.currentTime = saved;
+                const transcript = player.closest(".student-activity-main")?.querySelector("[data-transcript-hidden]");
+                if (transcript && player.dataset.played === "true") {
+                    transcript.hidden = false;
+                    transcript.open = true;
+                }
+            });
+            player.addEventListener("play", () => {
+                player.dataset.played = "true";
+                const transcript = player.closest(".student-activity-main")?.querySelector("[data-transcript-hidden]");
+                if (transcript) {
+                    transcript.hidden = false;
+                    transcript.open = true;
+                }
+            });
+            player.addEventListener("timeupdate", () => {
+                const toggle = player.closest(".student-activity-main")?.querySelector("[data-loop-toggle]");
+                const start = Number(player.dataset.loopA);
+                const end = Number(player.dataset.loopB);
+                if (toggle?.getAttribute("aria-pressed") === "true" && Number.isFinite(start) && Number.isFinite(end) && end > start && player.currentTime >= end) {
+                    player.currentTime = start;
+                }
+                if (Math.floor(player.currentTime / 5) !== Number(player.dataset.lastPositionBucket)) {
+                    player.dataset.lastPositionBucket = String(Math.floor(player.currentTime / 5));
+                    persistPosition();
+                }
+            });
+            player.addEventListener("pause", persistPosition);
+            player.addEventListener("ended", () => {
+                try {
+                    localStorage.removeItem(`slova-media-position:${player.dataset.mediaKey}`);
+                } catch (error) {
+                    console.warn("Could not clear media playback position.", error);
+                }
+            });
         });
         pageContent.querySelectorAll("[data-move-item]").forEach((button) => {
             button.addEventListener("click", () => {

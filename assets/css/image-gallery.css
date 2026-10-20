@@ -24,6 +24,8 @@
 .slova-gallery-arrow { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid rgba(128, 150, 135, .4); border-radius: 50%; background: transparent; color: inherit; cursor: pointer; }
 .slova-gallery-arrow svg { display: block; }
 .slova-gallery-arrow:hover { background: rgba(47, 158, 107, .16); border-color: #2f9e6b; }
+.slova-gallery-caption { margin: 8px auto 0; max-width: min(100%, 720px); color: inherit; font-size: 14px; line-height: 1.45; opacity: .82; }
+.slova-gallery-caption[hidden] { display: none; }
 
 .slova-lightbox { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 56px 72px; background: rgba(6, 10, 8, .88); }
 .slova-lightbox[hidden] { display: none; }

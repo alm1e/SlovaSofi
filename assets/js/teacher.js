@@ -541,6 +541,23 @@ async function uploadLessonImage(source, preserveOriginal = false) {
     return window.supabaseClient.storage.from("lesson-images").getPublicUrl(path).data.publicUrl;
 }
 
+async function uploadLessonMedia(file, type) {
+    const allowed = type === "video"
+        ? { "video/mp4": "mp4", "video/webm": "webm" }
+        : { "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/wav": "wav", "audio/x-wav": "wav", "audio/wave": "wav", "audio/ogg": "ogg" };
+    if (!allowed[file?.type]) throw new Error(currentLanguage === "ru" ? "Поддерживаются MP4/WebM для видео и MP3/M4A/WAV/OGG для аудио." : "Unsupported media file type.");
+    if (file.size > 100 * 1024 * 1024) throw new Error(currentLanguage === "ru" ? "Максимальный размер файла — 100 МБ." : "The maximum file size is 100 MB.");
+    if (!currentUser || !window.supabaseClient || !hasPermission("edit_lessons")) throw new Error(currentLanguage === "ru" ? "Нет прав для загрузки файла." : "You do not have permission to upload this file.");
+    const path = `${currentUser.id}/${crypto.randomUUID()}.${allowed[file.type]}`;
+    const { error } = await window.supabaseClient.storage.from("lesson-media").upload(path, file, {
+        contentType: file.type,
+        cacheControl: "31536000",
+        upsert: false
+    });
+    if (error) throw error;
+    return window.supabaseClient.storage.from("lesson-media").getPublicUrl(path).data.publicUrl;
+}
+
 const ownImageUrlPattern = /\/storage\/v1\/object\/public\/lesson-images\//;
 
 // Pasting or typing an image address copies the picture into our own storage so it outlives the source site.
@@ -2441,6 +2458,17 @@ function previewYoutubeEmbedUrl(value) {
     }
 }
 
+function previewDriveEmbedUrl(value) {
+    try {
+        const url = new URL(String(value || "").trim());
+        if (!["drive.google.com", "www.drive.google.com"].includes(url.hostname.toLowerCase())) return "";
+        const fileId = url.pathname.match(/^\/file\/d\/([A-Za-z0-9_-]+)/)?.[1] || url.searchParams.get("id");
+        return fileId && /^[A-Za-z0-9_-]{10,200}$/.test(fileId) ? `https://drive.google.com/file/d/${fileId}/preview` : "";
+    } catch {
+        return "";
+    }
+}
+
 function renderPreviewActivity(activity, index, canEdit = false, quickEditing = false, liveAnswerMarkup = "", questionIndex = null) {
     const type = activity.type;
     const isQuestion = Number.isInteger(questionIndex);
@@ -2559,9 +2587,16 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         body = images.length ? window.slovaGallery.html(images, activity.prompt || "", "preview-image") : `<p class="preview-material">${escapeHtml(displayContent || previewText("imageError"))}</p>`;
         checkable = false;
     } else if (type === "audio" || type === "video") {
-        const embed = type === "video" ? previewYoutubeEmbedUrl(content) : "";
+        const settings = activity.settings || {};
+        const embed = type === "video" ? previewYoutubeEmbedUrl(content) || previewDriveEmbedUrl(content) : "";
         const source = previewMediaUrl(content);
-        body = `${embed ? `<iframe class="preview-video-embed" src="${escapeHtml(embed)}" title="${escapeHtml(prompt || previewText("mediaError"))}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>` : source ? `<${type} class="preview-media" controls preload="metadata" data-preview-media><source src="${escapeHtml(source)}"></${type}>` : `<p class="preview-material">${escapeHtml(displayContent || previewText("mediaError"))}</p>`}`;
+        const hasConfiguredLoop = type === "audio" && settings.segmentA !== undefined && settings.segmentA !== "" && settings.segmentB !== undefined && settings.segmentB !== "" && Number.isFinite(Number(settings.segmentA)) && Number.isFinite(Number(settings.segmentB)) && Number(settings.segmentB) > Number(settings.segmentA);
+        const setALabel = currentLanguage === "ru" ? "Отметить A" : currentLanguage === "ua" ? "Позначити A" : "Set A";
+        const setBLabel = currentLanguage === "ru" ? "Отметить B" : currentLanguage === "ua" ? "Позначити B" : "Set B";
+        const loopLabel = currentLanguage === "ru" ? (hasConfiguredLoop ? "Повтор фрагмента: вкл." : "Повтор фрагмента: выкл.") : hasConfiguredLoop ? "A–B loop: on" : "A–B loop: off";
+        const mediaTools = `<div class="preview-media-tools"><label>${currentLanguage === "ru" ? "Скорость" : currentLanguage === "ua" ? "Швидкість" : "Speed"}<select data-preview-speed><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select></label>${type === "audio" ? `<button class="button secondary small" type="button" data-preview-seek="-5">−5s</button><button class="button secondary small" type="button" data-preview-seek="5">+5s</button><button class="button secondary small" type="button" data-preview-loop-marker="A">${setALabel}</button><button class="button secondary small" type="button" data-preview-loop-marker="B">${setBLabel}</button><button class="button secondary small" type="button" data-preview-loop-toggle aria-pressed="${hasConfiguredLoop}">${loopLabel}</button><span data-preview-loop-status aria-live="polite"></span>` : ""}</div>`;
+        const transcript = settings.transcript ? `<details class="preview-media-transcript" ${settings.hideTranscriptUntilPlayed ? "data-preview-transcript-hidden hidden" : ""}><summary>${currentLanguage === "ru" ? "Транскрипция" : "Transcript"}</summary><p>${escapeHtml(settings.transcript).replace(/\n/g, "<br>")}</p></details>` : "";
+        body = `${embed ? `<iframe class="preview-video-embed" src="${escapeHtml(embed)}" title="${escapeHtml(prompt || previewText("mediaError"))}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>` : source ? `<${type} class="preview-media" controls preload="metadata" data-preview-media data-loop-a="${Number(settings.segmentA) || ""}" data-loop-b="${Number(settings.segmentB) || ""}" ${type === "video" && previewMediaUrl(settings.poster) ? `poster="${escapeHtml(previewMediaUrl(settings.poster))}"` : ""}><source src="${escapeHtml(source)}">${type === "video" && previewMediaUrl(settings.captions) ? `<track kind="captions" src="${escapeHtml(previewMediaUrl(settings.captions))}" srclang="${currentLanguage === "ua" ? "uk" : escapeHtml(currentLanguage)}" label="${currentLanguage === "ru" ? "Субтитры" : "Captions"}" default>` : ""}</${type}>${mediaTools}${transcript}` : `<p class="preview-material">${escapeHtml(displayContent || previewText("mediaError"))}</p>`}`;
         checkable = false;
     } else if (type === "table") {
         let blankIndex = 0;
@@ -2575,7 +2610,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
             const noteEditTools = canEdit ? `<div class="preview-activity-actions note-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : "";
             return `<article class="preview-activity preview-note-card" data-preview-activity="${index}">${noteEditTools}${note}</article>`;
         }
-        body = displayContent ? `<div class="preview-material">${escapeHtml(displayContent).replace(/\n/g, "<br>")}</div>` : "";
+        body = displayContent ? (window.SlovaActivityUI?.renderRichText(displayContent) || "") : "";
         checkable = false;
     } else {
         body = displayContent ? `<div class="preview-material">${escapeHtml(displayContent).replace(/\n/g, "<br>")}</div>` : "";
@@ -2774,6 +2809,52 @@ async function savePreviewActivities(lesson, sectionId, activities, successMessa
 
 function bindLessonPreviewActions(container = pageContent, lesson = null, section = null, isHomework = false) {
     window.SlovaActivityUI?.enhancePairing(container, { empty: previewText("choose") });
+    container.querySelectorAll("[data-preview-speed]").forEach((select) => select.addEventListener("change", () => {
+        const player = select.closest(".preview-activity")?.querySelector("[data-preview-media]");
+        if (player) player.playbackRate = Number(select.value);
+    }));
+    container.querySelectorAll("[data-preview-seek]").forEach((button) => button.addEventListener("click", () => {
+        const player = button.closest(".preview-activity")?.querySelector("[data-preview-media]");
+        if (player) player.currentTime = Math.max(0, Math.min(player.duration || Infinity, player.currentTime + Number(button.dataset.previewSeek)));
+    }));
+    container.querySelectorAll("[data-preview-loop-marker]").forEach((button) => button.addEventListener("click", () => {
+        const player = button.closest(".preview-activity")?.querySelector("[data-preview-media]");
+        if (!player) return;
+        player.dataset[`loop${button.dataset.previewLoopMarker}`] = String(player.currentTime);
+        const status = button.closest(".preview-media-tools")?.querySelector("[data-preview-loop-status]");
+        if (status) status.textContent = `${button.dataset.previewLoopMarker} = ${player.currentTime.toFixed(1)}s`;
+    }));
+    container.querySelectorAll("[data-preview-loop-toggle]").forEach((button) => button.addEventListener("click", () => {
+        const player = button.closest(".preview-activity")?.querySelector("[data-preview-media]");
+        if (!player) return;
+        const enabled = button.getAttribute("aria-pressed") !== "true";
+        const start = Number(player.dataset.loopA);
+        const end = Number(player.dataset.loopB);
+        if (enabled && (!Number.isFinite(start) || !Number.isFinite(end) || end <= start)) {
+            const status = button.closest(".preview-media-tools")?.querySelector("[data-preview-loop-status]");
+            if (status) status.textContent = currentLanguage === "ru" ? "Сначала установите A и B" : "Set both A and B first";
+            return;
+        }
+        button.setAttribute("aria-pressed", String(enabled));
+        button.textContent = currentLanguage === "ru"
+            ? enabled ? "Повтор фрагмента: вкл." : "Повтор фрагмента: выкл."
+            : enabled ? "A–B loop: on" : "A–B loop: off";
+    }));
+    container.querySelectorAll("[data-preview-media]").forEach((player) => {
+        player.addEventListener("play", () => {
+            const transcript = player.closest(".preview-activity")?.querySelector("[data-preview-transcript-hidden]");
+            if (transcript) {
+                transcript.hidden = false;
+                transcript.open = true;
+            }
+        });
+        player.addEventListener("timeupdate", () => {
+            const toggle = player.closest(".preview-activity")?.querySelector("[data-preview-loop-toggle]");
+            const start = Number(player.dataset.loopA);
+            const end = Number(player.dataset.loopB);
+            if (toggle?.getAttribute("aria-pressed") === "true" && Number.isFinite(start) && Number.isFinite(end) && end > start && player.currentTime >= end) player.currentTime = start;
+        });
+    });
     if (lesson && section && hasPermission("edit_lessons")) {
         container.querySelectorAll("[data-edit-preview-block]").forEach((button) => button.addEventListener("click", () => {
             const activityIndex = Number(button.dataset.editPreviewBlock);
@@ -3988,6 +4069,58 @@ function exitLessonWorkspace() {
     render();
 }
 
+function renderRichTextEditor(block) {
+    const initial = window.SlovaActivityUI?.sanitizeRichText(block.content || "") || escapeHtml(block.content || "").replace(/\n/g, "<br>");
+    return `<div class="rich-text-editor">
+        <div class="rich-text-toolbar" role="toolbar" aria-label="${currentLanguage === "ru" ? "Форматирование текста" : currentLanguage === "ua" ? "Форматування тексту" : "Text formatting"}">
+            <select data-rich-format aria-label="${currentLanguage === "ru" ? "Заголовок" : currentLanguage === "ua" ? "Заголовок" : "Heading"}"><option value="P">Текст</option><option value="H1">H1</option><option value="H2">H2</option><option value="H3">H3</option></select>
+            <button type="button" data-rich-command="bold" title="Bold"><strong>B</strong></button>
+            <button type="button" data-rich-command="italic" title="Italic"><em>I</em></button>
+            <button type="button" data-rich-command="underline" title="Underline"><u>U</u></button>
+            <button type="button" data-rich-command="insertUnorderedList" title="List">• List</button>
+            <button type="button" data-rich-command="insertOrderedList" title="Numbered list">1. List</button>
+            <label class="rich-text-color" title="${currentLanguage === "ru" ? "Цвет текста" : currentLanguage === "ua" ? "Колір тексту" : "Text color"}">A<input type="color" data-rich-color value="#315f42"></label>
+            <button type="button" data-rich-highlight>${currentLanguage === "ru" ? "Выделить" : currentLanguage === "ua" ? "Виділити" : "Highlight"}</button>
+            <button type="button" data-rich-link>${currentLanguage === "ru" ? "Ссылка" : currentLanguage === "ua" ? "Посилання" : "Link"}</button>
+            <button type="button" data-rich-table>${currentLanguage === "ru" ? "Таблица" : currentLanguage === "ua" ? "Таблиця" : "Table"}</button>
+            <button type="button" data-rich-image-url>${currentLanguage === "ru" ? "Вставить фото" : currentLanguage === "ua" ? "Вставити фото" : "Insert image"}</button>
+            <button type="button" data-rich-image-file-button>${currentLanguage === "ru" ? "Загрузить фото" : currentLanguage === "ua" ? "Завантажити фото" : "Upload image"}</button>
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-rich-image-file hidden>
+        </div>
+        <div class="rich-text-surface" data-rich-content contenteditable="true" role="textbox" aria-multiline="true">${initial}</div>
+        <textarea data-field="content" hidden>${escapeHtml(block.content || "")}</textarea>
+    </div>`;
+}
+
+function renderImageGalleryEditor(block) {
+    const images = window.slovaGallery?.parse(block.content || "") || [];
+    if (!images.length) return `<p class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</p>`;
+    return `<div class="image-gallery-editor">${images.map((image, index) => `<div class="image-gallery-editor-item" data-gallery-item="${index}">
+        <img src="${escapeHtml(image.url)}" alt="">
+        <input type="text" data-gallery-caption value="${escapeHtml(image.alt)}" maxlength="300" placeholder="${currentLanguage === "ru" ? "Подпись" : currentLanguage === "ua" ? "Підпис" : "Caption"}" aria-label="${currentLanguage === "ru" ? "Подпись" : currentLanguage === "ua" ? "Підпис" : "Caption"}">
+        <button type="button" class="mini-action" data-gallery-move="-1" ${index === 0 ? "disabled" : ""} aria-label="${lessonSectionText("moveUp")}">↑</button>
+        <button type="button" class="mini-action" data-gallery-move="1" ${index === images.length - 1 ? "disabled" : ""} aria-label="${lessonSectionText("moveDown")}">↓</button>
+        <button type="button" class="mini-action" data-gallery-remove aria-label="${lessonSectionText("remove")}">×</button>
+    </div>`).join("")}</div>`;
+}
+
+function renderMediaContentEditor(block) {
+    const settings = block.settings && typeof block.settings === "object" && !Array.isArray(block.settings) ? block.settings : {};
+    const isVideo = block.type === "video";
+    const labels = currentLanguage === "ru"
+        ? { source: isVideo ? "Ссылка на YouTube, Google Drive или видеофайл" : "Ссылка на аудио", upload: isVideo ? "Загрузить видео" : "Загрузить аудио", poster: "Постер", captions: "Субтитры WebVTT", transcript: "Транскрипция", hidden: "Скрывать транскрипцию до воспроизведения", segmentA: "Начало фрагмента (сек.)", segmentB: "Конец фрагмента (сек.)" }
+        : currentLanguage === "ua"
+            ? { source: isVideo ? "Посилання на YouTube, Google Drive або відеофайл" : "Посилання на аудіо", upload: isVideo ? "Завантажити відео" : "Завантажити аудіо", poster: "Постер", captions: "Субтитри WebVTT", transcript: "Транскрипція", hidden: "Приховувати транскрипцію до відтворення", segmentA: "Початок фрагмента (сек.)", segmentB: "Кінець фрагмента (сек.)" }
+            : { source: isVideo ? "YouTube, Google Drive, or video URL" : "Audio URL", upload: isVideo ? "Upload video" : "Upload audio", poster: "Poster image URL", captions: "WebVTT captions URL", transcript: "Transcript", hidden: "Hide transcript until playback", segmentA: "Loop start (sec.)", segmentB: "Loop end (sec.)" };
+    const controls = isVideo
+        ? `<div class="form-field"><label>${labels.poster}</label><input type="url" data-media-setting="poster" value="${escapeHtml(settings.poster || "")}" placeholder="https://..."></div><div class="form-field"><label>${labels.captions}</label><input type="url" data-media-setting="captions" value="${escapeHtml(settings.captions || "")}" placeholder="https://..."></div>`
+        : `<div class="form-field"><label>${labels.segmentA}</label><input type="number" min="0" step="0.1" data-media-setting="segmentA" value="${escapeHtml(settings.segmentA ?? "")}"></div><div class="form-field"><label>${labels.segmentB}</label><input type="number" min="0" step="0.1" data-media-setting="segmentB" value="${escapeHtml(settings.segmentB ?? "")}"></div>`;
+    return `<div class="form-field"><label>${labels.source}</label><textarea data-field="content" placeholder="https://...">${escapeHtml(block.content || "")}</textarea><button type="button" class="button secondary small" data-media-upload>${labels.upload}</button><input type="file" accept="${isVideo ? "video/mp4,video/webm" : "audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,audio/wave,audio/ogg"}" data-media-file hidden></div>
+        ${controls}
+        <div class="form-field"><label>${labels.transcript}</label><textarea data-media-setting="transcript" rows="4">${escapeHtml(settings.transcript || "")}</textarea></div>
+        <label class="media-transcript-toggle"><input type="checkbox" data-media-setting="hideTranscriptUntilPlayed" ${settings.hideTranscriptUntilPlayed ? "checked" : ""}> ${labels.hidden}</label>`;
+}
+
 function renderActivityBlocks(activities = activeDraftSection()?.activities || []) {
     if (!activities.length) return `<div class="empty-state"><strong>${t("lesson.firstActivity")}</strong>${t("lesson.firstActivityHint")}</div>`;
     return activities.map((block, index) => {
@@ -3996,6 +4129,17 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
         const hasQuestions = Array.isArray(block.questions) && block.questions.length > 0;
         const summary = activitySummary(block);
         const meta = activityEditorMeta(block);
+        const contentEditor = hasQuestions
+            ? renderActivityQuestionEditor(block)
+            : block.type === "text"
+                ? renderRichTextEditor(block)
+                : block.type === "video" || block.type === "audio"
+                    ? renderMediaContentEditor(block)
+                    : `<div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(block.type))}</span></label>
+                    <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea>${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><button type="button" class="button secondary small" data-import-image-url>${currentLanguage === "ru" ? "Добавить по URL" : currentLanguage === "ua" ? "Додати за URL" : "Add from URL"}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div>${renderImageGalleryEditor(block)}</div>` : ""}</div>`;
+        const answerEditor = hasQuestions || ["text", "image", "video", "audio"].includes(block.type)
+            ? ""
+            : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`;
         return `<article class="builder-block ${isExpanded ? "is-expanded" : ""}" data-block-index="${index}">
             <header class="builder-block-header">
                 <button type="button" class="builder-block-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>
@@ -4008,13 +4152,9 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
             </header>
             <div class="builder-block-fields" ${isExpanded ? "" : "hidden"}>
                 <div class="form-field"><label>${hasQuestions ? activityQuestionText("commonPrompt") : t("field.instruction")}</label><input data-field="prompt" value="${escapeHtml(block.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
-                ${hasQuestions
-                    ? renderActivityQuestionEditor(block)
-                    : `<div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(block.type))}</span></label>
-                    <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea>${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div><small class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</small>` : ""}</div>
-                    ${block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
-                    ${renderActivityQuestionEditor(block)}`}
-                        ${activitySettingsField(block)}
+                ${contentEditor}
+                ${answerEditor}
+                ${activitySettingsField(block)}
             </div>
         </article>`;
     }).join("");
@@ -4090,6 +4230,10 @@ function updateActivitySettings(activity, input) {
     }
 }
 
+function updateImageBlockContent(block, images) {
+    block.content = images.map(({ url, alt }) => `![${String(alt || "").replace(/[\]\r\n]/g, " ").trim()}](${String(url).replace(/[)\r\n]/g, "%29")})`).join("\n");
+}
+
 function bindActivityBlockActions() {
     const currentSection = activeDraftSection();
     if (!currentSection) return;
@@ -4158,13 +4302,14 @@ function bindActivityBlockActions() {
             }
         }));
         const currentBlock = () => activeDraftSection().activities[Number(blockElement.dataset.blockIndex)];
-        const contentField = blockElement.querySelector(':scope > .builder-block-fields > .form-field > textarea[data-field="content"]');
+        const contentField = blockElement.querySelector('textarea[data-field="content"]');
         if (contentField && currentBlock()?.type === "image") {
             const imagesFrom = (files) => [...(files || [])].filter((item) => item.type?.startsWith("image/"));
             const skipped = new Set();
             const attachFiles = async (files) => {
                 for (const file of files) await attachImageToBlock(file, contentField, currentBlock());
                 scheduleLessonDraftAutosave();
+                render();
             };
             const importAddresses = async () => {
                 if (contentField.dataset.importing) return;
@@ -4180,12 +4325,22 @@ function bindActivityBlockActions() {
                 } finally {
                     delete contentField.dataset.importing;
                     scheduleLessonDraftAutosave();
+                    render();
                 }
             };
             contentField.addEventListener("paste", () => setTimeout(importAddresses));
             contentField.addEventListener("change", importAddresses);
             const filePicker = blockElement.querySelector("[data-image-file]");
             blockElement.querySelector("[data-pick-image]")?.addEventListener("click", () => filePicker?.click());
+            blockElement.querySelector("[data-import-image-url]")?.addEventListener("click", () => {
+                const address = window.prompt(currentLanguage === "ru" ? "Введите ссылку на изображение" : "Enter an image URL");
+                if (address?.trim()) attachFilesFromUrls([address.trim()]);
+            });
+            const attachFilesFromUrls = async (addresses) => {
+                for (const address of addresses) await attachImageToBlock(null, contentField, currentBlock(), address);
+                scheduleLessonDraftAutosave();
+                render();
+            };
             filePicker?.addEventListener("change", () => {
                 const files = imagesFrom(filePicker.files);
                 filePicker.value = "";
@@ -4200,7 +4355,149 @@ function bindActivityBlockActions() {
                 event.preventDefault();
                 attachFiles(files);
             });
+            blockElement.querySelectorAll("[data-gallery-caption]").forEach((input) => input.addEventListener("input", () => {
+                const images = window.slovaGallery.parse(currentBlock().content);
+                const itemIndex = Number(input.closest("[data-gallery-item]")?.dataset.galleryItem);
+                if (!images[itemIndex]) return;
+                images[itemIndex].alt = input.value;
+                updateImageBlockContent(currentBlock(), images);
+                contentField.value = currentBlock().content;
+                scheduleLessonDraftAutosave();
+            }));
+            blockElement.querySelectorAll("[data-gallery-move], [data-gallery-remove]").forEach((button) => button.addEventListener("click", () => {
+                const images = window.slovaGallery.parse(currentBlock().content);
+                const itemIndex = Number(button.closest("[data-gallery-item]")?.dataset.galleryItem);
+                if (!images[itemIndex]) return;
+                if (button.hasAttribute("data-gallery-remove")) images.splice(itemIndex, 1);
+                else {
+                    const targetIndex = itemIndex + Number(button.dataset.galleryMove);
+                    if (targetIndex < 0 || targetIndex >= images.length) return;
+                    [images[itemIndex], images[targetIndex]] = [images[targetIndex], images[itemIndex]];
+                }
+                updateImageBlockContent(currentBlock(), images);
+                scheduleLessonDraftAutosave();
+                render();
+            }));
         }
+        const richSurface = blockElement.querySelector("[data-rich-content]");
+        if (richSurface) {
+            let savedRange = null;
+            const saveRichSelection = () => {
+                const selection = window.getSelection();
+                if (selection?.rangeCount && richSurface.contains(selection.getRangeAt(0).commonAncestorContainer)) {
+                    savedRange = selection.getRangeAt(0).cloneRange();
+                }
+            };
+            const focusRichSurface = () => {
+                richSurface.focus();
+                if (!savedRange) return;
+                const selection = window.getSelection();
+                selection?.removeAllRanges();
+                selection?.addRange(savedRange);
+            };
+            const syncRichContent = () => {
+                currentBlock().content = window.SlovaActivityUI.sanitizeRichText(richSurface.innerHTML);
+                saveRichSelection();
+                scheduleLessonDraftAutosave();
+            };
+            richSurface.addEventListener("input", syncRichContent);
+            richSurface.addEventListener("keyup", saveRichSelection);
+            richSurface.addEventListener("mouseup", saveRichSelection);
+            const restoreSelection = (event) => event.preventDefault();
+            blockElement.querySelectorAll(".rich-text-toolbar button").forEach((control) => control.addEventListener("mousedown", restoreSelection));
+            blockElement.querySelectorAll("[data-rich-command]").forEach((button) => button.addEventListener("click", () => {
+                focusRichSurface();
+                document.execCommand(button.dataset.richCommand, false);
+                syncRichContent();
+            }));
+            blockElement.querySelector("[data-rich-format]")?.addEventListener("change", (event) => {
+                focusRichSurface();
+                document.execCommand("formatBlock", false, event.currentTarget.value);
+                syncRichContent();
+            });
+            blockElement.querySelector("[data-rich-color]")?.addEventListener("input", (event) => {
+                focusRichSurface();
+                document.execCommand("styleWithCSS", false, true);
+                document.execCommand("foreColor", false, event.currentTarget.value);
+                syncRichContent();
+            });
+            blockElement.querySelector("[data-rich-highlight]")?.addEventListener("click", () => {
+                focusRichSurface();
+                document.execCommand("styleWithCSS", false, true);
+                document.execCommand("hiliteColor", false, "#fff0b3");
+                syncRichContent();
+            });
+            blockElement.querySelector("[data-rich-link]")?.addEventListener("click", () => {
+                const address = window.prompt(currentLanguage === "ru" ? "Введите URL ссылки" : "Enter a link URL");
+                if (!address || !/^https?:\/\//i.test(address.trim())) return;
+                focusRichSurface();
+                document.execCommand("createLink", false, address.trim());
+                syncRichContent();
+            });
+            blockElement.querySelector("[data-rich-table]")?.addEventListener("click", () => {
+                const dimensions = window.prompt(currentLanguage === "ru" ? "Строки и столбцы (например, 2x3)" : "Rows and columns (e.g. 2x3)", "2x2");
+                const match = dimensions?.match(/^\s*(\d{1,2})\s*x\s*(\d{1,2})\s*$/i);
+                if (!match) return;
+                const rows = Math.min(10, Number(match[1]));
+                const columns = Math.min(10, Number(match[2]));
+                if (!rows || !columns) return;
+                focusRichSurface();
+                const table = `<table><tbody>${Array.from({ length: rows }, () => `<tr>${Array.from({ length: columns }, () => "<td><br></td>").join("")}</tr>`).join("")}</tbody></table><p><br></p>`;
+                document.execCommand("insertHTML", false, table);
+                syncRichContent();
+            });
+            blockElement.querySelector("[data-rich-image-url]")?.addEventListener("click", () => {
+                const address = window.prompt(currentLanguage === "ru" ? "Введите HTTPS-ссылку на изображение" : "Enter an HTTPS image URL");
+                if (!address || !/^https:\/\//i.test(address.trim())) return;
+                richSurface.focus();
+                document.execCommand("insertHTML", false, `<img src="${escapeHtml(address.trim())}" alt="">`);
+                syncRichContent();
+            });
+            const imageInput = blockElement.querySelector("[data-rich-image-file]");
+            blockElement.querySelector("[data-rich-image-file-button]")?.addEventListener("click", () => imageInput?.click());
+            imageInput?.addEventListener("change", async () => {
+                const file = imageInput.files?.[0];
+                imageInput.value = "";
+                if (!file) return;
+                try {
+                    const url = await uploadLessonImage(file);
+                    focusRichSurface();
+                    document.execCommand("insertHTML", false, `<img src="${escapeHtml(url)}" alt="">`);
+                    syncRichContent();
+                } catch (error) {
+                    console.error("Could not insert an image in the text block.", error);
+                    showToast(`${(imageUploadMessages[currentLanguage] || imageUploadMessages.ru).failed} ${error.message || error}`);
+                }
+            });
+        }
+        blockElement.querySelectorAll("[data-media-setting]").forEach((input) => input.addEventListener("input", () => {
+            const block = currentBlock();
+            const settings = block.settings && typeof block.settings === "object" && !Array.isArray(block.settings) ? block.settings : {};
+            const key = input.dataset.mediaSetting;
+            if (input.type === "checkbox") settings[key] = input.checked;
+            else if (input.type === "number") {
+                if (input.value === "") delete settings[key];
+                else settings[key] = Number(input.value);
+            } else settings[key] = input.value;
+            block.settings = settings;
+            scheduleLessonDraftAutosave();
+        }));
+        const mediaInput = blockElement.querySelector("[data-media-file]");
+        blockElement.querySelector("[data-media-upload]")?.addEventListener("click", () => mediaInput?.click());
+        mediaInput?.addEventListener("change", async () => {
+            const file = mediaInput.files?.[0];
+            mediaInput.value = "";
+            if (!file) return;
+            try {
+                showToast(currentLanguage === "ru" ? "Загружаем файл…" : "Uploading media…");
+                currentBlock().content = await uploadLessonMedia(file, currentBlock().type);
+                scheduleLessonDraftAutosave();
+                render();
+            } catch (error) {
+                console.error("Could not upload the lesson media.", error);
+                showToast(`${currentLanguage === "ru" ? "Не удалось загрузить файл." : "Could not upload media."} ${error.message || error}`);
+            }
+        });
     });
 
     if (blocksContainer) bindSortableActivityCards(blocksContainer, ".builder-block", ".builder-block-drag", "blockIndex", (order) => {
