@@ -48,24 +48,16 @@
 
     const PEEK = 56;
 
-    // Peeking edges are placed from the active card's edges so both sides show the same strip regardless of image widths.
+    // Equal-sized cards keep their height and reveal only a side strip behind the active card.
     function layout(gallery) {
         const slides = [...gallery.querySelectorAll(".slova-gallery-stage .slova-gallery-image")];
         const active = slides[Number(gallery.dataset.galleryIndex)];
         if (!active) return;
-        const stage = gallery.querySelector(".slova-gallery-stage");
-        stage.style.height = `${active.offsetHeight}px`;
-        stage.style.setProperty("--gallery-height", `${active.offsetHeight}px`);
-        const half = active.offsetWidth / 2;
         slides.forEach((slide, position) => {
             const offset = position - Number(gallery.dataset.galleryIndex);
             const steps = Math.min(Math.abs(offset), 3);
-            const scale = 1 - steps * 0.06;
             const sign = Math.sign(offset);
-            const x = sign * (half + PEEK * steps - (slide.offsetWidth * scale) / 2);
-            slide.style.setProperty("--x", `${offset === 0 ? 0 : x}px`);
-            slide.style.setProperty("--s", String(scale));
-            slide.style.setProperty("--r", `${-sign * 4}deg`);
+            slide.style.setProperty("--x", `${sign * PEEK * steps}px`);
         });
     }
 

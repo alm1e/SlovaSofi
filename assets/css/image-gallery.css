@@ -2,19 +2,19 @@
 .slova-gallery-image { display: block; max-width: 100%; max-height: 460px; margin: 0 auto; border-radius: 10px; object-fit: contain; cursor: zoom-in; }
 
 /* Stacked cards: every image shares one grid cell and is offset by its distance (--o) from the active one. */
-.slova-gallery-stage { display: grid; grid-template-rows: minmax(0, 1fr); align-items: center; justify-items: center; padding: 0 clamp(24px, 14%, 200px); perspective: 1400px; overflow: hidden; }
+.slova-gallery-stage { display: grid; grid-template-rows: minmax(0, 1fr); align-items: center; justify-items: center; padding: 0 clamp(24px, 14%, 200px); overflow: hidden; }
 .slova-gallery-stage .slova-gallery-image {
     grid-area: 1 / 1; margin: 0; transform-origin: center; cursor: pointer;
-    --x: 0px; --s: 1; --r: 0deg;
+    width: 100%; max-width: 330px; height: auto; max-height: 440px; aspect-ratio: 3 / 4; object-fit: cover;
+    --x: 0px;
     --d: max(var(--o), calc(var(--o) * -1));
-    transform: translateX(var(--x)) scale(var(--s)) rotateY(var(--r));
+    transform: translateX(var(--x));
     opacity: calc(1 - var(--d) * .42);
     z-index: calc(20 - var(--d));
     filter: brightness(calc(1 - var(--d) * .12));
     transition: transform .5s cubic-bezier(.22, 1, .36, 1), opacity .4s ease, filter .4s ease;
 }
 .slova-gallery-stage .slova-gallery-image[data-slot="0"] { cursor: zoom-in; }
-.slova-gallery-stage .slova-gallery-image:not([data-slot="0"]) { max-height: var(--gallery-height, 460px); }
 .slova-gallery-stage .slova-gallery-image[data-slot="-1"] { opacity: .58; }
 .slova-gallery-stage .slova-gallery-image:is([data-slot="-1"], [data-slot="1"], [data-slot="2"]):hover { opacity: .85; }
 .slova-gallery-stage .slova-gallery-image:is([data-slot="past"], [data-slot="far"]) { opacity: 0; pointer-events: none; }
