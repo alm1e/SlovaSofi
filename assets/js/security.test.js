@@ -71,4 +71,12 @@ test('rich lesson text supports formatting while keeping raw HTML and unsafe lin
     assert.ok(html.includes('<img src="https://example.test/photo.jpg"'));
     assert.ok(!/<script\b/i.test(html));
     assert.ok(!/href="javascript:/i.test(html));
+    const formatted = window.SlovaActivityUI.renderRichText('[align=center][size=24][u]styled[/u][/size][/align]\n[highlight=#fff19c][border]outlined[/border][/highlight]\n[size=999]unsafe size[/size]\n[align=left; background:red]unsafe alignment[/align]');
+    assert.ok(formatted.includes('style="text-align:center"'));
+    assert.ok(formatted.includes('style="font-size:24px"'));
+    assert.ok(formatted.includes('<u>styled</u>'));
+    assert.ok(formatted.includes('<mark style="background-color:#fff19c">'));
+    assert.ok(formatted.includes('class="activity-rich-outline"'));
+    assert.ok(!formatted.includes('font-size:999px'));
+    assert.ok(!formatted.includes('text-align:left;'));
 });

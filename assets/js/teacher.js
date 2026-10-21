@@ -894,7 +894,6 @@ const savedViewState = (() => {
     }
 })();
 let activeView = savedViewState.view || "overview";
-let navigationRenderGeneration = 0;
 let selectedLessonUnit = ["A1", "B1"].includes(savedViewState.unit) ? savedViewState.unit : "";
 let activeClassFilter = "";
 let searchQuery = "";
@@ -1195,7 +1194,15 @@ async function loadCurrentUser() {
 
         // Load workspace in background (don't block UI)
         try {
-            const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, user.id, user.email || "");
+            const workspace = await window.teacherWorkspaceApi.loadWorkspace(
+                window.supabaseClient,
+                user.id,
+                user.email || "",
+                (context) => {
+                    workspaceAccess = { ...workspaceAccess, ...context };
+                    translateStaticUI();
+                }
+            );
             data = workspace.data;
             workspaceAccess = {
                 workspaceOwnerId: workspace.workspaceOwnerId,
@@ -1453,18 +1460,8 @@ function setView(view) {
     document.getElementById("sidebar").classList.remove("open");
     document.getElementById("sidebarBackdrop").classList.remove("open");
     document.getElementById("menuToggle").setAttribute("aria-expanded", "false");
-    const generation = ++navigationRenderGeneration;
-    if (view === "overview" || view === "calendar") {
-        render();
-        return;
-    }
-    pageContent.setAttribute("aria-busy", "true");
-    pageContent.innerHTML = `<div class="panel navigation-loading" role="status">${escapeHtml(t("nav.loading"))}</div>`;
-    window.setTimeout(() => {
-        if (generation !== navigationRenderGeneration) return;
-        render();
-        pageContent.removeAttribute("aria-busy");
-    }, 0);
+    pageContent.removeAttribute("aria-busy");
+    render();
 }
 
 function render() {
@@ -4163,12 +4160,36 @@ function contentHint(type) {
 }
 
 function richTextToolbar() {
-    const labels = currentLanguage === "ru"
-        ? [["H1", "# "], ["H2", "## "], ["H3", "### "], ["Жирный", "**"], ["Курсив", "*"], ["Список", "- "], ["Ссылка", "[текст](https://)"], ["Изображение", "![описание](https://)"], ["Цвет", "[color=#d14]текст[/color]"]]
-        : currentLanguage === "ua"
-            ? [["H1", "# "], ["H2", "## "], ["H3", "### "], ["Жирний", "**"], ["Курсив", "*"], ["Список", "- "], ["Посилання", "[текст](https://)"], ["Зображення", "![опис](https://)"], ["Колір", "[color=#d14]текст[/color]"]]
-            : [["H1", "# "], ["H2", "## "], ["H3", "### "], ["Bold", "**"], ["Italic", "*"], ["List", "- "], ["Link", "[text](https://)"], ["Image", "![alt](https://)"], ["Color", "[color=#d14]text[/color]"]];
-    return `<div class="block-tabs" aria-label="${currentLanguage === "ru" ? "Форматирование текста" : currentLanguage === "ua" ? "Форматування тексту" : "Text formatting"}">${labels.map(([label, format]) => `<button class="block-tab" type="button" data-rich-format="${escapeHtml(format)}">${escapeHtml(label)}</button>`).join("")}</div>`;
+    const labels = {
+        ua: { toolbar: "Форматування тексту", style: "Стиль", normal: "Звичайний", heading: "Заголовок", list: "Список", size: "Розмір", align: "Вирівнювання", left: "Ліворуч", center: "По центру", right: "Праворуч", bold: "Жирний", italic: "Курсив", underline: "Підкреслення", strike: "Закреслення", textColor: "Колір тексту", highlight: "Підсвічування", outline: "Обведення", link: "Посилання", image: "Зображення" },
+        ru: { toolbar: "Форматирование текста", style: "Стиль", normal: "Обычный", heading: "Заголовок", list: "Список", size: "Размер", align: "Выравнивание", left: "Слева", center: "По центру", right: "Справа", bold: "Жирный", italic: "Курсив", underline: "Подчёркивание", strike: "Зачёркивание", textColor: "Цвет текста", highlight: "Подсветка", outline: "Обводка", link: "Ссылка", image: "Изображение" },
+        en: { toolbar: "Text formatting", style: "Style", normal: "Normal", heading: "Heading", list: "List", size: "Size", align: "Alignment", left: "Left", center: "Center", right: "Right", bold: "Bold", italic: "Italic", underline: "Underline", strike: "Strikethrough", textColor: "Text color", highlight: "Highlight", outline: "Outline", link: "Link", image: "Image" }
+    };
+    const text = labels[currentLanguage] || labels.en;
+    const aria = (value) => escapeHtml(value);
+    return `<div class="rich-text-toolbar" role="toolbar" aria-label="${aria(text.toolbar)}">
+        <select data-rich-style aria-label="${aria(text.style)}">
+            <option value="">${aria(text.style)}</option><option value="normal">${aria(text.normal)}</option>
+            <option value="h1">${aria(text.heading)} 1</option><option value="h2">${aria(text.heading)} 2</option><option value="h3">${aria(text.heading)} 3</option>
+            <option value="list">${aria(text.list)}</option>
+        </select>
+        <button type="button" data-rich-format="**" aria-label="${aria(text.bold)}" title="${aria(text.bold)}"><strong>B</strong></button>
+        <button type="button" data-rich-format="*" aria-label="${aria(text.italic)}" title="${aria(text.italic)}"><em>I</em></button>
+        <button type="button" data-rich-format="[u]" aria-label="${aria(text.underline)}" title="${aria(text.underline)}"><u>U</u></button>
+        <button type="button" data-rich-format="[s]" aria-label="${aria(text.strike)}" title="${aria(text.strike)}"><s>S</s></button>
+        <select data-rich-size aria-label="${aria(text.size)}">
+            <option value="">${aria(text.size)}</option>${[12, 14, 16, 18, 20, 24, 28, 32, 36].map((size) => `<option value="${size}">${size}px</option>`).join("")}
+        </select>
+        <input type="color" data-rich-color value="#34724d" aria-label="${aria(text.textColor)}" title="${aria(text.textColor)}">
+        <input type="color" data-rich-highlight value="#fff19c" aria-label="${aria(text.highlight)}" title="${aria(text.highlight)}">
+        <select data-rich-align aria-label="${aria(text.align)}">
+            <option value="">${aria(text.align)}</option><option value="left">${aria(text.left)}</option>
+            <option value="center">${aria(text.center)}</option><option value="right">${aria(text.right)}</option>
+        </select>
+        <button type="button" data-rich-format="[border]" aria-label="${aria(text.outline)}" title="${aria(text.outline)}">▣</button>
+        <button type="button" data-rich-format="[текст](https://)" aria-label="${aria(text.link)}" title="${aria(text.link)}">↗</button>
+        <button type="button" data-rich-format="![описание](https://)" aria-label="${aria(text.image)}" title="${aria(text.image)}">▧</button>
+    </div>`;
 }
 
 function contentPlaceholder(type) {
@@ -4312,41 +4333,73 @@ function bindActivityBlockActions() {
         }));
         const currentBlock = () => activeDraftSection().activities[Number(blockElement.dataset.blockIndex)];
         const contentField = blockElement.querySelector(':scope > .builder-block-fields > .form-field > textarea[data-field="content"]');
+        const applyRichFormat = (prefix, suffix = "", linePrefix = false) => {
+            if (!contentField) return;
+            const start = contentField.selectionStart;
+            const end = contentField.selectionEnd;
+            const selected = contentField.value.slice(start, end) || (currentLanguage === "ru" ? "текст" : "text");
+            const lines = selected.split(/\r?\n/);
+            const replacement = lines.map((line) => linePrefix ? `${prefix}${line}` : `${prefix}${line}${suffix}`).join("\n");
+            contentField.setRangeText(replacement, start, end, "select");
+            contentField.focus();
+            contentField.setSelectionRange(start, start + replacement.length);
+            currentBlock().content = contentField.value;
+            scheduleLessonDraftAutosave();
+        };
         blockElement.querySelectorAll("[data-rich-format]").forEach((button) => button.addEventListener("click", () => {
             const textarea = contentField;
             if (!textarea) return;
             const format = button.dataset.richFormat;
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const selected = textarea.value.slice(start, end);
-            let replacement;
-            let selectionStart = 0;
-            let selectionEnd = 0;
-            if (format === "**" || format === "*") {
-                const content = selected || (currentLanguage === "ru" ? "текст" : "text");
-                replacement = `${format}${content}${format}`;
-                selectionStart = format.length;
-                selectionEnd = selectionStart + content.length;
-            } else if (format.startsWith("#") || format === "- ") {
-                replacement = `${format}${selected}`;
-                selectionStart = selectionEnd = format.length + selected.length;
-            } else if (format.startsWith("[color=")) {
-                const content = selected || (currentLanguage === "ru" ? "текст" : "text");
-                replacement = `[color=#d14]${content}[/color]`;
-                selectionStart = "[color=#d14]".length;
-                selectionEnd = selectionStart + content.length;
-            } else {
-                const content = selected || (currentLanguage === "ru" ? "текст" : "text");
-                replacement = format.replace(/^\[[^\]]+\]/, `[${content}]`);
-                selectionStart = replacement.indexOf(`[${content}]`) + 1;
-                selectionEnd = selectionStart + content.length;
+            const wrappers = { "[u]": "[/u]", "[s]": "[/s]", "[border]": "[/border]" };
+            if (format === "**" || format === "*") applyRichFormat(format, format);
+            else if (wrappers[format]) applyRichFormat(format, wrappers[format]);
+            else if (format.startsWith("#") || format === "- ") applyRichFormat(format, "", true);
+            else {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const selected = textarea.value.slice(start, end) || (currentLanguage === "ru" ? "текст" : "text");
+                const label = selected.trim().replace(/\s+/g, " ").replace(/[\[\]()]/g, "");
+                const value = format.startsWith("![") ? `![${label}](https://)` : `[${label}](https://)`;
+                textarea.setRangeText(value, start, end, "select");
+                textarea.focus();
+                currentBlock().content = textarea.value;
+                scheduleLessonDraftAutosave();
             }
-            textarea.setRangeText(replacement, start, end, "select");
-            textarea.focus();
-            textarea.setSelectionRange(start + selectionStart, start + selectionEnd);
-            currentBlock().content = textarea.value;
-            scheduleLessonDraftAutosave();
         }));
+        blockElement.querySelector("[data-rich-style]")?.addEventListener("change", (event) => {
+            const style = event.currentTarget.value;
+            if (!style) return;
+            const prefixes = { normal: "", h1: "# ", h2: "## ", h3: "### ", list: "- " };
+            const prefix = prefixes[style];
+            const start = contentField.selectionStart;
+            const end = contentField.selectionEnd;
+            const selected = contentField.value.slice(start, end) || (currentLanguage === "ru" ? "текст" : "text");
+            const lines = selected.split(/\r?\n/).map((line) => line.replace(/^#{1,3}\s+/, ""));
+            const replacement = lines.map((line) => `${prefix}${line}`).join("\n");
+            contentField.setRangeText(replacement, start, end, "select");
+            contentField.focus();
+            currentBlock().content = contentField.value;
+            scheduleLessonDraftAutosave();
+            event.currentTarget.value = "";
+        });
+        blockElement.querySelector("[data-rich-size]")?.addEventListener("change", (event) => {
+            const size = event.currentTarget.value;
+            if (/^(12|14|16|18|20|24|28|32|36)$/.test(size)) applyRichFormat(`[size=${size}]`, "[/size]");
+            event.currentTarget.value = "";
+        });
+        blockElement.querySelector("[data-rich-color]")?.addEventListener("change", (event) => {
+            const color = event.currentTarget.value;
+            if (/^#[\da-f]{6}$/i.test(color)) applyRichFormat(`[color=${color}]`, "[/color]");
+        });
+        blockElement.querySelector("[data-rich-highlight]")?.addEventListener("change", (event) => {
+            const color = event.currentTarget.value;
+            if (/^#[\da-f]{6}$/i.test(color)) applyRichFormat(`[highlight=${color}]`, "[/highlight]");
+        });
+        blockElement.querySelector("[data-rich-align]")?.addEventListener("change", (event) => {
+            const align = event.currentTarget.value;
+            if (/^(left|center|right)$/.test(align)) applyRichFormat(`[align=${align}]`, "[/align]", false);
+            event.currentTarget.value = "";
+        });
         blockElement.querySelector("[data-hide-selected-word]")?.addEventListener("click", () => {
             if (!contentField) return;
             const start = contentField.selectionStart;
