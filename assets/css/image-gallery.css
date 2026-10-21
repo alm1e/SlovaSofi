@@ -4,7 +4,7 @@
 /* Stacked cards: every image shares one grid cell and is offset by its distance (--o) from the active one. */
 .slova-gallery-stage { display: grid; grid-template-columns: minmax(0, 330px); justify-content: center; align-items: center; justify-items: center; padding: 0 clamp(24px, 8vw, 56px); overflow: hidden; }
 .slova-gallery.is-multiple .slova-gallery-stage .slova-gallery-image {
-    width: 100%; min-width: 0; max-width: 330px; height: auto; max-height: none; aspect-ratio: 3 / 4; object-fit: cover;
+    width: 100%; min-width: 0; max-width: 330px; height: auto; max-height: none; aspect-ratio: 3 / 4; object-fit: contain; background: #fff;
 }
 .slova-gallery-stage .slova-gallery-image {
     grid-area: 1 / 1; margin: 0; transform-origin: center; cursor: pointer;
