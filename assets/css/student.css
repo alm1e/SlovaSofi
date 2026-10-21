@@ -119,6 +119,19 @@
 .student-platform .student-flashcard-hard-toggle { margin-bottom: 10px; }
 .student-platform .student-hint { margin-top: 8px; border: 0; padding: 0; background: transparent; color: #3f6f4c; text-decoration: underline; cursor: pointer; font: inherit; }
 .student-platform .student-activity-image { display: block; max-width: 100%; max-height: 440px; border-radius: 10px; object-fit: contain; }
+.student-platform .student-error-text { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 4px; line-height: 2; }
+.student-platform .student-error-word { border: 0; border-radius: 4px; padding: 0 2px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.student-platform .student-error-word:hover, .student-platform .student-error-word.is-selected { background: #e3f1e6; box-shadow: 0 0 0 2px #77a181; }
+.student-platform .student-error-correction { display: grid; gap: 5px; max-width: 300px; color: var(--muted); font-size: 12px; font-weight: 650; }
+.student-platform .student-hotspot-image { position: relative; width: fit-content; max-width: 100%; }
+.student-platform .student-hotspot-image img { display: block; max-width: 100%; max-height: 500px; border-radius: 10px; object-fit: contain; }
+.student-platform .student-hotspot { position: absolute; display: grid; place-items: center; width: 30px; height: 30px; transform: translate(-50%, -50%); border: 2px solid #fff; border-radius: 50%; background: var(--purple); color: #fff; font-size: 12px; font-weight: 750; box-shadow: 0 2px 9px #17251b55; cursor: pointer; }
+.student-platform .student-hotspot.is-active { background: #b35634; }
+.student-platform .student-hotspot-detail { display: grid; gap: 8px; width: fit-content; margin-top: 10px; color: var(--ink); }
+.student-platform .student-hotspot-detail audio { display: block; }
+.student-platform .student-recording-preview { display: block; max-width: min(100%, 420px); margin-top: 10px; }
+.student-platform .student-vocabulary-list { align-items: start; }
+.student-platform .student-vocabulary-list .student-flashcard-card { max-width: 260px; }
 .student-platform .student-activity-media { display: block; width: min(100%,640px); }
 .student-platform .student-activity-video { display: block; width: min(100%, 720px); aspect-ratio: 16 / 9; border: 0; border-radius: 12px; background: #17251c; }
 .student-platform .student-auth-content { display: grid; min-height: 100vh; place-items: center; padding: 28px; }
@@ -277,6 +290,8 @@
     color: #e0eae3;
 }
 :root[data-theme="dark"] .student-platform .student-activity-content { color: #cbd8ce; }
+:root[data-theme="dark"] .student-platform .student-error-word:hover,
+:root[data-theme="dark"] .student-platform .student-error-word.is-selected { background: #304a38; box-shadow: 0 0 0 2px #6b9d78; }
 :root[data-theme="dark"] .student-platform .student-activity-group {
     border-color: #34483a;
     background: #202f26;

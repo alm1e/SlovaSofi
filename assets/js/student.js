@@ -136,6 +136,33 @@
         openCalendar: "Open calendar →",
         reminder: "Upcoming session:"
     });
+    Object.assign(copy.ua, {
+        recordPronunciation: "Почати запис", stopRecording: "Зупинити запис", recording: "Запис…",
+        uploadingRecording: "Збереження запису…", recordingSaved: "Запис збережено для викладача.",
+        recordingError: "Не вдалося записати аудіо.", recordingUnsupported: "Браузер не підтримує запис аудіо.",
+        chooseErrorWord: "Виберіть слово з помилкою й введіть виправлення.",
+        correction: "Виправлення", selectHotspot: "Натисніть на позначку, щоб дізнатися слово.",
+        hotspotAudio: "Прослухати вимову", microphonePermission: "Дозвольте доступ до мікрофона.",
+        playsRemaining: "Залишилося прослуховувань: {count}", transcript: "Транскрипція"
+    });
+    Object.assign(copy.ru, {
+        recordPronunciation: "Начать запись", stopRecording: "Остановить запись", recording: "Идёт запись…",
+        uploadingRecording: "Сохранение записи…", recordingSaved: "Запись сохранена для преподавателя.",
+        recordingError: "Не удалось записать аудио.", recordingUnsupported: "Браузер не поддерживает запись аудио.",
+        chooseErrorWord: "Выберите слово с ошибкой и введите исправление.",
+        correction: "Исправление", selectHotspot: "Нажмите на метку, чтобы узнать слово.",
+        hotspotAudio: "Прослушать произношение", microphonePermission: "Разрешите доступ к микрофону.",
+        playsRemaining: "Осталось прослушиваний: {count}", transcript: "Транскрипция"
+    });
+    Object.assign(copy.en, {
+        recordPronunciation: "Start recording", stopRecording: "Stop recording", recording: "Recording…",
+        uploadingRecording: "Saving recording…", recordingSaved: "Recording saved for your teacher.",
+        recordingError: "Could not record audio.", recordingUnsupported: "Audio recording is not supported by this browser.",
+        chooseErrorWord: "Select the incorrect word and enter a correction.",
+        correction: "Correction", selectHotspot: "Select a marker to discover the word.",
+        hotspotAudio: "Play pronunciation", microphonePermission: "Allow microphone access.",
+        playsRemaining: "Listens remaining: {count}", transcript: "Transcript"
+    });
     const languageChoices = ["ua", "ru", "en"];
     let language = languageChoices.includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
     let user = null;
@@ -155,6 +182,7 @@
     let studentSectionsOpen = false;
     let draggedWordButton = null;
     let draggedOrderItem = null;
+    const activeRecorders = new Map();
     let draftSaveTimers = new Map();
     let pendingDrafts = new Map();
     let draftSaveQueue = Promise.resolve();
@@ -223,7 +251,8 @@
     const activitiesFor = (lesson) => lessonSections(lesson).flatMap((section) => Array.isArray(section.activities) ? section.activities : []);
     const answerableActivityTypes = new Set([
         "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
-        "sentence-order", "true-false", "table", "match", "columns", "open-answer", "flashcards"
+        "sentence-order", "true-false", "table", "match", "columns", "open-answer", "flashcards",
+        "pronunciation-recording", "listening-questions", "find-error", "vocabulary"
     ]);
     const progressActivitiesFor = (lesson) => activitiesFor(lesson).flatMap((activity) => {
         if (!answerableActivityTypes.has(activity.type)) return [];
@@ -567,14 +596,33 @@
         }
         if (Array.isArray(activity.questions) && activity.questions.length) {
             const canSubmit = activity.questions.some((question) => question.gradable || question.reviewRequired);
+            const questions = activity.questions.map((question, questionIndex) => ({
+                question,
+                questionIndex,
+                saved: progressForQuestion(openedLesson, activity, index, question.questionId || `legacy-${questionIndex}`, questionIndex)
+            }));
+            const listening = activity.type === "listening-questions"
+                ? (() => {
+                    const source = mediaUrl(activity.content);
+                    const maxPlays = Number(activity.maxPlays) || 0;
+                    return source ? `<audio class="student-activity-media" controls preload="none" data-listening-audio data-max-plays="${maxPlays}" src="${escapeHtml(source)}"></audio>${maxPlays ? `<p class="student-muted" data-listening-status>${escapeHtml(text("playsRemaining").replace("{count}", String(maxPlays)))}</p>` : ""}` : "";
+                })()
+                : "";
+            const transcriptAvailable = activity.transcript
+                && (!activity.transcriptAfterSubmit || questions.every(({ saved }) => saved?.draft !== true && hasAnswerResponse(saved?.response)));
+            const transcript = transcriptAvailable
+                ? `<details class="student-listening-transcript"><summary>${escapeHtml(text("transcript"))}</summary><p>${escapeHtml(activity.transcript).replace(/\n/g, "<br>")}</p></details>`
+                : "";
             return `<section class="student-activity-group">
                 <header class="student-activity-group-heading"><span class="student-activity-number">${index + 1}</span><h3>${escapeHtml(activity.prompt || text("activity"))}</h3></header>
-                <div class="student-activity-subitems">${activity.questions.map((question, questionIndex) => renderActivityItem(
+                ${listening}
+                <div class="student-activity-subitems">${questions.map(({ question, questionIndex, saved }) => renderActivityItem(
                     question,
                     index,
                     questionIndex,
-                    progressForQuestion(openedLesson, activity, index, question.questionId || `legacy-${questionIndex}`, questionIndex)
+                    saved
                 )).join("")}</div>
+                ${transcript}
                 ${canSubmit ? `<div class="student-activity-group-actions"><button class="button small" type="button" data-submit-activity-group>${escapeHtml(text("checkAnswers"))}</button></div>` : ""}
             </section>`;
         }
@@ -665,6 +713,27 @@
                 const rating = ratings[item.cardIndex] || "";
                 return `<div class="student-flashcard-card" data-flashcard-card data-card-index="${item.cardIndex}" data-rating="${escapeHtml(rating)}"><div class="student-flashcard"><strong class="student-flashcard-face">${flashcardSideMarkup(item.front)}</strong><button class="student-flashcard-flip" type="button" data-front="${escapeHtml(item.front)}" data-back="${escapeHtml(item.back)}">${escapeHtml(text("flip"))}</button></div><div class="student-flashcard-rating"><button class="button secondary small" type="button" data-flashcard-rating="know" data-card-index="${item.cardIndex}" aria-pressed="${rating === "know"}">${escapeHtml(flashcardChoiceText("know"))}</button><button class="button secondary small" type="button" data-flashcard-rating="repeat" data-card-index="${item.cardIndex}" aria-pressed="${rating === "repeat"}">${escapeHtml(flashcardChoiceText("repeat"))}</button></div></div>`;
             }).join("")}</div>`;
+        } else if (activity.type === "vocabulary") {
+            const ratings = Array.isArray(savedResponse) ? savedResponse : [];
+            body = `<div class="student-flashcard-list student-vocabulary-list">${(activity.cards || []).map((item) => {
+                const rating = ratings[item.cardIndex] || "";
+                return `<div class="student-flashcard-card" data-flashcard-card data-card-index="${item.cardIndex}" data-rating="${escapeHtml(rating)}"><div class="student-flashcard"><strong class="student-flashcard-face">${flashcardSideMarkup(item.front)}</strong><button class="student-flashcard-flip" type="button" data-front="${escapeHtml(item.front)}" data-back="${escapeHtml(item.back)}">${escapeHtml(text("flip"))}</button></div>${item.audio ? `<audio class="student-choice-media" controls preload="none" src="${escapeHtml(mediaUrl(item.audio))}"></audio>` : ""}<div class="student-flashcard-rating"><button class="button secondary small" type="button" data-flashcard-rating="know" data-card-index="${item.cardIndex}" aria-pressed="${rating === "know"}">${escapeHtml(flashcardChoiceText("know"))}</button><button class="button secondary small" type="button" data-flashcard-rating="repeat" data-card-index="${item.cardIndex}" aria-pressed="${rating === "repeat"}">${escapeHtml(flashcardChoiceText("repeat"))}</button></div></div>`;
+            }).join("")}</div>`;
+        } else if (activity.type === "pronunciation-recording") {
+            const savedPath = typeof savedResponse === "string" ? savedResponse : "";
+            body = `${activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : ""}<button class="button secondary small" type="button" data-recording-toggle>${escapeHtml(text("recordPronunciation"))}</button><p class="student-muted" data-recording-status aria-live="polite">${savedPath ? escapeHtml(text("recordingSaved")) : ""}</p><audio class="student-activity-media" data-recording-preview controls preload="none" ${savedPath ? "" : "hidden"}></audio>`;
+            controls = `<input type="hidden" data-answer-kind="recording" data-recording-path value="${escapeHtml(savedPath)}">`;
+        } else if (activity.type === "find-error") {
+            let wordIndex = 0;
+            const words = String(activity.content || "").match(/\S+|\s+/g) || [];
+            body = `<p class="student-error-text">${words.map((word) => /^\s+$/.test(word)
+                ? escapeHtml(word)
+                : `<button type="button" class="student-error-word" data-error-word-index="${wordIndex++}">${escapeHtml(word)}</button>`).join("")}</p><label class="student-error-correction">${escapeHtml(text("correction"))}<input class="student-inline-answer" data-error-correction autocomplete="off"></label><p class="student-muted" data-error-selection>${escapeHtml(text("chooseErrorWord"))}</p>`;
+            controls = `<input type="hidden" data-answer-kind="find-error" data-error-selected value="">`;
+        } else if (activity.type === "interactive-image") {
+            const image = mediaUrl(activity.content);
+            const hotspots = Array.isArray(activity.hotspots) ? activity.hotspots : [];
+            body = image ? `<div class="student-hotspot-image"><img src="${escapeHtml(image)}" alt="${escapeHtml(activity.prompt || text("imageAlt"))}" loading="lazy">${hotspots.map((hotspot, hotspotIndex) => `<button type="button" class="student-hotspot" data-hotspot-index="${hotspotIndex}" style="left:${Number(hotspot.x)}%;top:${Number(hotspot.y)}%" aria-label="${escapeHtml(hotspot.word)}">${hotspotIndex + 1}</button>`).join("")}</div><p class="student-hotspot-detail" data-hotspot-detail>${escapeHtml(text("selectHotspot"))}</p>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         } else if (activity.type === "image") {
             const images = window.slovaGallery.parse(activity.content);
             body = images.length ? window.slovaGallery.html(images, activity.alt || activity.prompt || text("imageAlt"), "student-activity-image") : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
@@ -797,6 +866,11 @@
         if (kind === "order") return [...element.querySelectorAll("[data-order-item]")].map((item) => item.dataset.orderItem);
         if (kind === "matches") return [...element.querySelectorAll("[data-match-answer]")].map((select) => select.value);
         if (kind === "table") return [...element.querySelectorAll("[data-table-answer]")].map((input) => input.value.trim());
+        if (kind === "recording") return element.querySelector("[data-recording-path]")?.value || "";
+        if (kind === "find-error") return JSON.stringify({
+            index: element.querySelector("[data-error-selected]")?.value || "",
+            correction: element.querySelector("[data-error-correction]")?.value.trim() || ""
+        });
         if (kind === "open") return {
             text: element.querySelector("[data-open-answer]")?.value || "",
             attachments: [...element.querySelectorAll("[data-open-attachment]")].map((input) => input.value.trim()).filter(Boolean)
@@ -947,6 +1021,102 @@
         target.append(replacement);
     }
 
+    function stopRecording(activityElement) {
+        const recording = activeRecorders.get(activityElement);
+        if (!recording || recording.recorder.state === "inactive") return recording?.finished || Promise.resolve();
+        recording.recorder.stop();
+        return recording.finished;
+    }
+
+    function startRecording(button) {
+        const activityElement = button.closest("[data-activity-index]");
+        const status = activityElement?.querySelector("[data-recording-status]");
+        if (!activityElement || !status || !openedLesson || !user || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+            showToast(text("recordingUnsupported"), true);
+            return;
+        }
+        const lesson = openedLesson;
+        const student = user;
+        const activityIndex = Number(activityElement.dataset.activityIndex);
+        let mediaStream;
+        button.disabled = true;
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+            mediaStream = stream;
+            if (openedLesson !== lesson) {
+                stream.getTracks().forEach((track) => track.stop());
+                return;
+            }
+            const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "";
+            const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+            const chunks = [];
+            const lessonId = lesson.id;
+            const classId = lesson.classId;
+            const userId = student.id;
+            let resolveFinished;
+            const finished = new Promise((resolve) => { resolveFinished = resolve; });
+            let maxTimer = 0;
+            recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
+            recorder.onstop = async () => {
+                stream.getTracks().forEach((track) => track.stop());
+                clearTimeout(maxTimer);
+                button.dataset.recording = "false";
+                button.disabled = true;
+                button.textContent = text("recordPronunciation");
+                const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+                const extension = blob.type.includes("ogg") ? "ogg" : blob.type.includes("mp4") ? "mp4" : blob.type.includes("wav") ? "wav" : "webm";
+                const path = `${userId}/${classId}/${lessonId}/${crypto.randomUUID()}.${extension}`;
+                const answerField = activityElement.querySelector("[data-recording-path]");
+                const preview = activityElement.querySelector("[data-recording-preview]");
+                const objectUrl = URL.createObjectURL(blob);
+                if (preview) {
+                    preview.src = objectUrl;
+                    preview.hidden = false;
+                }
+                status.textContent = text("uploadingRecording");
+                try {
+                    const { error } = await window.supabaseClient.storage.from("student-recordings").upload(path, blob, {
+                        contentType: blob.type.split(";")[0] || "audio/webm",
+                        upsert: false
+                    });
+                    if (error) throw error;
+                    if (answerField) answerField.value = path;
+                    status.textContent = text("recordingSaved");
+                    const draftKey = activityDraftKey(activityIndex, null);
+                    const response = path;
+                    pendingDrafts.set(draftKey, { activityIndex, questionId: null, response });
+                    queueDraftSave(lessonId, draftKey, activityIndex, null, response).catch((error) => {
+                        console.warn("The pronunciation recording remains pending until the next save attempt.", error);
+                        showToast(`${text("draftSaveError")} ${error.message}`, true);
+                    });
+                } catch (error) {
+                    console.error("Could not upload the student's pronunciation recording.", error);
+                    status.textContent = `${text("recordingError")} ${error.message || ""}`;
+                    showToast(`${text("recordingError")} ${error.message || ""}`, true);
+                } finally {
+                    activeRecorders.delete(activityElement);
+                    button.disabled = false;
+                    resolveFinished();
+                }
+            };
+            activeRecorders.set(activityElement, { recorder, finished, maxTimer });
+            recorder.start();
+            const maxSeconds = Math.max(5, Math.min(300, Number(activitiesFor(lesson)[activityIndex]?.settings?.maxSeconds) || 60));
+            maxTimer = window.setTimeout(() => {
+                if (recorder.state !== "inactive") recorder.stop();
+            }, maxSeconds * 1000);
+            button.dataset.recording = "true";
+            button.disabled = false;
+            button.textContent = text("stopRecording");
+            status.textContent = text("recording");
+        }).catch((error) => {
+            mediaStream?.getTracks().forEach((track) => track.stop());
+            console.error("Could not access the student's microphone.", error);
+            button.disabled = false;
+            status.textContent = text("microphonePermission");
+            showToast(`${text("microphonePermission")} ${error.message || ""}`, true);
+        });
+    }
+
     async function submitActivity(element, renderAfterSubmit = true) {
         const index = Number(element.dataset.activityIndex);
         const questionId = element.dataset.questionId || null;
@@ -959,8 +1129,17 @@
         feedback.textContent = text("loading");
         feedback.className = "student-answer-feedback";
         try {
+            await stopRecording(element);
             await flushDraftSaves();
             const response = responseForActivity(element);
+            if (element.querySelector('[data-answer-kind="find-error"]')
+                && (!element.querySelector("[data-error-selected]")?.value
+                    || !element.querySelector("[data-error-correction]")?.value.trim())) {
+                feedback.textContent = text("chooseErrorWord");
+                feedback.className = "student-answer-feedback is-incorrect";
+                unlockControls();
+                return true;
+            }
             const isEmpty = Array.isArray(response) ? response.some((part) => !part.trim()) || !response.length : !response.trim();
             if (isEmpty) {
                 feedback.textContent = text("emptyAnswer");
@@ -1150,6 +1329,52 @@
         pageContent.querySelectorAll("[data-submit-answer]").forEach((button) => {
             button.addEventListener("click", () => submitActivity(button.closest("[data-activity-index]")));
         });
+        pageContent.querySelectorAll("[data-listening-audio]").forEach((audio) => audio.addEventListener("play", () => {
+            const maxPlays = Number(audio.dataset.maxPlays) || 0;
+            if (!maxPlays) return;
+            const count = Number(audio.dataset.playCount) || 0;
+            const status = audio.parentElement.querySelector("[data-listening-status]");
+            if (count >= maxPlays) {
+                audio.pause();
+                if (status) status.textContent = text("playsRemaining").replace("{count}", "0");
+                return;
+            }
+            audio.dataset.playCount = String(count + 1);
+            if (status) status.textContent = text("playsRemaining").replace("{count}", String(maxPlays - count - 1));
+        }));
+        pageContent.querySelectorAll("[data-recording-toggle]").forEach((button) => button.addEventListener("click", () => {
+            const activity = button.closest("[data-activity-index]");
+            if (button.dataset.recording === "true") stopRecording(activity);
+            else startRecording(button);
+        }));
+        pageContent.querySelectorAll("[data-recording-path]").forEach((input) => {
+            if (!input.value || !window.supabaseClient?.storage) return;
+            const player = input.closest("[data-activity-index]")?.querySelector("[data-recording-preview]");
+            if (!player) return;
+            window.supabaseClient.storage.from("student-recordings").createSignedUrl(input.value, 300).then(({ data, error }) => {
+                if (error) throw error;
+                if (player.isConnected && data?.signedUrl) {
+                    player.src = data.signedUrl;
+                    player.hidden = false;
+                }
+            }).catch((error) => console.error("Could not load the student's saved pronunciation recording.", error));
+        });
+        pageContent.querySelectorAll("[data-error-word-index]").forEach((button) => button.addEventListener("click", () => {
+            const activity = button.closest("[data-activity-index]");
+            activity?.querySelectorAll("[data-error-word-index]").forEach((word) => word.classList.toggle("is-selected", word === button));
+            const selected = activity?.querySelector("[data-error-selected]");
+            if (selected) selected.value = button.dataset.errorWordIndex;
+            activity?.querySelector("[data-error-correction]")?.focus();
+            if (activity) scheduleDraftSave(activity);
+        }));
+        pageContent.querySelectorAll("[data-hotspot-index]").forEach((button) => button.addEventListener("click", () => {
+            const activity = button.closest("[data-activity-index]");
+            const hotspot = openedLesson && activitiesFor(openedLesson)[Number(activity?.dataset.activityIndex)]?.hotspots?.[Number(button.dataset.hotspotIndex)];
+            const detail = activity?.querySelector("[data-hotspot-detail]");
+            if (!hotspot || !detail) return;
+            activity.querySelectorAll("[data-hotspot-index]").forEach((marker) => marker.classList.toggle("is-active", marker === button));
+            detail.innerHTML = `<strong>${escapeHtml(hotspot.word)}</strong>${hotspot.translation ? ` · ${escapeHtml(hotspot.translation)}` : ""}${hotspot.audio ? `<audio class="student-choice-media" controls autoplay preload="none" src="${escapeHtml(mediaUrl(hotspot.audio))}"></audio>` : ""}`;
+        }));
         pageContent.querySelectorAll("[data-submit-activity-group]").forEach((button) => {
             button.addEventListener("click", () => submitActivityGroup(button.closest(".student-activity-group")));
         });
@@ -1561,21 +1786,11 @@
         await loadDashboard(client, session.user);
     }
 
-    document.querySelectorAll(".nav-item").forEach((button) => button.addEventListener("click", async () => {
-        if (openedLesson && selectedLessonId) {
-            const unlockControls = lockLessonControls();
-            button.disabled = true;
-            try {
-                await flushDraftSaves();
-            } catch (error) {
-                console.error("Could not save student progress before changing sections.", error);
-                showToast(`${text("draftSaveError")} ${error.message}`, true);
-                button.disabled = false;
-                unlockControls();
-                return;
-            }
-            button.disabled = false;
-        }
+    document.querySelectorAll(".nav-item").forEach((button) => button.addEventListener("click", () => {
+        const pendingSave = openedLesson && selectedLessonId ? flushDraftSaves() : Promise.resolve();
+        activeRecorders.forEach((recording) => {
+            if (recording.recorder.state !== "inactive") recording.recorder.stop();
+        });
         activeView = button.dataset.view;
         selectedClassId = "";
         selectedLessonId = "";
@@ -1585,6 +1800,10 @@
         document.getElementById("studentSidebarBackdrop").classList.remove("open");
         document.getElementById("studentMenuToggle").setAttribute("aria-expanded", "false");
         render();
+        pendingSave.catch((error) => {
+            console.error("Could not save student progress while changing sections.", error);
+            showToast(`${text("draftSaveError")} ${error.message}`, true);
+        });
     }));
     document.querySelectorAll(".language-button").forEach((button) => button.addEventListener("click", () => {
         if (!languageChoices.includes(button.dataset.lang)) return;

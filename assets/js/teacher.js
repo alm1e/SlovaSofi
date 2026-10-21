@@ -2,6 +2,7 @@ const STORAGE_KEY = "slovasofiTeacherSpace";
 const LESSON_UNITS = ["A1", "A2", "B1", "B2"];
 const translations = {
     ua: {
+        "nav.loading": "Завантаження розділу…",
         "nav.overview": "Огляд", "nav.classes": "Класи", "nav.lessons": "Уроки", "nav.calendar": "Календар", "nav.materials": "Матеріали", "nav.students": "Учні", "nav.home": "← На головну", "nav.label": "Навігація", "brand.home": "SlovaSofi — на головну", "language.label": "Мова", "menu.open": "Відкрити меню", "header.notifications": "Сповіщення", "modal.close": "Закрити", "teacher.role": "Викладач", "school.profile": "Профіль школи", "profile.open": "Профіль користувача: {name}", "profile.title": "Профіль користувача", "profile.signedOut": "Гість", "profile.notSignedIn": "Ви не ввійшли в обліковий запис", "profile.logout": "Вийти з профілю", "profile.login": "Увійти", "profile.logoutError": "Не вдалося вийти з профілю. Спробуйте ще раз.", "profile.loadError": "Не вдалося завантажити профіль користувача.", "school.title": "Профіль школи", "school.purpose": "Профіль школи — це спільний простір SlovaSofi. Тут зберігаються класи, уроки й навчальні матеріали школи.", "school.workspace": "Навчальний простір", "school.workspaceDetail": "Спільні класи, уроки та матеріали", "notifications.title": "Сповіщення", "notifications.empty": "Поки немає сповіщень", "notifications.description": "Тут з’являтимуться оновлення про класи, уроки та учнів.", "class.noClass": "Без класу",
         "calendar.title": "Розклад занять", "calendar.description": "Заплануйте заняття для класу. Учні побачать його у своєму кабінеті.", "calendar.add": "＋ Додати заняття", "calendar.today": "Сьогодні", "calendar.empty": "На цей день занять немає", "calendar.noEvents": "Поки немає запланованих занять", "calendar.createFirst": "Додайте заняття — воно з’явиться тут і в розкладі учнів.", "calendar.newEvent": "Нове заняття", "calendar.editEvent": "Редагувати заняття", "calendar.titleLabel": "Тема заняття", "calendar.classLabel": "Клас", "calendar.lessonLabel": "Матеріал уроку (необязательно)", "calendar.noLesson": "Без прив’язки до уроку", "calendar.dateLabel": "Дата і час", "calendar.duration": "Тривалість", "calendar.minutes": "мин.", "calendar.repeat": "Повтор", "calendar.noRepeat": "Не повторять", "calendar.weekly": "Каждую неделю", "calendar.repeatUntil": "Повторять до", "calendar.save": "Сохранить занятие", "calendar.delete": "Удалить занятие", "calendar.cancel": "Отмена", "calendar.saved": "Занятие добавлено в расписание.", "calendar.updated": "Расписание обновлено.", "calendar.deleted": "Занятие удалено.", "calendar.loadError": "Не удалось загрузить расписание.", "calendar.saveError": "Не удалось сохранить занятие:", "calendar.deleteConfirm": "Удалить занятие и все его повторы?", "calendar.recurring": "Еженедельно", "calendar.minutesShort": "мин", "calendar.noClasses": "Сначала создайте класс, чтобы запланировать занятие.", "calendar.soundReminder": "Скоро занятие: {title}",
         "page.overview": "Огляд", "page.classes": "Класи", "page.lessons": "Уроки", "page.materials": "Матеріали", "page.students": "Учні", "pageTitle": "Кабінет викладача", "welcome.badge": "ПАНЕЛЬ ВИКЛАДАЧА · SLOVASOFI", "welcome.title": "Добрий день, {name} 👋", "welcome.text": "Ваші заняття та матеріали в одному місці.", "welcome.storage": "✓ Демо-дані зберігаються у цьому браузері", "action.createLesson": "＋ Створити урок",
@@ -21,6 +22,7 @@ const translations = {
         "confirm.deleteClass": "Видалити клас «{name}»? Уроки залишаться у списку без класу.", "confirm.deleteLesson": "Видалити урок «{name}»?", "confirm.deleteActivity": "Видалити це завдання?", "confirm.deleteMaterial": "Видалити матеріал «{name}»?", "course.slovakA1": "Словацька · A1", "course.slovakB1": "Словацька · B1", "material.vocabulary": "Словник", "material.document": "Документ", "material.audio": "Аудіо", "material.video": "Відео", "material.link": "Посилання"
     },
     ru: {
+        "nav.loading": "Открываем раздел…",
         "nav.overview": "Обзор", "nav.classes": "Классы", "nav.lessons": "Уроки", "nav.materials": "Материалы", "nav.students": "Ученики", "nav.home": "← На главную", "nav.label": "Основная навигация", "brand.home": "SlovaSofi — на главную", "language.label": "Язык", "menu.open": "Открыть меню", "header.notifications": "Уведомления", "modal.close": "Закрыть", "teacher.role": "Преподаватель", "school.profile": "Профиль школы", "profile.open": "Профиль пользователя: {name}", "profile.title": "Профиль пользователя", "profile.signedOut": "Гость", "profile.notSignedIn": "Вы не вошли в учётную запись", "profile.logout": "Выйти из профиля", "profile.login": "Войти", "profile.logoutError": "Не удалось выйти из профиля. Попробуйте ещё раз.", "profile.loadError": "Не удалось загрузить профиль пользователя.", "school.title": "Профиль школы", "school.purpose": "Профиль школы — это общее пространство SlovaSofi. Здесь находятся классы, уроки и учебные материалы школы.", "school.workspace": "Учебное пространство", "school.workspaceDetail": "Общие классы, уроки и материалы", "notifications.title": "Уведомления", "notifications.empty": "Пока нет уведомлений", "notifications.description": "Здесь будут появляться обновления о классах, уроках и учениках.", "class.noClass": "Без класса",
         "nav.calendar": "Календарь", "calendar.title": "Расписание занятий", "calendar.description": "Планируйте занятия для классов. Ученики увидят расписание в своём кабинете.", "calendar.add": "＋ Добавить занятие", "calendar.today": "Сегодня", "calendar.empty": "На этот день занятий нет", "calendar.noEvents": "Пока нет запланированных занятий", "calendar.createFirst": "Добавьте занятие — оно появится здесь и в расписании учеников.", "calendar.newEvent": "Новое занятие", "calendar.editEvent": "Изменить занятие", "calendar.titleLabel": "Тема занятия", "calendar.classLabel": "Класс", "calendar.lessonLabel": "Урок (необязательно)", "calendar.noLesson": "Без привязки к уроку", "calendar.dateLabel": "Дата и время", "calendar.duration": "Длительность", "calendar.minutes": "мин.", "calendar.repeat": "Повтор", "calendar.noRepeat": "Не повторять", "calendar.weekly": "Каждую неделю", "calendar.repeatUntil": "Повторять до", "calendar.save": "Сохранить занятие", "calendar.delete": "Удалить занятие", "calendar.cancel": "Отмена", "calendar.saved": "Занятие добавлено в расписание.", "calendar.updated": "Расписание обновлено.", "calendar.deleted": "Занятие удалено.", "calendar.loadError": "Не удалось загрузить расписание.", "calendar.saveError": "Не удалось сохранить занятие:", "calendar.deleteConfirm": "Удалить занятие и все его повторы?", "calendar.recurring": "Каждую неделю", "calendar.minutesShort": "мин", "calendar.noClasses": "Сначала создайте класс, чтобы запланировать занятие.", "calendar.soundReminder": "Скоро занятие: {title}",
         "page.overview": "Обзор", "page.classes": "Классы", "page.lessons": "Уроки", "page.materials": "Материалы", "page.students": "Ученики", "pageTitle": "Кабинет преподавателя", "welcome.badge": "ПАНЕЛЬ ПРЕПОДАВАТЕЛЯ · SLOVASOFI", "welcome.title": "Добрый день, {name} 👋", "welcome.text": "Ваши занятия и материалы в одном месте.", "welcome.storage": "✓ Демо-данные сохраняются в этом браузере", "action.createLesson": "＋ Создать урок",
@@ -40,6 +42,7 @@ const translations = {
         "confirm.deleteClass": "Удалить класс «{name}»? Уроки останутся в списке без класса.", "confirm.deleteLesson": "Удалить урок «{name}»?", "confirm.deleteActivity": "Удалить это задание?", "confirm.deleteMaterial": "Удалить материал «{name}»?", "course.slovakA1": "Словацкий · A1", "course.slovakB1": "Словацкий · B1", "material.vocabulary": "Словарь", "material.document": "Документ", "material.audio": "Аудио", "material.video": "Видео", "material.link": "Ссылка"
     },
     en: {
+        "nav.loading": "Opening section…",
         "nav.overview": "Overview", "nav.classes": "Classes", "nav.lessons": "Lessons", "nav.materials": "Materials", "nav.students": "Students", "nav.home": "← Home", "nav.label": "Main navigation", "brand.home": "SlovaSofi — home", "language.label": "Language", "menu.open": "Open menu", "header.notifications": "Notifications", "modal.close": "Close", "teacher.role": "Teacher", "school.profile": "School profile", "profile.open": "User profile: {name}", "profile.title": "User profile", "profile.signedOut": "Guest", "profile.notSignedIn": "You are not signed in", "profile.logout": "Sign out", "profile.login": "Sign in", "profile.logoutError": "Could not sign out. Please try again.", "profile.loadError": "Could not load the user profile.", "school.title": "School profile", "school.purpose": "The school profile is SlovaSofi’s shared workspace. It brings the school’s classes, lessons, and learning materials together.", "school.workspace": "Learning workspace", "school.workspaceDetail": "Shared classes, lessons, and materials", "notifications.title": "Notifications", "notifications.empty": "No notifications yet", "notifications.description": "Updates about classes, lessons, and students will appear here.", "class.noClass": "No class",
         "page.overview": "Overview", "page.classes": "Classes", "page.lessons": "Lessons", "page.materials": "Materials", "page.students": "Students", "pageTitle": "Teacher dashboard", "welcome.badge": "TEACHER DASHBOARD · SLOVASOFI", "welcome.title": "Good day, {name} 👋", "welcome.text": "Your lessons and materials in one place.", "welcome.storage": "✓ Demo data is saved in this browser", "action.createLesson": "＋ Create lesson",
         "stat.classes": "Classes created", "stat.students": "Students in classes", "stat.lessons": "Lessons created", "stat.materials": "Materials", "overview.recent": "Recent lessons", "overview.recentHint": "Lessons assigned to your classes", "overview.allLessons": "All lessons →", "overview.yourClasses": "Your classes", "overview.groups": "Student groups", "overview.allClasses": "All classes →",
@@ -289,6 +292,44 @@ Object.assign(translations.en, {
     "calendar.invalidRepeatDays": "Select at least one weekday.",
     "calendar.migrationRequired": "The calendar database is not set up yet. An administrator must apply the Supabase migrations with supabase db push."
 });
+for (const [language, labels] of Object.entries({
+    ua: {
+        "activity.recording": "Запис вимови",
+        "activity.recordingDesc": "Учень записує вимову слова або речення й надсилає її викладачу.",
+        "activity.listeningQuiz": "Аудіювання з питаннями",
+        "activity.listeningQuizDesc": "Одне аудіо та кілька питань із варіантами відповідей.",
+        "activity.findError": "Знайди помилку в тексті",
+        "activity.findErrorDesc": "Учень вибирає слово з помилкою та вводить виправлення.",
+        "activity.hotspots": "Інтерактивне зображення",
+        "activity.hotspotsDesc": "Позначте на зображенні слова, переклади й вимову.",
+        "activity.vocabulary": "Словник уроку",
+        "activity.vocabularyDesc": "Картки нових слів із перекладом та аудіо."
+    },
+    ru: {
+        "activity.recording": "Запись произношения",
+        "activity.recordingDesc": "Ученик записывает слово или фразу и отправляет преподавателю.",
+        "activity.listeningQuiz": "Аудирование с вопросами",
+        "activity.listeningQuizDesc": "Одно аудио и несколько вопросов с вариантами ответов.",
+        "activity.findError": "Найди ошибку в тексте",
+        "activity.findErrorDesc": "Ученик выбирает ошибочное слово и вводит исправление.",
+        "activity.hotspots": "Интерактивная картинка",
+        "activity.hotspotsDesc": "Отметьте на картинке слова, переводы и произношение.",
+        "activity.vocabulary": "Словарь урока",
+        "activity.vocabularyDesc": "Карточки новых слов с переводом и аудио."
+    },
+    en: {
+        "activity.recording": "Pronunciation recording",
+        "activity.recordingDesc": "Students record a word or sentence and send it to the teacher.",
+        "activity.listeningQuiz": "Listening with questions",
+        "activity.listeningQuizDesc": "One audio track followed by multiple-choice questions.",
+        "activity.findError": "Find the text error",
+        "activity.findErrorDesc": "Students select an incorrect word and enter a correction.",
+        "activity.hotspots": "Interactive image",
+        "activity.hotspotsDesc": "Mark words, translations, and pronunciation on an image.",
+        "activity.vocabulary": "Lesson vocabulary",
+        "activity.vocabularyDesc": "New-word flashcards with translations and audio."
+    }
+})) Object.assign(translations[language], labels);
 Object.assign(translations.ru, { "nav.calendar": "Календарь", "page.calendar": "Календарь" });
 Object.assign(translations.ru, {
     "calendar.upcoming": "Ближайшие занятия",
@@ -687,7 +728,12 @@ const activityTypes = [
     { id: "text", nameKey: "activity.text", descKey: "activity.textDesc", icon: "T", category: "other" },
     { id: "video", nameKey: "activity.video", descKey: "activity.videoDesc", icon: "▶", category: "media" },
     { id: "audio", nameKey: "activity.audio", descKey: "activity.audioDesc", icon: "♫", category: "media" },
-    { id: "image", nameKey: "activity.image", descKey: "activity.imageDesc", icon: "▧", category: "media" }
+    { id: "image", nameKey: "activity.image", descKey: "activity.imageDesc", icon: "▧", category: "media" },
+    { id: "pronunciation-recording", nameKey: "activity.recording", descKey: "activity.recordingDesc", icon: "🎙", category: "media" },
+    { id: "listening-questions", nameKey: "activity.listeningQuiz", descKey: "activity.listeningQuizDesc", icon: "🎧", category: "tests" },
+    { id: "find-error", nameKey: "activity.findError", descKey: "activity.findErrorDesc", icon: "✎", category: "tests" },
+    { id: "interactive-image", nameKey: "activity.hotspots", descKey: "activity.hotspotsDesc", icon: "▧", category: "media" },
+    { id: "vocabulary", nameKey: "activity.vocabulary", descKey: "activity.vocabularyDesc", icon: "A", category: "other" }
 ];
 const MAX_ACTIVITY_QUESTIONS = 100;
 const activityQuestionLabels = {
@@ -697,7 +743,8 @@ const activityQuestionLabels = {
 };
 const liveAnswerActivityTypes = new Set([
     "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
-    "sentence-order", "true-false", "table", "match", "columns", "open-answer"
+    "sentence-order", "true-false", "table", "match", "columns", "open-answer",
+    "pronunciation-recording", "listening-questions", "find-error", "vocabulary"
 ]);
 
 function activityQuestionText(key) {
@@ -804,7 +851,7 @@ function renderActivityQuestionEditor(activity, preview = false) {
     const addAttribute = preview ? "data-add-preview-question" : "data-add-question";
     const removeAttribute = preview ? "data-preview-remove-question" : "data-remove-question";
     const type = activityTypes.find((item) => item.id === activity.type);
-    const hasAnswer = !["text", "image", "video", "audio"].includes(activity.type);
+    const hasAnswer = !["text", "image", "video", "audio", "pronunciation-recording", "interactive-image", "vocabulary"].includes(activity.type);
     const items = questions.map((question, index) => `<section class="activity-question-editor-item" ${indexAttribute}="${index}">
         <header class="activity-question-editor-heading"><strong>${activityQuestionText("item")} ${index + 1}</strong><button type="button" class="mini-action activity-question-remove" ${removeAttribute} aria-label="${activityQuestionText("remove")}" title="${activityQuestionText("remove")}" ${questions.length <= 1 ? "disabled" : ""}>×</button></header>
         <div class="form-field"><label>${activityQuestionText("itemPrompt")}</label><input ${fieldAttribute}="prompt" value="${escapeHtml(question.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
@@ -847,6 +894,7 @@ const savedViewState = (() => {
     }
 })();
 let activeView = savedViewState.view || "overview";
+let navigationRenderGeneration = 0;
 let selectedLessonUnit = ["A1", "B1"].includes(savedViewState.unit) ? savedViewState.unit : "";
 let activeClassFilter = "";
 let searchQuery = "";
@@ -1405,7 +1453,18 @@ function setView(view) {
     document.getElementById("sidebar").classList.remove("open");
     document.getElementById("sidebarBackdrop").classList.remove("open");
     document.getElementById("menuToggle").setAttribute("aria-expanded", "false");
-    render();
+    const generation = ++navigationRenderGeneration;
+    if (view === "overview" || view === "calendar") {
+        render();
+        return;
+    }
+    pageContent.setAttribute("aria-busy", "true");
+    pageContent.innerHTML = `<div class="panel navigation-loading" role="status">${escapeHtml(t("nav.loading"))}</div>`;
+    window.setTimeout(() => {
+        if (generation !== navigationRenderGeneration) return;
+        render();
+        pageContent.removeAttribute("aria-busy");
+    }, 0);
 }
 
 function render() {
@@ -1563,7 +1622,9 @@ const liveStudentLabels = {
         correctAnswer: "Правильна відповідь",
         noCorrectAnswer: "Еталонну відповідь не задано",
         count: "{answered}/{total} відповідей",
-        noActivities: "Немає завдань із відповідями"
+        noActivities: "Немає завдань із відповідями",
+        recording: "Запис вимови",
+        playRecording: "Прослухати запис"
     },
     ru: {
         selector: "Показывать ответы ученика",
@@ -1571,7 +1632,9 @@ const liveStudentLabels = {
         correctAnswer: "Правильный ответ",
         noCorrectAnswer: "Эталонный ответ не задан",
         count: "{answered}/{total} ответов",
-        noActivities: "Нет заданий с ответами"
+        noActivities: "Нет заданий с ответами",
+        recording: "Запись произношения",
+        playRecording: "Прослушать запись"
     },
     en: {
         selector: "Show answers for",
@@ -1579,7 +1642,9 @@ const liveStudentLabels = {
         correctAnswer: "Correct answer",
         noCorrectAnswer: "No reference answer set",
         count: "{answered}/{total} answers",
-        noActivities: "No answer activities"
+        noActivities: "No answer activities",
+        recording: "Pronunciation recording",
+        playRecording: "Play recording"
     }
 };
 
@@ -2365,7 +2430,12 @@ const lessonIconPaths = {
     text: '<path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/>',
     video: '<rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="m10 9 5 3-5 3z"/>',
     audio: '<path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/>',
-    image: '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="9" r="1.5"/><path d="m4 16 5-4 3 2 3-3 5 4"/>'
+    image: '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="9" r="1.5"/><path d="m4 16 5-4 3 2 3-3 5 4"/>',
+    "pronunciation-recording": '<rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3m-4 0h8"/>',
+    "listening-questions": '<path d="M4 13v-2a8 8 0 0 1 16 0v2"/><path d="M4 12H3v6h4v-5H4zm16 0h1v6h-4v-5h3z"/>',
+    "find-error": '<path d="m4 7 2 2 4-4M13 7h7M4 17h16M6 13h8"/>',
+    "interactive-image": '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="9" r="1.5"/><path d="m4 16 5-4 3 2 3-3 5 4"/><circle cx="16" cy="10" r="2"/>',
+    vocabulary: '<path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/><path d="m16 2 2 2"/>'
 };
 
 function lessonIcon(lesson) {
@@ -3521,6 +3591,16 @@ function formatLiveResponse(activity, response) {
     if (typeof response !== "string") return "";
     const value = response.trim();
     if (!value) return "";
+    if (activity.type === "find-error") {
+        try {
+            const submitted = JSON.parse(value);
+            const wordIndex = Number(submitted.index);
+            const word = String(activity.content || "").match(/\S+/g)?.[wordIndex];
+            return word ? `${word} → ${String(submitted.correction || "")}` : value;
+        } catch {
+            return value;
+        }
+    }
     if (activity.type === "true-false") {
         if (/^(true|yes|так|да)$/i.test(value)) return previewText("true");
         if (/^(false|no|ні|нет)$/i.test(value)) return previewText("false");
@@ -3619,12 +3699,17 @@ function renderLiveAnswerPanel(student, activity, progressIndex, questionId = nu
     const answer = studentAnswers[answerKey]
         || (questionId && legacyKey ? studentAnswers[`${legacyKey}.q${questionId}`] : null)
         || ((questionIndex === 0 || !questionId) && legacyKey ? studentAnswers[legacyKey] : null);
-    const response = formatLiveResponse(activity, answer?.response);
+    const recordingPath = activity.type === "pronunciation-recording"
+        && typeof answer?.response === "string"
+        && /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.(webm|ogg|mp4|wav)$/i.test(answer.response)
+        ? answer.response
+        : "";
+    const response = recordingPath ? liveStudentText("recording") : formatLiveResponse(activity, answer?.response);
     const answerStatus = answer
         ? `<span class="live-answer-status ${answer.draft ? "is-draft" : "is-submitted"}">${answer.draft ? lessonSectionText("liveDraft") : lessonSectionText("liveSubmitted")}</span>`
         : "";
     const name = student?.name ? `${liveStudentText("answer")} · ${student.name}` : lessonSectionText("liveNoStudents");
-    const reviewForm = activity.type === "open-answer" && reviewContext?.lessonId && reviewContext?.classId && student?.id && hasPermission("edit_lessons")
+    const reviewForm = ["open-answer", "pronunciation-recording"].includes(activity.type) && reviewContext?.lessonId && reviewContext?.classId && student?.id && hasPermission("edit_lessons")
         ? `<details class="live-answer-review"><summary>${liveReviewText("title")}</summary>
             <div class="form-field"><label>${liveReviewText("feedback")}</label><textarea data-live-review-feedback rows="2">${escapeHtml(answer?.teacher_feedback || "")}</textarea></div>
             <div class="form-field"><label>${liveReviewText("correction")}</label><textarea data-live-review-correction rows="2">${escapeHtml(answer?.teacher_correction || "")}</textarea></div>
@@ -3637,7 +3722,7 @@ function renderLiveAnswerPanel(student, activity, progressIndex, questionId = nu
         </details>`
         : "";
     const teacherFeedback = answer?.teacher_feedback ? `<small class="live-answer-teacher-feedback">${escapeHtml(answer.teacher_feedback)}</small>` : "";
-    return `<div class="live-answer-inline" aria-label="${escapeHtml(name)}"><strong>${escapeHtml(name)}</strong>${answerStatus}<span class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</span>${teacherFeedback}${reviewForm}</div>`;
+    return `<div class="live-answer-inline" aria-label="${escapeHtml(name)}"><strong>${escapeHtml(name)}</strong>${answerStatus}<span class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</span>${recordingPath ? `<button class="button secondary small" type="button" data-play-recording="${escapeHtml(recordingPath)}">${escapeHtml(liveStudentText("playRecording"))}</button>` : ""}<span data-recording-player></span>${teacherFeedback}${reviewForm}</div>`;
 }
 
 function renderLiveMonitor(lesson, progressIndexes) {
@@ -3848,6 +3933,27 @@ function renderLessonWorkspace() {
             if (button.isConnected) button.disabled = false;
         }
     });
+    pageContent.querySelectorAll("[data-play-recording]").forEach((button) => button.addEventListener("click", async () => {
+        if (!window.supabaseClient?.storage) return;
+        button.disabled = true;
+        try {
+            const { data: signed, error } = await window.supabaseClient.storage
+                .from("student-recordings")
+                .createSignedUrl(button.dataset.playRecording, 300);
+            if (error) throw error;
+            if (!signed?.signedUrl) throw new Error("Could not create a secure audio link.");
+            const player = document.createElement("audio");
+            player.controls = true;
+            player.autoplay = true;
+            player.src = signed.signedUrl;
+            button.closest(".live-answer-inline")?.querySelector("[data-recording-player]")?.replaceChildren(player);
+        } catch (error) {
+            console.error("Could not open the student's pronunciation recording.", error);
+            showToast(`${liveStudentText("recording")} ${error.message || ""}`);
+        } finally {
+            if (button.isConnected) button.disabled = false;
+        }
+    }));
     pageContent.querySelectorAll("[data-save-live-review]").forEach((button) => button.addEventListener("click", async () => {
         if (!hasPermission("edit_lessons") || !window.teacherWorkspaceApi?.saveLessonAnswerReview || !window.supabaseClient) return;
         const panel = button.closest(".live-answer-review");
@@ -4025,6 +4131,30 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
 
 function contentHint(type) {
     const hints = { "drag-words": t("hint.drag"), "fill-blank": t("hint.blank"), "multiple-choice": t("hint.options"), "order-items": t("hint.order"), "sentence-order": t("hint.sentences"), match: t("hint.match"), columns: t("hint.columns"), table: t("hint.table"), "one-of-many": t("hint.select"), "true-false": t("hint.trueFalse"), flashcards: t("hint.cards"), text: "[info] / [star] + *italic* **bold** 1. list" };
+    const newActivityHints = {
+        ua: {
+            "pronunciation-recording": "Інструкція, яку учень побачить перед записом.",
+            "listening-questions": "Вставте URL аудіо. Питання та варіанти додайте нижче.",
+            "find-error": "Введіть речення; виправлення налаштуйте у JSON нижче.",
+            "interactive-image": "Вставте URL зображення; координати точок — у JSON нижче.",
+            vocabulary: "Слова та переклади додайте у JSON нижче."
+        },
+        ru: {
+            "pronunciation-recording": "Инструкция, которую ученик увидит перед записью.",
+            "listening-questions": "Вставьте URL аудио. Вопросы и варианты добавьте ниже.",
+            "find-error": "Введите предложение; исправления задаются в JSON ниже.",
+            "interactive-image": "Вставьте URL изображения; координаты точек — в JSON ниже.",
+            vocabulary: "Слова и переводы добавьте в JSON ниже."
+        },
+        en: {
+            "pronunciation-recording": "Instructions shown to the student before recording.",
+            "listening-questions": "Paste the audio URL. Add questions and options below.",
+            "find-error": "Enter a sentence; configure corrections in the JSON below.",
+            "interactive-image": "Paste the image URL; configure marker coordinates in JSON below.",
+            vocabulary: "Add words and translations in the JSON below."
+        }
+    };
+    if (newActivityHints[currentLanguage]?.[type]) return newActivityHints[currentLanguage][type];
     if (type === "flashcards") {
         const delimiterHint = currentLanguage === "ru" ? "лицевая сторона | обратная сторона" : currentLanguage === "ua" ? "лицева сторона | зворот" : "front | back";
         return `${hints.flashcards} · ${delimiterHint} (URL изображений/аудио допустимы)`;
@@ -4043,9 +4173,9 @@ function richTextToolbar() {
 
 function contentPlaceholder(type) {
     const examples = {
-        ua: { match: "dom = дім\nškola = школа", columns: "Дієслова: ísť\nІменники: dom" },
-        ru: { match: "dom = дом\nškola = школа", columns: "Глаголы: ísť\nСуществительные: dom" },
-        en: { match: "dom = house\nškola = school", columns: "Verbs: ísť\nNouns: dom" }
+        ua: { match: "dom = дім\nškola = школа", columns: "Дієслова: ísť\nІменники: dom", "listening-questions": "https://example.com/listening.mp3", "interactive-image": "https://example.com/room.jpg", "find-error": "Ja bývať v Bratislave." },
+        ru: { match: "dom = дом\nškola = школа", columns: "Глаголы: ísť\nСуществительные: dom", "listening-questions": "https://example.com/listening.mp3", "interactive-image": "https://example.com/room.jpg", "find-error": "Ja bývať v Bratislave." },
+        en: { match: "dom = house\nškola = school", columns: "Verbs: ísť\nNouns: dom", "listening-questions": "https://example.com/listening.mp3", "interactive-image": "https://example.com/room.jpg", "find-error": "Ja bývať v Bratislave." }
     };
     return examples[currentLanguage][type] || ({ "drag-words": "Napríklad: Ja bývam v Bratislave.", "fill-blank": "Ja ___ v Bratislave.", "multiple-choice": "Bratislava\nKošice\nŽilina", "order-items": "1. ráno\n2. popoludní\n3. večer" })[type] || t("field.enterText");
 }
@@ -4073,7 +4203,12 @@ function activitySettingsPlaceholder(type) {
         "open-answer": { allowAttachments: ["image", "audio"] },
         flashcards: { shuffle: true, cards: [{ front: "Ahoj", back: "https://example.com/audio.mp3" }] },
         audio: { transcript: "Prepis hovoreného textu.", hideTranscript: true },
-        video: { transcript: "Video transcript.", hideTranscript: true }
+        video: { transcript: "Video transcript.", hideTranscript: true },
+        "listening-questions": { maxPlays: 3, transcript: "Transcript shown after the questions.", transcriptAfterSubmit: true },
+        "find-error": { errors: [{ index: 2, correction: "bývam" }] },
+        "interactive-image": { hotspots: [{ x: 35, y: 48, word: "dom", translation: "house", audio: "https://example.com/dom.mp3" }] },
+        vocabulary: { words: [{ word: "dom", translation: "house", audio: "https://example.com/dom.mp3" }] },
+        "pronunciation-recording": { maxSeconds: 60 }
     };
     return JSON.stringify(examples[type] || {}, null, 2);
 }

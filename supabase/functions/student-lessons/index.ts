@@ -10,16 +10,18 @@ const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}
 const interactiveTypes = new Set([
     "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
     "sentence-order", "true-false", "table", "match", "columns", "open-answer",
-    "flashcards", "text", "image", "audio", "video"
+    "flashcards", "text", "image", "audio", "video", "pronunciation-recording",
+    "listening-questions", "find-error", "interactive-image", "vocabulary"
 ]);
 const answerableTypes = new Set([
     "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
-    "sentence-order", "true-false", "table", "match", "columns", "open-answer", "flashcards"
+    "sentence-order", "true-false", "table", "match", "columns", "open-answer",
+    "flashcards", "pronunciation-recording", "listening-questions", "find-error", "vocabulary"
 ]);
 
 type JsonRecord = Record<string, unknown>;
 type ActivityQuestion = { id: string; prompt: string; content: string; answer: string };
-type ActivityCard = { front: string; back: string };
+type ActivityCard = { front: string; back: string; audio?: string };
 type Activity = { id?: string; legacyProgressIndex?: number; type: string; prompt: string; content: string; answer: string; questions?: ActivityQuestion[]; cards?: ActivityCard[]; settings?: JsonRecord };
 type ProgressAnswer = { response: unknown; correct: boolean | null; submitted_at: string; draft?: boolean; feedback?: string };
 type ActivityProgressItem = { activity: Activity; key: string; fallbackKeys?: string[] };
@@ -102,7 +104,12 @@ function publicActivitySettings(type: string, settings: JsonRecord | undefined):
         columns: ["categories"],
         "open-answer": ["allowAttachments"],
         audio: ["transcript", "hideTranscript"],
-        video: ["transcript", "hideTranscript"]
+        video: ["transcript", "hideTranscript"],
+        "interactive-image": [],
+        vocabulary: [],
+        "listening-questions": ["maxPlays", "transcript", "transcriptAfterSubmit"],
+        "find-error": [],
+        "pronunciation-recording": ["maxSeconds"]
     };
     const result: JsonRecord = {};
     for (const key of keysByType[type] || []) {
@@ -129,6 +136,11 @@ function settingStringGroups(settings: JsonRecord | undefined, key: string): str
     return Array.isArray(value) ? value.map((group) => Array.isArray(group)
         ? group.filter((item): item is string => typeof item === "string").map((item) => item.trim())
         : []).filter((group) => group.length > 0) : [];
+}
+
+function settingRecords(settings: JsonRecord | undefined, key: string): JsonRecord[] {
+    const value = settings?.[key];
+    return Array.isArray(value) ? value.map(record) : [];
 }
 
 function normalizedQuestions(value: unknown): ActivityQuestion[] | undefined {
@@ -164,7 +176,7 @@ function normalizedFlashcards(value: unknown): ActivityCard[] | undefined {
 
 function activityForQuestion(activity: Activity, question: ActivityQuestion): Activity {
     return {
-        type: activity.type,
+        type: activity.type === "listening-questions" ? "multiple-choice" : activity.type,
         prompt: question.prompt,
         content: question.content,
         answer: question.answer,
@@ -332,6 +344,20 @@ function safeActivity(activity: Activity): Record<string, unknown> {
     const prompt = activity.prompt;
     const settings = activity.settings;
     if (activity.questions?.length) {
+        if (activity.type === "listening-questions") {
+            return {
+                type: activity.type,
+                prompt,
+                content: activity.content,
+                transcript: stringValue(settings?.transcript).slice(0, 20000),
+                transcriptAfterSubmit: settings?.transcriptAfterSubmit === true,
+                maxPlays: Math.max(0, Math.min(20, Number(settings?.maxPlays) || 0)),
+                questions: activity.questions.map((question) => ({
+                    questionId: question.id,
+                    ...safeActivity(activityForQuestion(activity, question))
+                }))
+            };
+        }
         return {
             type: activity.type,
             prompt,
@@ -475,6 +501,50 @@ function safeActivity(activity: Activity): Record<string, unknown> {
             });
             return { type: activity.type, prompt, content: images.map((image) => image.url).join("\n"), alt: images[0]?.alt || prompt };
         }
+        case "pronunciation-recording":
+            return { type: activity.type, prompt, content: activity.content, reviewRequired: true };
+        case "listening-questions":
+            return {
+                type: activity.type,
+                prompt,
+                content: activity.content,
+                transcript: stringValue(settings?.transcript).slice(0, 20000),
+                transcriptAfterSubmit: settings?.transcriptAfterSubmit === true,
+                maxPlays: Math.max(0, Math.min(20, Number(settings?.maxPlays) || 0)),
+                questions: [],
+                gradable: false
+            };
+        case "find-error":
+            return { type: activity.type, prompt, content: activity.content, gradable: true };
+        case "interactive-image": {
+            const image = contentLines[0] || "";
+            const hotspots = settingRecords(settings, "hotspots").flatMap((hotspot) => {
+                const x = Number(hotspot.x);
+                const y = Number(hotspot.y);
+                const word = stringValue(hotspot.word).trim();
+                if (!Number.isFinite(x) || !Number.isFinite(y) || !word) return [];
+                return [{
+                    x: Math.min(100, Math.max(0, x)),
+                    y: Math.min(100, Math.max(0, y)),
+                    word: word.slice(0, 200),
+                    translation: stringValue(hotspot.translation).slice(0, 500),
+                    audio: stringValue(hotspot.audio).slice(0, 2000)
+                }];
+            });
+            return { type: activity.type, prompt, content: image, hotspots };
+        }
+        case "vocabulary": {
+            const words = settingRecords(settings, "words").flatMap((word) => {
+                const front = stringValue(word.word).trim();
+                const back = stringValue(word.translation).trim();
+                return front && back ? [{
+                    front,
+                    back,
+                    audio: stringValue(word.audio).slice(0, 2000)
+                }] : [];
+            }).map((word, cardIndex) => ({ ...word, cardIndex }));
+            return { type: activity.type, prompt, cards: words };
+        }
         case "audio":
         case "video":
         case "text":
@@ -548,6 +618,21 @@ function isCorrect(activity: Activity, response: unknown): boolean {
             || (expectedFalse && ["false", "no", "нет", "ні", "неправда"].includes(actual))
             || (expectedNotStated && settings?.allowNotStated === true && ["not-stated", "not stated"].includes(actual));
     }
+    if (activity.type === "find-error") {
+        if (typeof response !== "string") return false;
+        let submitted: unknown;
+        try {
+            submitted = JSON.parse(response);
+        } catch {
+            return false;
+        }
+        const value = record(submitted);
+        const index = Number(value.index);
+        const correction = stringValue(value.correction).trim();
+        const errors = settingRecords(settings, "errors");
+        const expected = errors.find((item) => Number(item.index) === index);
+        return Boolean(expected && correction && normalized(correction) === normalized(stringValue(expected.correction)));
+    }
     if (activity.type === "drag-words") {
         const expected = answerParts(activity.answer);
         const actual = Array.isArray(response) ? response.map(stringValue) : [];
@@ -619,7 +704,8 @@ function answerFeedback(activity: Activity, response: unknown): string {
 }
 
 function isGradable(activity: Activity): boolean {
-    if (["open-answer", "flashcards", "text", "image", "audio", "video"].includes(activity.type)) return false;
+    if (["open-answer", "flashcards", "text", "image", "audio", "video", "pronunciation-recording", "interactive-image", "vocabulary"].includes(activity.type)) return false;
+    if (activity.type === "find-error") return settingRecords(activity.settings, "errors").length > 0;
     if (activity.answer.trim()) return true;
     if (activity.type === "fill-blank" && settingStringGroups(activity.settings, "acceptedAnswers").length) return true;
     if ((activity.type === "multiple-choice" || activity.type === "one-of-many")
@@ -629,6 +715,14 @@ function isGradable(activity: Activity): boolean {
     if (activity.type === "table" && Object.keys(record(activity.settings?.acceptedAnswers)).length) return true;
     return ["order-items", "sentence-order", "match", "columns"].includes(activity.type)
         && lines(activity.content).length > 0;
+}
+
+function validRecordingPath(value: unknown, userId: string, classId: string, lessonId: string): value is string {
+    if (typeof value !== "string") return false;
+    const match = value.match(/^([0-9a-f-]{36})\/([0-9a-f-]{36})\/([0-9a-f-]{36})\/([0-9a-f-]{36})\.(webm|ogg|mp4|wav)$/i);
+    return Boolean(match && match[1].toLowerCase() === userId.toLowerCase()
+        && match[2].toLowerCase() === classId.toLowerCase()
+        && match[3].toLowerCase() === lessonId.toLowerCase());
 }
 
 function publicProgress(value: unknown): Record<string, ProgressAnswer> {
@@ -833,6 +927,7 @@ Deno.serve(async (request: Request) => {
             id: lessonId,
             title: stringValue(assignment.lesson.title),
             unit: stringValue(assignment.lesson.unit),
+            classId: assignment.classId,
             activityCount: allActivities.length,
             ...progressSummary(allActivities, progress?.answers),
             sections: sectionsWithSafeActivities(assignment.lesson.activities),
@@ -867,6 +962,10 @@ Deno.serve(async (request: Request) => {
     const response = payload.response;
     if (action === "save-draft") {
         if (!answerableTypes.has(answerActivity.type)) return jsonResponse(400, { error: "This activity does not accept a saved answer." }, allowedOrigin);
+        if (answerActivity.type === "pronunciation-recording"
+            && !validRecordingPath(response, user.id, assignment.classId, lessonId)) {
+            return jsonResponse(400, { error: "Record your pronunciation before saving." }, allowedOrigin);
+        }
         const openResponse = answerActivity.type === "open-answer" ? normalizeOpenAnswerResponse(response) : null;
         const invalidOpenResponse = answerActivity.type === "open-answer"
             && (!openResponse || openResponse.text.length > 10000 || openResponse.attachments.some((item) => item.length > 2000));
@@ -898,6 +997,26 @@ Deno.serve(async (request: Request) => {
             return jsonResponse(500, { error: "Could not save your draft. Please try again." }, allowedOrigin);
         }
         return jsonResponse(200, { answers, completed }, allowedOrigin);
+    }
+    if (answerActivity.type === "pronunciation-recording") {
+        if (!validRecordingPath(response, user.id, assignment.classId, lessonId)) {
+            return jsonResponse(400, { error: "Record your pronunciation before submitting." }, allowedOrigin);
+        }
+        const answers = publicProgress(progress?.answers);
+        answers[answerKey] = { response, correct: null, submitted_at: new Date().toISOString() };
+        const { error } = await admin.from("student_lesson_progress").upsert({
+            student_id: assignment.memberId,
+            class_id: assignment.classId,
+            lesson_id: lessonId,
+            answers,
+            completed_at: progress?.completed_at || null,
+            updated_at: new Date().toISOString()
+        }, { onConflict: "student_id,lesson_id" });
+        if (error) {
+            console.error("Could not save the student's pronunciation recording.", error);
+            return jsonResponse(500, { error: "Could not save your recording. Please try again." }, allowedOrigin);
+        }
+        return jsonResponse(200, { correct: null, reviewRequired: true, answers, completed: Boolean(progress?.completed_at) }, allowedOrigin);
     }
     if (answerActivity.type === "open-answer") {
         const writtenResponse = normalizeOpenAnswerResponse(response);
