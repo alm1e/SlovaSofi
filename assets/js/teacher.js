@@ -4350,7 +4350,8 @@ function bindActivityBlockActions() {
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
                 const selected = textarea.value.slice(start, end) || (currentLanguage === "ru" ? "текст" : "text");
-                const value = format.startsWith("![") ? `![${selected.replace(/[[\]()]/g, "")}](https://)` : `[${selected}](https://)`;
+                const label = selected.trim().replace(/\s+/g, " ").replace(/[\[\]()]/g, "");
+                const value = format.startsWith("![") ? `![${label}](https://)` : `[${label}](https://)`;
                 textarea.setRangeText(value, start, end, "select");
                 textarea.focus();
                 currentBlock().content = textarea.value;
