@@ -255,6 +255,11 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .course-lesson-actions { display: flex; align-items: center; gap: 5px; }
 .course-lesson-actions .mini-action { width: 34px; height: 34px; background: #f3f7f3; color: #64816a; font-size: 17px; }
 .course-lesson-actions .mini-action:hover { background: #e4f0e6; color: #2b6446; }
+.course-lesson-actions .mini-action { display: grid; place-items: center; border: 1px solid transparent; border-radius: 11px; transition: background .18s ease, color .18s ease, border-color .18s ease; }
+.course-lesson-actions .mini-action svg { display: block; width: 19px; height: 19px; }
+.course-lesson-actions .mini-action:focus-visible { outline: 2px solid #2f9e6b; outline-offset: 3px; }
+.course-lesson-actions .mini-action.course-action-delete:hover { border-color: #d9747440; background: #c84c4c18; color: #bf4141; }
+:root[data-theme="dark"] .course-lesson-actions .mini-action.course-action-delete:hover { border-color: #ef909055; background: #ef707020; color: #ffaaaa; }
 @media (max-width: 700px) {
     .course-hero { min-height: 145px; gap: 14px; padding: 16px; }
     .course-hero-art { flex-basis: 100px; height: 100px; }
