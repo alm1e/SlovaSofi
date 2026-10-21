@@ -1487,7 +1487,7 @@ function render() {
 }
 
 function enhanceSelects(root) {
-    root.querySelectorAll("select:not(.teacher-select-native):not([data-pair-row] select)").forEach((select) => {
+    root.querySelectorAll("select:not(.teacher-select-native):not([data-pair-row] select):not([data-rich-style]):not([data-rich-size])").forEach((select) => {
         const wrapper = document.createElement("div");
         wrapper.className = "teacher-select";
         const id = `teacher-select-${++selectDropdownSequence}`;
@@ -4182,7 +4182,7 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
                 <div class="form-field"><label>${hasQuestions ? activityQuestionText("commonPrompt") : t("field.instruction")}</label><input data-field="prompt" value="${escapeHtml(block.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
                 ${hasQuestions
                     ? `${block.type === "listening-questions" ? `<div class="form-field"><label>${t("field.mediaContent")}</label><textarea data-field="content" placeholder="https://…">${escapeHtml(block.content || "")}</textarea></div>` : ""}${renderActivityQuestionEditor(block)}`
-                    : `<div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(block.type))}</span></label>
+                    : `<div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${block.type === "text" ? "" : escapeHtml(contentHint(block.type))}</span></label>
                     ${block.type === "text" ? richTextToolbar() : ""}
                     <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea>${block.type === "fill-blank" ? `<button type="button" class="button secondary small" data-hide-selected-word>${currentLanguage === "ru" ? "Скрыть выделенное слово" : currentLanguage === "ua" ? "Приховати виділене слово" : "Hide selected word"}</button>` : ""}                    ${block.type === "text" ? `<div class="image-upload-row rich-text-actions"><button type="button" class="button secondary small" data-pick-rich-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-rich-image-file hidden><button type="button" class="button secondary small" data-rich-add-item>${currentLanguage === "ru" ? "＋ Добавить пункт" : currentLanguage === "ua" ? "＋ Додати пункт" : "＋ Add item"}</button></div>` : ""}${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div><small class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</small>` : ""}${["audio", "video"].includes(block.type) ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-media>${currentLanguage === "ru" ? "Загрузить файл" : currentLanguage === "ua" ? "Завантажити файл" : "Upload file"}</button><input type="file" accept="${block.type}/*" data-media-file hidden></div><small class="hint">${currentLanguage === "ru" ? "До 50 МБ; поддерживаются MP3/M4A/WAV/OGG/AAC и MP4/WebM/MOV." : currentLanguage === "ua" ? "До 50 МБ; підтримуються MP3/M4A/WAV/OGG/AAC і MP4/WebM/MOV." : "Up to 50 MB; MP3/M4A/WAV/OGG/AAC and MP4/WebM/MOV supported."}</small>` : ""}</div>
                     ${block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
@@ -4427,7 +4427,9 @@ function bindActivityBlockActions() {
     pageContent.querySelectorAll(".builder-block").forEach((blockElement) => {
         const currentBlock = () => activeDraftSection().activities[Number(blockElement.dataset.blockIndex)];
         const previewBox = blockElement.querySelector("[data-builder-preview]");
+        let visualEditor = null;
         const refreshRichPreview = () => {
+            visualEditor?.refresh();
             if (!previewBox || !blockElement.classList.contains("is-expanded")) return;
             const scrollTop = previewBox.scrollTop;
             previewBox.innerHTML = renderBuilderPreview(currentBlock(), Number(blockElement.dataset.blockIndex));
@@ -4453,6 +4455,7 @@ function bindActivityBlockActions() {
             refreshRichPreview();
         }));
         const contentField = blockElement.querySelector(':scope > .builder-block-fields > .builder-block-editor > .form-field > textarea[data-field="content"]');
+        if (currentBlock().type === "text") visualEditor = window.SlovaRichEditor?.attach(blockElement, contentField, window.SlovaActivityUI.renderRichText);
         if (previewBox && blockElement.classList.contains("is-expanded")) bindLessonPreviewActions(previewBox);
         const applyRichFormat = (prefix, suffix = "", linePrefix = false) => {
             if (!contentField) return;

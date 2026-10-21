@@ -1140,7 +1140,7 @@
                 unlockControls();
                 return true;
             }
-            const isEmpty = Array.isArray(response) ? response.some((part) => !part.trim()) || !response.length : !response.trim();
+            const isEmpty = Array.isArray(response) ? response.some((part) => !String(part).trim()) || !response.length : !hasAnswerResponse(response);
             if (isEmpty) {
                 feedback.textContent = text("emptyAnswer");
                 feedback.className = "student-answer-feedback is-incorrect";
@@ -1388,74 +1388,74 @@
                     row.querySelector('[data-move-item="-1"]').disabled = index === 0;
                     row.querySelector('[data-move-item="1"]').disabled = index === rows.length - 1;
                 });
-                pageContent.querySelectorAll("[data-media-seek]").forEach((button) => {
-                    button.addEventListener("click", () => {
-                        const media = button.closest("[data-activity-index]")?.querySelector("[data-enhanced-media]");
-                        if (media) media.currentTime = Math.max(0, Math.min(media.duration || Infinity, media.currentTime + Number(button.dataset.mediaSeek)));
-                    });
-                });
-                pageContent.querySelectorAll("[data-media-speed]").forEach((select) => {
-                    select.addEventListener("change", () => {
-                        const media = select.closest("[data-activity-index]")?.querySelector("[data-enhanced-media]");
-                        if (media) media.playbackRate = Number(select.value);
-                    });
-                });
-                pageContent.querySelectorAll("[data-enhanced-media]").forEach((media) => {
-                    const key = `slovasofiStudentMediaPosition:${media.dataset.mediaPositionKey}`;
-                    const savePosition = () => {
-                        try {
-                            if (!Number.isFinite(media.currentTime) || media.currentTime < 1 || (media.duration && media.currentTime >= media.duration)) {
-                                localStorage.removeItem(key);
-                                return;
-                            }
-                            localStorage.setItem(key, String(Math.floor(media.currentTime)));
-                        } catch (error) {
-                            console.warn("Could not save media playback position.", error);
-                        }
-                    };
-                    const restorePosition = () => {
-                        try {
-                            const saved = Number(localStorage.getItem(key));
-                            if (Number.isFinite(saved) && saved > 0 && saved < media.duration - 1) media.currentTime = saved;
-                        } catch (error) {
-                            console.warn("Could not restore media playback position.", error);
-                        }
-                    };
-                    media.addEventListener("loadedmetadata", restorePosition, { once: true });
-                    media.addEventListener("pause", savePosition);
-                    let positionTimer = 0;
-                    media.addEventListener("timeupdate", () => {
-                        clearTimeout(positionTimer);
-                        positionTimer = setTimeout(savePosition, 1000);
-                    });
-                    media.addEventListener("ended", () => {
-                        try { localStorage.removeItem(key); } catch (error) { console.warn("Could not clear media playback position.", error); }
-                    }, { once: true });
-                });
-                pageContent.querySelectorAll("[data-media-loop]").forEach((button) => {
-                    button.addEventListener("click", () => {
-                        const media = button.closest("[data-activity-index]")?.querySelector("[data-enhanced-media]");
-                        if (!media) return;
-                        const point = button.dataset.mediaLoop;
-                        if (point === "clear") {
-                            delete media.dataset.loopStart;
-                            delete media.dataset.loopEnd;
-                            return;
-                        }
-                        media.dataset[point === "a" ? "loopStart" : "loopEnd"] = String(media.currentTime);
-                        if (!media.dataset.loopListener) {
-                            media.dataset.loopListener = "true";
-                            media.addEventListener("timeupdate", () => {
-                                const start = Number(media.dataset.loopStart);
-                                const end = Number(media.dataset.loopEnd);
-                                if (Number.isFinite(start) && Number.isFinite(end) && end > start && media.currentTime >= end) {
-                                    media.currentTime = start;
-                                }
-                            });
-                        }
-                    });
-                });
                 scheduleDraftSave(item.closest("[data-activity-index]"));
+            });
+        });
+        pageContent.querySelectorAll("[data-media-seek]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const media = button.closest("[data-activity-index]")?.querySelector("[data-enhanced-media]");
+                if (media) media.currentTime = Math.max(0, Math.min(media.duration || Infinity, media.currentTime + Number(button.dataset.mediaSeek)));
+            });
+        });
+        pageContent.querySelectorAll("[data-media-speed]").forEach((select) => {
+            select.addEventListener("change", () => {
+                const media = select.closest("[data-activity-index]")?.querySelector("[data-enhanced-media]");
+                if (media) media.playbackRate = Number(select.value);
+            });
+        });
+        pageContent.querySelectorAll("[data-enhanced-media]").forEach((media) => {
+            const key = `slovasofiStudentMediaPosition:${media.dataset.mediaPositionKey}`;
+            const savePosition = () => {
+                try {
+                    if (!Number.isFinite(media.currentTime) || media.currentTime < 1 || (media.duration && media.currentTime >= media.duration)) {
+                        localStorage.removeItem(key);
+                        return;
+                    }
+                    localStorage.setItem(key, String(Math.floor(media.currentTime)));
+                } catch (error) {
+                    console.warn("Could not save media playback position.", error);
+                }
+            };
+            const restorePosition = () => {
+                try {
+                    const saved = Number(localStorage.getItem(key));
+                    if (Number.isFinite(saved) && saved > 0 && saved < media.duration - 1) media.currentTime = saved;
+                } catch (error) {
+                    console.warn("Could not restore media playback position.", error);
+                }
+            };
+            media.addEventListener("loadedmetadata", restorePosition, { once: true });
+            media.addEventListener("pause", savePosition);
+            let positionTimer = 0;
+            media.addEventListener("timeupdate", () => {
+                clearTimeout(positionTimer);
+                positionTimer = setTimeout(savePosition, 1000);
+            });
+            media.addEventListener("ended", () => {
+                try { localStorage.removeItem(key); } catch (error) { console.warn("Could not clear media playback position.", error); }
+            }, { once: true });
+        });
+        pageContent.querySelectorAll("[data-media-loop]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const media = button.closest("[data-activity-index]")?.querySelector("[data-enhanced-media]");
+                if (!media) return;
+                const point = button.dataset.mediaLoop;
+                if (point === "clear") {
+                    delete media.dataset.loopStart;
+                    delete media.dataset.loopEnd;
+                    return;
+                }
+                media.dataset[point === "a" ? "loopStart" : "loopEnd"] = String(media.currentTime);
+                if (!media.dataset.loopListener) {
+                    media.dataset.loopListener = "true";
+                    media.addEventListener("timeupdate", () => {
+                        const start = Number(media.dataset.loopStart);
+                        const end = Number(media.dataset.loopEnd);
+                        if (Number.isFinite(start) && Number.isFinite(end) && end > start && media.currentTime >= end) {
+                            media.currentTime = start;
+                        }
+                    });
+                }
             });
         });
         pageContent.querySelectorAll("[data-show-hint]").forEach((button) => {
@@ -1485,13 +1485,6 @@
                 wrap.append(row);
                 row.querySelector("[data-open-attachment]")?.focus();
                 scheduleDraftSave(activity);
-            });
-        });
-        pageContent.querySelectorAll("[data-remove-open-attachment]").forEach((button) => {
-            button.addEventListener("click", () => {
-                const activity = button.closest("[data-activity-index]");
-                button.closest(".student-open-attachment")?.remove();
-                if (activity) scheduleDraftSave(activity);
             });
         });
         pageContent.querySelectorAll("[data-front][data-back]").forEach((button) => {
@@ -1552,6 +1545,14 @@
         const activity = button.closest("[data-activity-index]");
         moveWordButton(button, button.dataset.wordToken ? "answer" : "bank");
         scheduleDraftSave(activity);
+    });
+    // Delegation also covers attachment rows added after the lesson was rendered.
+    pageContent.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-remove-open-attachment]");
+        if (!button) return;
+        const activity = button.closest("[data-activity-index]");
+        button.closest(".student-open-attachment")?.remove();
+        if (activity) scheduleDraftSave(activity);
     });
     pageContent.addEventListener("input", (event) => {
         const activity = event.target.closest("[data-activity-index]");

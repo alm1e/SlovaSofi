@@ -91,9 +91,10 @@
         .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
         .replace(/\*(.+?)\*/g, "<em>$1</em>");
 
-    function renderRichText(content) {
+    function renderRichText(content, depth = 0) {
         const source = String(content || "");
         if (!source.trim()) return "";
+        if (depth > 20) return `<p>${escapeNote(source)}</p>`;
         const lines = source.replace(/\r/g, "").split("\n");
         const blocks = [];
         let listItems = [];
@@ -127,7 +128,7 @@
             const alignment = line.match(/^\[align=(left|center|right)\]([\s\S]*)\[\/align\]$/i);
             if (alignment) {
                 flushList();
-                blocks.push(`<p style="text-align:${alignment[1].toLowerCase()}">${noteInline(alignment[2])}</p>`);
+                blocks.push(`<div style="text-align:${alignment[1].toLowerCase()}">${renderRichText(alignment[2], depth + 1)}</div>`);
                 continue;
             }
             const quote = line.match(/^>\s?(.*)$/);

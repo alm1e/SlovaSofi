@@ -1956,3 +1956,31 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
     .builder-block.is-expanded .builder-block-actions { margin-left: auto; }
     .builder-block.is-expanded .rich-toolbar-options { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Formatting controls must fit the editor column, including at browser zoom. */
+.builder-block, .builder-block-fields, .builder-block-editor, .builder-block-preview,
+.builder-block-editor .form-field, .rich-text-toolbar, .rich-toolbar-row { min-width: 0; max-width: 100%; }
+.builder-block.is-expanded .rich-toolbar-options { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
+.builder-block.is-expanded .rich-accent-colors, .builder-block.is-expanded .rich-align-buttons { flex-wrap: wrap; }
+.builder-block.is-expanded .rich-toolbar-group select { min-width: 0; max-width: 100%; text-overflow: clip; }
+.builder-block-title { min-width: 0; overflow-wrap: anywhere; }
+.builder-block-header { flex-wrap: wrap; }
+.builder-block-actions { flex-shrink: 0; margin-left: auto; }
+.rich-text-actions .button { max-width: 100%; white-space: normal; }
+.visual-rich-editor { min-height: 200px; max-height: 65vh; overflow: auto; overflow-wrap: anywhere; border: 1px solid var(--line); border-radius: 0 0 12px 12px; padding: 14px; background: var(--surface, transparent); color: inherit; line-height: 1.65; }
+.visual-rich-editor:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+.visual-rich-editor img { max-width: 100%; height: auto; }
+.visual-rich-editor p { margin: 0 0 .75em; }
+.builder-block-editor textarea[hidden] { display: none; }
+.builder-preview-body { overflow-wrap: anywhere; }
+
+/* Grid children must shrink before their text starts widening the page. */
+.lesson-workspace-form { grid-template-columns: minmax(0, 1fr); }
+.lesson-workspace-form > *, .lesson-workspace-layout > *,
+.lesson-workspace-fields > *, .lesson-sections-panel { min-width: 0; }
+.lesson-workspace-fields input { min-width: 0; }
+@media (max-width: 700px) {
+    .lesson-workspace-layout, .lesson-workspace-layout.has-live-monitor { grid-template-columns: minmax(0, 1fr); }
+    .lesson-workspace-fields { grid-template-columns: minmax(0, 1fr); }
+    .lesson-workspace-tabs button { min-width: 0; overflow-wrap: anywhere; }
+}
