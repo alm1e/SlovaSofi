@@ -5,7 +5,7 @@
 .slova-gallery-stage { display: grid; grid-template-rows: minmax(0, 1fr); align-items: center; justify-items: center; padding: 0 clamp(24px, 14%, 200px); overflow: hidden; }
 .slova-gallery-stage .slova-gallery-image {
     grid-area: 1 / 1; margin: 0; transform-origin: center; cursor: pointer;
-    width: 100%; max-width: 330px; height: auto; max-height: 440px; aspect-ratio: 3 / 4; object-fit: cover;
+    width: 100%; max-width: 330px; height: auto; max-height: 440px; aspect-ratio: 3 / 4; object-fit: fill;
     --x: 0px;
     --d: max(var(--o), calc(var(--o) * -1));
     transform: translateX(var(--x));
