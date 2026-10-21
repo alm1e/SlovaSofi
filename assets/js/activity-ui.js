@@ -83,6 +83,11 @@
         .replace(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/gi, '<img src="$2" alt="$1" loading="lazy">')
         .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/gi, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
         .replace(/\[color=(#[\da-f]{3,8})\]([\s\S]+?)\[\/color\]/gi, '<span style="color:$1">$2</span>')
+        .replace(/\[size=(12|14|16|18|20|24|28|32|36)\]([\s\S]+?)\[\/size\]/gi, '<span style="font-size:$1px">$2</span>')
+        .replace(/\[highlight=(#[\da-f]{6})\]([\s\S]+?)\[\/highlight\]/gi, '<mark style="background-color:$1">$2</mark>')
+        .replace(/\[u\]([\s\S]+?)\[\/u\]/gi, "<u>$1</u>")
+        .replace(/\[s\]([\s\S]+?)\[\/s\]/gi, "<s>$1</s>")
+        .replace(/\[border\]([\s\S]+?)\[\/border\]/gi, '<span class="activity-rich-outline">$1</span>')
         .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
         .replace(/\*(.+?)\*/g, "<em>$1</em>");
 
@@ -117,6 +122,12 @@
                 continue;
             }
             flushTable();
+            const alignment = line.match(/^\[align=(left|center|right)\]([\s\S]*)\[\/align\]$/i);
+            if (alignment) {
+                flushList();
+                blocks.push(`<p style="text-align:${alignment[1].toLowerCase()}">${noteInline(alignment[2])}</p>`);
+                continue;
+            }
             const heading = line.match(/^(#{1,3})\s+(.+)$/);
             if (heading) {
                 flushList();
