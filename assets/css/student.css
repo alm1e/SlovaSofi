@@ -96,7 +96,7 @@
 .student-platform .student-order-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; border: 1px solid #e2ebe3; border-radius: 9px; padding: 7px 9px; }
 .student-platform .student-order-list li > span:first-child { overflow-wrap: anywhere; }
 .student-platform .student-order-list li > span:last-child { display: flex; flex: 0 0 auto; gap: 4px; }
-.student-platform .student-order-list button { width: 30px; height: 30px; border: 1px solid #d7e6d8; border-radius: 7px; background: #fff; color: var(--ink); }
+.student-platform .student-order-list button { width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-raised, #fff); color: var(--ink); }
 .student-platform .student-order-list button:disabled { opacity: .4; }
 .student-platform .student-match-list { display: grid; gap: 8px; margin-top: 12px; }
 .student-platform .student-match-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(120px,220px); align-items: center; gap: 12px; }
@@ -311,15 +311,15 @@
 }
 :root[data-theme="dark"] .student-platform .student-word-token,
 :root[data-theme="dark"] .student-platform .student-order-list button {
-    border-color: #49644e;
-    background: #26352b;
+    border-color: #3b515a;
+    background: #23343c;
     color: #e0ece2;
 }
 :root[data-theme="dark"] .student-platform .student-word-token:hover,
 :root[data-theme="dark"] .student-platform .student-word-token.selected,
 :root[data-theme="dark"] .student-platform .student-order-list button:hover:not(:disabled) {
-    border-color: #6b9d78;
-    background: #304a38;
+    border-color: #5d818f;
+    background: #2c424c;
 }
 :root[data-theme="dark"] .student-platform .student-inline-answer,
 :root[data-theme="dark"] .student-platform .student-match-row select,

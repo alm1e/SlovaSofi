@@ -1,5 +1,8 @@
 begin;
 
+drop policy if exists "Workspace editors reset student lesson progress"
+    on public.student_lesson_progress;
+
 create policy "Workspace editors reset student lesson progress"
     on public.student_lesson_progress for delete to authenticated
     using (

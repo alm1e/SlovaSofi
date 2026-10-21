@@ -10,6 +10,31 @@ supabase functions deploy invite-student
 supabase functions deploy student-lessons
 ```
 
+## Recovering from the duplicate migration version `20261024`
+
+Three migrations previously shared version `20261024`. The calendar migration keeps
+that version; privilege hardening now uses `20261030`, and the lesson-progress reset
+policy uses `20261031`. The reset policy can be reapplied safely if its SQL committed
+before migration-history recording failed.
+
+Before retrying an existing deployment, check the recorded migration in the Supabase
+SQL Editor:
+
+```sql
+select version, name
+from supabase_migrations.schema_migrations
+where version = '20261024';
+```
+
+If the recorded name is `calendar_events`, run `supabase db push --dry-run`, inspect
+the pending migrations, then run `supabase db push`. If no row exists, inspect the
+dry-run output before pushing as usual.
+
+If the name is different, reconcile the remote migration history with the SQL that
+actually ran before pushing. Do not delete migration-history rows or mark migrations
+as applied blindly: that can skip the calendar schema or other required changes.
+Use `supabase migration list` to compare local and remote versions.
+
 The role and class-isolation migration makes `akhumanoid@gmail.com` the platform administrator and grants `vikishim11@gmail.com` permission to edit the shared lesson library. Teachers only see and manage their own classes and students; all teachers can view and assign shared lessons, while only the administrator and designated lesson editors can change lesson content.
 
 Set the `APP_URL` function secret to the deployed site's origin (for example, `https://example.com`). The Edge Functions also require the standard `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` secrets. The service-role key must remain server-side and must never be added to the browser application.
