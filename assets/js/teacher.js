@@ -4101,10 +4101,14 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
         const hasQuestions = Array.isArray(block.questions) && block.questions.length > 0;
         const summary = activitySummary(block);
         const meta = activityEditorMeta(block);
-        return `<article class="builder-block ${isExpanded ? "is-expanded" : ""}" data-block-index="${index}">
+        const isRichText = block.type === "text";
+        const previewTitle = currentLanguage === "ru" ? "Предпросмотр" : currentLanguage === "ua" ? "Попередній перегляд" : "Preview";
+        const previewHint = currentLanguage === "ru" ? "Так блок будет выглядеть для ученика" : currentLanguage === "ua" ? "Так блок бачитиме учень" : "How the block will look to a student";
+        const richPreview = isRichText ? `<aside class="builder-block-preview"><div class="builder-preview-head"><span class="builder-preview-icon">◉</span><div><strong>${previewTitle}</strong><small>${previewHint}</small></div></div><div class="builder-preview-body" data-builder-preview>${previewRichContent(block)}</div></aside>` : "";
+        return `<article class="builder-block ${isExpanded ? "is-expanded" : ""} ${isRichText ? "has-preview" : ""}" data-block-index="${index}">
             <header class="builder-block-header">
                 <button type="button" class="builder-block-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>
-                <div class="builder-block-title"><strong>${index + 1}. ${escapeHtml(type ? t(type.nameKey) : t("activity.task"))}</strong>${summary ? `<span class="builder-block-summary">${escapeHtml(summary)}</span>` : ""}<span class="builder-block-summary">${escapeHtml(meta)}</span></div>
+                <div class="builder-block-title"><strong>${index + 1}. ${escapeHtml(type ? t(type.nameKey) : t("activity.task"))}${isExpanded && type ? `<span class="builder-block-badge">${escapeHtml(type.category === "media" ? "media" : "block")}</span>` : ""}</strong>${summary ? `<span class="builder-block-summary">${escapeHtml(summary)}</span>` : ""}<span class="builder-block-summary">${escapeHtml(meta)}</span></div>
                 <div class="builder-block-actions">
                     ${duplicateBlockButton("data-duplicate-block", index)}
                     <button type="button" class="mini-action builder-block-edit" data-toggle-block="${index}" aria-expanded="${isExpanded}" aria-label="${isExpanded ? lessonSectionText("done") : lessonSectionText("edit")}" title="${isExpanded ? lessonSectionText("done") : lessonSectionText("edit")}">${isExpanded ? "✓" : "✎"}</button>
@@ -4117,13 +4121,22 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
                     ? renderActivityQuestionEditor(block)
                     : `<div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(block.type))}</span></label>
                     ${block.type === "text" ? richTextToolbar() : ""}
-                    <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea>${block.type === "fill-blank" ? `<button type="button" class="button secondary small" data-hide-selected-word>${currentLanguage === "ru" ? "Скрыть выделенное слово" : currentLanguage === "ua" ? "Приховати виділене слово" : "Hide selected word"}</button>` : ""}${block.type === "text" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-rich-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-rich-image-file hidden></div>` : ""}${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div><small class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</small>` : ""}${["audio", "video"].includes(block.type) ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-media>${currentLanguage === "ru" ? "Загрузить файл" : currentLanguage === "ua" ? "Завантажити файл" : "Upload file"}</button><input type="file" accept="${block.type}/*" data-media-file hidden></div><small class="hint">${currentLanguage === "ru" ? "До 50 МБ; поддерживаются MP3/M4A/WAV/OGG/AAC и MP4/WebM/MOV." : currentLanguage === "ua" ? "До 50 МБ; підтримуються MP3/M4A/WAV/OGG/AAC і MP4/WebM/MOV." : "Up to 50 MB; MP3/M4A/WAV/OGG/AAC and MP4/WebM/MOV supported."}</small>` : ""}</div>
+                    <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea>${block.type === "fill-blank" ? `<button type="button" class="button secondary small" data-hide-selected-word>${currentLanguage === "ru" ? "Скрыть выделенное слово" : currentLanguage === "ua" ? "Приховати виділене слово" : "Hide selected word"}</button>` : ""}                    ${block.type === "text" ? `<div class="image-upload-row rich-text-actions"><button type="button" class="button secondary small" data-pick-rich-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-rich-image-file hidden><button type="button" class="button secondary small" data-rich-add-item>${currentLanguage === "ru" ? "＋ Добавить пункт" : currentLanguage === "ua" ? "＋ Додати пункт" : "＋ Add item"}</button></div>` : ""}${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div><small class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</small>` : ""}${["audio", "video"].includes(block.type) ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-media>${currentLanguage === "ru" ? "Загрузить файл" : currentLanguage === "ua" ? "Завантажити файл" : "Upload file"}</button><input type="file" accept="${block.type}/*" data-media-file hidden></div><small class="hint">${currentLanguage === "ru" ? "До 50 МБ; поддерживаются MP3/M4A/WAV/OGG/AAC и MP4/WebM/MOV." : currentLanguage === "ua" ? "До 50 МБ; підтримуються MP3/M4A/WAV/OGG/AAC і MP4/WebM/MOV." : "Up to 50 MB; MP3/M4A/WAV/OGG/AAC and MP4/WebM/MOV supported."}</small>` : ""}</div>
                     ${block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
                     ${renderActivityQuestionEditor(block)}`}
                         ${activitySettingsField(block)}
+                ${richPreview}
             </div>
         </article>`;
     }).join("");
+}
+
+function previewRichContent(block) {
+    const content = String(block.content || "");
+    const note = window.SlovaActivityUI?.renderNote(content, block.prompt);
+    if (note) return note;
+    const rendered = window.SlovaActivityUI?.renderRichText(content);
+    return rendered || `<div class="preview-material">${escapeHtml(content).replace(/\n/g, "<br>")}</div>`;
 }
 
 function contentHint(type) {
@@ -4161,34 +4174,48 @@ function contentHint(type) {
 
 function richTextToolbar() {
     const labels = {
-        ua: { toolbar: "Форматування тексту", style: "Стиль", normal: "Звичайний", heading: "Заголовок", list: "Список", size: "Розмір", align: "Вирівнювання", left: "Ліворуч", center: "По центру", right: "Праворуч", bold: "Жирний", italic: "Курсив", underline: "Підкреслення", strike: "Закреслення", textColor: "Колір тексту", highlight: "Підсвічування", outline: "Обведення", link: "Посилання", image: "Зображення" },
-        ru: { toolbar: "Форматирование текста", style: "Стиль", normal: "Обычный", heading: "Заголовок", list: "Список", size: "Размер", align: "Выравнивание", left: "Слева", center: "По центру", right: "Справа", bold: "Жирный", italic: "Курсив", underline: "Подчёркивание", strike: "Зачёркивание", textColor: "Цвет текста", highlight: "Подсветка", outline: "Обводка", link: "Ссылка", image: "Изображение" },
-        en: { toolbar: "Text formatting", style: "Style", normal: "Normal", heading: "Heading", list: "List", size: "Size", align: "Alignment", left: "Left", center: "Center", right: "Right", bold: "Bold", italic: "Italic", underline: "Underline", strike: "Strikethrough", textColor: "Text color", highlight: "Highlight", outline: "Outline", link: "Link", image: "Image" }
+        ua: { toolbar: "Форматування тексту", style: "Стиль", normal: "Звичайний текст", size: "Розмір", accent: "Колір акценту", align: "Вирівнювання", left: "Ліворуч", center: "По центру", right: "Праворуч", bold: "Жирний", italic: "Курсив", underline: "Підкреслення", strike: "Закреслення", bullet: "Маркований список", numbered: "Нумерований список", quote: "Цитата", info: "Інформаційний блок", link: "Посилання", heading: "Заголовок" },
+        ru: { toolbar: "Форматирование текста", style: "Стиль", normal: "Обычный текст", size: "Размер", accent: "Цвет акцента", align: "Выравнивание", left: "Слева", center: "По центру", right: "Справа", bold: "Жирный", italic: "Курсив", underline: "Подчёркивание", strike: "Зачёркивание", bullet: "Маркированный список", numbered: "Нумерованный список", quote: "Цитата", info: "Информационный блок", link: "Ссылка", heading: "Заголовок" },
+        en: { toolbar: "Text formatting", style: "Style", normal: "Normal text", size: "Size", accent: "Accent color", align: "Alignment", left: "Left", center: "Center", right: "Right", bold: "Bold", italic: "Italic", underline: "Underline", strike: "Strikethrough", bullet: "Bulleted list", numbered: "Numbered list", quote: "Quote", info: "Information block", link: "Link", heading: "Heading" }
     };
     const text = labels[currentLanguage] || labels.en;
     const aria = (value) => escapeHtml(value);
+    const formatButton = (format, label, icon) => `<button type="button" data-rich-format="${aria(format)}" aria-label="${aria(label)}" title="${aria(label)}">${icon}</button>`;
+    const sizes = [12, 14, 16, 18, 20, 24, 28, 32, 36];
+    const accents = ["#34724d", "#f4d35e", "#f4778b", "#4dabf7", "#a855f7"];
     return `<div class="rich-text-toolbar" role="toolbar" aria-label="${aria(text.toolbar)}">
-        <select data-rich-style aria-label="${aria(text.style)}">
-            <option value="">${aria(text.style)}</option><option value="normal">${aria(text.normal)}</option>
-            <option value="h1">${aria(text.heading)} 1</option><option value="h2">${aria(text.heading)} 2</option><option value="h3">${aria(text.heading)} 3</option>
-            <option value="list">${aria(text.list)}</option>
-        </select>
-        <button type="button" data-rich-format="**" aria-label="${aria(text.bold)}" title="${aria(text.bold)}"><strong>B</strong></button>
-        <button type="button" data-rich-format="*" aria-label="${aria(text.italic)}" title="${aria(text.italic)}"><em>I</em></button>
-        <button type="button" data-rich-format="[u]" aria-label="${aria(text.underline)}" title="${aria(text.underline)}"><u>U</u></button>
-        <button type="button" data-rich-format="[s]" aria-label="${aria(text.strike)}" title="${aria(text.strike)}"><s>S</s></button>
-        <select data-rich-size aria-label="${aria(text.size)}">
-            <option value="">${aria(text.size)}</option>${[12, 14, 16, 18, 20, 24, 28, 32, 36].map((size) => `<option value="${size}">${size}px</option>`).join("")}
-        </select>
-        <input type="color" data-rich-color value="#34724d" aria-label="${aria(text.textColor)}" title="${aria(text.textColor)}">
-        <input type="color" data-rich-highlight value="#fff19c" aria-label="${aria(text.highlight)}" title="${aria(text.highlight)}">
-        <select data-rich-align aria-label="${aria(text.align)}">
-            <option value="">${aria(text.align)}</option><option value="left">${aria(text.left)}</option>
-            <option value="center">${aria(text.center)}</option><option value="right">${aria(text.right)}</option>
-        </select>
-        <button type="button" data-rich-format="[border]" aria-label="${aria(text.outline)}" title="${aria(text.outline)}">▣</button>
-        <button type="button" data-rich-format="[текст](https://)" aria-label="${aria(text.link)}" title="${aria(text.link)}">↗</button>
-        <button type="button" data-rich-format="![описание](https://)" aria-label="${aria(text.image)}" title="${aria(text.image)}">▧</button>
+        <div class="rich-toolbar-row rich-toolbar-main">
+            <select data-rich-style aria-label="${aria(text.style)}">
+                <option value="">${aria(text.style)}</option><option value="normal">${aria(text.normal)}</option>
+                <option value="h1">${aria(text.heading)} 1</option><option value="h2">${aria(text.heading)} 2</option><option value="h3">${aria(text.heading)} 3</option>
+            </select>
+            ${formatButton("**", text.bold, "<strong>B</strong>")}
+            ${formatButton("*", text.italic, "<em>I</em>")}
+            ${formatButton("[u]", text.underline, "<u>U</u>")}
+            ${formatButton("[s]", text.strike, "<s>S</s>")}
+            ${formatButton("list", text.bullet, "☷")}
+            ${formatButton("numbered", text.numbered, "☷")}
+            ${formatButton("quote", text.quote, "❝")}
+            ${formatButton("link", text.link, "↗")}
+            ${formatButton("[info]", text.info, "ⓘ")}
+            ${formatButton("[border]", currentLanguage === "ru" ? "Обводка" : currentLanguage === "ua" ? "Обведення" : "Outline", "▣")}
+            ${[1, 2, 3].map((level) => formatButton(`${"#".repeat(level)} `, `${text.heading} ${level}`, `H${level}`)).join("")}
+        </div>
+        <div class="rich-toolbar-row rich-toolbar-options">
+            <label class="rich-toolbar-group"><span>${aria(text.style)}</span><select data-rich-style aria-label="${aria(text.style)}">
+                <option value="normal">${aria(text.normal)}</option><option value="h1">${aria(text.heading)} 1</option><option value="h2">${aria(text.heading)} 2</option><option value="h3">${aria(text.heading)} 3</option>
+            </select></label>
+            <label class="rich-toolbar-group"><span>${aria(text.size)}</span><select data-rich-size aria-label="${aria(text.size)}">
+                <option value="">${aria(text.normal)}</option>${sizes.map((size) => `<option value="${size}">${size}px</option>`).join("")}
+            </select></label>
+            <div class="rich-toolbar-group rich-accent-group"><span>${aria(text.accent)}</span><div class="rich-accent-colors">
+                ${accents.map((color, index) => `<button type="button" class="rich-accent-swatch ${index === 0 ? "is-selected" : ""}" data-rich-color="${color}" style="--accent-color:${color}" aria-label="${aria(text.accent)} ${index + 1}" title="${aria(text.accent)}: ${color}"></button>`).join("")}
+            </div></div>
+            <label class="rich-toolbar-group"><span>${currentLanguage === "ru" ? "Подсветка" : currentLanguage === "ua" ? "Підсвічування" : "Highlight"}</span><input type="color" data-rich-highlight value="#fff19c" aria-label="${currentLanguage === "ru" ? "Цвет подсветки" : currentLanguage === "ua" ? "Колір підсвічування" : "Highlight color"}"></label>
+            <div class="rich-toolbar-group rich-align-group"><span>${aria(text.align)}</span><div class="rich-align-buttons">
+                ${formatButton("[align=left]", text.left, "☰")}${formatButton("[align=center]", text.center, "≡")}${formatButton("[align=right]", text.right, "☷")}
+            </div></div>
+        </div>
     </div>`;
 }
 
@@ -4333,6 +4360,18 @@ function bindActivityBlockActions() {
         }));
         const currentBlock = () => activeDraftSection().activities[Number(blockElement.dataset.blockIndex)];
         const contentField = blockElement.querySelector(':scope > .builder-block-fields > .form-field > textarea[data-field="content"]');
+        const previewBox = blockElement.querySelector("[data-builder-preview]");
+        const refreshRichPreview = () => {
+            if (previewBox && contentField) previewBox.innerHTML = previewRichContent({ ...currentBlock(), content: contentField.value });
+        };
+        if (previewBox && contentField) {
+            const refreshPreview = () => setTimeout(refreshRichPreview, 0);
+            contentField.addEventListener("input", refreshPreview);
+            blockElement.querySelector('[data-field="prompt"]')?.addEventListener("input", refreshPreview);
+            blockElement.querySelector(".rich-text-toolbar")?.addEventListener("click", refreshPreview);
+            blockElement.querySelector(".rich-text-toolbar")?.addEventListener("change", refreshPreview);
+            blockElement.querySelector(".image-upload-row")?.addEventListener("change", () => setTimeout(refreshPreview, 1500));
+        }
         const applyRichFormat = (prefix, suffix = "", linePrefix = false) => {
             if (!contentField) return;
             const start = contentField.selectionStart;
@@ -4346,6 +4385,12 @@ function bindActivityBlockActions() {
             currentBlock().content = contentField.value;
             scheduleLessonDraftAutosave();
         };
+        const syncRichContent = () => {
+            if (!contentField) return;
+            currentBlock().content = contentField.value;
+            scheduleLessonDraftAutosave();
+            refreshRichPreview();
+        };
         blockElement.querySelectorAll("[data-rich-format]").forEach((button) => button.addEventListener("click", () => {
             const textarea = contentField;
             if (!textarea) return;
@@ -4353,7 +4398,37 @@ function bindActivityBlockActions() {
             const wrappers = { "[u]": "[/u]", "[s]": "[/s]", "[border]": "[/border]" };
             if (format === "**" || format === "*") applyRichFormat(format, format);
             else if (wrappers[format]) applyRichFormat(format, wrappers[format]);
-            else if (format.startsWith("#") || format === "- ") applyRichFormat(format, "", true);
+            else if (format === "list") applyRichFormat("- ", "", true);
+            else if (format === "numbered") applyRichFormat("1. ", "", true);
+            else if (format === "quote") applyRichFormat("> ", "", true);
+            else if (format === "[info]") {
+                const existingInfo = textarea.value.match(/^\s*\[info\]\s*\n?/i);
+                if (existingInfo) textarea.setRangeText("", 0, existingInfo[0].length);
+                else textarea.setRangeText(`[info]\n${textarea.value}`, 0, textarea.value.length, "end");
+                textarea.focus();
+                syncRichContent();
+            }
+            else if (/^#/.test(format)) applyRichFormat(format, "", true);
+            else if (format.startsWith("[align=")) {
+                const align = format.match(/^\[align=(left|center|right)\]$/)?.[1];
+                if (align) applyRichFormat(format, "[/align]");
+            }
+            else if (format === "link") {
+                const selectionStart = textarea.selectionStart;
+                const selectionEnd = textarea.selectionEnd;
+                const selected = textarea.value.slice(selectionStart, selectionEnd) || (currentLanguage === "ru" ? "текст" : "text");
+                const linkUrl = window.prompt(currentLanguage === "ru" ? "Введите URL ссылки (https://…)" : currentLanguage === "ua" ? "Введіть URL посилання (https://…)" : "Enter a link URL (https://…)", "https://");
+                if (linkUrl === null) return;
+                try {
+                    const url = new URL(linkUrl);
+                    if (!["http:", "https:"].includes(url.protocol)) throw new Error("Unsupported link protocol");
+                    textarea.setRangeText(`[${selected.replace(/[\[\]()]/g, "")}](${url.href})`, selectionStart, selectionEnd, "select");
+                    textarea.focus();
+                    syncRichContent();
+                } catch {
+                    showToast(currentLanguage === "ru" ? "Введите корректную ссылку, начинающуюся с http:// или https://." : currentLanguage === "ua" ? "Введіть коректне посилання, що починається з http:// або https://." : "Enter a valid link starting with http:// or https://.");
+                }
+            }
             else {
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
@@ -4362,11 +4437,10 @@ function bindActivityBlockActions() {
                 const value = format.startsWith("![") ? `![${label}](https://)` : `[${label}](https://)`;
                 textarea.setRangeText(value, start, end, "select");
                 textarea.focus();
-                currentBlock().content = textarea.value;
-                scheduleLessonDraftAutosave();
+                syncRichContent();
             }
         }));
-        blockElement.querySelector("[data-rich-style]")?.addEventListener("change", (event) => {
+        blockElement.querySelectorAll("[data-rich-style]").forEach((styleSelect) => styleSelect.addEventListener("change", (event) => {
             const style = event.currentTarget.value;
             if (!style) return;
             const prefixes = { normal: "", h1: "# ", h2: "## ", h3: "### ", list: "- " };
@@ -4378,19 +4452,20 @@ function bindActivityBlockActions() {
             const replacement = lines.map((line) => `${prefix}${line}`).join("\n");
             contentField.setRangeText(replacement, start, end, "select");
             contentField.focus();
-            currentBlock().content = contentField.value;
-            scheduleLessonDraftAutosave();
+            syncRichContent();
             event.currentTarget.value = "";
-        });
+        }));
         blockElement.querySelector("[data-rich-size]")?.addEventListener("change", (event) => {
             const size = event.currentTarget.value;
             if (/^(12|14|16|18|20|24|28|32|36)$/.test(size)) applyRichFormat(`[size=${size}]`, "[/size]");
             event.currentTarget.value = "";
         });
-        blockElement.querySelector("[data-rich-color]")?.addEventListener("change", (event) => {
-            const color = event.currentTarget.value;
-            if (/^#[\da-f]{6}$/i.test(color)) applyRichFormat(`[color=${color}]`, "[/color]");
-        });
+        blockElement.querySelectorAll("[data-rich-color]").forEach((swatch) => swatch.addEventListener("click", () => {
+            const color = swatch.dataset.richColor;
+            if (!/^#[\da-f]{6}$/i.test(color)) return;
+            blockElement.querySelectorAll(".rich-accent-swatch").forEach((item) => item.classList.toggle("is-selected", item === swatch));
+            applyRichFormat(`[color=${color}]`, "[/color]");
+        }));
         blockElement.querySelector("[data-rich-highlight]")?.addEventListener("change", (event) => {
             const color = event.currentTarget.value;
             if (/^#[\da-f]{6}$/i.test(color)) applyRichFormat(`[highlight=${color}]`, "[/highlight]");
@@ -4399,6 +4474,15 @@ function bindActivityBlockActions() {
             const align = event.currentTarget.value;
             if (/^(left|center|right)$/.test(align)) applyRichFormat(`[align=${align}]`, "[/align]", false);
             event.currentTarget.value = "";
+        });
+        blockElement.querySelector("[data-rich-add-item]")?.addEventListener("click", () => {
+            if (!contentField) return;
+            const position = contentField.selectionStart;
+            const before = contentField.value.slice(0, position);
+            const separator = before && !before.endsWith("\n") ? "\n" : "";
+            contentField.setRangeText(`${separator}- `, position, position, "end");
+            contentField.focus();
+            syncRichContent();
         });
         blockElement.querySelector("[data-hide-selected-word]")?.addEventListener("click", () => {
             if (!contentField) return;
@@ -4437,6 +4521,7 @@ function bindActivityBlockActions() {
                 }
                 currentBlock().content = contentField.value;
                 scheduleLessonDraftAutosave();
+                refreshRichPreview();
             } catch (error) {
                 console.error("Could not upload an inline lesson image.", error);
                 showToast(error.message || (currentLanguage === "ru" ? "Не удалось загрузить изображение." : "Could not upload the image."));

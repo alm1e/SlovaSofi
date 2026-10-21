@@ -97,10 +97,12 @@
         const lines = source.replace(/\r/g, "").split("\n");
         const blocks = [];
         let listItems = [];
+        let listType = "";
         let tableRows = [];
         const flushList = () => {
-            if (listItems.length) blocks.push(`<ul>${listItems.map((item) => `<li>${noteInline(item)}</li>`).join("")}</ul>`);
+            if (listItems.length) blocks.push(`<${listType}>${listItems.map((item) => `<li>${noteInline(item)}</li>`).join("")}</${listType}>`);
             listItems = [];
+            listType = "";
         };
         const flushTable = () => {
             if (tableRows.length) blocks.push(`<div class="preview-table-wrap"><table><tbody>${tableRows.map((row) => `<tr>${row.map((cell) => `<td>${noteInline(cell.trim())}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`);
@@ -128,6 +130,12 @@
                 blocks.push(`<p style="text-align:${alignment[1].toLowerCase()}">${noteInline(alignment[2])}</p>`);
                 continue;
             }
+            const quote = line.match(/^>\s?(.*)$/);
+            if (quote) {
+                flushList();
+                blocks.push(`<blockquote>${noteInline(quote[1])}</blockquote>`);
+                continue;
+            }
             const heading = line.match(/^(#{1,3})\s+(.+)$/);
             if (heading) {
                 flushList();
@@ -135,9 +143,12 @@
                 blocks.push(`<h${level}>${noteInline(heading[2])}</h${level}>`);
                 continue;
             }
-            const item = line.match(/^(?:\d+[.)]|[-•])\s+(.*)$/);
+            const item = line.match(/^(\d+[.)]|[-•])\s+(.*)$/);
             if (item) {
-                listItems.push(item[1]);
+                const nextListType = /^\d/.test(item[1]) ? "ol" : "ul";
+                if (listType && listType !== nextListType) flushList();
+                listType = nextListType;
+                listItems.push(item[2]);
                 continue;
             }
             flushList();
