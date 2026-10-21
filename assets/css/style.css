@@ -198,19 +198,20 @@ body {
 }
 
 .btn-card-green-cta {
-    background-color: var(--primary-green) !important;
+    background: linear-gradient(135deg, #21a873, #168653 58%, #116d50) !important;
     color: var(--light-white) !important;
     border-radius: 12px;
     padding: 15px;
     font-weight: 700;
     border: none;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    box-shadow: 0 5px 14px rgba(22, 134, 83, 0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
     text-align: center;
     text-decoration: none;
     margin-top: auto; 
 }
 .btn-card-green-cta:hover {
-    background-color: var(--sage-deep) !important;
+    background: linear-gradient(135deg, #32b982, #16885d 58%, #11734f) !important;
     transform: translateY(-1px);
     box-shadow: 0 8px 18px rgba(31, 70, 52, 0.18);
 }
@@ -840,10 +841,10 @@ html {
 }
 :root[data-theme="dark"] .footer .social-icon:hover { background: #20372f; color: #dfffee; }
 :root[data-theme="dark"] .btn-card-green-cta {
-    background: #168653 !important;
+    background: linear-gradient(135deg, #1fa775, #147d61 58%, #126c57) !important;
     color: #fff !important;
 }
-:root[data-theme="dark"] .btn-card-green-cta:hover { background: #1da467 !important; }
+:root[data-theme="dark"] .btn-card-green-cta:hover { background: linear-gradient(135deg, #30b982, #168b67 58%, #14775f) !important; }
 :root[data-theme="dark"] .text-success,
 :root[data-theme="dark"] .price-card .text-success { color: #54e29b !important; }
 :root:not([data-theme="dark"]) .text-success,

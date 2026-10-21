@@ -844,6 +844,7 @@ function addActivityQuestion(activity) {
 }
 
 function renderActivityQuestionEditor(activity, preview = false) {
+    if (activity.type === "text") return "";
     const questions = Array.isArray(activity.questions) ? activity.questions : [];
     ensureActivityQuestionIds(activity);
     const fieldAttribute = preview ? "data-preview-question-field" : "data-field";
