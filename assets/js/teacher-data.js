@@ -3,7 +3,7 @@
         if (error) throw new Error(`${operation}: ${error.message || error.details || "Неизвестная ошибка базы данных."}`);
     }
 
-    async function loadWorkspace(client, userId, userEmail = "") {
+    async function loadWorkspace(client, userId, userEmail = "", onContextReady) {
         const { data: context, error: contextError } = await client.rpc("teacher_workspace_context");
         fail(contextError, "Не удалось определить школьный кабинет и права доступа");
         if (!context?.owner_id || !context?.permissions) {
@@ -16,6 +16,11 @@
             throw error;
         }
         const permissions = context.permissions;
+        onContextReady?.({
+            workspaceOwnerId: userId,
+            role: context.role,
+            permissions
+        });
         const [settingsResult, classesResult, lessonsResult, rosterResult, assignmentsResult] = await Promise.all([
             client.from("teacher_workspace_settings").select("legacy_imported").eq("user_id", userId).maybeSingle(),
             (isAdmin

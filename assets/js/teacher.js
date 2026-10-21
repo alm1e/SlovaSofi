@@ -1194,7 +1194,15 @@ async function loadCurrentUser() {
 
         // Load workspace in background (don't block UI)
         try {
-            const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, user.id, user.email || "");
+            const workspace = await window.teacherWorkspaceApi.loadWorkspace(
+                window.supabaseClient,
+                user.id,
+                user.email || "",
+                (context) => {
+                    workspaceAccess = { ...workspaceAccess, ...context };
+                    translateStaticUI();
+                }
+            );
             data = workspace.data;
             workspaceAccess = {
                 workspaceOwnerId: workspace.workspaceOwnerId,

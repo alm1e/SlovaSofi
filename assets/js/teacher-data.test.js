@@ -140,10 +140,13 @@ test("workspace navigation data loads without a redundant network user lookup", 
         profiles: []
     };
     let userLookupCount = 0;
+    const queriedTables = [];
+    let earlyContext;
     const client = {
         rpc: async () => ({ data: { owner_id: "teacher-1", role: "teacher", permissions: {} }, error: null }),
         auth: { getUser: async () => { userLookupCount += 1; throw new Error("Unexpected network user lookup"); } },
         from(table) {
+            queriedTables.push(table);
             const query = {
                 eq() { return query; },
                 order() { return query; },
@@ -156,9 +159,35 @@ test("workspace navigation data loads without a redundant network user lookup", 
             return { select: () => query };
         }
     };
-    const workspace = await window.teacherWorkspaceApi.loadWorkspace(client, "teacher-1", "teacher@example.test");
+    const workspace = await window.teacherWorkspaceApi.loadWorkspace(client, "teacher-1", "teacher@example.test", (context) => {
+        earlyContext = context;
+        assert.deepEqual(queriedTables, []);
+    });
     assert.equal(userLookupCount, 0);
+    assert.deepEqual(JSON.parse(JSON.stringify(earlyContext)), {
+        workspaceOwnerId: "teacher-1",
+        role: "teacher",
+        permissions: {}
+    });
+    assert.ok(queriedTables.length > 0);
     assert.equal(workspace.role, "teacher");
     assert.deepEqual(JSON.parse(JSON.stringify(workspace.data)), { classes: [], lessons: [] });
     assert.equal(workspace.staff.length, 0);
+});
+
+test("workspace context callback is not called for unauthorized roles", async () => {
+    const window = {};
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, "teacher-data.js"), "utf8"), {
+        window, crypto: { randomUUID: () => "new-id" }, console, Date, Map, Set, Promise, Error
+    });
+    const client = {
+        rpc: async () => ({ data: { owner_id: "student", role: "student", permissions: {} }, error: null }),
+        from() { throw new Error("Must not read workspace data"); }
+    };
+    let contextCalled = false;
+    await assert.rejects(
+        window.teacherWorkspaceApi.loadWorkspace(client, "student", "", () => { contextCalled = true; }),
+        (error) => error.code === "WORKSPACE_FORBIDDEN"
+    );
+    assert.equal(contextCalled, false);
 });
