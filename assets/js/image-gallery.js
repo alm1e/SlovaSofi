@@ -53,6 +53,7 @@
         const slides = [...gallery.querySelectorAll(".slova-gallery-stage .slova-gallery-image")];
         const active = slides[Number(gallery.dataset.galleryIndex)];
         if (!active) return;
+        gallery.querySelector(".slova-gallery-stage").style.height = `${active.offsetHeight}px`;
         const half = active.offsetWidth / 2;
         slides.forEach((slide, position) => {
             const offset = position - Number(gallery.dataset.galleryIndex);

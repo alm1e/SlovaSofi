@@ -2,7 +2,7 @@
 .slova-gallery-image { display: block; max-width: 100%; max-height: 460px; margin: 0 auto; border-radius: 10px; object-fit: contain; cursor: zoom-in; }
 
 /* Stacked cards: every image shares one grid cell and is offset by its distance (--o) from the active one. */
-.slova-gallery-stage { display: grid; align-items: start; justify-items: center; padding: 0 clamp(60px, 14%, 200px); perspective: 1400px; overflow: hidden; }
+.slova-gallery-stage { display: grid; grid-template-rows: minmax(0, 1fr); align-items: center; justify-items: center; padding: 0 clamp(24px, 14%, 200px); perspective: 1400px; overflow: hidden; }
 .slova-gallery-stage .slova-gallery-image {
     grid-area: 1 / 1; margin: 0; transform-origin: center; cursor: pointer;
     --x: 0px; --s: 1; --r: 0deg;
