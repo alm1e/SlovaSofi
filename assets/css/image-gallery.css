@@ -14,6 +14,7 @@
     transition: transform .5s cubic-bezier(.22, 1, .36, 1), opacity .4s ease, filter .4s ease;
 }
 .slova-gallery-stage .slova-gallery-image[data-slot="0"] { cursor: zoom-in; }
+.slova-gallery-stage .slova-gallery-image:not([data-slot="0"]) { max-height: var(--gallery-height, 460px); }
 .slova-gallery-stage .slova-gallery-image[data-slot="-1"] { opacity: .58; }
 .slova-gallery-stage .slova-gallery-image:is([data-slot="-1"], [data-slot="1"], [data-slot="2"]):hover { opacity: .85; }
 .slova-gallery-stage .slova-gallery-image:is([data-slot="past"], [data-slot="far"]) { opacity: 0; pointer-events: none; }
