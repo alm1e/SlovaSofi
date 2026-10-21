@@ -31,7 +31,7 @@
 
     const chevron = (direction) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="${direction < 0 ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-    const slotFor = (offset) => (offset < -1 ? "past" : offset > 2 ? "far" : String(offset));
+    const slotFor = (offset) => (offset < -1 ? "past" : offset > 1 ? "far" : String(offset));
 
     function html(images, fallbackAlt, imageClass) {
         if (!images.length) return "";
@@ -104,7 +104,7 @@
 
     function openLightbox(gallery, startImage) {
         const slides = [...gallery.querySelectorAll(".slova-gallery-image")];
-        lightboxImages = slides.map((slide) => ({ src: slide.currentSrc || slide.src, alt: slide.alt }));
+        lightboxImages = slides.map((slide) => ({ src: slide.src, alt: slide.alt }));
         lightboxIndex = Math.max(0, slides.indexOf(startImage));
         renderLightbox();
         lightbox.hidden = false;
