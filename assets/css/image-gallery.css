@@ -42,3 +42,10 @@ html.slova-lightbox-open { overflow: hidden; }
     .slova-lightbox { padding: 56px 8px; }
     .slova-lightbox-arrow { top: auto; bottom: 8px; transform: none; }
 }
+
+:root[data-theme="dark"] .slova-gallery-count b { color: #39d98a; }
+:root[data-theme="dark"] .slova-gallery-arrow { border-color: #31474d; }
+:root[data-theme="dark"] .slova-gallery-arrow:hover { border-color: #39d98a; background: #39d98a20; }
+:root[data-theme="dark"] .slova-lightbox { background: rgb(7 15 19 / 92%); }
+:root:not([data-theme="dark"]) .slova-gallery-count b { color: #168653; }
+:root:not([data-theme="dark"]) .slova-gallery-arrow:hover { border-color: #168653; background: #16865318; }

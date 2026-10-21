@@ -27,7 +27,7 @@
         else document.documentElement.removeAttribute("data-theme");
 
         const meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.content = theme === "dark" ? "#111a16" : "#f5f8f5";
+        if (meta) meta.content = theme === "dark" ? "#0d1519" : "#f2f7f6";
 
         let language = "ua";
         try {

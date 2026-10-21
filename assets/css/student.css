@@ -403,3 +403,85 @@
 :root[data-theme="dark"] .student-platform .student-answer-zone { border-color: #484b4e; background: #202225; }
 :root[data-theme="dark"] .student-platform .student-inline-answer { border-bottom-color: #778079; background: transparent; color: #e0e2e4; }
 :root[data-theme="dark"] .student-platform .student-answer-option:has(input:checked) { border-color: #565a5d; background: #303236; }
+
+:root:not([data-theme="dark"]) .student-platform .student-hero {
+    border-color: #cfe2dc;
+    background: radial-gradient(circle at 91% 15%, #c7eadd 0, transparent 32%), linear-gradient(115deg, #f3faf7, #e5f3ed);
+}
+:root:not([data-theme="dark"]) .student-platform .student-lesson-hero { background: linear-gradient(115deg, #168653, #1e4b45); }
+:root:not([data-theme="dark"]) .student-platform .student-activity-group,
+:root:not([data-theme="dark"]) .student-platform .student-word-bank { border-color: #d8e5e2; background: #f5f9f8; }
+:root:not([data-theme="dark"]) .student-platform .student-activity,
+:root:not([data-theme="dark"]) .student-platform .student-answer-option,
+:root:not([data-theme="dark"]) .student-platform .student-order-list li,
+:root:not([data-theme="dark"]) .student-platform .student-match-row,
+:root:not([data-theme="dark"]) .student-platform .student-answer-table td { border-color: #d8e5e2; }
+:root:not([data-theme="dark"]) .student-platform .student-inline-answer:focus,
+:root:not([data-theme="dark"]) .student-platform .student-answer-option:has(input:checked) { border-color: #168653; background: #e4f3ec; }
+
+:root[data-theme="dark"] .student-platform .student-hero {
+    border-color: #2a4548;
+    background: radial-gradient(circle at 91% 15%, #1b574755 0, transparent 34%), linear-gradient(115deg, #142329, #17292c);
+    box-shadow: 0 12px 34px #06101488;
+}
+:root[data-theme="dark"] .student-platform .student-hero p,
+:root[data-theme="dark"] .student-platform .student-progress-meta,
+:root[data-theme="dark"] .student-platform .student-progress-meta strong { color: #b7c6ca; }
+:root[data-theme="dark"] .student-platform .student-lesson-link,
+:root[data-theme="dark"] .student-platform .student-lesson-row,
+:root[data-theme="dark"] .student-platform .student-activity,
+:root[data-theme="dark"] .student-platform .student-activity-group,
+:root[data-theme="dark"] .student-platform .student-word-bank,
+:root[data-theme="dark"] .student-platform .student-answer-zone,
+:root[data-theme="dark"] .student-platform .student-answer-option,
+:root[data-theme="dark"] .student-platform .student-order-list li,
+:root[data-theme="dark"] .student-platform .student-match-row,
+:root[data-theme="dark"] .student-platform .student-answer-table td,
+:root[data-theme="dark"] .student-platform .student-flashcard,
+:root[data-theme="dark"] .student-platform .student-sections-panel,
+:root[data-theme="dark"] .student-platform .student-auth-card,
+:root[data-theme="dark"] .student-platform .student-message-card {
+    border-color: #2a3d44;
+    background-color: #17252b;
+    color: #e5edef;
+}
+:root[data-theme="dark"] .student-platform .student-lesson-link:hover,
+:root[data-theme="dark"] .student-platform .student-lesson-row:hover,
+:root[data-theme="dark"] .student-platform .student-answer-option:hover,
+:root[data-theme="dark"] .student-platform .student-order-list li:hover,
+:root[data-theme="dark"] .student-platform .student-answer-option:has(input:checked) { border-color: #32966a; background-color: #1d352f; }
+:root[data-theme="dark"] .student-platform .student-lesson-icon,
+:root[data-theme="dark"] .student-platform .student-empty-icon,
+:root[data-theme="dark"] .student-platform .student-activity-number,
+:root[data-theme="dark"] .student-platform .student-section-number { background: #183b30; color: #63e6a0; }
+:root[data-theme="dark"] .student-platform .student-lesson-hero { border-color: #28644a; background: linear-gradient(115deg, #14372f, #18533d); }
+:root[data-theme="dark"] .student-platform .student-homework-section { border-color: #293e44; background: linear-gradient(180deg, #17262b, #111c21 140px); }
+:root[data-theme="dark"] .student-platform .student-progress-track { background: #283a40; }
+:root[data-theme="dark"] .student-platform .student-progress-fill { background: linear-gradient(90deg, #168653, #39d98a); }
+:root[data-theme="dark"] .student-platform .student-progress-badge.is-complete { background: #183b30; color: #8ef0b8; }
+:root[data-theme="dark"] .student-platform .student-activity-main > .student-answer-feedback.is-correct { background: #183b30; color: #8ef0b8; }
+:root[data-theme="dark"] .student-platform .student-activity-main > .student-answer-feedback.is-incorrect { background: #402b2d; color: #f0a7aa; }
+:root[data-theme="dark"] .student-platform .student-answer-zone,
+:root[data-theme="dark"] .student-platform .student-word-bank,
+:root[data-theme="dark"] .student-platform .student-flashcard-list { border-color: #2b4448; background: #132126; }
+:root[data-theme="dark"] .student-platform .student-inline-answer,
+:root[data-theme="dark"] .student-platform .student-match-row select,
+:root[data-theme="dark"] .student-platform .student-open-answer,
+:root[data-theme="dark"] .student-platform .student-form input { border-color: #31474d; background-color: #101b20; color: #edf3f4; }
+:root[data-theme="dark"] .student-platform .student-activity-group-heading h3,
+:root[data-theme="dark"] .student-platform .student-sections-panel h2,
+:root[data-theme="dark"] .student-platform .student-sections-panel h3 { border-color: #2a3d44; color: #e5edef; }
+:root[data-theme="dark"] .student-platform .student-section-row.active,
+:root[data-theme="dark"] .student-platform .student-workspace-tabs button.active { border-color: #2a654a; background: #183b30; color: #dfffee; }
+:root[data-theme="dark"] .student-platform .student-workspace-tabs { border-color: #2a3d44; background: #17252b; }
+:root[data-theme="dark"] .student-platform .student-workspace-tabs button { color: #bdcbd0; }
+:root[data-theme="dark"] .student-platform .student-workspace-tabs button:hover:not(.active),
+:root[data-theme="dark"] .student-platform .student-section-row:not(.active) .student-section-select:hover { background: #20372f; }
+:root[data-theme="dark"] .student-platform .student-sections-toggle,
+:root[data-theme="dark"] .student-platform .student-sections-heading > button { border-color: #31474d; background: #17252b; color: #dce8eb; }
+:root[data-theme="dark"] .student-platform .student-activity-number,
+:root[data-theme="dark"] .student-platform .student-section-number { color: #8ef0b8; }
+:root[data-theme="dark"] .student-platform .student-activity-content,
+:root[data-theme="dark"] .student-platform .student-answer-feedback,
+:root[data-theme="dark"] .student-platform .student-muted { color: #b3c2c7; }
+:root[data-theme="dark"] .student-platform :focus-visible { outline-color: #39d98a; }

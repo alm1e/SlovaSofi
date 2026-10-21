@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f2f7f6">
     <title>SlovaSofi School | Школа мов</title>
     <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+    <script src="assets/js/theme.js"></script>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -38,6 +40,10 @@
                 <button class="btn-lang-item" data-lang="ru" onclick="changeLanguage('ru')">RU</button>
                 <button class="btn-lang-item" data-lang="en" onclick="changeLanguage('en')">EN</button>
             </div>
+            <button class="site-theme-toggle ms-2" type="button" data-theme-toggle aria-label="Увімкнути темну тему" title="Увімкнути темну тему" aria-pressed="false">
+                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/><path d="M16.5 3.5v4M14.5 5.5h4"/></svg>
+                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+            </button>
             <a href="login.html" class="btn btn-card-green-cta ms-lg-2" data-key="account">
                 Особистий кабінет
             </a>

@@ -1,10 +1,10 @@
 /* 1. Общие настройки */
 :root {
-    --primary-green: #2B6446;
-    --sage-deep: #1F4634;
-    --sage-page: #F4F7F2;
-    --sage-line: #DCE7DC;
-    --sage-accent: #D9AE58;
+    --primary-green: #168653;
+    --sage-deep: #1E3033;
+    --sage-page: #F2F7F6;
+    --sage-line: #D8E5E2;
+    --sage-accent: #54B980;
     --light-white: #FFFFFF;
 }
 
@@ -36,7 +36,7 @@ body {
 }
 
 .nav-link {
-    color: #2B6446 !important;
+    color: var(--primary-green) !important;
     font-weight: 600;
     transition: color 0.2s ease, transform 0.2s ease;
 }
@@ -53,7 +53,7 @@ body {
 .logo-s {
     font-size: 4.5rem; 
     font-weight: 700;
-    color: #2B6446;
+    color: var(--primary-green);
     font-family: "Arial Black", sans-serif;
     margin-right: 5px;
 }
@@ -61,7 +61,7 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    color: #2B6446;
+    color: var(--primary-green);
 }
 .logo-lova {
     font-size: 1.8rem;
@@ -90,7 +90,7 @@ body {
     color: #ffffff !important;
     background:
         radial-gradient(circle at 82% 18%, rgba(217, 174, 88, 0.2), transparent 24%),
-        linear-gradient(125deg, #1F4634 0%, #2B6446 62%, #477553 100%);
+        linear-gradient(125deg, #183c38 0%, #168653 62%, #4b9a72 100%);
 }
 
 .hero-section::before {
@@ -237,8 +237,8 @@ body {
 .footer {
     padding: 40px 0;
     border-top: 1px solid rgba(255,255,255,0.12);
-    background: linear-gradient(130deg, #1F4634, #2B6446);
-    color: #F4F7F2;
+    background: linear-gradient(130deg, #183c38, #168653);
+    color: #f2f7f6;
 }
 
 .footer a {
@@ -271,7 +271,7 @@ body {
 .btn-lang-item {
         border: none !important; 
         background: transparent;
-        color: #2B6446;
+        color: var(--primary-green);
         font-size: 0.75rem;
         font-weight: bold;
         padding: 6px 14px;
@@ -304,7 +304,7 @@ body {
 }
 /* Стиль для активной кнопки (выбранный язык) */
 .btn-lang-item.active {
-    background-color: #2B6446;
+    background-color: var(--primary-green);
     color: #ffffff;
 }
 
@@ -313,7 +313,7 @@ body {
 }
 .free-trial-wide {
     background-color: #ffffff;
-    border: 2px solid #2B6446 !important;
+    border: 2px solid var(--primary-green) !important;
     border-radius: 20px !important;
 }
 
@@ -347,7 +347,7 @@ body {
     margin: 0 auto;
     border-radius: 50%;
     overflow: hidden;
-    border: 5px solid #2B6446; 
+    border: 5px solid var(--primary-green);
     position: relative;
     transition: transform 0.25s ease, border-color 0.25s ease;
     box-shadow: 0 5px 15px rgba(31, 70, 52, 0.16);
@@ -399,7 +399,7 @@ body {
     background: #E8F0E7;
     border-radius: 50%;
     margin: 0 auto;
-    border: 3px solid #2B6446;
+    border: 3px solid var(--primary-green);
     transition: all 0.3s ease;
 }
 
@@ -445,14 +445,14 @@ body {
     transform: translateY(-2px);
 }
 .footer .social-icon {
-    background-color: #F4F7F2;
+    background-color: #F2F7F6;
     border: 1px solid rgba(255,255,255,0.6);
-    color: #1F4634;
+    color: #1E3033;
 }
 .footer .social-icon:hover,
 .footer .social-icon:focus-visible {
     background-color: #D9AE58;
-    color: #1F4634;
+    color: #1E3033;
 }
 @media (max-width: 768px) {
     .teacher-card {
@@ -755,6 +755,160 @@ html {
 :root[data-theme="dark"] #resetMessage.text-success {
     color: #9bd7aa !important;
 }
+
+/* Site-wide emerald and blue-green theme, paired with a soft light variant. */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --primary-green: #39d98a;
+    --sage-deep: #edf3f4;
+    --sage-page: #0d1519;
+    --sage-line: #28383f;
+    --sage-accent: #54e29b;
+    --light-white: #152126;
+}
+:root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --primary-green: #168653;
+    --sage-deep: #1e3033;
+    --sage-page: #f2f7f6;
+    --sage-line: #d8e5e2;
+    --sage-accent: #54b980;
+}
+:root:not([data-theme="dark"]) .hero-section {
+    background:
+        radial-gradient(circle at 82% 18%, #73c99542, transparent 25%),
+        linear-gradient(125deg, #e8f4ef 0%, #dcefe5 62%, #cce8d8 100%);
+    color: #1e3033 !important;
+}
+:root:not([data-theme="dark"]) .hero-subtitle { color: #526a63; }
+:root:not([data-theme="dark"]) .hero-section .btn-custom-lg { background: #168653; color: #fff; }
+:root:not([data-theme="dark"]) .hero-section .btn-custom-lg:hover { background: #116d44; color: #fff; }
+:root:not([data-theme="dark"]) .auth-forgot-password { background: #e4f3ec; color: #116d44; }
+:root:not([data-theme="dark"]) .auth-forgot-password:hover { background: #d3ecdf; color: #104d34; }
+:root[data-theme="dark"] body {
+    background-color: #0d1519 !important;
+    color: #edf3f4 !important;
+}
+:root[data-theme="dark"] .custom-nav {
+    border-color: #28383f;
+    background: #111c21 !important;
+    box-shadow: 0 4px 18px #06101466;
+}
+:root[data-theme="dark"] .nav-link,
+:root[data-theme="dark"] .logo-s,
+:root[data-theme="dark"] .logo-text-stack { color: #dce8eb !important; }
+:root[data-theme="dark"] .nav-link:hover { color: #54e29b !important; }
+:root[data-theme="dark"] .custom-nav .navbar-toggler { border-color: #31444b; }
+:root[data-theme="dark"] .custom-nav .navbar-toggler-icon { filter: invert(1) grayscale(1) brightness(1.7); }
+:root[data-theme="dark"] .hero-section {
+    background:
+        radial-gradient(circle at 82% 18%, #39d98a24, transparent 25%),
+        linear-gradient(125deg, #102126 0%, #14342f 62%, #195540 100%);
+}
+:root[data-theme="dark"] .price-card,
+:root[data-theme="dark"] .teacher-card,
+:root[data-theme="dark"] .free-trial-wide {
+    border-color: #283b42 !important;
+    background: linear-gradient(145deg, #17252b, #131f24) !important;
+    color: #e7eff1 !important;
+    box-shadow: 0 12px 30px #06101466 !important;
+}
+:root[data-theme="dark"] .price-card:hover,
+:root[data-theme="dark"] .teacher-card:hover { border-color: #35725a !important; }
+:root[data-theme="dark"] .price-card h2,
+:root[data-theme="dark"] .price-card h3,
+:root[data-theme="dark"] .teacher-card h3,
+:root[data-theme="dark"] .price-tag,
+:root[data-theme="dark"] .price-tag span,
+:root[data-theme="dark"] #teachers h2,
+:root[data-theme="dark"] #prices h2 { color: #edf3f4 !important; }
+:root[data-theme="dark"] #prices p,
+:root[data-theme="dark"] #teachers p,
+:root[data-theme="dark"] .teacher-card .opacity-75 { color: #a8b8bd !important; }
+:root[data-theme="dark"] .teacher-avatar-container,
+:root[data-theme="dark"] .mini-avatar { border-color: #39a873; }
+:root[data-theme="dark"] .footer {
+    border-color: #28383f;
+    background: linear-gradient(130deg, #101b20, #152a2c);
+    color: #dce8eb;
+}
+:root[data-theme="dark"] .footer a { color: #bfced2; }
+:root[data-theme="dark"] .footer .social-icon {
+    border-color: #31444b;
+    background: #1a292f;
+    color: #54e29b;
+}
+:root[data-theme="dark"] .footer .social-icon:hover { background: #20372f; color: #dfffee; }
+:root[data-theme="dark"] .btn-card-green-cta {
+    background: #168653 !important;
+    color: #fff !important;
+}
+:root[data-theme="dark"] .btn-card-green-cta:hover { background: #1da467 !important; }
+:root[data-theme="dark"] .text-success,
+:root[data-theme="dark"] .price-card .text-success { color: #54e29b !important; }
+:root:not([data-theme="dark"]) .text-success,
+:root:not([data-theme="dark"]) .price-card .text-success { color: #168653 !important; }
+:root[data-theme="dark"] .lang-switcher,
+:root[data-theme="dark"] .auth-controls > .lang-switcher {
+    border: 1px solid #28383f;
+    background: #17242a;
+}
+:root[data-theme="dark"] .btn-lang-item { color: #b9c8cc; }
+:root[data-theme="dark"] .btn-lang-item.active { background: #168653; color: #fff; }
+:root[data-theme="dark"] .btn-lang-item:hover:not(.active) { background: #20372f; }
+:root[data-theme="dark"] .auth-page { background: #0d1519 !important; color: #edf3f4 !important; }
+:root[data-theme="dark"] body.auth-page { background-color: #0d1519 !important; }
+:root[data-theme="dark"] .auth-card {
+    border-color: #28383f;
+    background: #152126;
+    color: #edf3f4;
+    box-shadow: 0 18px 48px #061014aa;
+}
+:root[data-theme="dark"] .auth-title,
+:root[data-theme="dark"] .auth-card .form-label { color: #edf3f4; }
+:root[data-theme="dark"] .auth-card .logo-s,
+:root[data-theme="dark"] .auth-card .logo-text-stack { color: #54e29b; }
+:root[data-theme="dark"] .auth-subtitle,
+:root[data-theme="dark"] .auth-note { color: #a0b0b6; }
+:root[data-theme="dark"] .auth-card .form-control {
+    border-color: #31444b;
+    background-color: #101a1e;
+    color: #edf3f4;
+}
+:root[data-theme="dark"] .auth-card .form-control:focus {
+    border-color: #39d98a;
+    background-color: #101a1e;
+    box-shadow: 0 0 0 .25rem #39d98a33;
+}
+:root[data-theme="dark"] .auth-card a:not(.auth-forgot-password),
+:root[data-theme="dark"] .auth-back-link { color: #54e29b; }
+:root[data-theme="dark"] .auth-forgot-password { background: #18352a; color: #a8f1c7; }
+:root[data-theme="dark"] .auth-controls > .lang-switcher { border-color: #28383f; background: #17242a; }
+:root[data-theme="dark"] .auth-controls .btn-lang-item.active { background: #168653; color: #fff; }
+:root[data-theme="dark"] .auth-theme-toggle,
+:root[data-theme="dark"] .site-theme-toggle {
+    border-color: #31444b;
+    background: #1a292f;
+    color: #54e29b;
+}
+:root[data-theme="dark"] .auth-theme-toggle:hover,
+:root[data-theme="dark"] .site-theme-toggle:hover { border-color: #39a873; background: #20372f; }
+:root[data-theme="dark"] .site-theme-toggle .theme-icon-moon,
+:root:not([data-theme="dark"]) .site-theme-toggle .theme-icon-sun { display: none; }
+.site-theme-toggle {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--sage-line);
+    border-radius: 50%;
+    padding: 0;
+    background: #fff;
+    color: var(--primary-green);
+}
+.site-theme-toggle .theme-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+:root:not([data-theme="dark"]) .site-theme-toggle:hover { border-color: #a9d3be; background: #e7f4ed; }
 
 @keyframes sage-rise {
     from { opacity: 0; transform: translateY(12px); }

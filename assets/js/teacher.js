@@ -1823,7 +1823,7 @@ function applyTheme(theme) {
     currentTheme = theme;
     if (theme === "dark") document.documentElement.dataset.theme = "dark";
     else document.documentElement.removeAttribute("data-theme");
-    document.querySelector('meta[name="theme-color"]').content = theme === "dark" ? "#111a16" : "#f5f8f5";
+    document.querySelector('meta[name="theme-color"]').content = theme === "dark" ? "#0d1519" : "#f2f7f6";
     syncThemeToggle();
 }
 
