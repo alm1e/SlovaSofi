@@ -1,0 +1,7 @@
+
+currentLanguage = 'ru';
+data = { classes: [{id:'qa-class',name:'Проверка интерфейса',course:'Slovak · A1',students:['Тестовый ученик']}], lessons: [{id:'qa-lesson',title:'QA · Проверка всех блоков',unit:'A1',classIds:[],sections:[{id:'qa-intro',title:'Текст и оформление',activities:[{id:'qa-text',type:'text',prompt:'Заголовок и текст',content:'## Наголос — prízvuk\n📌 Наголос у словацькій мові завжди падає на перший склад.\nДовжина голосних змінює значення слова.'}]},{id:'qa-types',title:'Все типы заданий',activities:activityTypes.filter(t=>t.id!=='text').map((type,i)=>({id:'qa-'+i,type:type.id,prompt:type.id,content:type.id==='image'?'https://placehold.co/600x800/png':type.id==='fill-blank'?'Ja ___ v Bratislave.':type.id==='match'?'dom = дім\nškola = школа':type.id==='columns'?'Глаголы: ísť\nСуществительные: dom':'dom\nškola',answer:'dom',settings:{}}))}],homeworkSections:[{id:'qa-homework',title:'Домашняя работа',activities:[{id:'qa-hw',type:'open-answer',prompt:'Напишите о себе',content:'Как вас зовут?'}]}]}]};
+activeView='lessons'; selectedLessonUnit='A1'; translateStaticUI();render();
+window.qaErrors=[];
+window.addEventListener('error',event=>{window.qaErrors.push(event.message);const log=document.getElementById('qa-log');log.textContent+='\nERROR: '+event.message;});
+window.addEventListener('unhandledrejection',event=>{window.qaErrors.push(String(event.reason));document.getElementById('qa-log').textContent+='\nREJECTION: '+event.reason;});

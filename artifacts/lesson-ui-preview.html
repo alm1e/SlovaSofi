@@ -255,6 +255,11 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .course-lesson-actions { display: flex; align-items: center; gap: 5px; }
 .course-lesson-actions .mini-action { width: 34px; height: 34px; background: #f3f7f3; color: #64816a; font-size: 17px; }
 .course-lesson-actions .mini-action:hover { background: #e4f0e6; color: #2b6446; }
+.course-lesson-actions .mini-action { display: grid; place-items: center; border: 1px solid transparent; border-radius: 11px; transition: background .18s ease, color .18s ease, border-color .18s ease; }
+.course-lesson-actions .mini-action svg { display: block; width: 19px; height: 19px; }
+.course-lesson-actions .mini-action:focus-visible { outline: 2px solid #2f9e6b; outline-offset: 3px; }
+.course-lesson-actions .mini-action.course-action-delete:hover { border-color: #d9747440; background: #c84c4c18; color: #bf4141; }
+:root[data-theme="dark"] .course-lesson-actions .mini-action.course-action-delete:hover { border-color: #ef909055; background: #ef707020; color: #ffaaaa; }
 @media (max-width: 700px) {
     .course-hero { min-height: 145px; gap: 14px; padding: 16px; }
     .course-hero-art { flex-basis: 100px; height: 100px; }
@@ -1978,6 +1983,49 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .lesson-section-progress progress::-webkit-progress-value { background: #38a46c; border-radius: 8px; }
 @media (min-width: 1401px) { .lesson-workspace-layout.has-live-monitor { grid-template-columns: 190px minmax(0, 1fr) 230px; } }
 @media (max-width: 650px) { :root .builder-block.has-preview, :root .preview-activity { padding: 16px; } }
+/* Formatting controls must fit the editor column, including at browser zoom. */
+.builder-block, .builder-block-fields, .builder-block-editor, .builder-block-preview,
+.builder-block-editor .form-field, .rich-text-toolbar, .rich-toolbar-row { min-width: 0; max-width: 100%; }
+.builder-block.is-expanded .rich-toolbar-options { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
+.builder-block.is-expanded .rich-accent-colors, .builder-block.is-expanded .rich-align-buttons { flex-wrap: wrap; }
+.builder-block.is-expanded .rich-toolbar-group select { min-width: 0; max-width: 100%; text-overflow: clip; }
+.builder-block-title { min-width: 0; overflow-wrap: anywhere; }
+.builder-block-header { flex-wrap: wrap; }
+.builder-block-actions { flex-shrink: 0; margin-left: auto; }
+.rich-text-actions .button { max-width: 100%; white-space: normal; }
+.visual-rich-editor { min-height: 200px; max-height: 65vh; overflow: auto; overflow-wrap: anywhere; border: 1px solid var(--line); border-radius: 0 0 12px 12px; padding: 14px; background: var(--surface, transparent); color: inherit; line-height: 1.65; }
+.visual-rich-editor:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+.visual-rich-editor img { max-width: 100%; height: auto; }
+.visual-rich-editor p { margin: 0 0 .75em; }
+.builder-block-editor textarea[hidden] { display: none; }
+.builder-preview-body { overflow-wrap: anywhere; }
+
+/* Grid children must shrink before their text starts widening the page. */
+.lesson-workspace-form { grid-template-columns: minmax(0, 1fr); }
+.lesson-workspace-form > *, .lesson-workspace-layout > *,
+.lesson-workspace-fields > *, .lesson-sections-panel { min-width: 0; }
+.lesson-workspace-fields input { min-width: 0; }
+@media (max-width: 700px) {
+    .lesson-workspace-layout, .lesson-workspace-layout.has-live-monitor { grid-template-columns: minmax(0, 1fr); }
+    .lesson-workspace-fields { grid-template-columns: minmax(0, 1fr); }
+    .lesson-workspace-tabs button { min-width: 0; overflow-wrap: anywhere; }
+}
+
+/* An open lesson uses the full window; school navigation opens over the lesson. */
+.platform.lesson-focus .sidebar { transform: translateX(-101%); visibility: hidden; }
+.platform.lesson-focus .sidebar.open { transform: translateX(0); visibility: visible; box-shadow: 10px 0 30px #0004; }
+.platform.lesson-focus .main-area { margin-left: 0; }
+.platform.lesson-focus .menu-toggle { display: inline-grid; place-items: center; flex: 0 0 42px; width: 42px; height: 42px; margin-right: 8px; border-radius: 10px; }
+.platform.lesson-focus .menu-toggle:hover { background: var(--purple-light); }
+.platform.lesson-focus .breadcrumbs { margin-right: auto; }
+.platform.lesson-focus .topbar { position: sticky; top: 0; z-index: 3; }
+.platform.lesson-focus .page-content { width: 100%; max-width: none; }
+.platform.lesson-focus .sidebar-backdrop { position: fixed; inset: 0; z-index: 4; display: block; border: 0; background: #07131980; opacity: 0; pointer-events: none; }
+.platform.lesson-focus .sidebar-backdrop.open { opacity: 1; pointer-events: auto; }
+.platform.lesson-focus .lesson-workspace-section .builder-block,
+.platform.lesson-focus .lesson-workspace-section .lesson-preview-list > :first-child,
+.platform.lesson-focus .lesson-workspace-main .lesson-workspace-section,
+.platform.lesson-focus .student-workspace-main [data-student-section] { scroll-margin-top: 92px; }
 
 body{padding:32px;max-width:1500px;margin:auto!important}.demo-header{display:flex;justify-content:space-between;gap:24px;align-items:center;margin-bottom:28px}.demo-header h1{margin:8px 0}.demo-note{color:var(--muted);margin:0 0 28px}.demo-cards{display:grid;gap:16px}.activity-grid{max-height:none!important;overflow:visible!important}.demo-title{margin:40px 0 20px}.demo-nav{padding:18px;background:var(--surface-soft);border-radius:16px}.demo-nav p{padding:10px;border-bottom:1px solid var(--line)}@media(max-width:800px){body{padding:16px}.demo-nav{display:none}}
 </style><body class="platform"><header class="demo-header"><div><small>SLOVASOFI · ПРЕДПРОСМОТР</small><h1>Slovenčina každý deň</h1><span>A1 · Урок 3</span></div><button class="button secondary" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark'">Светлая / тёмная тема</button></header><p class="demo-note">Обновлённые компоненты на демонстрационных данных. Статусы и ответы ниже — примеры.</p><div class="lesson-workspace-layout has-live-monitor"><aside class="demo-nav"><strong>Ответы учеников</strong><p>Анна · 3/5</p><p>Мария · 2/5</p></aside><main class="demo-cards"><section><article class="builder-block has-preview " data-block-index="0">

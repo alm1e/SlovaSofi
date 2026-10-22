@@ -31,7 +31,7 @@
 
     const chevron = (direction) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="${direction < 0 ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"}" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
-    const slotFor = (offset) => (offset < -1 ? "past" : offset > 2 ? "far" : String(offset));
+    const slotFor = (offset) => (offset < -1 ? "past" : offset > 1 ? "far" : String(offset));
 
     function html(images, fallbackAlt, imageClass) {
         if (!images.length) return "";
@@ -48,21 +48,16 @@
 
     const PEEK = 56;
 
-    // Peeking edges are placed from the active card's edges so both sides show the same strip regardless of image widths.
+    // Equal-sized cards keep their height and reveal only a side strip behind the active card.
     function layout(gallery) {
         const slides = [...gallery.querySelectorAll(".slova-gallery-stage .slova-gallery-image")];
         const active = slides[Number(gallery.dataset.galleryIndex)];
         if (!active) return;
-        const half = active.offsetWidth / 2;
         slides.forEach((slide, position) => {
             const offset = position - Number(gallery.dataset.galleryIndex);
             const steps = Math.min(Math.abs(offset), 3);
-            const scale = 1 - steps * 0.06;
             const sign = Math.sign(offset);
-            const x = sign * (half + PEEK * steps - (slide.offsetWidth * scale) / 2);
-            slide.style.setProperty("--x", `${offset === 0 ? 0 : x}px`);
-            slide.style.setProperty("--s", String(scale));
-            slide.style.setProperty("--r", `${-sign * 4}deg`);
+            slide.style.setProperty("--x", `${sign * PEEK * steps}px`);
         });
     }
 
@@ -109,7 +104,7 @@
 
     function openLightbox(gallery, startImage) {
         const slides = [...gallery.querySelectorAll(".slova-gallery-image")];
-        lightboxImages = slides.map((slide) => ({ src: slide.currentSrc || slide.src, alt: slide.alt }));
+        lightboxImages = slides.map((slide) => ({ src: slide.src, alt: slide.alt }));
         lightboxIndex = Math.max(0, slides.indexOf(startImage));
         renderLightbox();
         lightbox.hidden = false;

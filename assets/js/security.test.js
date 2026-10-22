@@ -82,3 +82,14 @@ test('rich lesson text supports formatting while keeping raw HTML and unsafe lin
     assert.ok(!formatted.includes('font-size:999px'));
     assert.ok(!formatted.includes('text-align:left;'));
 });
+
+
+test("aligned headings and lists keep their structure", () => {
+    const window = {};
+    vm.runInNewContext(fs.readFileSync(path.join(__dirname, "activity-ui.js"), "utf8"), { window });
+    const html = window.SlovaActivityUI.renderRichText('[align=center]## [size=24]Heading[/size][/align]\n[align=right]- Item[/align]');
+    assert.match(html, /text-align:center/);
+    assert.match(html, /<h2><span style="font-size:24px">Heading<\/span><\/h2>/);
+    assert.match(html, /<ul><li>Item<\/li><\/ul>/);
+    assert.ok(!html.includes('## '));
+});

@@ -777,13 +777,15 @@ html {
 }
 :root:not([data-theme="dark"]) .hero-section {
     background:
-        radial-gradient(circle at 82% 18%, #73c99542, transparent 25%),
-        linear-gradient(125deg, #e8f4ef 0%, #dcefe5 62%, #cce8d8 100%);
-    color: #1e3033 !important;
+        radial-gradient(ellipse at 82% 18%, #c8f4d070, transparent 44%),
+        radial-gradient(ellipse at 12% 90%, #123f4838, transparent 55%),
+        linear-gradient(125deg, #1c514d 0%, #21835d 62%, #52a574 100%);
+    color: #fff !important;
 }
-:root:not([data-theme="dark"]) .hero-subtitle { color: #526a63; }
-:root:not([data-theme="dark"]) .hero-section .btn-custom-lg { background: #168653; color: #fff; }
-:root:not([data-theme="dark"]) .hero-section .btn-custom-lg:hover { background: #116d44; color: #fff; }
+:root:not([data-theme="dark"]) .hero-section::before { border-color: #ffffff26; }
+:root:not([data-theme="dark"]) .hero-subtitle { color: #ffffffe0; }
+:root:not([data-theme="dark"]) .hero-section .btn-custom-lg { background: #fff; color: #146440; box-shadow: 0 8px 24px #103b3526; }
+:root:not([data-theme="dark"]) .hero-section .btn-custom-lg:hover { background: #edf8ef; color: #104c34; }
 :root:not([data-theme="dark"]) .auth-forgot-password { background: #e4f3ec; color: #116d44; }
 :root:not([data-theme="dark"]) .auth-forgot-password:hover { background: #d3ecdf; color: #104d34; }
 :root[data-theme="dark"] body {
