@@ -114,6 +114,7 @@ function publicActivitySettings(type: string, settings: JsonRecord | undefined):
         video: ["transcript", "hideTranscript"],
         "interactive-image": [],
         vocabulary: [],
+        text: ["note", "noteColor", "noteCollapsed"],
         "listening-questions": ["maxPlays", "transcript", "transcriptAfterSubmit"],
         "find-error": [],
         "pronunciation-recording": ["maxSeconds"]
@@ -323,6 +324,8 @@ function sectionsWithSafeActivities(activities: unknown) {
             if (!interactiveTypes.has(type)) return [];
             const questions = normalizedQuestions(activity.questions);
             const cards = normalizedFlashcards(activity.cards);
+            const index = activityIndex++;
+            if (type === "text" && record(activity.settings).studentVisible === false) return [];
             const safe = safeActivity({
                 type,
                 prompt: stringValue(activity.prompt).slice(0, 500),
@@ -339,7 +342,7 @@ function sectionsWithSafeActivities(activities: unknown) {
                 ...(Number.isInteger(activity.legacyProgressIndex) && Number(activity.legacyProgressIndex) >= 0
                     ? { legacyProgressIndex: Number(activity.legacyProgressIndex) }
                     : {}),
-                index: activityIndex++
+                index
             }];
         });
         return { title: stringValue(section.title) || "Lesson", homework, activities: safeActivities };
@@ -347,6 +350,7 @@ function sectionsWithSafeActivities(activities: unknown) {
 }
 
 function safeActivity(activity: Activity): Record<string, unknown> {
+    if (activity.type === "text" && activity.settings?.studentVisible === false) return {};
     const contentLines = lines(activity.content);
     const prompt = activity.prompt;
     const settings = activity.settings;

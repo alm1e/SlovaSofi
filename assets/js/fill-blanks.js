@@ -8,6 +8,10 @@
         const source = String(content || '');
         const tokens = /\\\[|\\\]|___|\[([^\[\]\r\n]+)\]/g;
         for (const match of source.matchAll(tokens)) {
+            // Formatting tags and Markdown links are text, not answer gaps.
+            if (match[1] !== undefined && (/^\/?(?:u|s|border|color(?:=#[\da-f]{3,8})?|size(?:=\d+)?|highlight(?:=#[\da-f]{6})?|align(?:=(?:left|center|right))?)$/i.test(match[1]) || source[match.index + match[0].length] === '(')) {
+                continue;
+            }
             parts[parts.length - 1] += source.slice(cursor, match.index);
             cursor = match.index + match[0].length;
             if (match[0].startsWith('\\')) { parts[parts.length - 1] += match[0].slice(1); continue; }

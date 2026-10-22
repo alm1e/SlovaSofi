@@ -161,13 +161,24 @@
     }
 
     // A text block becomes a note when its content starts with [info] or [star].
-    function renderNote(content, title) {
+    function renderNote(content, title, settings = {}) {
         const match = String(content || "").match(/^\s*\[(info|star)\]\s*\n?([\s\S]*)$/i);
-        if (!match) return "";
-        const kind = match[1].toLowerCase();
+        if (!match && settings.note !== true) return "";
+        const kind = match ? match[1].toLowerCase() : 'info';
         const icon = kind === "info" ? "i" : "★";
-        return `<aside class="activity-note activity-note-${kind}"><span class="activity-note-icon" aria-hidden="true">${icon}</span><div class="activity-note-body">${title ? `<h4>${noteInline(title)}</h4>` : ""}${renderRichText(match[2])}</div></aside>`;
+        if (window.SlovaLessonNotes) {
+            const language = typeof localStorage !== 'undefined' ? localStorage.getItem('siteLanguage') : 'ru';
+            const words = window.SlovaLessonNotes.text(language);
+            return `<details class="activity-note customizable-note" style="--note-color:${window.SlovaLessonNotes.color(settings)}" ${settings.noteCollapsed ? '' : 'open'}><summary><span aria-hidden="true">${icon}</span> ${noteInline(title || words[0])}${settings.studentVisible === false ? `<small class="note-private">◉ ${words[4]}</small>` : ''}</summary><div class="activity-note-body">${renderRichText(match ? match[2] : content)}</div></details>`;
+        }
+        return `<aside class="activity-note activity-note-${kind}"><span class="activity-note-icon" aria-hidden="true">${icon}</span><div class="activity-note-body">${title ? `<h4>${noteInline(title)}</h4>` : ""}${renderRichText(match ? match[2] : content)}</div></aside>`;
     }
 
-    window.SlovaActivityUI = { enhancePairing, renderNote, renderRichText };
+    function renderBlankText(parts, inputs) {
+        let marker = '\uE000GAP';
+        while (parts.some(part => String(part).includes(marker))) marker += 'X';
+        const content = parts.map((part, index) => part + (inputs[index] ? `${marker}${index}\uE001` : '')).join('');
+        return renderRichText(content).replace(new RegExp(`${marker}(\\d+)\uE001`, 'g'), (_, index) => inputs[Number(index)] || '');
+    }
+    window.SlovaActivityUI = { enhancePairing, renderNote, renderRichText, renderBlankText };
 })();

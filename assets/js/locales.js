@@ -693,6 +693,8 @@
     "Uploading media…": "Nahráva sa mediálny súbor…",
     "Could not upload media.": "Mediálny súbor sa nepodarilo nahrať.",
     "No copy was saved.": "Kópia nebola uložená.",
+    "Note": "Poznámka",
+    "Student hint or private teacher note.": "Pomôcka pre žiaka alebo súkromná poznámka učiteľa.",
     "Upload from computer": "Nahrať z počítača",
     "One image per line. With several, students get a slider; click an image to enlarge it.": "Jeden obrázok na riadok. Viac obrázkov sa zobrazí v posuvníku; kliknutím obrázok zväčšíte.",
     "The site does not allow saving a copy, so the link is used. Upload the file from your computer to keep the image.": "Stránka neumožňuje uložiť kópiu, preto sa použije odkaz. Nahrajte súbor z počítača, aby sa obrázok zachoval."
@@ -1388,6 +1390,8 @@
     "Uploading media…": "Медиафайл жүктелуде…",
     "Could not upload media.": "Медиафайлды жүктеу мүмкін болмады.",
     "No copy was saved.": "Көшірме сақталмады.",
+    "Note": "Ескертпе",
+    "Student hint or private teacher note.": "Оқушыға кеңес немесе мұғалімнің жеке ескертпесі.",
     "Upload from computer": "Компьютерден жүктеу",
     "One image per line. With several, students get a slider; click an image to enlarge it.": "Әр жолға бір сурет. Бірнеше сурет слайдерде көрсетіледі; үлкейту үшін суретті басыңыз.",
     "The site does not allow saving a copy, so the link is used. Upload the file from your computer to keep the image.": "Сайт көшірмені сақтауға рұқсат бермейді, сондықтан сілтеме қолданылады. Суретті сақтау үшін файлды компьютерден жүктеңіз."

@@ -22,6 +22,7 @@ function createEditorContext() {
     });
     vm.runInContext(fs.readFileSync(`${__dirname}/locales.js`, "utf8"), context);
     context.imageUploadMessages = context.SlovaI18n.locales(context.imageUploadMessages);
+    vm.runInContext(fs.readFileSync(`${__dirname}/lesson-notes.js`, "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "activity-ui.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "fill-blanks.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "phrase-list.js"), "utf8"), context);
