@@ -103,7 +103,7 @@ Deno.serve(async (request: Request) => {
 
     if (action === "list") {
         const { data: profiles, error: profilesError } = await adminClient.from("profiles")
-            .select("id,role").eq("role", "teacher");
+            .select("id,role").in("role", ["teacher", "admin"]);
         if (profilesError) {
             console.error("Could not load teacher profiles.", profilesError);
             return jsonResponse(500, { error: "Could not load teacher accounts." }, configuredOrigin);
@@ -137,7 +137,8 @@ Deno.serve(async (request: Request) => {
                 id: candidate.id,
                 email: candidate.email || "",
                 name,
-                permissions: { edit_lessons: editorIds.has(candidate.id) },
+                role: profiles.find((profile) => profile.id === candidate.id)?.role,
+                permissions: { edit_lessons: profiles.some((profile) => profile.id === candidate.id && profile.role === "admin") || editorIds.has(candidate.id) },
                 created_at: candidate.created_at
             };
         });

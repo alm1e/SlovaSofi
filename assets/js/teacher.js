@@ -2342,8 +2342,8 @@ function renderStaff() {
     const members = workspaceAccess.staff || [];
     return `<div class="section-heading"><div><h1>${staffText("title")}</h1><p>${staffText("description")}</p></div><button class="button" data-action="add-teacher">${staffText("add")}</button></div>
         <div class="staff-grid">
-            ${members.length ? members.map((member) => `<article class="staff-card"><span class="avatar">${escapeHtml(initialsFor(member.name || member.email))}</span><div class="staff-card-main"><strong>${escapeHtml(member.name || member.email)}</strong>${member.name ? `<small class="staff-card-email">${escapeHtml(member.email)}</small>` : ""}<small>${staffText("memberRole")}</small>${presenceBadge(member.id)}<span class="staff-permissions">${permissionLabels.filter(([key]) => member.permissions?.[key]).map(([, label]) => staffText(label)).join(" · ") || staffText("noEditor")}</span></div>
-                <div class="staff-card-actions"><button type="button" class="button secondary small" data-action="edit-teacher" data-id="${escapeHtml(member.id)}">${staffText("edit")}</button><button type="button" class="mini-action" data-action="remove-teacher" data-id="${escapeHtml(member.id)}" aria-label="${staffText("remove")}" title="${staffText("remove")}">×</button></div></article>`).join("") : emptyMessage(staffText("empty"), staffText("emptyHint"))}
+            ${members.length ? members.map((member) => `<article class="staff-card"><span class="avatar">${escapeHtml(initialsFor(member.name || member.email))}</span><div class="staff-card-main"><strong>${escapeHtml(member.name || member.email)}</strong>${member.name ? `<small class="staff-card-email">${escapeHtml(member.email)}</small>` : ""}<small>${member.role === "admin" ? roleLabels.admin[currentLanguage] : staffText("memberRole")}</small>${presenceBadge(member.id)}<span class="staff-permissions">${permissionLabels.filter(([key]) => member.permissions?.[key]).map(([, label]) => staffText(label)).join(" · ") || staffText("noEditor")}</span></div>
+                ${member.role === "admin" ? "" : `<div class="staff-card-actions"><button type="button" class="button secondary small" data-action="edit-teacher" data-id="${escapeHtml(member.id)}">${staffText("edit")}</button><button type="button" class="mini-action" data-action="remove-teacher" data-id="${escapeHtml(member.id)}" aria-label="${staffText("remove")}" title="${staffText("remove")}">×</button></div>`}</article>`).join("") : emptyMessage(staffText("empty"), staffText("emptyHint"))}
         </div>`;
 }
 
@@ -3756,7 +3756,8 @@ function renderLiveAnswerPanel(student, activity, progressIndex, questionId = nu
     const answerStatus = answer
         ? `<span class="live-answer-status ${answer.draft ? "is-draft" : "is-submitted"}">${answer.draft ? lessonSectionText("liveDraft") : lessonSectionText("liveSubmitted")}</span>`
         : "";
-    const name = student?.name ? `${liveStudentText("answer")} · ${student.name}` : lessonSectionText("liveNoStudents");
+    const name = student?.name || lessonSectionText("liveNoStudents");
+    const answerTone = answer && !answer.draft ? (answer.correct === true ? "is-correct" : answer.correct === false ? "is-incorrect" : "") : "";
     const reviewForm = ["open-answer", "pronunciation-recording"].includes(activity.type) && reviewContext?.lessonId && reviewContext?.classId && student?.id && hasPermission("edit_lessons")
         ? `<details class="live-answer-review"><summary>${liveReviewText("title")}</summary>
             <div class="form-field"><label>${liveReviewText("feedback")}</label><textarea data-live-review-feedback rows="2">${escapeHtml(answer?.teacher_feedback || "")}</textarea></div>
@@ -3770,7 +3771,7 @@ function renderLiveAnswerPanel(student, activity, progressIndex, questionId = nu
         </details>`
         : "";
     const teacherFeedback = answer?.teacher_feedback ? `<small class="live-answer-teacher-feedback">${escapeHtml(answer.teacher_feedback)}</small>` : "";
-    return `<div class="live-answer-inline" aria-label="${escapeHtml(name)}"><strong>${escapeHtml(name)}</strong>${answerStatus}<span class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</span>${recordingPath ? `<button class="button secondary small" type="button" data-play-recording="${escapeHtml(recordingPath)}">${escapeHtml(liveStudentText("playRecording"))}</button>` : ""}<span data-recording-player></span>${teacherFeedback}${reviewForm}</div>`;
+    return `<div class="live-answer-inline ${answerTone}" aria-label="${escapeHtml(name)}"><span class="live-answer-avatar" aria-hidden="true">${escapeHtml(name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2))}</span><strong>${escapeHtml(name)}</strong>${answerStatus}<span class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</span>${recordingPath ? `<button class="button secondary small" type="button" data-play-recording="${escapeHtml(recordingPath)}">${escapeHtml(liveStudentText("playRecording"))}</button>` : ""}<span data-recording-player></span>${teacherFeedback}${reviewForm}</div>`;
 }
 
 function renderLiveMonitor(lesson, progressIndexes) {
@@ -3860,6 +3861,13 @@ function renderLessonWorkspace() {
         && previewActivityEdit.sectionId === section.id && previewActivityEdit.isHomework === isHomework;
     const title = isEditing ? lessonFormDraft.title : lesson.title;
     const unit = isEditing ? lessonFormDraft.unit : lesson.unit || inferLessonUnit(lesson);
+    const progress = !isEditing && liveStudent ? liveStudentAnswerProgress(lesson, liveStudent.id, progressIndexes) : null;
+    const progressValue = progress ? progress.answered : sections.indexOf(section) + 1;
+    const progressTotal = progress ? progress.total : sections.length;
+    const progressLabel = progress
+        ? ({ ru: "Ответы ученика", ua: "Відповіді учня", en: "Student answers" })[currentLanguage]
+        : ({ ru: "Текущий раздел", ua: "Поточний розділ", en: "Current section" })[currentLanguage];
+    const sectionProgress = `<div class="lesson-section-progress"><div><span>${progressLabel}</span><strong>${progressValue}/${progressTotal}</strong></div><progress max="${Math.max(1, progressTotal)}" value="${progressValue}" aria-label="${progressLabel}"></progress></div>`;
     const renderSectionMenu = (items, isHomeworkSection) => items.map((item, index) => `<div class="lesson-section-row ${item.id === (isHomeworkSection ? activeHomeworkSectionId : activeLessonSectionId) ? "active" : ""}">
         <button type="button" class="lesson-section-select" data-select-section="${escapeHtml(item.id)}" data-section-homework="${isHomeworkSection}" ${quickEditActive ? "disabled" : ""}><span class="lesson-section-number">${index + 1}</span><span class="lesson-section-label" data-section-label="${escapeHtml(item.id)}">${escapeHtml(item.title)}</span></button>
         ${isEditing ? `<div class="lesson-section-tools"><button type="button" data-move-section-from="${escapeHtml(item.id)}" data-move-section="${index - 1}" data-section-homework="${isHomeworkSection}" ${index === 0 ? "disabled" : ""} aria-label="${lessonSectionText("previous")}">↑</button><button type="button" data-move-section-from="${escapeHtml(item.id)}" data-move-section="${index + 1}" data-section-homework="${isHomeworkSection}" ${index === items.length - 1 ? "disabled" : ""} aria-label="${lessonSectionText("next")}">↓</button><button type="button" data-delete-section="${escapeHtml(item.id)}" data-section-homework="${isHomeworkSection}" ${items.length === 1 ? "disabled" : ""} aria-label="${lessonSectionText("remove")}">×</button></div>` : ""}</div>`).join("");
@@ -3927,7 +3935,7 @@ function renderLessonWorkspace() {
                 <div class="lesson-workspace-footer"><button type="button" class="button secondary small" data-section-step="-1" ${sections.indexOf(section) === 0 || quickEditActive ? "disabled" : ""}>${lessonSectionText("previous")}</button><span>${sections.indexOf(section) + 1} / ${sections.length}</span><button type="button" class="button secondary small" data-section-step="1" ${sections.indexOf(section) === sections.length - 1 || quickEditActive ? "disabled" : ""}>${lessonSectionText("next")}</button>
                 ${isEditing ? `<span class="lesson-workspace-spacer"></span><button type="button" class="button secondary small" data-action="choose-activity">${lessonSectionText("addElement")}</button><button type="button" class="button secondary small" data-copy-activity ${section.activities.length ? "" : "disabled"}>${lessonSectionText("copyElement")}</button>` : ""}</div>
             </main>
-            <aside class="lesson-sections-panel"><h2>${lessonSectionText("section")}</h2><nav class="lesson-sections-list" aria-label="${lessonSectionText("section")}">${lessonSectionMenu}</nav>
+            <aside class="lesson-sections-panel">${sectionProgress}<h2>${lessonSectionText("section")}</h2><nav class="lesson-sections-list" aria-label="${lessonSectionText("section")}">${lessonSectionMenu}</nav>
                 ${isEditing && !isHomework ? `<button type="button" class="button secondary lesson-add-section" data-add-section="lesson">${lessonSectionText("addSection")}</button>` : ""}
                 <h3 class="homework-sections-heading">${lessonSectionText("homework")}</h3><nav class="lesson-sections-list homework-sections-list" aria-label="${lessonSectionText("homework")}">${homeworkSectionMenu}</nav>
                 ${isEditing && isHomework ? `<button type="button" class="button secondary lesson-add-section" data-add-section="homework">${lessonSectionText("addSection")}</button>` : ""}
@@ -4735,6 +4743,11 @@ function activityIllustration(type) {
         "text": '<rect x="16" y="13" width="70" height="44" rx="6" fill="#fff" stroke="#d8d9e9"/><rect x="23" y="20" width="35" height="7" rx="3" fill="#8c84dc"/><path d="M23 34h55M23 42h47M23 50h31" stroke="#c0c1d6" stroke-width="3" stroke-linecap="round"/>',
         "video": '<rect x="14" y="13" width="74" height="46" rx="7" fill="#e9e7ff"/><rect x="19" y="18" width="64" height="36" rx="4" fill="#7770cc"/><circle cx="51" cy="36" r="11" fill="#fff"/><path d="m48 30 10 6-10 6z" fill="#7770cc"/><path d="M24 49h17" stroke="#c7c3f2" stroke-width="2" stroke-linecap="round"/>',
         "audio": '<rect x="16" y="13" width="70" height="46" rx="8" fill="#f0edff"/><circle cx="34" cy="36" r="10" fill="#7770cc"/><path d="m32 31 7 5-7 5z" fill="#fff"/><path d="M51 36h4m4-7v14m5-19v24m5-14v5m5-11v17m5-13v9" stroke="#8c84dc" stroke-width="3" stroke-linecap="round"/>',
+        "pronunciation-recording": '<rect x="41" y="12" width="22" height="32" rx="11" fill="#2b6446"/><path d="M33 32v5a19 19 0 0 0 38 0v-5M52 56v9M41 65h22" fill="none" stroke="#bd913b" stroke-width="4" stroke-linecap="round"/>',
+        "listening-questions": '<path d="M23 38v-7a20 20 0 0 1 40 0v7" fill="none" stroke="#2b6446" stroke-width="5"/><rect x="18" y="31" width="12" height="24" rx="5" fill="#bd913b"/><rect x="56" y="31" width="12" height="24" rx="5" fill="#bd913b"/><circle cx="78" cy="47" r="17" fill="#e1eee5"/><path d="m70 47 6 6 10-12" fill="none" stroke="#2b6446" stroke-width="3"/>',
+        "find-error": '<rect x="12" y="14" width="69" height="42" rx="7" fill="#fff"/><path d="M22 26h48M22 36h26M22 46h19" stroke="#b4bdc9" stroke-width="3"/><circle cx="64" cy="43" r="13" fill="#fae9e7" stroke="#b76b63" stroke-width="3"/><path d="m74 53 13 12M59 43h10" stroke="#b76b63" stroke-width="4" stroke-linecap="round"/>',
+        "interactive-image": '<rect x="13" y="12" width="78" height="48" rx="7" fill="#edf5ee"/><path d="m19 53 20-22 17 16 12-12 17 18" fill="#a8ccb0"/><circle cx="66" cy="24" r="7" fill="#bd913b"/><circle cx="39" cy="31" r="7" fill="#fff" stroke="#2b6446" stroke-width="3"/><path d="m68 43 3 22 5-7 8-2z" fill="#2b6446"/>',
+        "vocabulary": '<path d="M14 18q19-8 38 2 19-10 38-2v39q-19-8-38 2-19-10-38-2z" fill="#fff" stroke="#bd913b" stroke-width="2"/><path d="M52 20v39M23 42h19M62 32h19M62 41h19M62 49h13" stroke="#afbbbd" stroke-width="3"/><path d="m25 36 6-13 6 13m-10-4h8" fill="none" stroke="#2b6446" stroke-width="2"/>',
         "image": '<rect x="15" y="13" width="72" height="46" rx="7" fill="#fff" stroke="#d8d9e9"/><circle cx="68" cy="24" r="5" fill="#f4cf7b"/><path d="m20 51 17-17 11 10 10-9 23 16z" fill="#b5dcb9"/><path d="m20 51 17-17 11 10" fill="none" stroke="#78af83" stroke-width="2"/>'
     };
     const brandColors = new Map([

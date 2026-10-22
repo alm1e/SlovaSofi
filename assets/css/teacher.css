@@ -1878,7 +1878,7 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 }
 .builder-block.has-preview .builder-block-fields > .builder-block-editor { grid-column: 1; min-width: 0; }
 .builder-block.has-preview .builder-block-fields > .builder-block-preview { grid-column: 2; grid-row: 1; min-width: 0; top: 16px; }
-.builder-block-editor { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--surface-soft); }
+.builder-block-editor { border: 0; border-radius: 14px; padding: 16px; background: var(--surface-soft); }
 .builder-block-editor > .form-field { min-width: 0; }
 .builder-block.is-expanded .builder-block-fields { border-color: var(--line); }
 .builder-block.is-expanded .builder-block-title > strong { flex-wrap: wrap; }
@@ -1951,3 +1951,30 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
     .builder-block.is-expanded .builder-block-actions { margin-left: auto; }
     .builder-block.is-expanded .rich-toolbar-options { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Consistent lesson cards, compact answers and quieter navigation. */
+:root .builder-block.has-preview { border: 1px solid #c8ddd4; border-radius: 16px; padding: 24px; background: linear-gradient(180deg, #fff, #f7fbf9); box-shadow: none; }
+:root[data-theme="dark"] .builder-block.has-preview { border-color: #2d4846; background: linear-gradient(180deg, #152329, #101a1e); }
+:root .preview-activity { border-radius: 16px; padding: 24px; box-shadow: none; }
+:root .preview-activity-group .preview-question-activity { border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; }
+:root .live-answer-inline { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px 10px; max-width: 620px; margin: 12px 0; padding: 12px; border-radius: 12px; background: var(--surface-soft); color: var(--ink); }
+.live-answer-avatar { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #e3ebe7; color: #31574a; font-size: 10px; font-weight: 700; }
+:root .live-answer-inline .live-answer-response { grid-column: 2 / -1; width: 100%; margin: 0; padding: 8px 10px; background: #f0f3f4; color: #233a40; font-size: 14px; font-weight: 500; }
+:root .live-answer-inline.is-correct .live-answer-response { background: #e8f4ec; color: #205336; }
+:root .live-answer-inline.is-incorrect .live-answer-response { background: #faedeb; color: #883f3a; }
+:root .live-answer-inline .live-answer-status { background: transparent; color: var(--muted); padding: 0; font-size: 10px; }
+.live-answer-review, .live-answer-teacher-feedback, .live-answer-inline [data-recording-player] { grid-column: 2 / -1; }
+:root[data-theme="dark"] .live-answer-inline .live-answer-response { background: #233239; color: #edf3f4; }
+:root[data-theme="dark"] .live-answer-inline.is-correct .live-answer-response { background: #203c30; color: #d4efdd; }
+:root[data-theme="dark"] .live-answer-inline.is-incorrect .live-answer-response { background: #402d30; color: #f1d5d2; }
+:root .lesson-sections-panel { background: var(--surface-raised); box-shadow: none; }
+:root .lesson-section-row.active { border-color: transparent; border-left: 3px solid #38a46c; background: var(--surface-soft); box-shadow: none; }
+:root .lesson-section-row:not(.active) .lesson-section-number { background: transparent; color: var(--muted); }
+.lesson-section-progress { margin-bottom: 24px; }
+.lesson-section-progress > div { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; font-size: 12px; color: var(--muted); }
+.lesson-section-progress strong { color: var(--ink); }
+.lesson-section-progress progress { display: block; width: 100%; height: 6px; border: 0; border-radius: 8px; overflow: hidden; background: var(--surface-soft); accent-color: #38a46c; }
+.lesson-section-progress progress::-webkit-progress-bar { background: var(--surface-soft); }
+.lesson-section-progress progress::-webkit-progress-value { background: #38a46c; border-radius: 8px; }
+@media (min-width: 1401px) { .lesson-workspace-layout.has-live-monitor { grid-template-columns: 190px minmax(0, 1fr) 230px; } }
+@media (max-width: 650px) { :root .builder-block.has-preview, :root .preview-activity { padding: 16px; } }
