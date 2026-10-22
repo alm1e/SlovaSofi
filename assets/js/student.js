@@ -252,7 +252,7 @@
     const answerableActivityTypes = new Set([
         "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
         "sentence-order", "true-false", "table", "match", "columns", "open-answer", "flashcards",
-        "pronunciation-recording", "listening-questions", "find-error", "vocabulary"
+        "pronunciation-recording", "listening-questions", "find-error"
     ]);
     const progressActivitiesFor = (lesson) => activitiesFor(lesson).flatMap((activity) => {
         if (!answerableActivityTypes.has(activity.type)) return [];
@@ -713,12 +713,8 @@
                 const rating = ratings[item.cardIndex] || "";
                 return `<div class="student-flashcard-card" data-flashcard-card data-card-index="${item.cardIndex}" data-rating="${escapeHtml(rating)}"><div class="student-flashcard"><strong class="student-flashcard-face">${flashcardSideMarkup(item.front)}</strong><button class="student-flashcard-flip" type="button" data-front="${escapeHtml(item.front)}" data-back="${escapeHtml(item.back)}">${escapeHtml(text("flip"))}</button></div><div class="student-flashcard-rating"><button class="button secondary small" type="button" data-flashcard-rating="know" data-card-index="${item.cardIndex}" aria-pressed="${rating === "know"}">${escapeHtml(flashcardChoiceText("know"))}</button><button class="button secondary small" type="button" data-flashcard-rating="repeat" data-card-index="${item.cardIndex}" aria-pressed="${rating === "repeat"}">${escapeHtml(flashcardChoiceText("repeat"))}</button></div></div>`;
             }).join("")}</div>`;
-        } else if (activity.type === "vocabulary") {
-            const ratings = Array.isArray(savedResponse) ? savedResponse : [];
-            body = `<div class="student-flashcard-list student-vocabulary-list">${(activity.cards || []).map((item) => {
-                const rating = ratings[item.cardIndex] || "";
-                return `<div class="student-flashcard-card" data-flashcard-card data-card-index="${item.cardIndex}" data-rating="${escapeHtml(rating)}"><div class="student-flashcard"><strong class="student-flashcard-face">${flashcardSideMarkup(item.front)}</strong><button class="student-flashcard-flip" type="button" data-front="${escapeHtml(item.front)}" data-back="${escapeHtml(item.back)}">${escapeHtml(text("flip"))}</button></div>${item.audio ? `<audio class="student-choice-media" controls preload="none" src="${escapeHtml(mediaUrl(item.audio))}"></audio>` : ""}<div class="student-flashcard-rating"><button class="button secondary small" type="button" data-flashcard-rating="know" data-card-index="${item.cardIndex}" aria-pressed="${rating === "know"}">${escapeHtml(flashcardChoiceText("know"))}</button><button class="button secondary small" type="button" data-flashcard-rating="repeat" data-card-index="${item.cardIndex}" aria-pressed="${rating === "repeat"}">${escapeHtml(flashcardChoiceText("repeat"))}</button></div></div>`;
-            }).join("")}</div>`;
+        } else if (["vocabulary", "phrase-list"].includes(activity.type)) {
+            body = window.SlovaPhraseList.render(window.SlovaPhraseList.wordsFor(activity), language, user?.id || "");
         } else if (activity.type === "pronunciation-recording") {
             const savedPath = typeof savedResponse === "string" ? savedResponse : "";
             body = `${activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : ""}<button class="button secondary small" type="button" data-recording-toggle>${escapeHtml(text("recordPronunciation"))}</button><p class="student-muted" data-recording-status aria-live="polite">${savedPath ? escapeHtml(text("recordingSaved")) : ""}</p><audio class="student-activity-media" data-recording-preview controls preload="none" ${savedPath ? "" : "hidden"}></audio>`;

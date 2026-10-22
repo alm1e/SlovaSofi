@@ -327,7 +327,7 @@ for (const [language, labels] of Object.entries({
         "activity.hotspots": "Interactive image",
         "activity.hotspotsDesc": "Mark words, translations, and pronunciation on an image.",
         "activity.vocabulary": "Lesson vocabulary",
-        "activity.vocabularyDesc": "New-word flashcards with translations and audio."
+        "activity.vocabularyDesc": "Words and phrases with translations, pronunciation and saved vocabulary."
     }
 })) Object.assign(translations[language], labels);
 Object.assign(translations.ru, { "nav.calendar": "Календарь", "page.calendar": "Календарь" });
@@ -744,7 +744,7 @@ const activityQuestionLabels = {
 const liveAnswerActivityTypes = new Set([
     "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
     "sentence-order", "true-false", "table", "match", "columns", "open-answer",
-    "pronunciation-recording", "listening-questions", "find-error", "vocabulary"
+    "pronunciation-recording", "listening-questions", "find-error"
 ]);
 
 function activityQuestionText(key) {
@@ -848,6 +848,7 @@ function addActivityQuestion(activity) {
 }
 
 function renderActivityQuestionEditor(activity, preview = false) {
+    if (["vocabulary", "phrase-list"].includes(activity.type)) return "";
     const questions = Array.isArray(activity.questions) ? activity.questions : [];
     if (activity.type === "text" && !questions.length) return "";
     ensureActivityQuestionIds(activity);
@@ -2667,7 +2668,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         const richText = window.SlovaActivityUI?.renderRichText(content);
         body = richText || (displayContent ? `<div class="preview-material">${escapeHtml(displayContent).replace(/\n/g, "<br>")}</div>` : "");
         checkable = false;
-    } else if (["pronunciation-recording", "listening-questions", "find-error", "interactive-image", "vocabulary"].includes(type)) {
+    } else if (["pronunciation-recording", "listening-questions", "find-error", "interactive-image", "vocabulary", "phrase-list"].includes(type)) {
         body = renderSupplementaryPreview(activity);
         checkable = false;
     } else {
@@ -2708,13 +2709,7 @@ function renderSupplementaryPreview(activity) {
     if (activity.type === "find-error") {
         return `<div class="preview-error-words">${(content.match(/\S+|\s+/g) || []).map((word) => /^\s+$/.test(word) ? escapeHtml(word) : `<button type="button" data-preview-error-word aria-pressed="false">${escapeHtml(word)}</button>`).join("")}</div>${empty(text.choose)}<label class="preview-error-correction">${text.correction}<input class="preview-inline-input" autocomplete="off"></label>`;
     }
-    if (activity.type === "vocabulary") {
-        const words = Array.isArray(settings.words) ? settings.words.filter((word) => word && typeof word.word === "string" && typeof word.translation === "string" && word.word.trim() && word.translation.trim()).slice(0, 100) : [];
-        return words.length ? `<div class="preview-flashcards">${words.map((word) => {
-            const audio = previewMediaUrl(word.audio);
-            return `<div class="preview-flashcard" data-front="${escapeHtml(word.word)}" data-back="${escapeHtml(word.translation)}"><strong>${escapeHtml(word.word)}</strong><button type="button" class="preview-flashcard-flip" aria-pressed="false">${previewText("flip")}</button>${audio ? `<audio controls preload="none" src="${escapeHtml(audio)}" data-preview-media></audio>` : ""}</div>`;
-        }).join("")}</div>` : empty(text.words);
-    }
+    if (["vocabulary", "phrase-list"].includes(activity.type)) return window.SlovaPhraseList.render(window.SlovaPhraseList.wordsFor(activity), currentLanguage);
     const image = previewMediaUrl(content.split(/\r?\n/)[0]);
     if (!image) return empty(text.empty);
     const hotspots = Array.isArray(settings.hotspots) ? settings.hotspots.filter((spot) => spot && Number.isFinite(Number(spot.x)) && Number.isFinite(Number(spot.y)) && typeof spot.word === "string" && spot.word.trim()).slice(0, 100) : [];
@@ -4193,8 +4188,8 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
                     ? `${block.type === "listening-questions" ? `<div class="form-field"><label>${t("field.mediaContent")}</label><textarea data-field="content" placeholder="https://…">${escapeHtml(block.content || "")}</textarea></div>` : ""}${renderActivityQuestionEditor(block)}`
                     : `<div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${block.type === "text" ? "" : escapeHtml(contentHint(block.type))}</span></label>
                     ${block.type === "text" ? richTextToolbar() : ""}
-                    <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(block.content || "")}</textarea>${block.type === "fill-blank" ? `<button type="button" class="button secondary small" data-hide-selected-word>${currentLanguage === "ru" ? "Скрыть выделенное слово" : currentLanguage === "ua" ? "Приховати виділене слово" : "Hide selected word"}</button>` : ""}                    ${block.type === "text" ? `<div class="image-upload-row rich-text-actions"><button type="button" class="button secondary small" data-pick-rich-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-rich-image-file hidden><button type="button" class="button secondary small" data-rich-add-item>${currentLanguage === "ru" ? "＋ Добавить пункт" : currentLanguage === "ua" ? "＋ Додати пункт" : "＋ Add item"}</button></div>` : ""}${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div><small class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</small>` : ""}${["audio", "video"].includes(block.type) ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-media>${currentLanguage === "ru" ? "Загрузить файл" : currentLanguage === "ua" ? "Завантажити файл" : "Upload file"}</button><input type="file" accept="${block.type}/*" data-media-file hidden></div><small class="hint">${currentLanguage === "ru" ? "До 50 МБ; поддерживаются MP3/M4A/WAV/OGG/AAC и MP4/WebM/MOV." : currentLanguage === "ua" ? "До 50 МБ; підтримуються MP3/M4A/WAV/OGG/AAC і MP4/WebM/MOV." : "Up to 50 MB; MP3/M4A/WAV/OGG/AAC and MP4/WebM/MOV supported."}</small>` : ""}</div>
-                    ${block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
+                    <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(["vocabulary", "phrase-list"].includes(block.type) ? window.SlovaPhraseList.editorContent(block) : block.content || "")}</textarea>${block.type === "fill-blank" ? `<button type="button" class="button secondary small" data-hide-selected-word>${currentLanguage === "ru" ? "Скрыть выделенное слово" : currentLanguage === "ua" ? "Приховати виділене слово" : "Hide selected word"}</button>` : ""}                    ${block.type === "text" ? `<div class="image-upload-row rich-text-actions"><button type="button" class="button secondary small" data-pick-rich-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-rich-image-file hidden><button type="button" class="button secondary small" data-rich-add-item>${currentLanguage === "ru" ? "＋ Добавить пункт" : currentLanguage === "ua" ? "＋ Додати пункт" : "＋ Add item"}</button></div>` : ""}${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div><small class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</small>` : ""}${["audio", "video"].includes(block.type) ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-media>${currentLanguage === "ru" ? "Загрузить файл" : currentLanguage === "ua" ? "Завантажити файл" : "Upload file"}</button><input type="file" accept="${block.type}/*" data-media-file hidden></div><small class="hint">${currentLanguage === "ru" ? "До 50 МБ; поддерживаются MP3/M4A/WAV/OGG/AAC и MP4/WebM/MOV." : currentLanguage === "ua" ? "До 50 МБ; підтримуються MP3/M4A/WAV/OGG/AAC і MP4/WebM/MOV." : "Up to 50 MB; MP3/M4A/WAV/OGG/AAC and MP4/WebM/MOV supported."}</small>` : ""}</div>
+                    ${["vocabulary", "phrase-list"].includes(block.type) || block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
                     ${renderActivityQuestionEditor(block)}`}
                         ${activitySettingsField(block)}
                 </div>
@@ -4231,6 +4226,7 @@ function previewRichContent(block) {
 }
 
 function contentHint(type) {
+    if (["vocabulary", "phrase-list"].includes(type)) return ({ ru: "Каждая строка: слово | перевод | URL аудио (необязательно). До 100 строк. Без аудио используется словацкая озвучка браузера.", ua: "Кожен рядок: слово | переклад | URL аудіо (необов’язково). До 100 рядків. Без аудіо використовується словацька вимова браузера.", en: "One row per word: word / translation / audio URL (optional). Up to 100 rows. Without audio, browser Slovak speech is used." })[currentLanguage];
     const hints = { "drag-words": t("hint.drag"), "fill-blank": t("hint.blank"), "multiple-choice": t("hint.options"), "order-items": t("hint.order"), "sentence-order": t("hint.sentences"), match: t("hint.match"), columns: t("hint.columns"), table: t("hint.table"), "one-of-many": t("hint.select"), "true-false": t("hint.trueFalse"), flashcards: t("hint.cards"), text: "[info] / [star] + *italic* **bold** 1. list" };
     const newActivityHints = {
         ua: {
@@ -4307,6 +4303,7 @@ function richTextToolbar() {
 }
 
 function contentPlaceholder(type) {
+    if (["vocabulary", "phrase-list"].includes(type)) return "Ďakujem | Дякую\nProsím | Будь ласка\nŠťastnú cestu! | Щасливої дороги";
     const examples = {
         ua: { match: "dom = дім\nškola = школа", columns: "Дієслова: ísť\nІменники: dom", "listening-questions": "https://example.com/listening.mp3", "interactive-image": "https://example.com/room.jpg", "find-error": "Ja bývať v Bratislave." },
         ru: { match: "dom = дом\nškola = школа", columns: "Глаголы: ísť\nСуществительные: dom", "listening-questions": "https://example.com/listening.mp3", "interactive-image": "https://example.com/room.jpg", "find-error": "Ja bývať v Bratislave." },
@@ -4349,6 +4346,7 @@ function activitySettingsPlaceholder(type) {
 }
 
 function activitySettingsField(activity, preview = false) {
+    if (["vocabulary", "phrase-list"].includes(activity.type)) return "";
     const field = preview ? "data-preview-field" : "data-field";
     const settings = activity.settings && typeof activity.settings === "object" && !Array.isArray(activity.settings)
         ? activity.settings
@@ -4459,6 +4457,9 @@ function bindActivityBlockActions() {
                 scheduleLessonDraftAutosave();
             } else {
                 block[input.dataset.field] = input.value;
+                if (["vocabulary", "phrase-list"].includes(block.type) && input.dataset.field === "content") {
+                    block.settings = { ...block.settings, vocabularyFormat: "slash", words: window.SlovaPhraseList.parse(input.value) };
+                }
                 scheduleLessonDraftAutosave();
             }
             refreshRichPreview();

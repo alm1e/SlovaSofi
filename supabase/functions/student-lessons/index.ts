@@ -11,12 +11,12 @@ const interactiveTypes = new Set([
     "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
     "sentence-order", "true-false", "table", "match", "columns", "open-answer",
     "flashcards", "text", "image", "audio", "video", "pronunciation-recording",
-    "listening-questions", "find-error", "interactive-image", "vocabulary"
+    "listening-questions", "find-error", "interactive-image", "vocabulary", "phrase-list"
 ]);
 const answerableTypes = new Set([
     "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
     "sentence-order", "true-false", "table", "match", "columns", "open-answer",
-    "flashcards", "pronunciation-recording", "listening-questions", "find-error", "vocabulary"
+    "flashcards", "pronunciation-recording", "listening-questions", "find-error"
 ]);
 
 type JsonRecord = Record<string, unknown>;
@@ -543,8 +543,10 @@ function safeActivity(activity: Activity): Record<string, unknown> {
                     audio: stringValue(word.audio).slice(0, 2000)
                 }] : [];
             }).map((word, cardIndex) => ({ ...word, cardIndex }));
-            return { type: activity.type, prompt, cards: words };
+            return { type: activity.type, prompt, content: activity.content, cards: words,
+                settings: { vocabularyFormat: settings.vocabularyFormat } };
         }
+        case "phrase-list":
         case "audio":
         case "video":
         case "text":
@@ -704,7 +706,7 @@ function answerFeedback(activity: Activity, response: unknown): string {
 }
 
 function isGradable(activity: Activity): boolean {
-    if (["open-answer", "flashcards", "text", "image", "audio", "video", "pronunciation-recording", "interactive-image", "vocabulary"].includes(activity.type)) return false;
+    if (["open-answer", "flashcards", "text", "image", "audio", "video", "pronunciation-recording", "interactive-image", "vocabulary", "phrase-list"].includes(activity.type)) return false;
     if (activity.type === "find-error") return settingRecords(activity.settings, "errors").length > 0;
     if (activity.answer.trim()) return true;
     if (activity.type === "fill-blank" && settingStringGroups(activity.settings, "acceptedAnswers").length) return true;

@@ -21,6 +21,7 @@ function createEditorContext() {
         imageUploadMessages: { en: { chooseFile: "Choose file", galleryHint: "Gallery" } }
     });
     vm.runInContext(fs.readFileSync(path.join(__dirname, "activity-ui.js"), "utf8"), context);
+    vm.runInContext(fs.readFileSync(path.join(__dirname, "phrase-list.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "image-gallery.js"), "utf8"), context);
     const liveTypesStart = source.indexOf("const liveAnswerActivityTypes =");
     vm.runInContext(source.slice(liveTypesStart, source.indexOf("\n]);", liveTypesStart) + 4), context);
@@ -70,6 +71,16 @@ test("collapsed blocks defer rendering their preview content", () => {
     assert.doesNotMatch(markup, /class="preview-order-list"/);
 });
 
+test("lesson vocabulary shows translations and audio without grading or technical settings", () => {
+    const editor = createEditorContext();
+    const html = editor.renderActivityBlocks([{ type: "vocabulary", content: "Ďakujem / Дякую\nProsím / Будь ласка" }]);
+    assert.match(html, /phrase-row/);
+    assert.match(html, /Ďakujem/);
+    assert.match(html, /Дякую/);
+    assert.match(html, /data-phrase-listen/);
+    assert.doesNotMatch(html, /data-field="answer"|activity-advanced-settings|data-add-question/);
+});
+
 test("text groups remain editable while plain text has only the toolbar add action", () => {
     const editor = createEditorContext();
     assert.equal(editor.renderActivityQuestionEditor({ type: "text" }), "");
@@ -94,7 +105,7 @@ test("listening question creation preserves its audio and renders radio options"
 
 test("vocabulary, hotspots, error selection, and recording have dedicated previews", () => {
     const editor = createEditorContext();
-    assert.match(editor.renderBuilderPreview({ type: "vocabulary", settings: { words: [{ word: "dom", translation: "house" }] } }, 0), /data-front="dom" data-back="house"/);
+    assert.match(editor.renderBuilderPreview({ type: "vocabulary", settings: { words: [{ word: "dom", translation: "house" }] } }, 0), /data-phrase-word="dom" data-phrase-translation="house"/);
     const image = editor.renderBuilderPreview({ type: "interactive-image", content: "https://example.test/image.png", settings: { hotspots: [{ x: 120, y: -5, word: "dom" }] } }, 0);
     assert.match(image, /left:100%;top:0%/);
     assert.match(image, /data-preview-hotspot="dom"/);
@@ -133,7 +144,7 @@ test("structured preview values are escaped and unsafe image/audio schemes are r
 test("technical settings preserve their values and explain when JSON is needed", () => {
     const editor = createEditorContext();
     const settings = { words: [{ word: "dom", translation: "house" }] };
-    const block = { type: "vocabulary", settings };
+    const block = { type: "interactive-image", settings };
     const markup = editor.activitySettingsField(block);
     assert.match(markup, /Advanced settings/);
     assert.match(markup, /Technical settings \(JSON\)/);

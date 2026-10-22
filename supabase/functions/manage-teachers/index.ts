@@ -124,7 +124,10 @@ Deno.serve(async (request: Request) => {
                 console.error("Could not load teacher email addresses.", error);
                 return jsonResponse(500, { error: "Could not load teacher email addresses." }, configuredOrigin);
             }
-            users.push(...data.users.filter((candidate) => teacherIds.includes(candidate.id)));
+            // Directory visibility is server-managed and does not change access rights.
+            users.push(...data.users.filter((candidate) => teacherIds.includes(candidate.id)
+                && !(profiles.some((profile) => profile.id === candidate.id && profile.role === "admin")
+                    && candidate.app_metadata?.hide_from_staff_directory === true)));
             if (data.users.length < 1000) break;
         }
         const staff = users.map((candidate) => {
