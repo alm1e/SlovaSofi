@@ -2027,6 +2027,78 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .platform.lesson-focus .lesson-workspace-main .lesson-workspace-section,
 .platform.lesson-focus .student-workspace-main [data-student-section] { scroll-margin-top: 92px; }
 
+/* Quiet exercise surfaces, shared by all activity types. */
+:root { --exercise-surface: #fff; --exercise-line: #e1e5e6; }
+:root[data-theme="dark"] { --exercise-surface: #202225; --exercise-line: #383c40; }
+:root .lesson-workspace-section { background: transparent; border: 0; box-shadow: none; }
+:root .builder-block.has-preview,
+:root .preview-activity,
+:root[data-theme="dark"] .builder-block.has-preview,
+:root[data-theme="dark"] .preview-activity,
+:root .preview-activity:has(.slova-gallery) { background: var(--exercise-surface); border-color: var(--exercise-line); box-shadow: none; }
+:root .preview-activity-group .preview-question-activity,
+:root .builder-block.has-preview .builder-block-editor,
+:root .builder-block.has-preview .builder-block-preview,
+:root .builder-block.has-preview .builder-preview-body,
+:root .preview-word-bank, :root .preview-dropzone,
+:root[data-theme="dark"] .preview-activity-group .preview-question-activity,
+:root[data-theme="dark"] .builder-block.has-preview .builder-block-editor,
+:root[data-theme="dark"] .builder-block.has-preview .builder-block-preview,
+:root[data-theme="dark"] .builder-block.has-preview .builder-preview-body,
+:root[data-theme="dark"] .preview-word-bank,
+:root[data-theme="dark"] .preview-dropzone { background: transparent; box-shadow: none; }
+:root .preview-activity-group .preview-question-activity { border-color: var(--exercise-line); }
+:root .builder-block.has-preview .builder-block-preview { border: 0; }
+:root .live-answer-inline,
+:root .live-answer-inline .live-answer-response,
+:root .live-answer-inline.is-correct .live-answer-response,
+:root .live-answer-inline.is-incorrect .live-answer-response,
+:root[data-theme="dark"] .live-answer-inline,
+:root[data-theme="dark"] .live-answer-inline .live-answer-response,
+:root[data-theme="dark"] .live-answer-inline.is-correct .live-answer-response,
+:root[data-theme="dark"] .live-answer-inline.is-incorrect .live-answer-response { background: transparent; box-shadow: none; color: var(--ink); }
+:root .live-answer-inline { padding: 6px 0; }
+:root .live-answer-inline .live-answer-response { padding: 0; font-weight: 500; }
+
+/* The editor uses the same accessible listboxes as the rest of the workspace. */
+:root .teacher-select .select-trigger,
+:root .teacher-select .select-options,
+:root[data-theme="dark"] .teacher-select .select-trigger,
+:root[data-theme="dark"] .teacher-select .select-options { border-color: var(--line); background: var(--surface-raised); color: var(--ink); }
+:root .teacher-select .select-options { padding: 6px; border-radius: 12px; box-shadow: 0 12px 32px #0002; }
+:root .teacher-select .select-option { display: block; width: 100%; height: auto; min-height: 36px; padding: 8px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--ink); text-align: left; font-size: 13px; line-height: 1.4; white-space: normal; }
+:root .teacher-select .select-option:hover,
+:root .teacher-select .select-option:focus-visible,
+:root .teacher-select .select-option[aria-selected="true"] { background: var(--accent-soft); color: var(--accent-strong); }
+:root .teacher-select .select-option:disabled { color: var(--muted); opacity: .6; }
+:root .rich-text-toolbar .teacher-select .select-trigger { display: flex; justify-content: space-between; min-height: 36px; padding: 8px 10px; font-size: 13px; }
+.rich-toolbar-group:has(.teacher-select.open) { position: relative; z-index: 65; }
+
+/* Desktop icon rail expands over the content, so exercises never jump. */
+@media (min-width: 701px) {
+    .platform .sidebar, .platform.lesson-focus .sidebar { width: 76px; padding: 24px 12px 18px; transform: none; visibility: visible; overflow-x: hidden; transition: width .2s ease, box-shadow .2s ease; }
+    .platform .sidebar:hover, .platform .sidebar:focus-within, .platform .sidebar.open { width: 248px; box-shadow: 12px 0 32px #0002; }
+    .platform .main-area, .platform.lesson-focus .main-area { margin-left: 76px; }
+    .platform .menu-toggle, .platform.lesson-focus .menu-toggle { display: none; }
+    .platform .sidebar-backdrop, .platform.lesson-focus .sidebar-backdrop { display: none; }
+    .sidebar .brand { gap: 14px; padding-left: 6px; white-space: nowrap; }
+    .sidebar .brand-mark { flex: 0 0 40px; }
+    .sidebar .nav-item { position: relative; gap: 14px; min-height: 48px; padding: 10px 12px; white-space: nowrap; }
+    .sidebar .nav-icon { flex: 0 0 28px; }
+    .sidebar .nav-item.active { background: transparent; color: var(--accent); }
+    .sidebar .nav-item.active::before { content: ''; position: absolute; left: -12px; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--accent); }
+    .sidebar .brand > span:last-child, .sidebar .nav-item > span:last-child,
+    .sidebar .user-summary, .sidebar .profile-chevron, .sidebar .home-link { opacity: 0; transition: opacity .15s ease; }
+    .sidebar:is(:hover, :focus-within, .open) .brand > span:last-child,
+    .sidebar:is(:hover, :focus-within, .open) .nav-item > span:last-child,
+    .sidebar:is(:hover, :focus-within, .open) .user-summary,
+    .sidebar:is(:hover, :focus-within, .open) .profile-chevron,
+    .sidebar:is(:hover, :focus-within, .open) .home-link { opacity: 1; }
+    .sidebar .teacher-mini { min-width: 216px; padding: 8px 6px; }
+    .sidebar .teacher-mini .avatar { flex-shrink: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .platform .sidebar, .sidebar span, .sidebar .home-link { transition: none; } }
+
 body{padding:32px;max-width:1500px;margin:auto!important}.demo-header{display:flex;justify-content:space-between;gap:24px;align-items:center;margin-bottom:28px}.demo-header h1{margin:8px 0}.demo-note{color:var(--muted);margin:0 0 28px}.demo-cards{display:grid;gap:16px}.activity-grid{max-height:none!important;overflow:visible!important}.demo-title{margin:40px 0 20px}.demo-nav{padding:18px;background:var(--surface-soft);border-radius:16px}.demo-nav p{padding:10px;border-bottom:1px solid var(--line)}@media(max-width:800px){body{padding:16px}.demo-nav{display:none}}
 </style><body class="platform"><header class="demo-header"><div><small>SLOVASOFI · ПРЕДПРОСМОТР</small><h1>Slovenčina každý deň</h1><span>A1 · Урок 3</span></div><button class="button secondary" onclick="document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'light':'dark'">Светлая / тёмная тема</button></header><p class="demo-note">Обновлённые компоненты на демонстрационных данных. Статусы и ответы ниже — примеры.</p><div class="lesson-workspace-layout has-live-monitor"><aside class="demo-nav"><strong>Ответы учеников</strong><p>Анна · 3/5</p><p>Мария · 2/5</p></aside><main class="demo-cards"><section><article class="builder-block has-preview " data-block-index="0">
             <header class="builder-block-header">

@@ -1488,7 +1488,7 @@ function render() {
 }
 
 function enhanceSelects(root) {
-    root.querySelectorAll("select:not(.teacher-select-native):not([data-pair-row] select):not([data-rich-style]):not([data-rich-size])").forEach((select) => {
+    root.querySelectorAll("select:not(.teacher-select-native):not([data-pair-row] select)").forEach((select) => {
         const wrapper = document.createElement("div");
         wrapper.className = "teacher-select";
         const id = `teacher-select-${++selectDropdownSequence}`;
@@ -1586,7 +1586,7 @@ function enhanceSelects(root) {
                     syncSelection();
                     closeSelectDropdown();
                     select.dispatchEvent(new Event("change", { bubbles: true }));
-                    trigger.focus();
+                    if (!select.matches('[data-rich-style], [data-rich-size]')) trigger.focus();
                 });
                 listbox.append(item);
             });

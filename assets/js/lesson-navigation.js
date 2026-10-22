@@ -5,13 +5,14 @@
     if (!sidebar || !button || !backdrop) return;
     let lessonOpen = false;
     const mobile = window.matchMedia('(max-width: 700px)');
+    const teacherRail = sidebar.id === 'sidebar';
     const labels = {
         ua: ['Відкрити навігацію', 'Закрити навігацію'],
         ru: ['Открыть навигацию', 'Закрыть навигацию'],
         en: ['Open navigation', 'Close navigation']
     };
     function update() {
-        const drawer = lessonOpen || mobile.matches;
+        const drawer = mobile.matches || (lessonOpen && !teacherRail);
         const expanded = !drawer || sidebar.classList.contains('open');
         sidebar.inert = !expanded;
         button.setAttribute('aria-controls', sidebar.id);
