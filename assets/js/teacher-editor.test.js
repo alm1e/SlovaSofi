@@ -33,7 +33,7 @@ function createEditorContext() {
     }
     vm.runInContext("const MAX_ACTIVITY_QUESTIONS = 100; this.types = activityTypes;", context);
     for (const name of [
-        "escapeHtml", "activityQuestionText", "createActivityQuestionId", "ensureActivityQuestionIds",
+        "renderTrueFalseEditor", "moveTrueFalseQuestion", "escapeHtml", "activityQuestionText", "createActivityQuestionId", "ensureActivityQuestionIds",
         "addActivityQuestion", "renderActivityQuestionEditor", "activitySummary", "activityEditorMeta",
         "duplicateBlockButton", "previewText", "previewTokens", "previewLines", "previewMediaUrl",
         "previewFlashcardSideMarkup", "previewVideoEmbedUrl", "renderPreviewActivity",
@@ -70,6 +70,38 @@ test("collapsed blocks defer rendering their preview content", () => {
     editor.expandedActivityBlocks.has = () => false;
     const markup = editor.renderActivityBlocks([{ type: "order-items", content: "one\ntwo" }]);
     assert.doesNotMatch(markup, /class="preview-order-list"/);
+});
+
+test("true/false uses compact answer selects for new and legacy statements", () => {
+    const editor = createEditorContext();
+    const single = {type:'true-false',prompt:'Choose',content:'Slon je malý',answer:'false'};
+    const original = JSON.stringify(single);
+    const html = editor.renderActivityBlocks([single]);
+    assert.match(html, /class="tf-row"/);
+    assert.match(html, /value="false" selected/);
+    assert.match(html, /data-field="content" value="Slon je malý"/);
+    assert.doesNotMatch(html, /<textarea|<input data-field="answer"/);
+    assert.equal(JSON.stringify(single),original);
+    const group = {type:'true-false',questions:[{id:'q1',prompt:'Strom je vysoký',content:'',answer:'true'},{id:'q2',prompt:'Context',content:'Slimák je rýchly',answer:'false'}]};
+    const rows = editor.renderActivityQuestionEditor(group);
+    assert.match(rows, /data-field="prompt" value="Strom je vysoký"/);
+    assert.match(rows, /data-field="content" value="Slimák je rýchly"/);
+    assert.match(rows, /<small>Context<\/small>/);
+    const quick = editor.renderActivityQuestionEditor(group,true);
+    assert.match(quick,/data-preview-question-field="answer"/);
+    assert.match(editor.renderTrueFalseEditor(single,true),/data-preview-field="answer"/);
+});
+
+test("moving true/false statements preserves identity and correct answers", () => {
+    const editor = createEditorContext();
+    const first = {id:'existing-1',content:'One',answer:'true'};
+    const second = {id:'existing-2',content:'Two',answer:'false'};
+    const activity = {type:'true-false',questions:[first,second]};
+    assert.equal(editor.moveTrueFalseQuestion(activity,0,1),true);
+    assert.equal(activity.questions[1],first);
+    assert.equal(activity.questions[0],second);
+    assert.equal(editor.moveTrueFalseQuestion(activity,0,-1),false);
+    assert.equal(activity.questions[0].answer,'false');
 });
 
 test("lesson vocabulary shows translations and audio without grading or technical settings", () => {

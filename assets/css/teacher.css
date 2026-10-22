@@ -2101,3 +2101,31 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 
 :root .preview-inline-input.blank-correct { border-bottom: 2px solid #299368; }
 :root .preview-inline-input.blank-incorrect { border-bottom: 2px solid #c46969; }
+
+/* Compact true/false authoring rows in both workspace themes. */
+.tf-editor { container-type: inline-size; display: grid; gap: 14px; min-width: 0; }
+.tf-editor-heading { color: var(--muted); font-size: 13px; }
+.tf-rows { display: grid; gap: 10px; }
+.tf-row { display: grid; grid-template-columns: 18px 145px minmax(0, 1fr) 78px; align-items: center; gap: 8px; min-width: 0; }
+.tf-drag { color: var(--muted); font-size: 20px; cursor: grab; user-select: none; }
+.tf-statement { min-width: 0; }
+:root .tf-statement input, :root .tf-row > select { width: 100%; min-width: 0; min-height: 40px; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; background: var(--surface-raised); color: var(--ink); font: inherit; font-size: 14px; }
+:root .tf-statement input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tf-statement small { display: block; color: var(--muted); margin-top: 5px; font-size: 12px; overflow-wrap: anywhere; }
+.tf-row-actions { display: flex; gap: 2px; }
+.tf-row-actions button { width: 24px; height: 32px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--muted); }
+.tf-row-actions button:hover:not(:disabled) { background: var(--surface-soft); color: var(--accent); }
+.tf-row-actions button:focus-visible { outline: 2px solid var(--accent); }
+.tf-row-actions button:disabled { opacity: .3; cursor: default; }
+.tf-add { justify-self: stretch; width: 100%; margin-top: 4px; }
+.tf-row > .teacher-select { min-width: 0; }
+:root .tf-row .select-trigger { min-height: 40px; padding: 9px 10px; font-size: 13px; }
+.tf-row:has(.teacher-select.open) { position: relative; z-index: 65; }
+@container (max-width: 470px) {
+    .tf-row { grid-template-columns: 18px minmax(0, 1fr) 78px; row-gap: 6px; }
+    .tf-drag { grid-column: 1; grid-row: 1 / 3; }
+    .tf-statement { grid-column: 2; grid-row: 1; }
+    .tf-row > .teacher-select, .tf-row > select { grid-column: 2; grid-row: 2; max-width: 190px; }
+    .tf-row-actions { grid-column: 3; grid-row: 1 / 3; }
+}
+[data-preview-type="true-false"] > .preview-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }

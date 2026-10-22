@@ -848,6 +848,10 @@ function addActivityQuestion(activity) {
 }
 
 function renderActivityQuestionEditor(activity, preview = false) {
+    if (activity.type === "true-false") {
+        ensureActivityQuestionIds(activity);
+        return renderTrueFalseEditor(activity, preview);
+    }
     if (["vocabulary", "phrase-list"].includes(activity.type)) return "";
     const questions = Array.isArray(activity.questions) ? activity.questions : [];
     if (activity.type === "text" && !questions.length) return "";
@@ -865,6 +869,73 @@ function renderActivityQuestionEditor(activity, preview = false) {
         ${hasAnswer ? `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(activity.type))}</span></label><input ${fieldAttribute}="answer" value="${escapeHtml(question.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(activity.type))}"></div>` : ""}
     </section>`).join("");
     return `<div class="activity-question-editor">${items}<button type="button" class="button secondary small activity-question-add" ${addAttribute} ${questions.length >= MAX_ACTIVITY_QUESTIONS ? "disabled" : ""} title="${activityQuestionText("limit")}">${activityQuestionText("add")}</button></div>`;
+}
+
+function renderTrueFalseEditor(activity, preview = false) {
+    const text = ({
+        ru: { title: "Утверждения", yes: "Правда", no: "Неправда", choose: "Выберите ответ", statement: "Текст утверждения", add: "＋ Добавить утверждение", remove: "Удалить утверждение", up: "Выше", down: "Ниже", move: "Перетащить утверждение" },
+        ua: { title: "Твердження", yes: "Правда", no: "Неправда", choose: "Оберіть відповідь", statement: "Текст твердження", add: "＋ Додати твердження", remove: "Видалити твердження", up: "Вище", down: "Нижче", move: "Перетягнути твердження" },
+        en: { title: "Statements", yes: "True", no: "False", choose: "Choose answer", statement: "Statement", add: "＋ Add statement", remove: "Remove statement", up: "Move up", down: "Move down", move: "Drag statement" }
+    })[currentLanguage];
+    const grouped = Boolean(activity.questions?.length);
+    const rows = grouped ? activity.questions : [activity];
+    const field = preview ? grouped ? "data-preview-question-field" : "data-preview-field" : "data-field";
+    const indexAttr = preview ? "data-preview-question-index" : "data-question-index";
+    return `<div class="tf-editor" data-tf-editor data-tf-preview="${preview}"><strong class="tf-editor-heading">${text.title}</strong><div class="tf-rows">${rows.map((question, index) => {
+        const answer = String(question.answer || "").trim();
+        const value = /^(true|yes|так|да|правда|0)$/i.test(answer) ? "true" : /^(false|no|ні|нет|неправда|1)$/i.test(answer) ? "false" : answer;
+        const contentField = grouped && !question.content && question.prompt ? "prompt" : "content";
+        return `<div class="tf-row" data-tf-index="${index}" ${grouped ? `${indexAttr}="${index}"` : ""}>
+            <span class="tf-drag" data-tf-drag draggable="${grouped}" aria-hidden="true" title="${text.move}">⠿</span>
+            <select ${field}="answer" data-tf-answer aria-label="${text.choose} ${index + 1}"><option value="" ${!value ? "selected" : ""}>${text.choose}</option><option value="true" ${value === "true" ? "selected" : ""}>${text.yes}</option><option value="false" ${value === "false" ? "selected" : ""}>${text.no}</option>${value && !["true", "false"].includes(value) ? `<option value="${escapeHtml(value)}" selected>${escapeHtml(value)}</option>` : ""}</select>
+            <div class="tf-statement"><input ${field}="${contentField}" value="${escapeHtml(question[contentField] || "")}" placeholder="${text.statement}" aria-label="${text.statement} ${index + 1}">${grouped && question.prompt && question.content ? `<small>${escapeHtml(question.prompt)}</small>` : ""}</div>
+            <div class="tf-row-actions"><button type="button" data-tf-move="-1" aria-label="${text.up}" title="${text.up}" ${index === 0 ? "disabled" : ""}>↑</button><button type="button" data-tf-move="1" aria-label="${text.down}" title="${text.down}" ${index === rows.length - 1 ? "disabled" : ""}>↓</button><button type="button" ${preview ? "data-preview-remove-question" : "data-remove-question"} aria-label="${text.remove}" title="${text.remove}" ${!grouped || rows.length <= 1 ? "disabled" : ""}>×</button></div>
+        </div>`;
+    }).join("")}</div><button type="button" class="button secondary tf-add" ${preview ? "data-add-preview-question" : "data-add-question"} ${rows.length >= MAX_ACTIVITY_QUESTIONS ? "disabled" : ""}>${text.add}</button></div>`;
+}
+
+function moveTrueFalseQuestion(activity, from, to) {
+    if (activity?.type !== "true-false" || !Array.isArray(activity.questions)
+        || !Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0
+        || from >= activity.questions.length || to >= activity.questions.length || from === to) return false;
+    const [question] = activity.questions.splice(from, 1);
+    activity.questions.splice(to, 0, question);
+    return true;
+}
+
+function bindTrueFalseEditors(root) {
+    root.querySelectorAll('[data-tf-editor]').forEach(editor => {
+        if (editor.dataset.bound) return;
+        editor.dataset.bound = 'true';
+        const preview = editor.dataset.tfPreview === 'true';
+        const activity = () => preview ? previewActivityEdit?.draft : activeDraftSection()?.activities[Number(editor.closest('[data-block-index]')?.dataset.blockIndex)];
+        const move = (from, to) => {
+            if (!moveTrueFalseQuestion(activity(), from, to)) return;
+            if (!preview) scheduleLessonDraftAutosave();
+            render();
+        };
+        editor.querySelectorAll('[data-tf-answer]').forEach(select => select.addEventListener('change', () => select.dispatchEvent(new Event('input', { bubbles: true }))));
+        editor.querySelectorAll('[data-tf-move]').forEach(button => button.addEventListener('click', () => {
+            const from = Number(button.closest('[data-tf-index]').dataset.tfIndex);
+            move(from, from + Number(button.dataset.tfMove));
+        }));
+        let dragged = null;
+        editor.addEventListener('dragstart', event => {
+            if (!event.target.closest('[data-tf-drag]')) return;
+            dragged = Number(event.target.closest('[data-tf-index]').dataset.tfIndex);
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', String(dragged));
+            event.stopPropagation();
+        });
+        editor.addEventListener('dragover', event => { if (dragged !== null && event.target.closest('[data-tf-index]')) event.preventDefault(); });
+        editor.addEventListener('drop', event => {
+            const row = event.target.closest('[data-tf-index]');
+            if (dragged === null || !row) return;
+            event.preventDefault(); event.stopPropagation();
+            const from = dragged; dragged = null; move(from, Number(row.dataset.tfIndex));
+        });
+        editor.addEventListener('dragend', () => { dragged = null; });
+    });
 }
 
 function activitySummary(activity) {
@@ -2555,7 +2626,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
             </div></header>
             <div class="preview-inline-editor">
                 <div class="form-field"><label>${hasQuestions ? activityQuestionText("commonPrompt") : t("field.instruction")}</label><input data-preview-field="prompt" value="${escapeHtml(activity.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
-                ${hasQuestions
+                ${hasQuestions || type === "true-false"
                     ? renderActivityQuestionEditor(activity, true)
                     : `<div class="form-field"><label>${activityType?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(type))}</span></label><textarea data-preview-field="content" placeholder="${escapeHtml(contentPlaceholder(type))}">${escapeHtml(activity.content || "")}</textarea></div>
                     ${hasAnswer ? `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(type))}</span></label><input data-preview-field="answer" value="${escapeHtml(activity.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(type))}"></div>` : ""}
@@ -4133,6 +4204,7 @@ function renderLessonWorkspace() {
     if (isHomework) bindHomeworkCopySource();
     if (isEditing) bindActivityBlockActions();
     else bindLessonPreviewActions(pageContent);
+    bindTrueFalseEditors(pageContent);
 }
 
 function scrollToFirstWorkspaceActivity() {
@@ -4184,7 +4256,7 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
             <div class="builder-block-fields" ${isExpanded ? "" : "hidden"}>
                 <div class="builder-block-editor">
                 <div class="form-field"><label>${hasQuestions ? activityQuestionText("commonPrompt") : t("field.instruction")}</label><input data-field="prompt" value="${escapeHtml(block.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
-                ${hasQuestions
+                ${hasQuestions || block.type === "true-false"
                     ? `${block.type === "listening-questions" ? `<div class="form-field"><label>${t("field.mediaContent")}</label><textarea data-field="content" placeholder="https://…">${escapeHtml(block.content || "")}</textarea></div>` : ""}${renderActivityQuestionEditor(block)}`
                     : `<div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${block.type === "text" ? "" : escapeHtml(contentHint(block.type))}</span></label>
                     ${block.type === "text" ? richTextToolbar() : ""}
@@ -4347,6 +4419,7 @@ function activitySettingsPlaceholder(type) {
 }
 
 function activitySettingsField(activity, preview = false) {
+    if (activity.type === "true-false" && !Object.keys(activity.settings || {}).length) return "";
     if (["vocabulary", "phrase-list"].includes(activity.type)) return "";
     const field = preview ? "data-preview-field" : "data-field";
     const settings = activity.settings && typeof activity.settings === "object" && !Array.isArray(activity.settings)
