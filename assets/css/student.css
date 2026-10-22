@@ -485,3 +485,8 @@
 :root[data-theme="dark"] .student-platform .student-answer-feedback,
 :root[data-theme="dark"] .student-platform .student-muted { color: #b3c2c7; }
 :root[data-theme="dark"] .student-platform :focus-visible { outline-color: #39d98a; }
+
+/* Fill-in exercises keep line breaks and show a result for each blank. */
+.student-platform .student-fill-text { white-space: pre-wrap; line-height: 2.2; }
+:root .student-platform .student-inline-answer.blank-correct { border-bottom: 2px solid #299368; }
+:root .student-platform .student-inline-answer.blank-incorrect { border-bottom: 2px solid #c46969; }

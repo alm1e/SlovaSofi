@@ -2098,3 +2098,6 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
     .sidebar .teacher-mini .avatar { flex-shrink: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .platform .sidebar, .sidebar span, .sidebar .home-link { transition: none; } }
+
+:root .preview-inline-input.blank-correct { border-bottom: 2px solid #299368; }
+:root .preview-inline-input.blank-incorrect { border-bottom: 2px solid #c46969; }

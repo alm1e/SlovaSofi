@@ -21,6 +21,7 @@ function createEditorContext() {
         imageUploadMessages: { en: { chooseFile: "Choose file", galleryHint: "Gallery" } }
     });
     vm.runInContext(fs.readFileSync(path.join(__dirname, "activity-ui.js"), "utf8"), context);
+    vm.runInContext(fs.readFileSync(path.join(__dirname, "fill-blanks.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "phrase-list.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "image-gallery.js"), "utf8"), context);
     const liveTypesStart = source.indexOf("const liveAnswerActivityTypes =");

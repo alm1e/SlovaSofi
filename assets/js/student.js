@@ -649,7 +649,7 @@
             const parts = String(activity.content || "").split("___");
             const blankCount = Math.max(parts.length - 1, Number(activity.blankCount) || 0);
             const hints = Array.isArray(activity.settings?.hints) ? activity.settings.hints : activity.hints || [];
-            body = `<p class="student-activity-content">${Array.from({ length: blankCount }, (_, partIndex) => `${escapeHtml(parts[partIndex] || "")}<input class="student-inline-answer" data-blank-answer value="${escapeHtml(savedParts.shift() || "")}" aria-label="${escapeHtml(text("yourAnswer"))}" autocomplete="off">`).join("")}${escapeHtml(parts.slice(blankCount).join("___"))}</p>${hints.map((hint, hintIndex) => `<div><button type="button" class="student-hint" data-show-hint="${hintIndex}">${escapeHtml(text("hint"))} ${hintIndex + 1}</button><span data-hint-content hidden>${escapeHtml(hint)}</span></div>`).join("")}${activity.wordBank?.length ? `<div class="student-word-bank">${activity.wordBank.map((word) => `<button class="student-word-token" type="button" data-word-bank-answer="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}</div>` : ""}`;
+            body = `<p class="student-activity-content student-fill-text">${Array.from({ length: blankCount }, (_, partIndex) => `${escapeHtml(parts[partIndex] || "")}<input class="student-inline-answer ${!saved?.draft && saved?.blankResults?.[partIndex] === true ? "blank-correct" : !saved?.draft && saved?.blankResults?.[partIndex] === false ? "blank-incorrect" : ""}" data-blank-answer value="${escapeHtml(savedParts.shift() || "")}" aria-invalid="${!saved?.draft && saved?.blankResults?.[partIndex] === false}" aria-label="${escapeHtml(text("yourAnswer"))} ${partIndex + 1}" autocomplete="off">`).join("")}${escapeHtml(parts.slice(blankCount).join("___"))}</p>${hints.map((hint, hintIndex) => `<div><button type="button" class="student-hint" data-show-hint="${hintIndex}">${escapeHtml(text("hint"))} ${hintIndex + 1}</button><span data-hint-content hidden>${escapeHtml(hint)}</span></div>`).join("")}${activity.wordBank?.length ? `<div class="student-word-bank">${activity.wordBank.map((word) => `<button class="student-word-token" type="button" data-word-bank-answer="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}</div>` : ""}`;
             controls = `<input type="hidden" data-answer-kind="blanks">`;
         } else if (activity.type === "multiple-choice" || activity.type === "one-of-many") {
             const rawOptions = Array.isArray(activity.options) ? activity.options : [];
@@ -1154,6 +1154,12 @@
             }));
             draftSaveQueue = submission;
             const result = await submission;
+            element.querySelectorAll('[data-blank-answer]').forEach((input, index) => {
+                const checked = result.blankResults?.[index];
+                input.classList.toggle('blank-correct', checked === true);
+                input.classList.toggle('blank-incorrect', checked === false);
+                input.setAttribute('aria-invalid', String(checked === false));
+            });
             pendingDrafts.delete(draftKey);
             updateLessonProgress(lessonId, result.answers, result.completed);
             feedback.textContent = [result.reviewRequired ? text("submitted")
@@ -1552,6 +1558,10 @@
         if (activity) scheduleDraftSave(activity);
     });
     pageContent.addEventListener("input", (event) => {
+        if (event.target.matches('[data-blank-answer]')) {
+            event.target.classList.remove('blank-correct', 'blank-incorrect');
+            event.target.removeAttribute('aria-invalid');
+        }
         const activity = event.target.closest("[data-activity-index]");
         if (activity) scheduleDraftSave(activity);
     });

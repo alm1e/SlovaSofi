@@ -1,4 +1,11 @@
+import "../../../assets/js/fill-blanks.js";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+
+const fillBlanks = (globalThis as unknown as { SlovaFillBlanks: {
+    parse(content: string, answer?: string, settings?: unknown): {content: string; groups: string[][]; answers: string[]};
+    check(content: string, answer: string, settings: unknown, response: unknown): boolean[];
+} }).SlovaFillBlanks;
 
 const corsHeaders = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -23,7 +30,7 @@ type JsonRecord = Record<string, unknown>;
 type ActivityQuestion = { id: string; prompt: string; content: string; answer: string };
 type ActivityCard = { front: string; back: string; audio?: string };
 type Activity = { id?: string; legacyProgressIndex?: number; type: string; prompt: string; content: string; answer: string; questions?: ActivityQuestion[]; cards?: ActivityCard[]; settings?: JsonRecord };
-type ProgressAnswer = { response: unknown; correct: boolean | null; submitted_at: string; draft?: boolean; feedback?: string };
+type ProgressAnswer = { blankResults?: boolean[]; response: unknown; correct: boolean | null; submitted_at: string; draft?: boolean; feedback?: string };
 type ActivityProgressItem = { activity: Activity; key: string; fallbackKeys?: string[] };
 type OpenAnswerResponse = { text: string; attachments: string[] };
 
@@ -374,18 +381,14 @@ function safeActivity(activity: Activity): Record<string, unknown> {
             const lockedWords = settingStrings(settings, "lockedWords");
             return { type: activity.type, prompt, tokens: shuffle(words), lockedWords, acceptedOrders: settingStringGroups(settings, "acceptedOrders"), gradable: expected.length > 0 };
         }
-        case "fill-blank":
-            return {
-                type: activity.type,
-                prompt,
-                content: activity.content,
-                blankCount: Math.max((activity.content.match(/___/g) || []).length, settingStringGroups(settings, "acceptedAnswers").length),
-                acceptedAnswers: settingStringGroups(settings, "acceptedAnswers"),
-                hints: settingStrings(settings, "hints"),
-                wordBank: shuffle(settingStrings(settings, "wordBank")),
-                caseSensitive: settings?.caseSensitive === true,
-                gradable: Boolean(activity.answer.trim()) || settingStringGroups(settings, "acceptedAnswers").length > 0
-            };
+        case "fill-blank": {
+            const settings = (activity as Activity & { settings?: Record<string, unknown> }).settings || {};
+            const blanks = fillBlanks.parse(activity.content, activity.answer, settings);
+            return { type: activity.type, prompt, content: blanks.content, blankCount: blanks.groups.length,
+                hints: Array.isArray(settings.hints) ? settings.hints.filter(value => typeof value === 'string') : [],
+                wordBank: Array.isArray(settings.wordBank) ? settings.wordBank.filter(value => typeof value === 'string') : [],
+                gradable: blanks.groups.length > 0 && blanks.groups.every(group => group.length > 0) };
+        }
         case "multiple-choice":
         case "one-of-many": {
             const configuredOptions = Array.isArray(settings?.options) ? settings.options.map((raw) => record(raw))
@@ -561,15 +564,19 @@ function normalized(value: string): string {
 }
 
 function isCorrect(activity: Activity, response: unknown): boolean {
+    if (activity.type === "fill-blank") {
+        const checks = fillBlanks.check(activity.content, activity.answer, (activity as Activity & {settings?: unknown}).settings, response);
+        return checks.length > 0 && Array.isArray(response) && response.length === checks.length && checks.every(Boolean);
+    }
     const contentLines = lines(activity.content);
     const settings = activity.settings;
     const normalizeAnswer = (value: string) => {
         const collapsed = value.trim().replace(/\s+/g, " ");
         return settings?.caseSensitive === true ? collapsed : collapsed.toLocaleLowerCase();
     };
-    if (activity.type === "fill-blank" || activity.type === "table") {
+    if (activity.type === "table") {
         const actual = Array.isArray(response) ? response.map(stringValue) : [stringValue(response)];
-        const configured = activity.type === "fill-blank" ? settings?.acceptedAnswers : settings?.acceptedAnswers;
+        const configured = settings?.acceptedAnswers;
         const expectedGroups = Array.isArray(configured)
             ? configured.map((group) => Array.isArray(group) ? group.filter((item): item is string => typeof item === "string") : [])
             : answerParts(activity.answer).map((value) => [value]);
@@ -706,6 +713,10 @@ function answerFeedback(activity: Activity, response: unknown): string {
 }
 
 function isGradable(activity: Activity): boolean {
+    if (activity.type === "fill-blank") {
+        const blanks = fillBlanks.parse(activity.content, activity.answer, (activity as Activity & {settings?: unknown}).settings);
+        return blanks.groups.length > 0 && blanks.groups.every(group => group.length > 0);
+    }
     if (["open-answer", "flashcards", "text", "image", "audio", "video", "pronunciation-recording", "interactive-image", "vocabulary", "phrase-list"].includes(activity.type)) return false;
     if (activity.type === "find-error") return settingRecords(activity.settings, "errors").length > 0;
     if (activity.answer.trim()) return true;
@@ -735,6 +746,7 @@ function publicProgress(value: unknown): Record<string, ProgressAnswer> {
         if (typeof entry.correct !== "boolean" && entry.correct !== null) continue;
         result[key] = {
             response: entry.response,
+            ...(Array.isArray(entry.blankResults) && entry.blankResults.every(value => typeof value === "boolean") ? {blankResults: entry.blankResults.slice(0, 1000) as boolean[]} : {}),
             correct: entry.correct as boolean | null,
             submitted_at: stringValue(entry.submitted_at),
             draft: entry.draft === true,
@@ -1048,9 +1060,11 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(400, { error: "The submitted answer has an invalid format." }, allowedOrigin);
     }
     const correct = isCorrect(answerActivity, response);
+    const blankResults = answerActivity.type === "fill-blank"
+        ? fillBlanks.check(answerActivity.content, answerActivity.answer, (answerActivity as Activity & {settings?: unknown}).settings, response) : undefined;
     const feedback = answerFeedback(answerActivity, response);
     const answers = publicProgress(progress?.answers);
-    answers[answerKey] = { response, correct, submitted_at: new Date().toISOString(), ...(feedback ? { feedback } : {}) };
+    answers[answerKey] = { response, correct, ...(blankResults ? {blankResults} : {}), submitted_at: new Date().toISOString(), ...(feedback ? { feedback } : {}) };
     const completed = allGradableAnswersCorrect(allActivities, answers);
     const { error: saveError } = await admin.from("student_lesson_progress").upsert({
         student_id: assignment.memberId,
@@ -1064,5 +1078,5 @@ Deno.serve(async (request: Request) => {
         console.error("Could not save student progress.", saveError);
         return jsonResponse(500, { error: "Could not save your progress. Please try again." }, allowedOrigin);
     }
-    return jsonResponse(200, { correct, feedback, reviewRequired: false, answers, completed }, allowedOrigin);
+    return jsonResponse(200, { correct, blankResults, feedback, reviewRequired: false, answers, completed }, allowedOrigin);
 });

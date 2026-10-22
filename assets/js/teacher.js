@@ -2548,7 +2548,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         const activityType = activityTypes.find((item) => item.id === type);
         const hasAnswer = !["text", "image", "video", "audio"].includes(type);
         const hasQuestions = Array.isArray(activity.questions) && activity.questions.length > 0;
-        return `<article class="preview-activity preview-activity-editable preview-activity-editing" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}">
+        return `<article class="preview-activity preview-activity-editable preview-activity-editing" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${type === "fill-blank" ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}>
             <header class="preview-activity-header"><h3>${index + 1}. ${prompt}</h3><div class="preview-activity-actions">
                 <button class="mini-action" type="button" data-save-preview-block aria-label="${lessonSectionText("done")}" title="${lessonSectionText("done")}">✓</button>
                 <button class="mini-action preview-activity-delete" type="button" data-cancel-preview-edit aria-label="${t("action.cancel")}" title="${t("action.cancel")}">×</button>
@@ -2591,10 +2591,8 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         body = `<div class="preview-drag-layout"><div><strong>${previewText("bank")}</strong><div class="preview-word-bank" data-word-bank>${tokens.map(({ word, wordIndex }) => `<button type="button" class="preview-word" draggable="true" data-word-index="${previewKey}-${wordIndex}">${escapeHtml(word)}</button>`).join("")}</div></div><div><strong>${previewText("answer")}</strong><div class="preview-dropzone" data-dropzone tabindex="0">${correctOrder ? `<span class="preview-answer-ghost">${escapeHtml(correctOrder)}</span>` : `<span class="preview-drop-hint">${previewText("drop")}</span>`}</div></div></div>`;
         if (!expected.length) checkable = false;
     } else if (type === "fill-blank") {
-        let blankIndex = 0;
-        const parts = content.split("___");
-        const correctParts = previewTokens(answer);
-        body = `<p class="preview-instruction">${parts.map((part, partIndex) => `${escapeHtml(part)}${partIndex < parts.length - 1 ? `<input class="preview-inline-input" data-answer-index="${blankIndex}" placeholder="${escapeHtml(correctParts[blankIndex++] || "")}" aria-label="${previewText("typeAnswer")}" autocomplete="off">` : ""}`).join("")}</p>`;
+        const blanks = window.SlovaFillBlanks.parse(content, answer, activity.settings);
+        body = `<p class="preview-instruction">${blanks.parts.map((part, partIndex) => `${escapeHtml(part)}${partIndex < blanks.groups.length ? `<input class="preview-inline-input" data-answer-index="${partIndex}" placeholder="${escapeHtml(blanks.answers[partIndex])}" aria-label="${previewText("typeAnswer")} ${partIndex + 1}" autocomplete="off">` : ""}`).join("")}</p>`;
     } else if (type === "one-of-many" && (lines[0] || "").includes("___")) {
         const [before, ...after] = lines[0].split("___");
         const options = lines.slice(1);
@@ -2686,7 +2684,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         ? `<div class="preview-actions"><button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button></div>`
         : "";
     const correctMarkup = "";
-    return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}"><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}${isQuestion ? `<span class="preview-q-badge">${questionIndex + 1}</span>` : `<h3>${previewItemNumber}. ${prompt}</h3>`}${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${isQuestion && activity.prompt?.trim() ? `<p class="preview-q-prompt">${prompt}</p>` : ""}${liveAnswerMarkup}${resultMarkup}${body}${correctMarkup}${checkButton}</article>`;
+    return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${type === "fill-blank" ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}${isQuestion ? `<span class="preview-q-badge">${questionIndex + 1}</span>` : `<h3>${previewItemNumber}. ${prompt}</h3>`}${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${isQuestion && activity.prompt?.trim() ? `<p class="preview-q-prompt">${prompt}</p>` : ""}${liveAnswerMarkup}${resultMarkup}${body}${correctMarkup}${checkButton}</article>`;
 }
 
 function renderSupplementaryPreview(activity) {
@@ -2721,7 +2719,7 @@ function checkPreviewActivity(card) {
     if (!result) return;
     const answer = card.dataset.previewAnswer.trim();
     const resultClass = (status = "") => `preview-result${card.classList.contains("preview-question-activity") ? " preview-question-result" : ""}${status ? ` ${status}` : ""}`;
-    if (!answer && !["match", "columns"].includes(card.dataset.previewType)) {
+    if (!answer && !["match", "columns", "fill-blank"].includes(card.dataset.previewType)) {
         result.textContent = previewText("noAnswer");
         result.className = resultClass();
         return;
@@ -2733,9 +2731,10 @@ function checkPreviewActivity(card) {
         const expected = answer ? previewTokens(answer) : card.dataset.previewContent.trim().split(/\s+/).filter(Boolean);
         correct = actual.length === expected.length && actual.every((word, index) => word.toLocaleLowerCase() === expected[index].toLocaleLowerCase());
     } else if (type === "fill-blank") {
-        const actual = Array.from(card.querySelectorAll("[data-answer-index]"), (input) => input.value.trim().toLocaleLowerCase());
-        const expected = answer.split("/").map((part) => part.trim().toLocaleLowerCase());
-        correct = actual.length === expected.length && actual.every((value, index) => value === expected[index]);
+        const inputs = Array.from(card.querySelectorAll("[data-answer-index]"));
+        const checks = window.SlovaFillBlanks.check(card.dataset.previewContent, answer, JSON.parse(card.dataset.previewSettings || '{}'), inputs.map(input => input.value));
+        inputs.forEach((input, index) => { input.classList.toggle('blank-correct', checks[index] === true); input.classList.toggle('blank-incorrect', checks[index] === false); input.setAttribute('aria-invalid', String(checks[index] === false)); });
+        correct = checks.length > 0 && checks.length === inputs.length && checks.every(Boolean);
     } else if (type === "table") {
         const actual = Array.from(card.querySelectorAll("[data-table-answer-index]"), (input) => input.value.trim().toLocaleLowerCase());
         const expected = answer.split("/").map((part) => part.trim().toLocaleLowerCase());
@@ -3669,7 +3668,8 @@ function formatLiveCorrectAnswer(activity) {
     const contentLines = previewLines(activity.content);
 
     if (activity.type === "drag-words") return expectedParts.join(" ");
-    if (activity.type === "fill-blank" || activity.type === "table") return expectedParts.join(" · ");
+    if (activity.type === "fill-blank") return window.SlovaFillBlanks.parse(activity.content, activity.answer, activity.settings).groups.map(group => group.join(" / ")).join(" · ");
+    if (activity.type === "table") return expectedParts.join(" · ");
     if (activity.type === "multiple-choice" || activity.type === "one-of-many") {
         const answerIndex = Number(answer);
         return answer && Number.isInteger(answerIndex) && answerIndex >= 0 && answerIndex < contentLines.length
@@ -4226,6 +4226,7 @@ function previewRichContent(block) {
 }
 
 function contentHint(type) {
+    if (type === "fill-blank") return ({ ru: "Пропуски: ___ или [ответ], например širok[á]. Варианты: [bývam / žijem]. Отдельное поле ответов — только для ___, по порядку через /.", ua: "Пропуски: ___ або [відповідь], наприклад širok[á]. Варіанти: [bývam / žijem]. Окреме поле відповідей — лише для ___, по порядку через /.", en: "Use ___ or [answer], e.g. širok[á]. Alternatives: [bývam / žijem]. The answer field is only for ___ blanks, in order separated by /." })[currentLanguage];
     if (["vocabulary", "phrase-list"].includes(type)) return ({ ru: "Каждая строка: слово | перевод | URL аудио (необязательно). До 100 строк. Без аудио используется словацкая озвучка браузера.", ua: "Кожен рядок: слово | переклад | URL аудіо (необов’язково). До 100 рядків. Без аудіо використовується словацька вимова браузера.", en: "One row per word: word / translation / audio URL (optional). Up to 100 rows. Without audio, browser Slovak speech is used." })[currentLanguage];
     const hints = { "drag-words": t("hint.drag"), "fill-blank": t("hint.blank"), "multiple-choice": t("hint.options"), "order-items": t("hint.order"), "sentence-order": t("hint.sentences"), match: t("hint.match"), columns: t("hint.columns"), table: t("hint.table"), "one-of-many": t("hint.select"), "true-false": t("hint.trueFalse"), flashcards: t("hint.cards"), text: "[info] / [star] + *italic* **bold** 1. list" };
     const newActivityHints = {
@@ -4589,15 +4590,14 @@ function bindActivityBlockActions() {
                 showToast(currentLanguage === "ru" ? "Сначала выделите слово в тексте." : "Select a word in the text first.");
                 return;
             }
-            const blankIndex = (contentField.value.slice(0, start).match(/___/g) || []).length;
-            contentField.setRangeText("___", start, end, "select");
-            currentBlock().content = contentField.value;
+            const block = currentBlock();
+            const inserted = window.SlovaFillBlanks.insert(contentField.value, block.answer, block.settings, start, end);
+            if (!inserted) return;
+            Object.assign(block, inserted);
+            contentField.value = inserted.content;
+            contentField.setSelectionRange(start, start + 3);
             const answerField = blockElement.querySelector('[data-field="answer"]');
-            const answers = String(answerField?.value || currentBlock().answer || "").split(/\s*\/\s*|\r?\n/);
-            while (answers.length <= blankIndex) answers.push("");
-            if (!answers[blankIndex].trim()) answers[blankIndex] = selected;
-            currentBlock().answer = answers.filter(Boolean).join(" / ");
-            if (answerField) answerField.value = currentBlock().answer;
+            if (answerField) answerField.value = inserted.answer;
             scheduleLessonDraftAutosave();
             refreshRichPreview();
         });
