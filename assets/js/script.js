@@ -1,4 +1,4 @@
-const translations = {
+const translations = SlovaI18n.locales({
 'ua': {
     'nav_courses': 'Курси',
     'nav_teachers': 'Викладачі',
@@ -169,7 +169,7 @@ const translations = {
     'register_note': "Don't have an account yet? Student registration will be added later.",
     'back_home': "Back to home"
     }
-};
+});
 function changeLanguage(lang) {
     if (!translations[lang]) return;
     document.querySelectorAll('.btn-lang-item').forEach(btn => {

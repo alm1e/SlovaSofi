@@ -1,5 +1,5 @@
 (() => {
-    const copy = {
+    const copy = SlovaI18n.locales({
         ua: {
             loading: "Завантаження…", activate: "Створіть пароль", activateHint: "Запрошення прийнято. Створіть пароль для входу до свого кабінету.",
             password: "Пароль (не менше 8 символів)", save: "Зберегти пароль", welcome: "Мій навчальний простір",
@@ -78,12 +78,12 @@
             moveUp: "Move up", moveDown: "Move down", flip: "Show translation", hint: "Hint", locked: "Locked word", loading: "Loading lesson…",
             seekBack: "−5 sec", seekForward: "+5 sec", loopA: "Set A", loopB: "Set B", clearLoop: "Clear loop", speed: "Speed", transcript: "Transcript"
         }
-    };
-    const recoveryCopy = {
+    });
+    const recoveryCopy = SlovaI18n.locales({
         ua: { retry: "Спробувати знову", unavailable: "Сервіс уроків тимчасово недоступний. Спробуйте ще раз пізніше.", connection: "Не вдалося з’єднатися із сервісом уроків. Перевірте інтернет і спробуйте знову.", profile: "Профіль учня", dashboardLoading: "Завантаження кабінету…" },
         ru: { retry: "Попробовать снова", unavailable: "Сервис уроков временно недоступен. Попробуйте ещё раз позже.", connection: "Не удалось связаться с сервисом уроков. Проверьте интернет и попробуйте снова.", profile: "Профиль ученика", dashboardLoading: "Загрузка кабинета…" },
         en: { retry: "Try again", unavailable: "The lesson service is temporarily unavailable. Please try again later.", connection: "Could not connect to the lesson service. Check your connection and try again.", profile: "Student profile", dashboardLoading: "Loading dashboard…" }
-    };
+    });
     Object.keys(recoveryCopy).forEach((lang) => Object.assign(copy[lang], recoveryCopy[lang]));
     Object.assign(copy.ua, {
         navCalendar: "Календар",
@@ -163,7 +163,7 @@
         hotspotAudio: "Play pronunciation", microphonePermission: "Allow microphone access.",
         playsRemaining: "Listens remaining: {count}", transcript: "Transcript"
     });
-    const languageChoices = ["ua", "ru", "en"];
+    const languageChoices = ["ua", "ru", "en", "sk", "kk"];
     let language = languageChoices.includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
     let user = null;
     let presenceChannels = [];
@@ -313,6 +313,8 @@
         </span>`;
     }
     function countLabel(count, type) {
+        if (language === "kk") return `${count} ${{ class: "сынып", lesson: "сабақ", activity: "тапсырма" }[type]}`;
+        if (language === "sk") return `${count} ${{ class: ["trieda", "triedy", "tried"], lesson: ["lekcia", "lekcie", "lekcií"], activity: ["úloha", "úlohy", "úloh"] }[type][count === 1 ? 0 : count >= 2 && count <= 4 ? 1 : 2]}`;
         if (language === "en") {
             const labels = { class: ["class", "classes"], lesson: ["lesson", "lessons"], activity: ["activity", "activities"] };
             return `${count} ${labels[type][count === 1 ? 0 : 1]}`;
@@ -415,7 +417,7 @@
     }
 
     function formatScheduledDate(date, options) {
-        const locale = language === "ua" ? "uk-UA" : language === "en" ? "en-US" : "ru-RU";
+        const locale = (SlovaI18n.locales({ ua: 'uk-UA', ru: 'ru-RU', en: 'en-US', sk: 'sk-SK', kk: 'kk-KZ' }))[language];
         return new Intl.DateTimeFormat(locale, options).format(date);
     }
 
@@ -429,7 +431,7 @@
             grouped.set(key, day);
         });
         const content = upcoming.length
-            ? `<div class="calendar-agenda">${[...grouped.values()].map((events) => `<section class="calendar-agenda-day"><h2>${formatScheduledDate(events[0].occurrenceAt, { weekday: "long", day: "numeric", month: "long" })}</h2>${events.map((event) => `<article class="calendar-agenda-event"><time><strong>${formatScheduledDate(event.occurrenceAt, { hour: "2-digit", minute: "2-digit" })}</strong><small>${Number(event.duration_minutes)} ${language === "en" ? "min" : language === "ua" ? "хв" : "мин"}</small></time><div><h3>${escapeHtml(event.title)}</h3><p>${escapeHtml(classes.find((group) => group.id === event.class_id)?.name || text("calendarClass"))}${calendarRecurrenceLabel(event.recurrence) ? ` · ${calendarRecurrenceLabel(event.recurrence)}` : ""}</p></div></article>`).join("")}</section>`).join("")}</div>`
+            ? `<div class="calendar-agenda">${[...grouped.values()].map((events) => `<section class="calendar-agenda-day"><h2>${formatScheduledDate(events[0].occurrenceAt, { weekday: "long", day: "numeric", month: "long" })}</h2>${events.map((event) => `<article class="calendar-agenda-event"><time><strong>${formatScheduledDate(event.occurrenceAt, { hour: "2-digit", minute: "2-digit" })}</strong><small>${Number(event.duration_minutes)} ${(SlovaI18n.locales({ ua: "хв", ru: "мин", en: "min", sk: "min", kk: "мин" }))[language]}</small></time><div><h3>${escapeHtml(event.title)}</h3><p>${escapeHtml(classes.find((group) => group.id === event.class_id)?.name || text("calendarClass"))}${calendarRecurrenceLabel(event.recurrence) ? ` · ${calendarRecurrenceLabel(event.recurrence)}` : ""}</p></div></article>`).join("")}</section>`).join("")}</div>`
             : `<div class="panel student-empty"><span class="student-empty-icon">▦</span><h2>${escapeHtml(text("calendarEmpty"))}</h2></div>`;
         return `<div class="section-heading"><div><h1>${escapeHtml(text("calendar"))}</h1><p>${escapeHtml(text("calendarHint"))}</p></div></div>${content}`;
     }
@@ -510,25 +512,25 @@
     }
 
     function questionItemLabel(index) {
-        const labels = { ua: "Пункт", ru: "Пункт", en: "Item" };
+        const labels = SlovaI18n.locales({ ua: "Пункт", ru: "Пункт", en: "Item" });
         return `${labels[language] || labels.en} ${index + 1}`;
     }
 
     function flashcardChoiceText(key) {
-        const labels = {
+        const labels = SlovaI18n.locales({
             ua: { know: "Знаю", repeat: "Повторити", hard: "Складні картки" },
             ru: { know: "Знаю", repeat: "Повторить", hard: "Сложные карточки" },
             en: { know: "Know", repeat: "Review", hard: "Difficult cards" }
-        };
+        });
         return labels[language]?.[key] || labels.en[key];
     }
 
     function openAnswerText(key) {
-        const labels = {
+        const labels = SlovaI18n.locales({
             ua: { attachments: "Вкладення", addAttachment: "Додати посилання", attachmentUrl: "https://...", removeAttachment: "Видалити" },
             ru: { attachments: "Вложения", addAttachment: "Добавить ссылку", attachmentUrl: "https://...", removeAttachment: "Удалить" },
             en: { attachments: "Attachments", addAttachment: "Add link", attachmentUrl: "https://...", removeAttachment: "Remove" }
-        };
+        });
         return labels[language]?.[key] || labels.en[key];
     }
 
@@ -1221,7 +1223,7 @@
     }
 
     function render() {
-        document.documentElement.lang = language === "ru" ? "ru" : language === "en" ? "en" : "uk";
+        document.documentElement.lang = language === "ua" ? "uk" : language;
         window.SlovaLessonNavigation?.sync(dashboardStatus === "ready" && Boolean(openedLesson && openedLesson.id === selectedLessonId));
         document.title = `SlovaSofi · ${escapeHtml(text("profileRole"))}`;
         updateIdentity();
@@ -1613,11 +1615,11 @@
         pageContent.classList.add("student-auth-content");
         pageContent.innerHTML = `<section class="student-auth-card"><div class="student-auth-controls"><button class="icon-button theme-toggle" type="button" data-theme-toggle aria-label="Включить тему" aria-pressed="false"><svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/></svg><svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2"/></svg></button></div><a class="brand student-auth-brand" href="index.html"><span class="brand-mark">S</span><span>Slova<span class="brand-accent">Sofi</span></span></a><span class="eyebrow">SLOVASOFI</span><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p>${form}</section>`;
         const darkTheme = document.documentElement.dataset.theme === "dark";
-        const themeToggleLabel = ({
+        const themeToggleLabel = (SlovaI18n.locales({
             ua: darkTheme ? "Увімкнути світлу тему" : "Увімкнути темну тему",
             ru: darkTheme ? "Включить светлую тему" : "Включить тёмную тему",
             en: darkTheme ? "Enable light theme" : "Enable dark theme"
-        })[language];
+        }))[language];
         const themeToggle = pageContent.querySelector("[data-theme-toggle]");
         themeToggle?.setAttribute("aria-pressed", String(darkTheme));
         themeToggle?.setAttribute("aria-label", themeToggleLabel);

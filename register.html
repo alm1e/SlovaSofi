@@ -2,6 +2,7 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
+    <script src="assets/js/locales.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#f5f8f5">
     <title>Реєстрація | SlovaSofi</title>
@@ -18,6 +19,8 @@
                     <button type="button" class="btn-lang-item active" data-lang="ua">UA</button>
                     <button type="button" class="btn-lang-item" data-lang="ru">RU</button>
                     <button type="button" class="btn-lang-item" data-lang="en">EN</button>
+<button type="button" class="btn-lang-item" data-lang="sk">SK</button>
+<button type="button" class="btn-lang-item" data-lang="kk">ҚАЗ</button>
                 </div>
                 <button class="theme-toggle auth-theme-toggle" type="button" data-theme-toggle aria-label="Включить тему" aria-pressed="false">
                     <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/></svg>
@@ -65,7 +68,7 @@
     </main>
 
     <script>
-        const translations = {
+        const translations = SlovaI18n.locales({
             ua: {
                 title: "Створити акаунт учня", subtitle: "Заповніть дані для реєстрації.",
                 first: "Ім’я", last: "Прізвище", email: "Електронна пошта",
@@ -84,7 +87,7 @@
                 phone: "Phone", password: "Password", submit: "Register",
                 haveAccount: "Already have an account?", login: "Sign in"
             }
-        };
+        });
 
         function setLanguage(lang) {
             if (!translations[lang]) lang = "ua";

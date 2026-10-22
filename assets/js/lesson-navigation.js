@@ -6,11 +6,11 @@
     let lessonOpen = false;
     const mobile = window.matchMedia('(max-width: 700px)');
     const teacherRail = sidebar.id === 'sidebar';
-    const labels = {
+    const labels = SlovaI18n.locales({
         ua: ['Відкрити навігацію', 'Закрити навігацію'],
         ru: ['Открыть навигацию', 'Закрыть навигацию'],
         en: ['Open navigation', 'Close navigation']
-    };
+    });
     function update() {
         const drawer = mobile.matches || (lessonOpen && !teacherRail);
         const expanded = !drawer || sidebar.classList.contains('open');

@@ -1,5 +1,5 @@
 (() => {
-    const translations = {
+    const translations = SlovaI18n.locales({
         ua: {
             title: "Створіть новий пароль", description: "Введіть новий пароль для свого облікового запису.",
             password: "Новий пароль (не менше 8 символів)", confirm: "Повторіть пароль",
@@ -27,7 +27,7 @@
             mismatch: "The passwords do not match.", failed: "Could not change the password. Request a new link.",
             success: "Password changed. Opening your dashboard…"
         }
-    };
+    });
     const language = localStorage.getItem("siteLanguage") || "ua";
     const copy = translations[language] || translations.ua;
     const form = document.getElementById("resetPasswordForm");
@@ -46,7 +46,7 @@
         actions.hidden = false;
     };
 
-    document.documentElement.lang = language === "ru" ? "ru" : language === "en" ? "en" : "uk";
+    document.documentElement.lang = SlovaI18n.translate(language === "ru" ? "ru" : language === "en" ? "en" : "uk", language);
     document.title = `${copy.title} | SlovaSofi`;
     title.textContent = copy.title;
     description.textContent = copy.description;

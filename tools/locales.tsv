@@ -1,0 +1,671 @@
+Nepodarilo sa overiť uloženú reláciu. Prihláste sa znova.	Сақталған сеансты тексеру мүмкін болмады. Қайта кіріңіз.
+Zadajte platnú e-mailovú adresu.	Жарамды электрондық пошта мекенжайын енгізіңіз.
+Nepodarilo sa pripojiť k Supabase. Skúste znova.	Supabase қызметіне қосылу мүмкін болмады. Қайталап көріңіз.
+E-mail na obnovenie hesla sa nepodarilo odoslať. Skontrolujte adresu alebo skúste neskôr.	Құпиясөзді қалпына келтіру хатын жіберу мүмкін болмады. Мекенжайды тексеріңіз немесе кейінірек көріңіз.
+Ak účet existuje, odkaz na obnovenie hesla bol odoslaný e-mailom. Skontrolujte aj spam.	Егер тіркелгі бар болса, құпиясөзді қалпына келтіру сілтемесі жіберілді. Спам қалтасын да тексеріңіз.
+ℹ️ Odkaz platí 24 hodín. Ak e-mail neprišiel, skontrolujte zadanú adresu.	ℹ️ Сілтеме 24 сағат жарамды. Хат келмесе, енгізілген мекенжайды тексеріңіз.
+Pripojenie zlyhalo. Skúste znova.	Қосылу мүмкін болмады. Қайталап көріңіз.
+Registrácia zlyhala. Skontrolujte údaje a skúste znova.	Тіркелу мүмкін болмады. Деректерді тексеріп, қайталап көріңіз.
+Zadajte meno a priezvisko.	Атыңыз бен тегіңізді енгізіңіз.
+Žiadosť o registráciu bola prijatá. Potvrďte účet e-mailom. Ak už účet máte, prihláste sa.	Тіркелу өтініші қабылданды. Тіркелгіні пошта арқылы растаңыз. Тіркелгіңіз бар болса, жүйеге кіріңіз.
+Registrácia dokončená. Ste prihlásený.	Тіркелу аяқталды. Жүйеге кірдіңіз.
+z	/
+Predchádzajúci obrázok	Алдыңғы сурет
+Nasledujúci obrázok	Келесі сурет
+Zavrieť	Жабу
+Zväčšiť obrázok	Суретті үлкейту
+Otvoriť navigáciu	Шарлауды ашу
+Zavrieť navigáciu	Шарлауды жабу
+Pridať všetky slová	Барлық сөзді қосу
+Pridať do slovníka	Сөздікке қосу
+Pridané	Қосылды
+Počúvať	Тыңдау
+Pridajte slová a preklady: slovo / preklad	Сөздер мен аудармаларды қосыңыз: сөз / аударма
+Môj slovník	Менің сөздігім
+Slovník sa pre váš účet ukladá v tomto prehliadači.	Сөздік тіркелгіңіз үшін осы браузерде сақталады.
+Náhľad: žiaci si môžu slová uložiť v lekcii.	Алдын ала қарау: оқушылар сөздерді сабақта сақтай алады.
+Slovník sa nepodarilo uložiť. Skontrolujte nastavenia prehliadača.	Сөздікті сақтау мүмкін болмады. Браузер баптауларын тексеріңіз.
+Výslovnosť sa nepodarilo prehrať.	Айтылымды ойнату мүмкін болмады.
+Odstrániť zo slovníka	Сөздіктен жою
+Zatiaľ žiadne uložené slová.	Сақталған сөздер әлі жоқ.
+Vytvorte nové heslo	Жаңа құпиясөз жасаңыз
+Zadajte nové heslo pre svoj účet.	Тіркелгіңізге жаңа құпиясөз енгізіңіз.
+Nové heslo (aspoň 8 znakov)	Жаңа құпиясөз (кемінде 8 таңба)
+Potvrďte heslo	Құпиясөзді растаңыз
+Uložiť heslo	Құпиясөзді сақтау
+Späť na prihlásenie	Кіру бетіне оралу
+Otvoriť pracovný priestor	Жеке кабинетке өту
+Odkaz na obnovenie nie je dostupný	Қалпына келтіру сілтемесі қолжетімсіз
+Odkaz je neplatný alebo vypršal. Požiadajte o nový e-mail na obnovenie hesla.	Сілтеме жарамсыз немесе мерзімі өткен. Құпиясөзді қалпына келтіру хатын қайта сұратыңыз.
+Heslá sa nezhodujú.	Құпиясөздер сәйкес келмейді.
+Heslo sa nepodarilo zmeniť. Požiadajte o nový odkaz.	Құпиясөзді өзгерту мүмкін болмады. Жаңа сілтеме сұратыңыз.
+Heslo bolo zmenené. Otvárame pracovný priestor…	Құпиясөз өзгертілді. Жеке кабинет ашылуда…
+Kurzy	Курстар
+Učitelia	Мұғалімдер
+Platforma	Платформа
+Slovenčina jednoducho	Словак тілін оңай үйреніңіз
+Učte sa slovenčinu pre život a prácu na Slovensku.	Словакияда өмір сүру және жұмыс істеу үшін словак тілін үйреніңіз.
+Pozrieť ceny	Бағаларды көру
+Skúšobná lekcia	Сынақ сабағы
+/zadarmo	/тегін
+Zoznámenie s učiteľom	Мұғаліммен танысу
+Test jazykovej úrovne	Тіл деңгейін анықтау
+30 minút rozhovoru	30 минут сөйлесу
+Interaktívna platforma	Интерактивті платформа
+Rezervovať zadarmo	Тегін жазылу
+Individuálne	Жеке сабақ
+/lekcia	/сабақ
+Individuálny rozvrh	Жеке кесте
+Dôraz na rozprávanie	Сөйлесуге басымдық
+Objednať lekciu	Сабаққа жазылу
+Skupinové lekcie	Топтық сабақтар
+Skupina od 3 osôb	3 адамнан тұратын топ
+Nahrávky lekcií	Сабақ жазбалары
+Kúpiť teraz	Қазір сатып алу
+Lekcie vo dvojici	Жұптық сабақтар
+S priateľom alebo partnerom	Досыңызбен немесе серіктесіңізбен
+Viac praxe	Көбірек тәжірибе
+Naši učitelia	Біздің мұғалімдер
+Viac ako 100 študentov už s nami hovorí po slovensky	100-ден астам оқушы бізбен бірге словакша сөйлей бастады
+Sofia	София
+Zakladateľka a metodička	Негізін қалаушы және әдіскер
+Vytvorila systém učenia, ktorý vám pomôže rýchlo začať hovoriť po slovensky bez memorovania.	Словакша жаттаусыз тез сөйлей бастауға көмектесетін оқу жүйесін жасады.
+Victoria	Виктория
+Hlavná učiteľka	Аға мұғалім
+Pomáha prejsť od porozumenia k rozprávaniu a sleduje výsledky každého žiaka.	Түсінуден сөйлеуге көшуге көмектесіп, әр оқушының нәтижесін бақылайды.
+Anastasia — učiteľka	Анастасия — мұғалім
+Myroslava — učiteľka	Мирослава — мұғалім
+Vitaliy — učiteľ	Виталий — мұғалім
+Ďalší učitelia nášho tímu	Командамыздың басқа мұғалімдері
+Každý učiteľ prechádza výberom a školením podľa našej metodiky, aby boli výsledky stabilné.	Әр мұғалім тұрақты нәтиже үшін біздің әдістеме бойынша іріктеу мен дайындықтан өтеді.
+Žiacky portál	Оқушы кабинеті
+Prihlásiť sa	Кіру
+Prihláste sa a pozrite si svoje kurzy a lekcie.	Курстарыңыз бен сабақтарыңызды көру үшін кіріңіз.
+E-mailová adresa	Электрондық пошта
+Heslo	Құпиясөз
+Ešte nemáte účet? Registrácia žiakov bude pridaná neskôr.	Тіркелгіңіз жоқ па? Оқушыларды тіркеу кейінірек қосылады.
+Späť na úvod	Басты бетке оралу
+Načítava sa…	Жүктелуде…
+Vytvorte heslo	Құпиясөз жасаңыз
+Pozvánka prijatá. Vytvorte heslo na prístup k účtu.	Шақыру қабылданды. Тіркелгіге кіру үшін құпиясөз жасаңыз.
+Heslo (aspoň 8 znakov)	Құпиясөз (кемінде 8 таңба)
+Môj vzdelávací priestor	Менің оқу кеңістігім
+Vaše triedy a lekcie od učiteľa na jednom mieste.	Сыныптарыңыз бен мұғалім тағайындаған сабақтар бір жерде.
+Otvorte pozvánku alebo sa prihláste do svojho priestoru.	Кабинетке кіру үшін шақыру сілтемесін ашыңыз немесе жүйеге кіріңіз.
+Moje triedy	Менің сыныптарым
+Moje lekcie	Менің сабақтарым
+Triedy, do ktorých ste boli pozvaný.	Сіз шақырылған сыныптар.
+Lekcie priradené vašim triedam.	Сыныптарыңызға тағайындалған сабақтар.
+Trieda	Сынып
+tried	сынып
+Lekcie triedy	Сынып сабақтары
+Všetky lekcie	Барлық сабақ
+lekcií	сабақ
+úloh	тапсырма
+K tomuto účtu zatiaľ nie sú priradené triedy.	Бұл тіркелгіге сыныптар әлі қосылмаған.
+Tejto triede zatiaľ neboli priradené lekcie.	Бұл сыныпқа сабақтар әлі тағайындалмаған.
+Učiteľ vám zatiaľ nepriradil lekcie.	Мұғалім сізге әлі сабақ тағайындамады.
+Otvoriť lekciu	Сабақты ашу
+Späť na lekcie	Сабақтарға оралу
+Sekcia	Бөлім
+Úloha	Тапсырма
+Učiteľ zatiaľ nepridal obsah tejto úlohy.	Мұғалім бұл тапсырмаға әлі мазмұн қоспады.
+Materiál	Материал
+Lekcia	Сабақ
+Domáca úloha	Үй тапсырмасы
+Sekcie lekcie	Сабақ бөлімдері
+Sekcie domácej úlohy	Үй тапсырмасының бөлімдері
+← Predchádzajúca	← Алдыңғы
+Ďalej →	Келесі →
+Otvoriť sekcie lekcie	Сабақ бөлімдерін ашу
+Zavrieť sekcie	Бөлімдерді жабу
+Žiak	Оқушы
+Odhlásiť sa	Шығу
+← Úvod	← Басты бет
+Jazyk	Тіл
+Heslo sa nepodarilo uložiť:	Құпиясөзді сақтау мүмкін болмады:
+Pracovný priestor sa nepodarilo načítať:	Кабинетті жүктеу мүмкін болмады:
+Odhlásenie zlyhalo. Skúste znova.	Шығу мүмкін болмады. Қайталап көріңіз.
+Obrázok úlohy	Тапсырма суреті
+Skontrolovať odpoveď	Жауапты тексеру
+Skontrolovať odpovede	Жауаптарды тексеру
+Správne!	Дұрыс!
+Zatiaľ nesprávne. Skúste znova.	Әзірге қате. Қайталап көріңіз.
+Odpoveď uložená. Učiteľ ju môže skontrolovať.	Жауап сақталды. Мұғалім оны тексере алады.
+Pokrok uložený.	Оқу барысы сақталды.
+Koncept sa nepodarilo uložiť:	Нобайды сақтау мүмкін болмады:
+Lekcia dokončená!	Сабақ аяқталды!
+zodpovedaných	жауап берілді
+Koncept uložený.	Нобай сақталды.
+Vyberte odpoveď	Жауапты таңдаңыз
+Pravda	Шын
+Nepravda	Жалған
+Ťahajte slová alebo na ne klikajte a zostavte odpoveď	Жауап құрастыру үшін сөздерді сүйреңіз немесе басыңыз
+Vaša odpoveď	Сіздің жауабыңыз
+Najprv zadajte odpoveď.	Алдымен жауап енгізіңіз.
+Posunúť vyššie	Жоғары жылжыту
+Posunúť nižšie	Төмен жылжыту
+Zobraziť preklad	Аударманы көрсету
+Pomôcka	Кеңес
+Uzamknuté slovo	Бекітілген сөз
+Načítava sa lekcia…	Сабақ жүктелуде…
+−5 s	−5 с
++5 s	+5 с
+Nastaviť A	A нүктесі
+Nastaviť B	B нүктесі
+Zrušiť opakovanie	Қайталауды өшіру
+Rýchlosť	Жылдамдық
+Prepis	Транскрипция
+Skúsiť znova	Қайталап көру
+Služba lekcií je dočasne nedostupná. Skúste neskôr.	Сабақ қызметі уақытша қолжетімсіз. Кейінірек көріңіз.
+Pripojenie k službe lekcií zlyhalo. Skontrolujte pripojenie a skúste znova.	Сабақ қызметіне қосылу мүмкін болмады. Қосылымды тексеріп, қайталап көріңіз.
+Profil žiaka	Оқушы профилі
+Načítava sa pracovný priestor…	Кабинет жүктелуде…
+Kalendár	Күнтізбе
+Rozvrh triedy	Сынып кестесі
+Dátumy a časy vyučovania vo vašich triedach.	Сыныптарыңыздағы сабақтардың күні мен уақыты.
+Zatiaľ nie sú naplánované hodiny.	Әлі сабақ жоспарланбаған.
+Týždenne	Апта сайын
+Denne	Күн сайын
+Každý druhý deň	Күнара
+Vo vybrané dni	Таңдалған күндері
+Vo vybrané dátumy	Таңдалған күндерде
+Oznámenia	Хабарландырулар
+Žiadne nadchádzajúce hodiny.	Алдағы сабақтар жоқ.
+Otvoriť kalendár →	Күнтізбені ашу →
+Najbližšia hodina:	Келесі сабақ:
+Spustiť nahrávanie	Жазуды бастау
+Zastaviť nahrávanie	Жазуды тоқтату
+Nahráva sa…	Жазылуда…
+Ukladá sa nahrávka…	Жазба сақталуда…
+Nahrávka uložená pre učiteľa.	Жазба мұғалім үшін сақталды.
+Zvuk sa nepodarilo nahrať.	Дыбысты жазу мүмкін болмады.
+Tento prehliadač nepodporuje nahrávanie zvuku.	Бұл браузер дыбыс жазуды қолдамайды.
+Vyberte nesprávne slovo a zadajte opravu.	Қате сөзді таңдап, түзету енгізіңіз.
+Oprava	Түзету
+Vyberte značku a zobrazte slovo.	Сөзді көру үшін белгіні таңдаңыз.
+Prehrať výslovnosť	Айтылымды ойнату
+Povoľte prístup k mikrofónu.	Микрофонға рұқсат беріңіз.
+Zostávajúce počúvania: {count}	Қалған тыңдау саны: {count}
+Položka	Тармақ
+Viem	Білемін
+Zopakovať	Қайталау
+Náročné kartičky	Қиын карточкалар
+Prílohy	Тіркемелер
+Pridať odkaz	Сілтеме қосу
+https://...	https://...
+Odstrániť	Жою
+Dokončite profil učiteľa	Мұғалім профилін толтырыңыз
+Boli ste pozvaný do SlovaSofi. Vyplňte profil a vytvorte heslo na prihlásenie.	Сіз SlovaSofi платформасына шақырылдыңыз. Профильді толтырып, кіру үшін құпиясөз жасаңыз.
+Meno	Аты
+Priezvisko	Тегі
+Telefónne číslo (nepovinné)	Телефон нөмірі (міндетті емес)
+Vytvorte heslo (aspoň 8 znakov)	Құпиясөз жасаңыз (кемінде 8 таңба)
+Uložiť profil a vytvoriť heslo	Профильді сақтап, құпиясөз жасау
+Prejsť na prihlásenie	Кіру бетіне өту
+Pozvánka je neplatná alebo vypršala. Požiadajte správcu o novú pozvánku.	Шақыру сілтемесі жарамсыз немесе мерзімі өткен. Әкімшіден жаңа шақыру сұраңыз.
+Pozvánku sa nepodarilo overiť. Skontrolujte pripojenie a otvorte odkaz znova.	Шақыруды тексеру мүмкін болмады. Қосылымды тексеріп, сілтемені қайта ашыңыз.
+Profil sa nepodarilo uložiť. Skúste znova.	Профильді сақтау мүмкін болмады. Қайталап көріңіз.
+Otvára sa sekcia…	Бөлім ашылуда…
+Prehľad	Шолу
+Triedy	Сыныптар
+Lekcie	Сабақтар
+Materiály	Материалдар
+Žiaci	Оқушылар
+Hlavná navigácia	Негізгі шарлау
+SlovaSofi — úvod	SlovaSofi — басты бет
+Otvoriť menu	Мәзірді ашу
+Učiteľ	Мұғалім
+Profil školy	Мектеп профилі
+Profil používateľa: {name}	Пайдаланушы профилі: {name}
+Profil používateľa	Пайдаланушы профилі
+Hosť	Қонақ
+Nie ste prihlásený	Жүйеге кірмегенсіз
+Profil používateľa sa nepodarilo načítať.	Пайдаланушы профилін жүктеу мүмкін болмады.
+Profil školy je spoločný priestor SlovaSofi s triedami, lekciami a vzdelávacími materiálmi školy.	Мектеп профилі — SlovaSofi ортақ кеңістігі. Мұнда мектептің сыныптары, сабақтары және оқу материалдары орналасқан.
+Vzdelávací priestor	Оқу кеңістігі
+Spoločné triedy, lekcie a materiály	Ортақ сыныптар, сабақтар және материалдар
+Zatiaľ žiadne oznámenia	Әзірге хабарландыру жоқ
+Tu sa zobrazia novinky o triedach, lekciách a žiakoch.	Мұнда сыныптар, сабақтар және оқушылар туралы жаңалықтар көрсетіледі.
+Bez triedy	Сыныпсыз
+Pracovný priestor učiteľa	Мұғалім кабинеті
+PRACOVNÝ PRIESTOR UČITEĽA · SLOVASOFI	МҰҒАЛІМ КАБИНЕТІ · SLOVASOFI
+Dobrý deň, {name} 👋	Қайырлы күн, {name} 👋
+Vaše lekcie a materiály na jednom mieste.	Сабақтарыңыз бен материалдарыңыз бір жерде.
+✓ Ukážkové údaje sú uložené v tomto prehliadači	✓ Үлгі деректер осы браузерде сақталған
+＋ Vytvoriť lekciu	＋ Сабақ жасау
+Vytvorené triedy	Құрылған сыныптар
+Žiaci v triedach	Сыныптардағы оқушылар
+Vytvorené lekcie	Жасалған сабақтар
+Nedávne lekcie	Соңғы сабақтар
+Lekcie priradené vašim triedam	Сыныптарыңызға тағайындалған сабақтар
+Všetky lekcie →	Барлық сабақ →
+Vaše triedy	Сіздің сыныптарыңыз
+Skupiny žiakov	Оқушы топтары
+Všetky triedy →	Барлық сынып →
+Vytvorte skupiny a priraďte im jednotlivé lekcie.	Топтар құрып, оларға жеке сабақтар тағайындаңыз.
+＋ Vytvoriť triedu	＋ Сынып құру
+Hľadať triedy…	Сыныптарды іздеу…
+Lekcie →	Сабақтар →
+Žiadne triedy sa nenašli	Сыныптар табылмады
+Zmeňte vyhľadávanie alebo vytvorte novú triedu.	Іздеуді өзгертіңіз немесе жаңа сынып құрыңыз.
+Vytvárajte interaktívne úlohy a priraďujte ich triedam.	Интерактивті тапсырмалар жасап, оларды сыныптарға тағайындаңыз.
+＋ Pridať lekciu	＋ Сабақ қосу
+Všetky triedy	Барлық сынып
+Hľadať lekcie…	Сабақтарды іздеу…
+Zatiaľ žiadne lekcie	Әлі сабақ жоқ
+Kliknite na „Pridať lekciu“ a vyberte typy úloh.	Тапсырма түрлерін таңдау үшін «Сабақ қосу» түймесін басыңыз.
+blokov	блок
+blok	блок
+úloha	тапсырма
+Spoločná knižnica súborov, odkazov a vzdelávacích zdrojov.	Файлдар, сілтемелер және оқу ресурстарының ортақ кітапханасы.
+＋ Pridať materiál	＋ Материал қосу
+Materiálov spolu: {count}	Барлық материал: {count}
+Hľadať materiály…	Материалдарды іздеу…
+Otvoriť materiál ↗	Материалды ашу ↗
+Pridané do knižnice	Кітапханаға қосылды
+Žiadne materiály sa nenašli	Материалдар табылмады
+Pridajte prvý materiál alebo zmeňte vyhľadávanie.	Алғашқы материалды қосыңыз немесе іздеуді өзгертіңіз.
+Žiaci podľa vašich tried.	Сыныптарыңыз бойынша оқушылар.
+Spravovať triedy	Сыныптарды басқару
+Žiakov spolu: {count}	Барлық оқушы: {count}
+Hľadať žiakov…	Оқушыларды іздеу…
+Žiak SlovaSofi	SlovaSofi оқушысы
+Žiadni žiaci sa nenašli	Оқушылар табылмады
+Pridajte žiakov do tried a zobrazia sa tu.	Оқушыларды сыныптарға қосыңыз, олар осында көрсетіледі.
+Online	Желіде
+Offline	Желіде емес
+Zatiaľ žiadne triedy	Әлі сынып жоқ
+Vytvorte triedu a priraďte jej lekcie.	Сынып құрып, оған сабақтар тағайындаңыз.
+Nič sa nenašlo	Ештеңе табылмады
+Skúste iné vyhľadávanie.	Басқаша іздеп көріңіз.
+Upraviť triedu	Сыныпты өңдеу
+Nová trieda	Жаңа сынып
+Názov triedy	Сынып атауы
+Kurz alebo úroveň	Курс немесе деңгей
+Zadajte mená oddelené čiarkami	Аттарды үтірмен бөліп енгізіңіз
+Každé meno sa pridá ako žiak.	Әр ат оқушы ретінде қосылады.
+＋ Pridať žiaka	＋ Оқушы қосу
+Napríklad Slovenčina A1	Мысалы, словак тілі A1
+Napríklad Slovenčina · A1	Мысалы, словак тілі · A1
+Zrušiť	Бас тарту
+Uložiť	Сақтау
+Vytvoriť triedu	Сынып құру
+Odstrániť	Жою
+Kurz nie je uvedený	Курс көрсетілмеген
+Upraviť lekciu	Сабақты өңдеу
+Nová lekcia	Жаңа сабақ
+Názov lekcie	Сабақ атауы
+Napríklad Lekcia 5. Rodina	Мысалы, Lekcia 5. Rodina
+Vyberte triedu	Сыныпты таңдаңыз
+Úlohy lekcie	Сабақ тапсырмалары
+＋ Pridať úlohu	＋ Тапсырма қосу
+Pridajte prvú úlohu	Алғашқы тапсырманы қосыңыз
+Vyberte blok: presúvanie slov, dopĺňanie, zoraďovanie, priraďovanie a ďalšie.	Блокты таңдаңыз: сөздерді сүйреу, бос орынды толтыру, реттеу, сәйкестендіру және басқалар.
+Uložiť lekciu	Сабақты сақтау
+Vytvoriť lekciu	Сабақ жасау
+Pokyny	Нұсқаулық
+Napríklad zostavte vetu	Мысалы, сөйлем құрастырыңыз
+Text úlohy	Тапсырма мәтіні
+Odkaz alebo obsah	Сілтеме немесе мазмұн
+Správna odpoveď	Дұрыс жауап
+Zadajte text alebo vložte odkaz	Мәтін енгізіңіз немесе сілтеме қойыңыз
+slová v správnom poradí	дұрыс реттегі сөздер
+na medzeru použite ___	бос орын үшін ___ қолданыңыз
+jedna možnosť na riadok	әр жолға бір нұсқа
+jedna položka na riadok	әр жолға бір тармақ
+jedna veta na riadok	әр жолға бір сөйлем
+páry slovo = preklad, jeden pár na riadok	сөз = аударма жұбы, әр жолға бір жұп
+kategória: položka, jedna na riadok	санат: тармақ, әр жолға біреу
+stĺpce oddeľte | a prázdne bunky označte ___	бағандарды | арқылы бөліп, бос ұяшықтарды ___ деп белгілеңіз
+1. riadok: veta s ___, potom možnosti (alebo iba možnosti)	1-жол: ___ бар сөйлем, содан кейін нұсқалар (немесе тек нұсқалар)
+tvrdenie na posúdenie	бағалауға арналған тұжырым
+kartička: preklad, jedna na riadok	карточка: аударма, әр жолға біреу
+slová oddeľte /	сөздерді / арқылы бөліңіз
+slovo alebo fráza	сөз немесе тіркес
+presný text správnej odpovede	дұрыс жауаптың нақты мәтіні
+správne poradie oddelené /	/ арқылы бөлінген дұрыс рет
+nepovinné	міндетті емес
+správna možnosť	дұрыс нұсқа
+Vyberte interaktívnu úlohu	Интерактивті тапсырманы таңдаңыз
+Všetko	Барлығы
+Kvízy	Тесттер
+Médiá	Медиа
+Ostatné	Басқа
+Hľadať úlohy…	Тапсырмаларды іздеу…
+← Späť na lekciu	← Сабаққа оралу
+Presuňte slová	Сөздерді сүйреңіз
+Zostavte vetu zoradením slov do správneho poradia.	Сөздерді дұрыс ретпен орналастырып, сөйлем құрастырыңыз.
+Doplňte medzeru	Бос орынды толтырыңыз
+Do medzery zadajte vhodné slovo.	Бос орынға тиісті сөзді енгізіңіз.
+Vyberte jednu správnu odpoveď.	Бір дұрыс жауапты таңдаңыз.
+Zoraďte	Ретімен орналастырыңыз
+Zoraďte položky do správneho poradia.	Тармақтарды дұрыс ретпен орналастырыңыз.
+Zoraďte vety	Сөйлемдерді реттеңіз
+Zostavte súvislý text z viet.	Сөйлемдерден бірізді мәтін құрастырыңыз.
+Vyberte z možností	Нұсқалардан таңдаңыз
+Vyberte slovo zo zoznamu a doplňte medzeru.	Тізімнен сөз таңдап, бос орынды толтырыңыз.
+Pravda alebo nepravda	Шын немесе жалған
+Určte, či je tvrdenie pravdivé alebo nepravdivé.	Тұжырымның шын немесе жалған екенін анықтаңыз.
+Doplňte tabuľku	Кестені толтырыңыз
+Zadajte odpovede do tabuľky.	Кестеге жауаптарды енгізіңіз.
+Priraďte položky	Сәйкестендіріңіз
+Priraďte slová k ich významom.	Сөздерді мағыналарымен сәйкестендіріңіз.
+Roztrieďte do stĺpcov	Бағандарға бөліңіз
+Roztrieďte kartičky do kategórií.	Карточкаларды санаттарға бөліңіз.
+Otvorená odpoveď	Ашық жауап
+Pridajte otázku s voľnou odpoveďou.	Еркін жауап берілетін сұрақ қосыңыз.
+Kartičky	Карточкалар
+Vytvorte kartičky so slovom a prekladom.	Сөз бен аудармасы бар карточкалар жасаңыз.
+Nadpis a text	Тақырып және мәтін
+Pridajte vysvetlenie alebo pokyny.	Түсіндірме немесе нұсқаулық қосыңыз.
+Video	Бейне
+Vložte odkaz na video.	Бейне сілтемесін қойыңыз.
+Zvuk	Аудио
+Pridajte zvuk alebo odkaz na nahrávku.	Аудио немесе жазба сілтемесін қосыңыз.
+Obrázok	Сурет
+Pridajte obrázok do lekcie.	Сабаққа сурет қосыңыз.
+Názov	Атауы
+Napríklad Slovná zásoba: jedlo	Мысалы, тағам сөздігі
+Typ materiálu	Материал түрі
+Popis	Сипаттама
+Krátky popis	Қысқаша сипаттама
+Odkaz (nepovinný)	Сілтеме (міндетті емес)
+Pridať materiál	Материал қосу
+Bez popisu	Сипаттама жоқ
+Trieda vytvorená.	Сынып құрылды.
+Trieda aktualizovaná.	Сынып жаңартылды.
+Trieda odstránená.	Сынып жойылды.
+Lekcia vytvorená.	Сабақ жасалды.
+Lekcia aktualizovaná.	Сабақ жаңартылды.
+Lekcia odstránená.	Сабақ жойылды.
+Úloha uložená.	Тапсырма сақталды.
+Úloha odstránená.	Тапсырма жойылды.
+Poradie úloh uložené.	Тапсырмалар реті сақталды.
+Materiál pridaný do knižnice.	Материал кітапханаға қосылды.
+Materiál odstránený.	Материал жойылды.
+Najprv vytvorte triedu a potom jej priraďte lekciu.	Сабақ тағайындау үшін алдымен сынып құрыңыз.
+Zadajte názov lekcie a vyberte triedu.	Сабақ атауын енгізіп, сыныпты таңдаңыз.
+Odkaz musí začínať http:// alebo https://.	Сілтеме http:// немесе https:// деп басталуы керек.
+Zmeny sa nepodarilo uložiť v prehliadači. Skontrolujte prístup k miestnemu úložisku.	Өзгерістерді браузерде сақтау мүмкін болмады. Жергілікті сақтау рұқсатын тексеріңіз.
+Odstrániť triedu „{name}“? Jej lekcie zostanú nepriradené.	«{name}» сыныбын жою керек пе? Оның сабақтары тағайындалмай қалады.
+Odstrániť lekciu „{name}“?	«{name}» сабағын жою керек пе?
+Odstrániť túto úlohu?	Бұл тапсырманы жою керек пе?
+Odstrániť materiál „{name}“?	«{name}» материалын жою керек пе?
+Slovenčina · A1	Словак тілі · A1
+Slovenčina · B1	Словак тілі · B1
+Slovník	Сөздік
+Dokument	Құжат
+Odkaz	Сілтеме
+＋ Pozvať žiaka	＋ Оқушы шақыру
+Pozvať žiaka do triedy	Оқушыны сыныпқа шақыру
+Nový žiak	Жаңа оқушы
+Z adresára žiakov	Оқушылар тізімінен
+Meno žiaka	Оқушының аты
+E-mail žiaka	Оқушының электрондық поштасы
+Žiak dostane e-mail na vytvorenie hesla a pripojenie k triede.	Оқушыға құпиясөз жасау және сыныпқа қосылу хаты жіберіледі.
+Vyberte žiaka	Оқушыны таңдаңыз
+Načítavajú sa žiaci…	Оқушылар жүктелуде…
+V tomto priestore nie sú žiaci, ktorých možno pridať.	Бұл кеңістікте қосуға болатын оқушылар жоқ.
+Všetci žiaci z adresára už sú v tejto triede.	Тізімдегі барлық оқушы осы сыныпқа қосылған.
+Trieda: {name}	Сынып: {name}
+Zobrazujú sa iba žiaci prepojení s vaším priestorom. Nová pozvánka sa neodošle.	Тек сіздің кеңістікке қосылған оқушылар көрсетіледі. Жаңа шақыру жіберілмейді.
+Odoslať pozvánku	Шақыру жіберу
+Pridať do triedy	Сыныпқа қосу
+Pozvánka odoslaná.	Шақыру жіберілді.
+Pozvánku sa nepodarilo odoslať:	Шақыру жіберу мүмкін болмады:
+Žiak pridaný do triedy.	Оқушы сыныпқа қосылды.
+Žiaka sa nepodarilo pridať:	Оқушыны қосу мүмкін болмады:
+Zoznam žiakov sa nepodarilo načítať:	Оқушылар тізімін жүктеу мүмкін болмады:
+✓ Údaje sa synchronizujú so Supabase	✓ Деректер Supabase қызметімен синхрондалады
+Údaje z databázy sa nepodarilo načítať:	Дерекқордан деректерді жүктеу мүмкін болмады:
+Zoznam učiteľov sa nepodarilo načítať:	Мұғалімдер тізімін жүктеу мүмкін болмады:
+Údaje sa nepodarilo uložiť do databázy:	Деректерді дерекқорға сақтау мүмкін болмады:
+Profil	Профиль
+Môj profil	Менің профилім
+Váš osobný priestor učiteľa v SlovaSofi.	SlovaSofi платформасындағы жеке мұғалім кеңістігіңіз.
+Lekcie pre túto úroveň	Осы деңгейге арналған сабақтар
+Učiteľ triedy	Сынып мұғалімі
+Žiaci tejto triedy	Осы сыныптың оқушылары
+Zatiaľ žiadni žiaci	Әлі оқушы жоқ
+Naplánujte hodinu pre triedu. Žiaci ju uvidia vo svojom priestore.	Сыныпқа сабақ жоспарлаңыз. Оқушылар оны кабинетінде көреді.
+＋ Pridať hodinu	＋ Сабақ уақытын қосу
+Dnes	Бүгін
+V tento deň nie sú hodiny	Бұл күні сабақ жоқ
+Zatiaľ nie sú naplánované hodiny	Әлі сабақ жоспарланбаған
+Pridajte hodinu a zobrazí sa tu aj v rozvrhu žiakov.	Сабақ қосыңыз, ол осында және оқушылардың кестесінде көрсетіледі.
+Nová hodina	Жаңа сабақ уақыты
+Upraviť hodinu	Сабақ уақытын өңдеу
+Téma hodiny	Сабақ тақырыбы
+Lekcia (nepovinná)	Сабақ (міндетті емес)
+Bez prepojenej lekcie	Байланыстырылған сабақ жоқ
+Dátum a čas	Күні мен уақыты
+Trvanie	Ұзақтығы
+min	мин
+Opakovanie	Қайталау
+Neopakuje sa	Қайталанбайды
+Každý deň	Күн сайын
+Vyberte dni v týždni	Апта күндерін таңдаңыз
+Dni vyučovania	Сабақ күндері
+Vyberte jeden alebo viac dní v týždni.	Бір немесе бірнеше апта күнін таңдаңыз.
+Pondelok	Дүйсенбі
+Utorok	Сейсенбі
+Streda	Сәрсенбі
+Štvrtok	Бейсенбі
+Piatok	Жұма
+Sobota	Сенбі
+Nedeľa	Жексенбі
+Opakovať do	Қайталаудың соңғы күні
+Uložiť hodinu	Сабақ уақытын сақтау
+Odstrániť hodinu	Сабақ уақытын жою
+Hodina pridaná do rozvrhu.	Сабақ кестеге қосылды.
+Rozvrh aktualizovaný.	Кесте жаңартылды.
+Hodina odstránená.	Сабақ уақыты жойылды.
+Rozvrh sa nepodarilo načítať.	Кестені жүктеу мүмкін болмады.
+Hodinu sa nepodarilo uložiť:	Сабақ уақытын сақтау мүмкін болмады:
+Odstrániť túto hodinu a všetky jej opakovania?	Осы сабақ уақытын және оның барлық қайталануын жою керек пе?
+Pred plánovaním hodiny vytvorte triedu.	Сабақ уақытын жоспарламас бұрын сынып құрыңыз.
+Najbližšia hodina: {title}	Келесі сабақ: {title}
+Nadchádzajúce hodiny	Алдағы сабақтар
+Najbližších 30 dní	Келесі 30 күн
+Vyberte platný dátum a čas.	Жарамды күн мен уақытты таңдаңыз.
+Vyberte triedu zo zoznamu.	Тізімнен сыныпты таңдаңыз.
+Koniec opakovania musí byť do jedného roka.	Қайталаудың аяқталу күні бір жыл ішінде болуы керек.
+Vyberte aspoň jeden deň v týždni.	Кемінде бір апта күнін таңдаңыз.
+Databáza kalendára ešte nie je nastavená. Správca musí vykonať migrácie Supabase príkazom supabase db push.	Күнтізбе дерекқоры әлі бапталмаған. Әкімші supabase db push арқылы Supabase көшірулерін орындауы керек.
+Nahrávanie výslovnosti	Айтылымды жазу
+Žiaci nahrajú slovo alebo vetu a odošlú ich učiteľovi.	Оқушылар сөзді немесе сөйлемді жазып, мұғалімге жібереді.
+Počúvanie s otázkami	Сұрақтары бар тыңдалым
+Jedna zvuková stopa a otázky s výberom odpovede.	Бір аудиожазба және жауап нұсқалары бар сұрақтар.
+Nájdite chybu v texte	Мәтіннен қатені табыңыз
+Žiaci vyberú nesprávne slovo a zadajú opravu.	Оқушылар қате сөзді таңдап, түзету енгізеді.
+Interaktívny obrázok	Интерактивті сурет
+Označte slová, preklady a výslovnosť na obrázku.	Суретте сөздерді, аудармаларды және айтылымды белгілеңіз.
+Slovník lekcie	Сабақ сөздігі
+Slová a frázy s prekladom, výslovnosťou a ukladaním do slovníka.	Аудармасы, айтылымы және сөздікке сақтау мүмкіндігі бар сөздер мен тіркестер.
+Vybrať konkrétne dátumy	Нақты күндерді таңдау
+Dátumy hodín	Сабақ күндері
+Vyberte dátumy v kalendári. Každá hodina bude v rovnakom čase.	Күнтізбеден күндерді таңдаңыз. Әр сабақ бір уақытта өтеді.
+Vybraných dátumov: {count}	Таңдалған күндер: {count}
+Vyberte začiatočný dátum a ďalšie dátumy v priebehu jedného roka.	Басталу күнін және одан кейінгі бір жыл ішіндегі басқа күндерді таңдаңыз.
+Dobré ráno, {name} ☀️	Қайырлы таң, {name} ☀️
+Dobré popoludnie, {name} 👋	Қайырлы күн, {name} 👋
+Dobrý večer, {name} 🌇	Қайырлы кеш, {name} 🌇
+Je neskoro — ešte nespíte, {name}? 🌙	Кеш болды — әлі ұйықтамадыңыз ба, {name}? 🌙
+Prepnúť na tmavú tému	Қараңғы тақырыпқа ауысу
+Prepnúť na svetlú tému	Ашық тақырыпқа ауысу
+Nastavenie témy sa nepodarilo uložiť.	Тақырып баптауын сақтау мүмкін болмады.
+Učitelia spravujú svoje triedy a žiakov. Právo upravovať spoločné lekcie možno prideliť samostatne.	Мұғалімдер өз сыныптары мен оқушыларын басқарады. Ортақ сабақтарды өңдеу құқығын бөлек беруге болады.
+＋ Pridať učiteľa	＋ Мұғалім қосу
+Zatiaľ žiadni ďalší učitelia	Әзірге басқа мұғалім жоқ
+Pozvite kolegu a vyberte jeho oprávnenia.	Әріптесіңізді шақырып, рұқсаттарын таңдаңыз.
+Pridať učiteľa	Мұғалім қосу
+Oprávnenia učiteľa	Мұғалім рұқсаттары
+E-mail učiteľa	Мұғалімнің электрондық поштасы
+Rola	Рөл
+Pozvánka prijatá. Vytvorte heslo na prístup do pracovného priestoru.	Шақыру қабылданды. Жұмыс кеңістігіне кіру үшін құпиясөз жасаңыз.
+Voliteľné oprávnenie	Қосымша рұқсат
+Zobraziť triedy a žiakov	Сыныптар мен оқушыларды көру
+Spravovať triedy a žiakov	Сыныптар мен оқушыларды басқару
+Zobraziť a priraďovať lekcie	Сабақтарды көру және тағайындау
+Upravovať spoločné lekcie	Ортақ сабақтарды өңдеу
+Pozývať a spravovať učiteľov	Мұғалімдерді шақыру және басқару
+Uložiť prístup	Рұқсаттарды сақтау
+Upraviť prístup	Рұқсаттарды өзгерту
+Odobrať prístup editora	Өңдеу рұқсатын алып тастау
+Odobrať používateľovi {email} právo upravovať lekcie?	{email} пайдаланушысының сабақтарды өңдеу рұқсатын алып тастау керек пе?
+Vyberte aspoň jedno oprávnenie.	Кемінде бір рұқсатты таңдаңыз.
+Nemôže upravovať lekcie	Сабақтарды өңдей алмайды
+Učiteľ pridaný do priestoru. Ak ešte nemal účet, bola mu odoslaná pozvánka.	Мұғалім кеңістікке қосылды. Тіркелгісі болмаса, шақыру хаты жіберілді.
+Oprávnenia aktualizované.	Рұқсаттар жаңартылды.
+Prístup učiteľa odobratý.	Мұғалімнің рұқсаты алынды.
+Prístup sa nepodarilo aktualizovať:	Рұқсатты жаңарту мүмкін болмады:
+Správca	Әкімші
+Nahráva sa obrázok…	Сурет жүктелуде…
+Obrázok pridaný.	Сурет қосылды.
+Obrázok sa nepodarilo nahrať:	Суретті жүктеу мүмкін болмады:
+Na nahrávanie obrázkov sa prihláste.	Сурет жүктеу үшін кіріңіз.
+Vložte súbor obrázka.	Сурет файлын қойыңыз.
+Spoločné pokyny	Жалпы нұсқаулық
+Otázka alebo položka (nepovinné)	Сұрақ немесе тармақ (міндетті емес)
+＋ Pridať položku	＋ Тармақ қосу
+Odstrániť položku	Тармақты жою
+Možno pridať najviac 100 položiek	100 тармаққа дейін қосуға болады
+Tvrdenia	Тұжырымдар
+Vyberte odpoveď	Жауапты таңдаңыз
+Tvrdenie	Тұжырым
+＋ Pridať tvrdenie	＋ Тұжырым қосу
+Odstrániť tvrdenie	Тұжырымды жою
+Presunúť tvrdenie	Тұжырымды сүйреу
+Úprava	Өңдеу
+Odpoveď:	Жауап:
+Ukladá sa…	Сақталуда…
+Uložené	Сақталды
+Ukladanie zlyhalo	Сақтау сәтсіз аяқталды
+Vytvárajte lekcie, usporiadajte ich podľa úrovne a priraďujte triedam.	Сабақтар жасап, деңгей бойынша реттеңіз және сыныптарға тағайындаңыз.
+Úroveň lekcie	Сабақ деңгейі
+Na tejto úrovni zatiaľ nie sú lekcie.	Бұл деңгейде әлі сабақ жоқ.
+Obsah kurzu a lekcie pre úroveň {level}.	{level} деңгейінің курс мазмұны мен сабақтары.
+VZDELÁVACÍ KURZ	ОҚУ КУРСЫ
+Nepriradené k triede	Сыныпқа тағайындалмаған
+Vyhľadávaniu nezodpovedajú žiadne lekcie.	Іздеуіңізге сәйкес сабақтар жоқ.
+Vyberte úroveň	Деңгейді таңдаңыз
+Triedu môžete priradiť po vytvorení lekcie.	Сабақ жасалғаннан кейін сыныпты тағайындай аласыз.
+＋ Priradiť triede	＋ Сыныпқа тағайындау
+Priradiť lekciu triedam	Сабақты сыныптарға тағайындау
+Vyberte jednu alebo viac tried pre túto lekciu.	Осы сабақ үшін бір немесе бірнеше сыныпты таңдаңыз.
+Uložiť priradenie	Тағайындауды сақтау
+Priradenie lekcie aktualizované.	Сабақ тағайындауы жаңартылды.
+žiak	оқушы
+žiaci	оқушы
+lekcia	сабақ
+Úvod	Кіріспе
+Nová sekcia	Жаңа бөлім
+＋ Pridať sekciu	＋ Бөлім қосу
+Názov sekcie	Бөлім атауы
+← Späť	← Артқа
+Ťahaním presuňte úlohu	Тапсырманы сүйреп жылжытыңыз
+Duplikovať blok	Блокты көшіру
+Blok duplikovaný.	Блок көшірілді.
+＋ Pridať novú položku	＋ Жаңа тармақ қосу
+▣ Duplikovať položku	▣ Тармақты көшіру
+Upraviť	Өңдеу
+Hotovo	Дайын
+Táto sekcia zatiaľ nemá položky.	Бұл бөлімде әлі тармақ жоқ.
+Odstrániť túto sekciu a jej položky?	Осы бөлімді және оның тармақтарын жою керек пе?
+Režim lekcie	Сабақ режимі
+Úlohy na doma	Үй тапсырмалары
+Aktuálna lekcia	Ағымдағы сабақ
+Kopírovať úlohy z lekcie	Сабақтан тапсырмаларды көшіру
+Presuňte úlohu alebo na ňu kliknite a skopírujte ju sem.	Осында көшіру үшін тапсырманы сүйреңіз немесе басыңыз.
+Presuňte úlohu sem	Тапсырманы осында сүйреңіз
+Táto lekcia zatiaľ nemá úlohy na kopírovanie.	Бұл сабақта көшіруге болатын тапсырмалар әлі жоқ.
+Odpovede žiakov sa aktualizujú v reálnom čase.	Оқушылардың жауаптары нақты уақытта жаңартылады.
+Pripája sa k odpovediam…	Жауаптарға қосылуда…
+Pripojené · odpovede sa aktualizujú naživo	Қосылды · жауаптар нақты уақытта жаңартылады
+Prihláste sa do priestoru učiteľa a zobrazte živé odpovede.	Жауаптарды нақты уақытта көру үшін мұғалім кабинетіне кіріңіз.
+K odpovediam žiakov sa nepodarilo pripojiť.	Оқушылардың жауаптарына қосылу мүмкін болмады.
+Táto lekcia zatiaľ nie je priradená k triede.	Бұл сабақ әлі сыныпқа тағайындалмаған.
+Nemáte prístup k odpovediam žiakov.	Оқушылардың жауаптарына рұқсатыңыз жоқ.
+V tejto triede zatiaľ nie sú žiaci.	Бұл сыныпта әлі оқушы жоқ.
+Odpovede žiakov	Оқушылардың жауаптары
+Zatiaľ bez odpovede	Әлі жауап жоқ
+Koncept	Нобай
+Odoslané	Жіберілді
+Zmeny v editore ešte nie sú uložené. Žiaci vidia poslednú uloženú verziu.	Редактордағы өзгерістер әлі сақталмаған. Оқушылар соңғы сақталған нұсқаны көреді.
+Zobraziť odpovede pre	Жауаптарды көрсету
+Odpoveď žiaka	Оқушы жауабы
+Vzorová odpoveď nie je nastavená	Үлгі жауап орнатылмаған
+{answered}/{total} odpovedí	{answered}/{total} жауап
+Žiadne úlohy s odpoveďou	Жауап берілетін тапсырмалар жоқ
+Prehrať nahrávku	Жазбаны ойнату
+Vymazať odpovede	Жауаптарды тазарту
+Vymazať všetky odpovede tohto žiaka v lekcii?	Осы оқушының сабақтағы барлық жауабын тазарту керек пе?
+Odpovede žiaka boli vymazané.	Оқушының жауаптары тазартылды.
+Odpovede žiaka sa nepodarilo vymazať.	Оқушының жауаптарын тазарту мүмкін болмады.
+Hodnotenie učiteľa	Мұғалімнің бағалауы
+Komentár	Пікір
+Body	Ұпай
+Uložiť hodnotenie	Бағалауды сақтау
+Hodnotenie uložené.	Бағалау сақталды.
+Vyskúšajte úlohy. Výsledky sa tu neukladajú.	Тапсырмаларды орындап көріңіз. Нәтижелер мұнда сақталмайды.
+Skúste znova.	Қайталап көріңіз.
+Pre túto úlohu nie je nastavená správna odpoveď.	Бұл тапсырма үшін дұрыс жауап орнатылмаған.
+Zadajte odpoveď	Жауап енгізіңіз
+Presuňte slová sem alebo na ne kliknite	Сөздерді осында сүйреңіз немесе басыңыз
+Slová	Сөздер
+Otočiť kartičku	Карточканы аудару
+Táto lekcia zatiaľ nemá úlohy.	Бұл сабақта әлі тапсырма жоқ.
+Obrázok sa nepodarilo načítať.	Суретті жүктеу мүмкін болмады.
+Skontrolujte odkaz na médium.	Медиа сілтемесін тексеріңіз.
+Vzdelávací materiál	Оқу материалы
+Nahrať výslovnosť	Айтылымды жазу
+Nahrávanie je pre žiakov dostupné v lekcii. Toto je vizuálny náhľad.	Жазу оқушыларға сабақта қолжетімді. Бұл — алдын ала көрініс.
+Vyberte nesprávne slovo	Қате сөзді таңдаңыз
+Pridajte obsah úlohy vľavo.	Сол жақта тапсырма мазмұнын қосыңыз.
+Pridajte značky v rozšírených nastaveniach.	Қосымша баптауларда белгілер қосыңыз.
+Pridajte slová a preklady v rozšírených nastaveniach.	Қосымша баптауларда сөздер мен аудармалар қосыңыз.
+Aktuálna sekcia	Ағымдағы бөлім
+Použite ___ alebo [odpoveď], napr. širok[á]. Alternatívy: [bývam / žijem]. Pole odpovede je iba pre medzery ___, v poradí oddelené /.	___ немесе [жауап] қолданыңыз, мысалы širok[á]. Баламалар: [bývam / žijem]. Жауап өрісі тек ___ бос орындарына арналған, ретімен / арқылы бөліңіз.
+Jeden riadok na slovo: slovo / preklad / URL zvuku (nepovinné). Najviac 100 riadkov. Bez zvuku sa použije slovenská reč prehliadača.	Әр сөзге бір жол: сөз / аударма / аудио URL (міндетті емес). 100 жолға дейін. Аудиосыз браузердің словакша дыбыстауы қолданылады.
+Pokyny pre žiaka pred nahrávaním.	Жазу алдындағы оқушыға арналған нұсқаулық.
+Vložte URL zvuku. Nižšie pridajte otázky a možnosti.	Аудио URL мекенжайын қойыңыз. Төменде сұрақтар мен нұсқалар қосыңыз.
+Zadajte vetu; opravy nastavte v JSON nižšie.	Сөйлем енгізіңіз; түзетулерді төмендегі JSON ішінде баптаңыз.
+Vložte URL obrázka; súradnice značiek nastavte v JSON nižšie.	Сурет URL мекенжайын қойыңыз; белгі координаттарын төмендегі JSON ішінде баптаңыз.
+Pridajte slová a preklady do JSON nižšie.	Төмендегі JSON ішіне сөздер мен аудармалар қосыңыз.
+Formátovanie textu	Мәтінді пішімдеу
+Štýl	Стиль
+Bežný text	Қалыпты мәтін
+Veľkosť	Өлшем
+Farba zvýraznenia	Екпін түсі
+Zarovnanie	Туралау
+Vľavo	Солға
+Na stred	Ортаға
+Vpravo	Оңға
+Tučné	Қалың
+Kurzíva	Көлбеу
+Podčiarknuté	Асты сызылған
+Prečiarknuté	Үсті сызылған
+Odrážkový zoznam	Таңбаланған тізім
+Číslovaný zoznam	Нөмірленген тізім
+Citát	Дәйексөз
+Informačný blok	Ақпараттық блок
+Nadpis	Тақырып
+dom = dom\nškola = škola	dom = үй\nškola = мектеп
+Slovesá: ísť\nPodstatné mená: dom	Етістіктер: ísť\nЗат есімдер: dom
+https://example.com/listening.mp3	https://example.com/listening.mp3
+https://example.com/room.jpg	https://example.com/room.jpg
+Ja bývať v Bratislave.	Ja bývať v Bratislave.
+Rozšírené nastavenia	Қосымша баптаулар
+Technické nastavenia (JSON)	Техникалық баптаулар (JSON)
+JSON ukladá ďalšie možnosti odpovedí, pomôcky, médiá a pravidlá kontroly. Bežné úlohy nevyžadujú jeho úpravu. Tu sa nastavujú slová slovníka a značky obrázka. Existujúce nastavenia zachovajte.	JSON қосымша жауап нұсқаларын, кеңестерді, медианы және тексеру ережелерін сақтайды. Қарапайым тапсырмалар үшін оны өңдеу қажет емес. Сөздік сөздері мен сурет белгілері осында бапталады. Бар баптауларды сақтаңыз.
+Zapnúť svetlú tému	Ашық тақырыпты қосу
+Zapnúť tmavú tému	Қараңғы тақырыпты қосу
+Zadajte e-mail	Электрондық поштаңызды енгізіңіз
+Zadajte heslo	Құпиясөзді енгізіңіз
+Zabudli ste heslo?	Құпиясөзді ұмыттыңыз ба?
+Vytvoriť účet žiaka	Оқушы тіркелгісін жасау
+Zadajte údaje na registráciu.	Тіркелу үшін деректеріңізді енгізіңіз.
+Telefón	Телефон
+Registrovať sa	Тіркелу
+Už máte účet?	Тіркелгіңіз бар ма?

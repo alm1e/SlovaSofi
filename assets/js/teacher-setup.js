@@ -1,4 +1,4 @@
-const setupTranslations = {
+const setupTranslations = SlovaI18n.locales({
     ua: {
         title: "Завершіть налаштування профілю викладача",
         subtitle: "Вас запросили до SlovaSofi. Заповніть профіль і створіть пароль для входу.",
@@ -50,7 +50,7 @@ const setupTranslations = {
         mismatch: "The passwords do not match.",
         saveError: "Could not save your profile. Please try again."
     }
-};
+});
 
 const setupForm = document.getElementById("teacherSetupForm");
 const setupMessage = document.getElementById("setupMessage");

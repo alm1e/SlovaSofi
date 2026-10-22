@@ -15,11 +15,11 @@ async function restoreSavedSession() {
         if (session) window.location.replace(await dashboardPathFor(session.user));
     } catch (error) {
         console.error("Could not restore the saved sign-in session.", error);
-        const messages = {
+        const messages = SlovaI18n.locales({
             ua: "Не вдалося перевірити збережений сеанс. Ви можете увійти ще раз.",
             ru: "Не удалось проверить сохранённую сессию. Вы можете войти ещё раз.",
             en: "Could not verify the saved session. You can sign in again."
-        };
+        });
         const message = document.getElementById("authMessage");
         if (message) {
             message.textContent = messages[localStorage.getItem("siteLanguage")] || messages.ua;
@@ -79,7 +79,7 @@ document.getElementById("forgotPasswordButton")?.addEventListener("click", async
     const button = event.currentTarget;
     const emailInput = document.getElementById("email");
     const language = localStorage.getItem("siteLanguage") || "ua";
-    const messages = {
+    const messages = SlovaI18n.locales({
         ua: {
             email: "Введіть коректну електронну пошту.",
             connection: "Не вдалося підключитися до Supabase. Спробуйте ще раз.",
@@ -101,7 +101,7 @@ document.getElementById("forgotPasswordButton")?.addEventListener("click", async
             sent: "If an account exists for this address, a password reset link has been sent to your email. Check your spam folder if you don't see it.",
             info: "ℹ️ The reset link is valid for 24 hours. If you don't receive an email, make sure you entered the correct address."
         }
-    };
+    });
     const copy = messages[language] || messages.ua;
     if (!emailInput.value.trim() || !emailInput.checkValidity()) {
         message.textContent = copy.email;
@@ -144,7 +144,7 @@ registerForm?.addEventListener("submit", async (event) => {
     const button = registerForm.querySelector('button[type="submit"]');
     if (button.disabled) return;
 
-    const messages = {
+    const messages = SlovaI18n.locales({
         ua: {
             connection: "Не вдалося підключитися. Спробуйте ще раз.",
             error: "Не вдалося зареєструватися. Перевірте дані та спробуйте ще раз.",
@@ -166,7 +166,7 @@ registerForm?.addEventListener("submit", async (event) => {
             confirm: "Registration request received. Check your email to confirm your account. If you already have an account, try signing in.",
             success: "Registration complete. You are signed in."
         }
-    };
+    });
     const copy = messages[localStorage.getItem("siteLanguage")] || messages.ua;
     const showMessage = (text, success = false) => {
         message.textContent = text;

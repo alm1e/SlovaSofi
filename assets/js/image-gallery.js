@@ -1,9 +1,9 @@
 (function () {
-    const words = {
+    const words = SlovaI18n.locales({
         ua: { of: "з", prev: "Попереднє зображення", next: "Наступне зображення", close: "Закрити", zoom: "Збільшити зображення" },
         ru: { of: "из", prev: "Предыдущее изображение", next: "Следующее изображение", close: "Закрыть", zoom: "Увеличить изображение" },
         en: { of: "of", prev: "Previous image", next: "Next image", close: "Close", zoom: "Enlarge image" }
-    };
+    });
     const maxImages = 20;
     let lightbox = null;
     let lightboxImages = [];

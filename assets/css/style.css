@@ -260,6 +260,7 @@ body {
 
 /* Контейнер для кнопок */
 .lang-switcher {
+    flex-shrink: 0;
     display: flex;
     background-color: #f1f1f1; 
     border-radius: 50px;
@@ -603,6 +604,9 @@ html {
 
 .auth-controls > .lang-switcher {
     margin: 0;
+}
+@media (max-width: 420px) {
+    .auth-controls .btn-lang-item { padding-inline: 7px; }
 }
 
 .auth-theme-toggle {

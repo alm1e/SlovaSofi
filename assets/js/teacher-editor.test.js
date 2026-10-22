@@ -20,6 +20,8 @@ function createEditorContext() {
         expandedActivityBlocks: { has: () => true },
         imageUploadMessages: { en: { chooseFile: "Choose file", galleryHint: "Gallery" } }
     });
+    vm.runInContext(fs.readFileSync(`${__dirname}/locales.js`, "utf8"), context);
+    context.imageUploadMessages = context.SlovaI18n.locales(context.imageUploadMessages);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "activity-ui.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "fill-blanks.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "phrase-list.js"), "utf8"), context);
@@ -28,8 +30,8 @@ function createEditorContext() {
     vm.runInContext(source.slice(liveTypesStart, source.indexOf("\n]);", liveTypesStart) + 4), context);
     for (const name of ["activityTypes", "activityQuestionLabels", "previewLabels", "previewGroupCheckLabels"]) {
         const start = source.indexOf(`const ${name} =`);
-        const end = source.indexOf(name === "activityTypes" ? "\n];" : name === "previewGroupCheckLabels" ? ";" : "\n};", start);
-        vm.runInContext(source.slice(start, end + (name === "previewGroupCheckLabels" ? 1 : 3)), context);
+        const end = source.indexOf(name === "activityTypes" ? "\n];" : name === "previewGroupCheckLabels" ? ";" : "\n});", start);
+        vm.runInContext(source.slice(start, end + (name === "previewGroupCheckLabels" ? 1 : name === "activityTypes" ? 3 : 4)), context);
     }
     vm.runInContext("const MAX_ACTIVITY_QUESTIONS = 100; this.types = activityTypes;", context);
     for (const name of [
@@ -70,6 +72,22 @@ test("collapsed blocks defer rendering their preview content", () => {
     editor.expandedActivityBlocks.has = () => false;
     const markup = editor.renderActivityBlocks([{ type: "order-items", content: "one\ntwo" }]);
     assert.doesNotMatch(markup, /class="preview-order-list"/);
+});
+
+test("all activity editors render in Slovak and Kazakh while preserving authored content", () => {
+    for (const language of ['sk', 'kk']) {
+        const editor = createEditorContext();
+        editor.currentLanguage = language;
+        for (const { id } of editor.types) {
+            const block = { type: id, prompt: 'Slovenské zadanie', content: 'one = two\nthree = four', answer: 'one' };
+            const before = JSON.stringify(block);
+            const html = editor.renderActivityBlocks([block]);
+            assert.match(html, /Slovenské zadanie/);
+            assert.doesNotMatch(html, /undefined/);
+            assert.match(html, language === 'sk' ? /Skúšobné odpovede sa tu neukladajú/ : /Сынақ жауаптары мұнда сақталмайды/);
+            assert.equal(JSON.stringify(block), before);
+        }
+    }
 });
 
 test("true/false uses compact answer selects for new and legacy statements", () => {

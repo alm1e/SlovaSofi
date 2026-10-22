@@ -2,6 +2,7 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
+    <script src="assets/js/locales.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#f5f8f5">
     <title>Вхід до кабінету | SlovaSofi</title>
@@ -27,6 +28,8 @@
                     <button type="button" class="btn-lang-item" data-lang="ua">UA</button>
                     <button type="button" class="btn-lang-item" data-lang="ru">RU</button>
                     <button type="button" class="btn-lang-item" data-lang="en">EN</button>
+<button type="button" class="btn-lang-item" data-lang="sk">SK</button>
+<button type="button" class="btn-lang-item" data-lang="kk">ҚАЗ</button>
                 </div>
                 <button class="theme-toggle auth-theme-toggle" type="button" data-theme-toggle aria-label="Включить тему" aria-pressed="false">
                     <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"/></svg>
@@ -74,7 +77,7 @@
     <script src="assets/js/supabase-config.js"></script>
 
     <script>
-        const loginTranslations = {
+        const loginTranslations = SlovaI18n.locales({
             ua: {
                 login_title: "Вхід до кабінету",
                 login_subtitle: "Увійдіть, щоб переглянути свої курси та уроки.",
@@ -108,7 +111,7 @@
                 password_placeholder: "Enter your password",
                 forgot_password: "Forgot password?"
             }
-        };
+        });
 
         function setLoginLanguage(lang) {
             const translations = loginTranslations[lang];

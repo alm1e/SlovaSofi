@@ -1,10 +1,10 @@
 (() => {
     const preferenceKey = "slovasofiTeacherTheme";
-    const themeLabels = {
+    const themeLabels = SlovaI18n.locales({
         ua: { light: "Увімкнути світлу тему", dark: "Увімкнути темну тему" },
         ru: { light: "Включить светлую тему", dark: "Включить тёмную тему" },
         en: { light: "Enable light theme", dark: "Enable dark theme" }
-    };
+    });
     let themeTimer = null;
 
     function savedTheme() {
@@ -94,4 +94,6 @@
         if (event.newValue === "light" || event.newValue === "dark") applyTheme(event.newValue);
         scheduleThemeUpdate();
     });
+    new MutationObserver(() => applyTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light"))
+        .observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
 })();

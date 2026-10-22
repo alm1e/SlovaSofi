@@ -1,9 +1,9 @@
 (function () {
-    const labels = {
+    const labels = SlovaI18n.locales({
         ru: { all: 'Добавить все слова', add: 'Добавить в словарь', added: 'Добавлено', listen: 'Прослушать', empty: 'Добавьте слова и переводы: слово | перевод', saved: 'Мой словарь', local: 'Словарь сохраняется в этом браузере для вашей учётной записи.', preview: 'Предпросмотр: добавление слов доступно ученику в уроке.', error: 'Не удалось сохранить словарь. Проверьте настройки браузера.', audioError: 'Не удалось воспроизвести произношение.', remove: 'Удалить из словаря', noWords: 'В словаре пока нет слов.' },
         ua: { all: 'Додати всі слова', add: 'Додати до словника', added: 'Додано', listen: 'Прослухати', empty: 'Додайте слова та переклади: слово | переклад', saved: 'Мій словник', local: 'Словник зберігається в цьому браузері для вашого облікового запису.', preview: 'Попередній перегляд: додавання слів доступне учню в уроці.', error: 'Не вдалося зберегти словник. Перевірте налаштування браузера.', audioError: 'Не вдалося відтворити вимову.', remove: 'Видалити зі словника', noWords: 'У словнику поки немає слів.' },
         en: { all: 'Add all words', add: 'Add to vocabulary', added: 'Added', listen: 'Listen', empty: 'Add words and translations: word / translation', saved: 'My vocabulary', local: 'Vocabulary is saved in this browser for your account.', preview: 'Preview: students can save words in their lesson.', error: 'Could not save vocabulary. Check your browser settings.', audioError: 'Could not play pronunciation.', remove: 'Remove from vocabulary', noWords: 'No saved words yet.' }
-    };
+    });
     const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
     const safeAudio = value => { try { const url = new URL(value); return ['https:', 'http:'].includes(url.protocol) ? url.href : ''; } catch { return ''; } };
     function parse(content) {

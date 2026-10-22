@@ -4,6 +4,7 @@ const vm = require('node:vm');
 const test = require('node:test');
 function setup(saved = {}) {
     const context = vm.createContext({ URL, window: { addEventListener() {} }, document: { addEventListener() {} }, localStorage: { getItem: key => saved[key] || null } });
+    vm.runInContext(fs.readFileSync(`${__dirname}/locales.js`, "utf8"), context);
     vm.runInContext(fs.readFileSync(`${__dirname}/phrase-list.js`, 'utf8'), context);
     return context.window.SlovaPhraseList;
 }

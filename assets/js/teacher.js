@@ -1,6 +1,6 @@
 const STORAGE_KEY = "slovasofiTeacherSpace";
 const LESSON_UNITS = ["A1", "A2", "B1", "B2"];
-const translations = {
+const translations = SlovaI18n.locales({
     ua: {
         "nav.loading": "Завантаження розділу…",
         "nav.overview": "Огляд", "nav.classes": "Класи", "nav.lessons": "Уроки", "nav.calendar": "Календар", "nav.materials": "Матеріали", "nav.students": "Учні", "nav.home": "← На головну", "nav.label": "Навігація", "brand.home": "SlovaSofi — на головну", "language.label": "Мова", "menu.open": "Відкрити меню", "header.notifications": "Сповіщення", "modal.close": "Закрити", "teacher.role": "Викладач", "school.profile": "Профіль школи", "profile.open": "Профіль користувача: {name}", "profile.title": "Профіль користувача", "profile.signedOut": "Гість", "profile.notSignedIn": "Ви не ввійшли в обліковий запис", "profile.logout": "Вийти з профілю", "profile.login": "Увійти", "profile.logoutError": "Не вдалося вийти з профілю. Спробуйте ще раз.", "profile.loadError": "Не вдалося завантажити профіль користувача.", "school.title": "Профіль школи", "school.purpose": "Профіль школи — це спільний простір SlovaSofi. Тут зберігаються класи, уроки й навчальні матеріали школи.", "school.workspace": "Навчальний простір", "school.workspaceDetail": "Спільні класи, уроки та матеріали", "notifications.title": "Сповіщення", "notifications.empty": "Поки немає сповіщень", "notifications.description": "Тут з’являтимуться оновлення про класи, уроки та учнів.", "class.noClass": "Без класу",
@@ -60,7 +60,7 @@ const translations = {
         "toast.classCreated": "Class created.", "toast.classUpdated": "Class updated.", "toast.classDeleted": "Class deleted.", "toast.lessonCreated": "Lesson created.", "toast.lessonUpdated": "Lesson updated.", "toast.lessonDeleted": "Lesson deleted.", "toast.activityUpdated": "Activity saved.", "toast.activityDeleted": "Activity deleted.", "toast.activityOrderSaved": "Activity order saved.", "toast.materialAdded": "Material added to the library.", "toast.materialDeleted": "Material deleted.", "toast.createClassFirst": "Create a class first to assign it a lesson.", "toast.titleAndClass": "Enter a lesson name and choose a class.", "toast.httpUrl": "The link must start with http:// or https://.", "toast.storageError": "Could not save changes in this browser. Check local storage access.",
         "confirm.deleteClass": "Delete class “{name}”? Its lessons will remain unassigned.", "confirm.deleteLesson": "Delete lesson “{name}”?", "confirm.deleteActivity": "Delete this activity?", "confirm.deleteMaterial": "Delete material “{name}”?", "course.slovakA1": "Slovak · A1", "course.slovakB1": "Slovak · B1", "material.vocabulary": "Vocabulary", "material.document": "Document", "material.audio": "Audio", "material.video": "Video", "material.link": "Link"
     }
-};
+});
 Object.assign(translations.ua, {
     "classes.inviteStudent": "＋ Запросити учня",
     "studentInvite.title": "Запросити учня до класу",
@@ -292,7 +292,7 @@ Object.assign(translations.en, {
     "calendar.invalidRepeatDays": "Select at least one weekday.",
     "calendar.migrationRequired": "The calendar database is not set up yet. An administrator must apply the Supabase migrations with supabase db push."
 });
-for (const [language, labels] of Object.entries({
+for (const [language, labels] of Object.entries(SlovaI18n.locales({
     ua: {
         "activity.recording": "Запис вимови",
         "activity.recordingDesc": "Учень записує вимову слова або речення й надсилає її викладачу.",
@@ -329,7 +329,7 @@ for (const [language, labels] of Object.entries({
         "activity.vocabulary": "Lesson vocabulary",
         "activity.vocabularyDesc": "Words and phrases with translations, pronunciation and saved vocabulary."
     }
-})) Object.assign(translations[language], labels);
+}))) Object.assign(translations[language], labels);
 Object.assign(translations.ru, { "nav.calendar": "Календарь", "page.calendar": "Календарь" });
 Object.assign(translations.ru, {
     "calendar.upcoming": "Ближайшие занятия",
@@ -408,7 +408,7 @@ Object.assign(translations.en, {
     "theme.saveError": "Could not save the theme preference."
 });
 
-const staffLabels = {
+const staffLabels = SlovaI18n.locales({
     ua: {
         nav: "Викладачі", title: "Викладачі", description: "Викладачі керують своїми класами й учнями. Редагування спільних уроків можна надати окремо.",
         add: "＋ Додати викладача", empty: "Поки немає інших викладачів", emptyHint: "Додайте колегу та оберіть, що він зможе робити.",
@@ -448,13 +448,13 @@ const staffLabels = {
         added: "Teacher added to the workspace. An invitation email was sent if they did not already have an account.", updated: "Permissions updated.",
         removed: "Teacher access removed.", error: "Could not update access:"
     }
-};
+});
 const permissionLabels = [
     ["edit_lessons", "editLessons"]
 ];
-const roleLabels = { admin: { ua: "Адміністратор", ru: "Администратор", en: "Administrator" } };
+const roleLabels = { admin: SlovaI18n.locales({ ua: "Адміністратор", ru: "Администратор", en: "Administrator" }) };
 const ownerPermissions = Object.fromEntries(permissionLabels.map(([key]) => [key, true]));
-let currentLanguage = ["ua", "ru", "en"].includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
+let currentLanguage = ["ua", "ru", "en", "sk", "kk"].includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
 let currentTheme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 let themeUpdateTimer = null;
 let currentUser = null;
@@ -470,11 +470,11 @@ let onlineUserIds = new Set();
 let workspaceSaveQueue = Promise.resolve(true);
 let openPopover = "";
 
-const imageUploadMessages = {
+const imageUploadMessages = SlovaI18n.locales({
     ua: { uploading: "Завантаження зображення…", done: "Зображення додано.", failed: "Не вдалося завантажити зображення:", login: "Увійдіть у кабінет, щоб завантажувати зображення.", type: "Вставте файл зображення." },
     ru: { uploading: "Загрузка изображения…", done: "Изображение добавлено.", failed: "Не удалось загрузить изображение:", login: "Войдите в кабинет, чтобы загружать изображения.", type: "Вставьте файл изображения." },
     en: { uploading: "Uploading image…", done: "Image added.", failed: "Could not upload the image:", login: "Sign in to upload images.", type: "Paste an image file." }
-};
+});
 
 imageUploadMessages.ua.copyFailed = "Копію не збережено.";
 imageUploadMessages.ru.copyFailed = "Копия не сохранена.";
@@ -736,11 +736,11 @@ const activityTypes = [
     { id: "vocabulary", nameKey: "activity.vocabulary", descKey: "activity.vocabularyDesc", icon: "A", category: "other" }
 ];
 const MAX_ACTIVITY_QUESTIONS = 100;
-const activityQuestionLabels = {
+const activityQuestionLabels = SlovaI18n.locales({
     ua: { item: "Пункт", commonPrompt: "Загальна інструкція", itemPrompt: "Питання або пункт (необов’язково)", add: "＋ Додати пункт", remove: "Видалити пункт", limit: "Можна додати до 100 пунктів" },
     ru: { item: "Пункт", commonPrompt: "Общая инструкция", itemPrompt: "Вопрос или пункт (необязательно)", add: "＋ Добавить пункт", remove: "Удалить пункт", limit: "Можно добавить до 100 пунктов" },
     en: { item: "Item", commonPrompt: "Shared instructions", itemPrompt: "Question or item (optional)", add: "＋ Add item", remove: "Remove item", limit: "Up to 100 items can be added" }
-};
+});
 const liveAnswerActivityTypes = new Set([
     "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
     "sentence-order", "true-false", "table", "match", "columns", "open-answer",
@@ -872,11 +872,11 @@ function renderActivityQuestionEditor(activity, preview = false) {
 }
 
 function renderTrueFalseEditor(activity, preview = false) {
-    const text = ({
+    const text = (SlovaI18n.locales({
         ru: { title: "Утверждения", yes: "Правда", no: "Неправда", choose: "Выберите ответ", statement: "Текст утверждения", add: "＋ Добавить утверждение", remove: "Удалить утверждение", up: "Выше", down: "Ниже", move: "Перетащить утверждение" },
         ua: { title: "Твердження", yes: "Правда", no: "Неправда", choose: "Оберіть відповідь", statement: "Текст твердження", add: "＋ Додати твердження", remove: "Видалити твердження", up: "Вище", down: "Нижче", move: "Перетягнути твердження" },
         en: { title: "Statements", yes: "True", no: "False", choose: "Choose answer", statement: "Statement", add: "＋ Add statement", remove: "Remove statement", up: "Move up", down: "Move down", move: "Drag statement" }
-    })[currentLanguage];
+    }))[currentLanguage];
     const grouped = Boolean(activity.questions?.length);
     const rows = grouped ? activity.questions : [activity];
     const field = preview ? grouped ? "data-preview-question-field" : "data-preview-field" : "data-field";
@@ -947,11 +947,11 @@ function activitySummary(activity) {
 }
 
 function activityEditorMeta(activity) {
-    const labels = {
+    const labels = SlovaI18n.locales({
         ua: { editing: "Редагування", answer: "Відповідь:" },
         ru: { editing: "Редактирование", answer: "Ответ:" },
         en: { editing: "Editing", answer: "Answer:" }
-    };
+    });
     const text = labels[currentLanguage] || labels.en;
     const firstQuestion = Array.isArray(activity.questions) ? activity.questions[0] : null;
     const answer = String(firstQuestion?.answer || activity.answer || "").trim();
@@ -1059,11 +1059,11 @@ function lessonDraftStorageKey() {
 }
 
 function lessonAutosaveText(key) {
-    const labels = {
+    const labels = SlovaI18n.locales({
         ua: { saving: "Збереження…", saved: "Збережено", error: "Помилка збереження" },
         ru: { saving: "Сохранение…", saved: "Сохранено", error: "Ошибка сохранения" },
         en: { saving: "Saving…", saved: "Saved", error: "Save failed" }
-    };
+    });
     return labels[currentLanguage]?.[key] || labels.en[key];
 }
 
@@ -1431,7 +1431,7 @@ function inferLessonUnit(lesson, classes = data.classes) {
 }
 
 function lessonText(key, values = {}) {
-    const labels = {
+    const labels = SlovaI18n.locales({
         ua: {
             description: "Створюйте уроки, розкладайте їх за рівнями, а потім призначайте класам.",
             unit: "Рівень уроку",
@@ -1471,16 +1471,16 @@ function lessonText(key, values = {}) {
             chooseUnit: "Choose a level",
             classLater: "You can assign a class after creating the lesson."
         }
-    };
+    });
     return labels[currentLanguage][key].replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ""));
 }
 
 function assignmentText(key) {
-    const labels = {
+    const labels = SlovaI18n.locales({
         ua: { add: "＋ Додати до класу", dialog: "Додати урок до класів", hint: "Виберіть один або кілька класів для цього уроку.", save: "Зберегти призначення", saved: "Призначення уроку оновлено." },
         ru: { add: "＋ Добавить в класс", dialog: "Добавить урок в классы", hint: "Выберите один или несколько классов для этого урока.", save: "Сохранить назначение", saved: "Назначение урока обновлено." },
         en: { add: "＋ Assign to class", dialog: "Assign lesson to classes", hint: "Choose one or more classes for this lesson.", save: "Save assignment", saved: "Lesson assignment updated." }
-    };
+    });
     return labels[currentLanguage][key];
 }
 
@@ -1490,13 +1490,14 @@ function classAssignmentChoices(selectedIds) {
 }
 
 function countLabel(count, entity) {
-    const forms = {
+    const forms = SlovaI18n.locales({
         ua: { student: ["учень", "учні", "учнів"], activity: ["завдання", "завдання", "завдань"], block: ["блок", "блоки", "блоків"], lesson: ["урок", "уроки", "уроків"] },
         ru: { student: ["ученик", "ученика", "учеников"], activity: ["задание", "задания", "заданий"], block: ["блок", "блока", "блоков"], lesson: ["урок", "урока", "уроков"] },
         en: { student: ["student", "students", "students"], activity: ["activity", "activities", "activities"], block: ["block", "blocks", "blocks"], lesson: ["lesson", "lessons", "lessons"] }
-    }[currentLanguage][entity];
+    })[currentLanguage][entity];
     const lastTwo = count % 100;
-    if (currentLanguage === "en") return `${count} ${forms[count === 1 ? 0 : 1]}`;
+    if (currentLanguage === "en" || currentLanguage === "kk") return `${count} ${forms[currentLanguage === "kk" || count === 1 ? 0 : 1]}`;
+    if (currentLanguage === "sk") return `${count} ${{ student: ["žiak", "žiaci", "žiakov"], activity: ["úloha", "úlohy", "úloh"], block: ["blok", "bloky", "blokov"], lesson: ["lekcia", "lekcie", "lekcií"] }[entity][count === 1 ? 0 : count >= 2 && count <= 4 ? 1 : 2]}`;
     if (lastTwo >= 11 && lastTwo <= 14) return `${count} ${forms[2]}`;
     const last = count % 10;
     return `${count} ${forms[last === 1 ? 0 : last >= 2 && last <= 4 ? 1 : 2]}`;
@@ -1682,15 +1683,15 @@ function closeSelectDropdown() {
 }
 
 function lessonSectionText(key) {
-    const labels = {
+    const labels = SlovaI18n.locales({
         ua: { intro: "Вступ", newSection: "Новий розділ", addSection: "＋ Додати розділ", section: "Розділи уроку", rename: "Назва розділу", remove: "Видалити", previous: "← Назад", next: "Далі →", moveUp: "Перемістити вище", moveDown: "Перемістити нижче", moveBlock: "Перетягніть, щоб перемістити блок", duplicate: "Дублювати блок", duplicated: "Блок продубльовано.", addElement: "＋ Додати новий елемент", copyElement: "▣ Копіювати елемент", edit: "Редагувати", done: "Готово", back: "До уроків", save: "Зберегти урок", create: "Створити урок", empty: "У цьому розділі ще немає елементів.", confirmRemove: "Видалити розділ разом з його елементами?", lessonTab: "Урок", editorTab: "Редагування", workspaceMode: "Режим уроку", homework: "Домашня робота", homeworkSections: "Розділи домашньої роботи", homeworkActivities: "Завдання домашньої роботи", currentLesson: "Поточний урок", copyFromLesson: "Копіювати завдання з уроку", dragCopyHint: "Перетягніть або натисніть завдання, щоб скопіювати його сюди.", dropCopyHint: "Перетягніть завдання сюди", noSourceActivities: "У цьому уроці поки немає завдань для копіювання.", liveHint: "Відповіді учнів оновлюються в реальному часі.", liveClass: "Клас", liveConnect: "Підключення до відповідей…", liveReady: "Підключено · відповіді оновлюються", liveOffline: "Увійдіть у кабінет викладача, щоб бачити відповіді в реальному часі.", liveError: "Не вдалося підключитися до відповідей.", liveNoClass: "Урок ще не призначений жодному класу.", liveNoPermission: "У вас немає доступу до відповідей учнів.", liveNoStudents: "У цьому класі поки немає учнів.", liveAnswers: "Відповіді учнів", liveWait: "Поки немає відповіді", liveDraft: "Чернетка", liveSubmitted: "Надіслано", liveUnsaved: "Зміни редактора ще не збережені. Учні бачать останню збережену версію." },
         ru: { intro: "Введение", newSection: "Новый раздел", addSection: "＋ Добавить раздел", section: "Разделы урока", rename: "Название раздела", remove: "Удалить", previous: "← Назад", next: "Далее →", moveUp: "Переместить выше", moveDown: "Переместить ниже", moveBlock: "Перетащите, чтобы переместить задание", duplicate: "Дублировать блок", duplicated: "Блок продублирован.", addElement: "＋ Добавить новый элемент", copyElement: "▣ Копировать элемент", edit: "Редактировать", done: "Готово", back: "К урокам", save: "Сохранить урок", create: "Создать урок", empty: "В этом разделе пока нет элементов.", confirmRemove: "Удалить раздел вместе с его элементами?", lessonTab: "Урок", editorTab: "Редактирование", workspaceMode: "Режим урока", homework: "Домашняя работа", homeworkSections: "Разделы домашней работы", homeworkActivities: "Задания домашней работы", currentLesson: "Текущий урок", copyFromLesson: "Копировать задания из урока", dragCopyHint: "Перетащите или нажмите задание, чтобы скопировать его сюда.", dropCopyHint: "Перетащите задание сюда", noSourceActivities: "В этом уроке пока нет заданий для копирования.", liveHint: "Ответы учеников обновляются в реальном времени.", liveClass: "Класс", liveConnect: "Подключение к ответам…", liveReady: "Подключено · ответы обновляются", liveOffline: "Войдите в кабинет преподавателя, чтобы видеть ответы в реальном времени.", liveError: "Не удалось подключиться к ответам.", liveNoClass: "Урок ещё не назначен ни одному классу.", liveNoPermission: "У вас нет доступа к ответам учеников.", liveNoStudents: "В этом классе пока нет учеников.", liveAnswers: "Ответы учеников", liveWait: "Пока нет ответа", liveDraft: "Черновик", liveSubmitted: "Отправлено", liveUnsaved: "Изменения редактора ещё не сохранены. Ученики видят последнюю сохранённую версию." },
         en: { intro: "Introduction", newSection: "New section", addSection: "＋ Add section", section: "Lesson sections", rename: "Section name", remove: "Delete", previous: "← Back", next: "Next →", moveUp: "Move up", moveDown: "Move down", moveBlock: "Drag to move this activity", duplicate: "Duplicate block", duplicated: "Block duplicated.", addElement: "＋ Add new item", copyElement: "▣ Duplicate item", edit: "Edit", done: "Done", back: "Back to lessons", save: "Save lesson", create: "Create lesson", empty: "This section has no items yet.", confirmRemove: "Delete this section and its items?", lessonTab: "Lesson", editorTab: "Edit", workspaceMode: "Lesson mode", homework: "Homework", homeworkSections: "Homework sections", homeworkActivities: "Homework activities", currentLesson: "Current lesson", copyFromLesson: "Copy activities from a lesson", dragCopyHint: "Drag or click an activity to copy it here.", dropCopyHint: "Drop an activity here", noSourceActivities: "This lesson has no activities to copy yet.", liveHint: "Student answers update in real time.", liveClass: "Class", liveConnect: "Connecting to answers…", liveReady: "Connected · answers update live", liveOffline: "Sign in to the teacher dashboard to see live answers.", liveError: "Could not connect to student answers.", liveNoClass: "This lesson is not assigned to a class yet.", liveNoPermission: "You do not have access to student answers.", liveNoStudents: "There are no students in this class yet.", liveAnswers: "Student answers", liveWait: "No answer yet", liveDraft: "Draft", liveSubmitted: "Submitted", liveUnsaved: "Editor changes are not saved yet. Students see the last saved version." }
-    };
+    });
     return labels[currentLanguage][key];
 }
 
-const liveStudentLabels = {
+const liveStudentLabels = SlovaI18n.locales({
     ua: {
         selector: "Показувати відповіді учня",
         answer: "Відповідь учня",
@@ -1721,7 +1722,7 @@ const liveStudentLabels = {
         recording: "Pronunciation recording",
         playRecording: "Play recording"
     }
-};
+});
 
 function liveStudentText(key, values = {}) {
     const text = liveStudentLabels[currentLanguage]?.[key] || liveStudentLabels.ru[key];
@@ -1729,16 +1730,16 @@ function liveStudentText(key, values = {}) {
 }
 
 function progressResetText(key) {
-    const labels = {
+    const labels = SlovaI18n.locales({
         ua: { action: "Скинути відповіді", confirm: "Скинути всі відповіді цього учня за урок?", success: "Відповіді учня скинуто.", error: "Не вдалося скинути відповіді." },
         ru: { action: "Сбросить ответы", confirm: "Сбросить все ответы этого ученика за урок?", success: "Ответы ученика сброшены.", error: "Не удалось сбросить ответы." },
         en: { action: "Reset answers", confirm: "Reset all of this student's answers for the lesson?", success: "Student answers were reset.", error: "Could not reset student answers." }
-    };
+    });
     return labels[currentLanguage]?.[key] || labels.en[key];
 }
 
 function liveReviewText(key) {
-    const labels = {
+    const labels = SlovaI18n.locales({
         ua: {
             title: "Рецензія викладача",
             feedback: "Коментар",
@@ -1763,7 +1764,7 @@ function liveReviewText(key) {
             save: "Save review",
             saved: "Review saved."
         }
-    };
+    });
     return labels[currentLanguage]?.[key] || labels.en[key];
 }
 
@@ -1988,7 +1989,7 @@ function calendarRecurrenceLabel(recurrence) {
 }
 
 function calendarLocale() {
-    return currentLanguage === "ua" ? "uk-UA" : currentLanguage === "en" ? "en-US" : "ru-RU";
+    return (SlovaI18n.locales({ ua: 'uk-UA', ru: 'ru-RU', en: 'en-US', sk: 'sk-SK', kk: 'kk-KZ' }))[currentLanguage];
 }
 
 function isMissingCalendarTable(error) {
@@ -2534,12 +2535,12 @@ function lessonRow(lesson) {
     return `<div class="lesson-row">${lessonIcon(lesson)}<div class="lesson-main"><button class="lesson-preview-link" data-action="preview-lesson" data-id="${escapeHtml(lesson.id)}">${escapeHtml(lesson.title)}</button><small>${lesson.unit || inferLessonUnit(lesson)} · ${escapeHtml(lessonClassNames(lesson))}</small></div><span class="lesson-count">${countLabel(lessonActivities(lesson).length, "activity")}</span></div>`;
 }
 
-const previewLabels = {
+const previewLabels = SlovaI18n.locales({
     ua: { open: "Відкрити урок", practice: "Спробуйте виконати завдання. Результати тут не зберігаються.", check: "Перевірити", correct: "Правильно!", incorrect: "Спробуйте ще раз.", noAnswer: "Для цього завдання ще не вказано правильну відповідь.", typeAnswer: "Введіть відповідь", choose: "Виберіть відповідь", drop: "Перетягніть або натисніть слова сюди", bank: "Слова", answer: "Ваше речення", up: "Вище", down: "Нижче", flip: "Перевернути картку", empty: "У цьому уроці поки немає блоків.", imageError: "Не вдалося завантажити зображення.", mediaError: "Перевірте посилання на медіафайл.", readOnly: "Навчальний матеріал", true: "Так", false: "Ні" },
     ru: { open: "Открыть урок", practice: "Попробуйте выполнить задания. Результаты здесь не сохраняются.", check: "Проверить", correct: "Верно!", incorrect: "Попробуйте ещё раз.", noAnswer: "Для этого задания ещё не указан правильный ответ.", typeAnswer: "Введите ответ", choose: "Выберите ответ", drop: "Перетащите или нажмите слова сюда", bank: "Слова", answer: "Ваш ответ", up: "Выше", down: "Ниже", flip: "Перевернуть карточку", empty: "В этом уроке пока нет блоков.", imageError: "Не удалось загрузить изображение.", mediaError: "Проверьте ссылку на медиафайл.", readOnly: "Учебный материал", true: "Да", false: "Нет" },
     en: { open: "Open lesson", practice: "Try the activities. Your results are not saved here.", check: "Check answer", correct: "Correct!", incorrect: "Try again.", noAnswer: "No correct answer has been set for this activity.", typeAnswer: "Type your answer", choose: "Choose an answer", drop: "Drag or click words here", bank: "Words", answer: "Your answer", up: "Move up", down: "Move down", flip: "Flip card", empty: "This lesson has no activities yet.", imageError: "The image could not be loaded.", mediaError: "Check the media link.", readOnly: "Learning material", true: "True", false: "False" }
-};
-const previewGroupCheckLabels = { ua: "Перевірити відповіді", ru: "Проверить ответы", en: "Check answers" };
+});
+const previewGroupCheckLabels = SlovaI18n.locales({ ua: "Перевірити відповіді", ru: "Проверить ответы", en: "Check answers" });
 
 function previewText(key) {
     return previewLabels[currentLanguage][key];
@@ -2760,11 +2761,11 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
 
 function renderSupplementaryPreview(activity) {
     const settings = activity.settings || {};
-    const text = {
+    const text = SlovaI18n.locales({
         ru: { record: "Записать произношение", demo: "Запись доступна ученику в уроке. Здесь показан вид задания.", correction: "Исправление", choose: "Нажмите на ошибочное слово", empty: "Добавьте содержимое задания слева.", markers: "Добавьте метки в расширенных настройках.", words: "Добавьте слова и переводы в расширенных настройках.", transcript: "Текст аудио" },
         ua: { record: "Записати вимову", demo: "Запис доступний учню в уроці. Тут показано вигляд завдання.", correction: "Виправлення", choose: "Натисніть на помилкове слово", empty: "Додайте вміст завдання ліворуч.", markers: "Додайте мітки в розширених налаштуваннях.", words: "Додайте слова й переклади в розширених налаштуваннях.", transcript: "Текст аудіо" },
         en: { record: "Record pronunciation", demo: "Recording is available to students in the lesson. This is a visual preview.", correction: "Correction", choose: "Select the incorrect word", empty: "Add activity content on the left.", markers: "Add markers in advanced settings.", words: "Add words and translations in advanced settings.", transcript: "Transcript" }
-    }[currentLanguage];
+    })[currentLanguage];
     const content = String(activity.content || "");
     const empty = (message) => `<p class="builder-preview-empty">${escapeHtml(message)}</p>`;
     if (activity.type === "pronunciation-recording") {
@@ -3943,8 +3944,8 @@ function renderLessonWorkspace() {
     const progressValue = progress ? progress.answered : sections.indexOf(section) + 1;
     const progressTotal = progress ? progress.total : sections.length;
     const progressLabel = progress
-        ? ({ ru: "Ответы ученика", ua: "Відповіді учня", en: "Student answers" })[currentLanguage]
-        : ({ ru: "Текущий раздел", ua: "Поточний розділ", en: "Current section" })[currentLanguage];
+        ? (SlovaI18n.locales({ ru: "Ответы ученика", ua: "Відповіді учня", en: "Student answers" }))[currentLanguage]
+        : (SlovaI18n.locales({ ru: "Текущий раздел", ua: "Поточний розділ", en: "Current section" }))[currentLanguage];
     const sectionProgress = `<div class="lesson-section-progress"><div><span>${progressLabel}</span><strong>${progressValue}/${progressTotal}</strong></div><progress max="${Math.max(1, progressTotal)}" value="${progressValue}" aria-label="${progressLabel}"></progress></div>`;
     const renderSectionMenu = (items, isHomeworkSection) => items.map((item, index) => `<div class="lesson-section-row ${item.id === (isHomeworkSection ? activeHomeworkSectionId : activeLessonSectionId) ? "active" : ""}">
         <button type="button" class="lesson-section-select" data-select-section="${escapeHtml(item.id)}" data-section-homework="${isHomeworkSection}" ${quickEditActive ? "disabled" : ""}><span class="lesson-section-number">${index + 1}</span><span class="lesson-section-label" data-section-label="${escapeHtml(item.id)}">${escapeHtml(item.title)}</span></button>
@@ -4240,9 +4241,9 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
         const summary = activitySummary(block);
         const meta = activityEditorMeta(block);
         const isRichText = block.type === "text";
-        const previewTitle = currentLanguage === "ru" ? "Предпросмотр" : currentLanguage === "ua" ? "Попередній перегляд" : "Preview";
-        const previewHint = currentLanguage === "ru" ? "Так блок будет выглядеть для ученика" : currentLanguage === "ua" ? "Так блок бачитиме учень" : "How the block will look to a student";
-        const preview = `<aside class="builder-block-preview"><div class="builder-preview-head"><span class="builder-preview-icon" aria-hidden="true">${activityEditorIcon("eye")}</span><div><strong>${previewTitle}</strong><small>${previewHint}</small></div></div><div class="builder-preview-body" data-builder-preview>${isExpanded ? renderBuilderPreview(block, index) : ""}</div><p class="builder-preview-hint">${currentLanguage === "ru" ? "Пробные ответы здесь не сохраняются." : currentLanguage === "ua" ? "Пробні відповіді тут не зберігаються." : "Practice answers here are not saved."}</p></aside>`;
+        const previewTitle = SlovaI18n.translate(currentLanguage === "ru" ? "Предпросмотр" : currentLanguage === "ua" ? "Попередній перегляд" : "Preview", currentLanguage);
+        const previewHint = SlovaI18n.translate(currentLanguage === "ru" ? "Так блок будет выглядеть для ученика" : currentLanguage === "ua" ? "Так блок бачитиме учень" : "How the block will look to a student", currentLanguage);
+        const preview = `<aside class="builder-block-preview"><div class="builder-preview-head"><span class="builder-preview-icon" aria-hidden="true">${activityEditorIcon("eye")}</span><div><strong>${previewTitle}</strong><small>${previewHint}</small></div></div><div class="builder-preview-body" data-builder-preview>${isExpanded ? renderBuilderPreview(block, index) : ""}</div><p class="builder-preview-hint">${SlovaI18n.translate(currentLanguage === "ru" ? "Пробные ответы здесь не сохраняются." : currentLanguage === "ua" ? "Пробні відповіді тут не зберігаються." : "Practice answers here are not saved.", currentLanguage)}</p></aside>`;
         return `<article class="builder-block has-preview ${isExpanded ? "is-expanded" : ""}" data-block-index="${index}">
             <header class="builder-block-header">
                 <button type="button" class="builder-block-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>
@@ -4260,7 +4261,7 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
                     ? `${block.type === "listening-questions" ? `<div class="form-field"><label>${t("field.mediaContent")}</label><textarea data-field="content" placeholder="https://…">${escapeHtml(block.content || "")}</textarea></div>` : ""}${renderActivityQuestionEditor(block)}`
                     : `<div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${block.type === "text" ? "" : escapeHtml(contentHint(block.type))}</span></label>
                     ${block.type === "text" ? richTextToolbar() : ""}
-                    <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(["vocabulary", "phrase-list"].includes(block.type) ? window.SlovaPhraseList.editorContent(block) : block.content || "")}</textarea>${block.type === "fill-blank" ? `<button type="button" class="button secondary small" data-hide-selected-word>${currentLanguage === "ru" ? "Скрыть выделенное слово" : currentLanguage === "ua" ? "Приховати виділене слово" : "Hide selected word"}</button>` : ""}                    ${block.type === "text" ? `<div class="image-upload-row rich-text-actions"><button type="button" class="button secondary small" data-pick-rich-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-rich-image-file hidden><button type="button" class="button secondary small" data-rich-add-item>${currentLanguage === "ru" ? "＋ Добавить пункт" : currentLanguage === "ua" ? "＋ Додати пункт" : "＋ Add item"}</button></div>` : ""}${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div><small class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</small>` : ""}${["audio", "video"].includes(block.type) ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-media>${currentLanguage === "ru" ? "Загрузить файл" : currentLanguage === "ua" ? "Завантажити файл" : "Upload file"}</button><input type="file" accept="${block.type}/*" data-media-file hidden></div><small class="hint">${currentLanguage === "ru" ? "До 50 МБ; поддерживаются MP3/M4A/WAV/OGG/AAC и MP4/WebM/MOV." : currentLanguage === "ua" ? "До 50 МБ; підтримуються MP3/M4A/WAV/OGG/AAC і MP4/WebM/MOV." : "Up to 50 MB; MP3/M4A/WAV/OGG/AAC and MP4/WebM/MOV supported."}</small>` : ""}</div>
+                    <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(["vocabulary", "phrase-list"].includes(block.type) ? window.SlovaPhraseList.editorContent(block) : block.content || "")}</textarea>${block.type === "fill-blank" ? `<button type="button" class="button secondary small" data-hide-selected-word>${SlovaI18n.translate(currentLanguage === "ru" ? "Скрыть выделенное слово" : currentLanguage === "ua" ? "Приховати виділене слово" : "Hide selected word", currentLanguage)}</button>` : ""}                    ${block.type === "text" ? `<div class="image-upload-row rich-text-actions"><button type="button" class="button secondary small" data-pick-rich-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-rich-image-file hidden><button type="button" class="button secondary small" data-rich-add-item>${SlovaI18n.translate(currentLanguage === "ru" ? "＋ Добавить пункт" : currentLanguage === "ua" ? "＋ Додати пункт" : "＋ Add item", currentLanguage)}</button></div>` : ""}${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div><small class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</small>` : ""}${["audio", "video"].includes(block.type) ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-media>${SlovaI18n.translate(currentLanguage === "ru" ? "Загрузить файл" : currentLanguage === "ua" ? "Завантажити файл" : "Upload file", currentLanguage)}</button><input type="file" accept="${block.type}/*" data-media-file hidden></div><small class="hint">${SlovaI18n.translate(currentLanguage === "ru" ? "До 50 МБ; поддерживаются MP3/M4A/WAV/OGG/AAC и MP4/WebM/MOV." : currentLanguage === "ua" ? "До 50 МБ; підтримуються MP3/M4A/WAV/OGG/AAC і MP4/WebM/MOV." : "Up to 50 MB; MP3/M4A/WAV/OGG/AAC and MP4/WebM/MOV supported.", currentLanguage)}</small>` : ""}</div>
                     ${["vocabulary", "phrase-list"].includes(block.type) || block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
                     ${renderActivityQuestionEditor(block)}`}
                         ${activitySettingsField(block)}
@@ -4298,10 +4299,10 @@ function previewRichContent(block) {
 }
 
 function contentHint(type) {
-    if (type === "fill-blank") return ({ ru: "Пропуски: ___ или [ответ], например širok[á]. Варианты: [bývam / žijem]. Отдельное поле ответов — только для ___, по порядку через /.", ua: "Пропуски: ___ або [відповідь], наприклад širok[á]. Варіанти: [bývam / žijem]. Окреме поле відповідей — лише для ___, по порядку через /.", en: "Use ___ or [answer], e.g. širok[á]. Alternatives: [bývam / žijem]. The answer field is only for ___ blanks, in order separated by /." })[currentLanguage];
-    if (["vocabulary", "phrase-list"].includes(type)) return ({ ru: "Каждая строка: слово | перевод | URL аудио (необязательно). До 100 строк. Без аудио используется словацкая озвучка браузера.", ua: "Кожен рядок: слово | переклад | URL аудіо (необов’язково). До 100 рядків. Без аудіо використовується словацька вимова браузера.", en: "One row per word: word / translation / audio URL (optional). Up to 100 rows. Without audio, browser Slovak speech is used." })[currentLanguage];
+    if (type === "fill-blank") return (SlovaI18n.locales({ ru: "Пропуски: ___ или [ответ], например širok[á]. Варианты: [bývam / žijem]. Отдельное поле ответов — только для ___, по порядку через /.", ua: "Пропуски: ___ або [відповідь], наприклад širok[á]. Варіанти: [bývam / žijem]. Окреме поле відповідей — лише для ___, по порядку через /.", en: "Use ___ or [answer], e.g. širok[á]. Alternatives: [bývam / žijem]. The answer field is only for ___ blanks, in order separated by /." }))[currentLanguage];
+    if (["vocabulary", "phrase-list"].includes(type)) return (SlovaI18n.locales({ ru: "Каждая строка: слово | перевод | URL аудио (необязательно). До 100 строк. Без аудио используется словацкая озвучка браузера.", ua: "Кожен рядок: слово | переклад | URL аудіо (необов’язково). До 100 рядків. Без аудіо використовується словацька вимова браузера.", en: "One row per word: word / translation / audio URL (optional). Up to 100 rows. Without audio, browser Slovak speech is used." }))[currentLanguage];
     const hints = { "drag-words": t("hint.drag"), "fill-blank": t("hint.blank"), "multiple-choice": t("hint.options"), "order-items": t("hint.order"), "sentence-order": t("hint.sentences"), match: t("hint.match"), columns: t("hint.columns"), table: t("hint.table"), "one-of-many": t("hint.select"), "true-false": t("hint.trueFalse"), flashcards: t("hint.cards"), text: "[info] / [star] + *italic* **bold** 1. list" };
-    const newActivityHints = {
+    const newActivityHints = SlovaI18n.locales({
         ua: {
             "pronunciation-recording": "Інструкція, яку учень побачить перед записом.",
             "listening-questions": "Вставте URL аудіо. Питання та варіанти додайте нижче.",
@@ -4323,21 +4324,21 @@ function contentHint(type) {
             "interactive-image": "Paste the image URL; configure marker coordinates in JSON below.",
             vocabulary: "Add words and translations in the JSON below."
         }
-    };
+    });
     if (newActivityHints[currentLanguage]?.[type]) return newActivityHints[currentLanguage][type];
     if (type === "flashcards") {
-        const delimiterHint = currentLanguage === "ru" ? "лицевая сторона | обратная сторона" : currentLanguage === "ua" ? "лицева сторона | зворот" : "front | back";
+        const delimiterHint = SlovaI18n.translate(currentLanguage === "ru" ? "лицевая сторона | обратная сторона" : currentLanguage === "ua" ? "лицева сторона | зворот" : "front | back", currentLanguage);
         return `${hints.flashcards} · ${delimiterHint} (URL изображений/аудио допустимы)`;
     }
     return hints[type] || "";
 }
 
 function richTextToolbar() {
-    const labels = {
+    const labels = SlovaI18n.locales({
         ua: { toolbar: "Форматування тексту", style: "Стиль", normal: "Звичайний текст", size: "Розмір", accent: "Колір акценту", align: "Вирівнювання", left: "Ліворуч", center: "По центру", right: "Праворуч", bold: "Жирний", italic: "Курсив", underline: "Підкреслення", strike: "Закреслення", bullet: "Маркований список", numbered: "Нумерований список", quote: "Цитата", info: "Інформаційний блок", link: "Посилання", heading: "Заголовок" },
         ru: { toolbar: "Форматирование текста", style: "Стиль", normal: "Обычный текст", size: "Размер", accent: "Цвет акцента", align: "Выравнивание", left: "Слева", center: "По центру", right: "Справа", bold: "Жирный", italic: "Курсив", underline: "Подчёркивание", strike: "Зачёркивание", bullet: "Маркированный список", numbered: "Нумерованный список", quote: "Цитата", info: "Информационный блок", link: "Ссылка", heading: "Заголовок" },
         en: { toolbar: "Text formatting", style: "Style", normal: "Normal text", size: "Size", accent: "Accent color", align: "Alignment", left: "Left", center: "Center", right: "Right", bold: "Bold", italic: "Italic", underline: "Underline", strike: "Strikethrough", bullet: "Bulleted list", numbered: "Numbered list", quote: "Quote", info: "Information block", link: "Link", heading: "Heading" }
-    };
+    });
     const text = labels[currentLanguage] || labels.en;
     const aria = (value) => escapeHtml(value);
     const formatButton = (format, label, icon) => `<button type="button" data-rich-format="${aria(format)}" aria-label="${aria(label)}" title="${aria(label)}">${icon}</button>`;
@@ -4354,7 +4355,7 @@ function richTextToolbar() {
             ${formatButton("quote", text.quote, "❝")}
             ${formatButton("link", text.link, activityEditorIcon("link"))}
             ${formatButton("[info]", text.info, "ⓘ")}
-            ${formatButton("[border]", currentLanguage === "ru" ? "Обводка" : currentLanguage === "ua" ? "Обведення" : "Outline", "▣")}
+            ${formatButton("[border]", SlovaI18n.translate(currentLanguage === "ru" ? "Обводка" : currentLanguage === "ua" ? "Обведення" : "Outline", currentLanguage), "▣")}
             ${[1, 2, 3].map((level) => formatButton(`${"#".repeat(level)} `, `${text.heading} ${level}`, `H${level}`)).join("")}
         </div>
         <div class="rich-toolbar-row rich-toolbar-options">
@@ -4367,7 +4368,7 @@ function richTextToolbar() {
             <div class="rich-toolbar-group rich-accent-group"><span>${aria(text.accent)}</span><div class="rich-accent-colors">
                 ${accents.map((color, index) => `<button type="button" class="rich-accent-swatch ${index === 0 ? "is-selected" : ""}" data-rich-color="${color}" style="--accent-color:${color}" aria-label="${aria(text.accent)} ${index + 1}" title="${aria(text.accent)}: ${color}"></button>`).join("")}
             </div></div>
-            <label class="rich-toolbar-group"><span>${currentLanguage === "ru" ? "Подсветка" : currentLanguage === "ua" ? "Підсвічування" : "Highlight"}</span><input type="color" data-rich-highlight value="#fff19c" aria-label="${currentLanguage === "ru" ? "Цвет подсветки" : currentLanguage === "ua" ? "Колір підсвічування" : "Highlight color"}"></label>
+            <label class="rich-toolbar-group"><span>${SlovaI18n.translate(currentLanguage === "ru" ? "Подсветка" : currentLanguage === "ua" ? "Підсвічування" : "Highlight", currentLanguage)}</span><input type="color" data-rich-highlight value="#fff19c" aria-label="${SlovaI18n.translate(currentLanguage === "ru" ? "Цвет подсветки" : currentLanguage === "ua" ? "Колір підсвічування" : "Highlight color", currentLanguage)}"></label>
             <div class="rich-toolbar-group rich-align-group"><span>${aria(text.align)}</span><div class="rich-align-buttons">
                 ${formatButton("[align=left]", text.left, activityEditorIcon("left"))}${formatButton("[align=center]", text.center, activityEditorIcon("center"))}${formatButton("[align=right]", text.right, activityEditorIcon("right"))}
             </div></div>
@@ -4377,11 +4378,11 @@ function richTextToolbar() {
 
 function contentPlaceholder(type) {
     if (["vocabulary", "phrase-list"].includes(type)) return "Ďakujem | Дякую\nProsím | Будь ласка\nŠťastnú cestu! | Щасливої дороги";
-    const examples = {
+    const examples = SlovaI18n.locales({
         ua: { match: "dom = дім\nškola = школа", columns: "Дієслова: ísť\nІменники: dom", "listening-questions": "https://example.com/listening.mp3", "interactive-image": "https://example.com/room.jpg", "find-error": "Ja bývať v Bratislave." },
         ru: { match: "dom = дом\nškola = школа", columns: "Глаголы: ísť\nСуществительные: dom", "listening-questions": "https://example.com/listening.mp3", "interactive-image": "https://example.com/room.jpg", "find-error": "Ja bývať v Bratislave." },
         en: { match: "dom = house\nškola = school", columns: "Verbs: ísť\nNouns: dom", "listening-questions": "https://example.com/listening.mp3", "interactive-image": "https://example.com/room.jpg", "find-error": "Ja bývať v Bratislave." }
-    };
+    });
     return examples[currentLanguage][type] || ({ "drag-words": "Napríklad: Ja bývam v Bratislave.", "fill-blank": "Ja ___ v Bratislave.", "multiple-choice": "Bratislava\nKošice\nŽilina", "order-items": "1. ráno\n2. popoludní\n3. večer" })[type] || t("field.enterText");
 }
 
@@ -4425,11 +4426,11 @@ function activitySettingsField(activity, preview = false) {
     const settings = activity.settings && typeof activity.settings === "object" && !Array.isArray(activity.settings)
         ? activity.settings
         : {};
-    const text = {
+    const text = SlovaI18n.locales({
         ru: { title: "Расширенные настройки", label: "Технические настройки (JSON)", help: "JSON — технический формат дополнительных настроек: варианты ответов, подсказки, медиа и правила проверки. Для обычного задания этот раздел можно не открывать. Для словаря и интерактивного изображения здесь задаются слова и метки. Существующие настройки сохраняются; удалять их не нужно." },
         ua: { title: "Розширені налаштування", label: "Технічні налаштування (JSON)", help: "JSON — технічний формат додаткових налаштувань: варіанти відповідей, підказки, медіа та правила перевірки. Для звичайного завдання цей розділ можна не відкривати. Для словника й інтерактивного зображення тут задаються слова та мітки. Наявні налаштування зберігаються; видаляти їх не потрібно." },
         en: { title: "Advanced settings", label: "Technical settings (JSON)", help: "JSON stores additional answer options, hints, media, and checking rules. Ordinary activities do not require editing it. Vocabulary words and interactive image markers are configured here. Existing settings are preserved; do not delete them." }
-    }[currentLanguage] || { title: "Advanced settings", label: "Technical settings (JSON)", help: "Optional technical settings. Existing values are preserved." };
+    })[currentLanguage] || { title: "Advanced settings", label: "Technical settings (JSON)", help: "Optional technical settings. Existing values are preserved." };
     return `<details class="activity-advanced-settings"><summary>${text.title}</summary><div class="form-field"><p class="activity-settings-help">${text.help}</p><label>${text.label}</label><textarea ${field}="settings" spellcheck="false" aria-label="${text.label}" placeholder="${escapeHtml(activitySettingsPlaceholder(activity.type))}">${escapeHtml(JSON.stringify(settings, null, 2))}</textarea><small data-settings-error class="hint" role="status"></small></div></details>`;
 }
 
@@ -4545,7 +4546,7 @@ function bindActivityBlockActions() {
             if (!contentField) return;
             const start = contentField.selectionStart;
             const end = contentField.selectionEnd;
-            const selected = contentField.value.slice(start, end) || (currentLanguage === "ru" ? "текст" : "text");
+            const selected = contentField.value.slice(start, end) || (SlovaI18n.translate(currentLanguage === "ru" ? "текст" : "text", currentLanguage));
             const lines = selected.split(/\r?\n/);
             const replacement = lines.map((line) => linePrefix ? `${prefix}${line}` : `${prefix}${line}${suffix}`).join("\n");
             contentField.setRangeText(replacement, start, end, "select");
@@ -4586,8 +4587,8 @@ function bindActivityBlockActions() {
             else if (format === "link") {
                 const selectionStart = textarea.selectionStart;
                 const selectionEnd = textarea.selectionEnd;
-                const selected = textarea.value.slice(selectionStart, selectionEnd) || (currentLanguage === "ru" ? "текст" : "text");
-                const linkUrl = window.prompt(currentLanguage === "ru" ? "Введите URL ссылки (https://…)" : currentLanguage === "ua" ? "Введіть URL посилання (https://…)" : "Enter a link URL (https://…)", "https://");
+                const selected = textarea.value.slice(selectionStart, selectionEnd) || (SlovaI18n.translate(currentLanguage === "ru" ? "текст" : "text", currentLanguage));
+                const linkUrl = window.prompt(SlovaI18n.translate(currentLanguage === "ru" ? "Введите URL ссылки (https://…)" : currentLanguage === "ua" ? "Введіть URL посилання (https://…)" : "Enter a link URL (https://…)", currentLanguage), "https://");
                 if (linkUrl === null) return;
                 try {
                     const url = new URL(linkUrl);
@@ -4596,13 +4597,13 @@ function bindActivityBlockActions() {
                     textarea.focus();
                     syncRichContent();
                 } catch {
-                    showToast(currentLanguage === "ru" ? "Введите корректную ссылку, начинающуюся с http:// или https://." : currentLanguage === "ua" ? "Введіть коректне посилання, що починається з http:// або https://." : "Enter a valid link starting with http:// or https://.");
+                    showToast(SlovaI18n.translate(currentLanguage === "ru" ? "Введите корректную ссылку, начинающуюся с http:// или https://." : currentLanguage === "ua" ? "Введіть коректне посилання, що починається з http:// або https://." : "Enter a valid link starting with http:// or https://.", currentLanguage));
                 }
             }
             else {
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
-                const selected = textarea.value.slice(start, end) || (currentLanguage === "ru" ? "текст" : "text");
+                const selected = textarea.value.slice(start, end) || (SlovaI18n.translate(currentLanguage === "ru" ? "текст" : "text", currentLanguage));
                 const label = selected.trim().replace(/\s+/g, " ").replace(/[\[\]()]/g, "");
                 const value = format.startsWith("![") ? `![${label}](https://)` : `[${label}](https://)`;
                 textarea.setRangeText(value, start, end, "select");
@@ -4617,7 +4618,7 @@ function bindActivityBlockActions() {
             const prefix = prefixes[style];
             const start = contentField.selectionStart;
             const end = contentField.selectionEnd;
-            const selected = contentField.value.slice(start, end) || (currentLanguage === "ru" ? "текст" : "text");
+            const selected = contentField.value.slice(start, end) || (SlovaI18n.translate(currentLanguage === "ru" ? "текст" : "text", currentLanguage));
             const lines = selected.split(/\r?\n/).map((line) => line.replace(/^#{1,3}\s+/, ""));
             const replacement = lines.map((line) => `${prefix}${line}`).join("\n");
             contentField.setRangeText(replacement, start, end, "select");
@@ -4660,7 +4661,7 @@ function bindActivityBlockActions() {
             const end = contentField.selectionEnd;
             const selected = contentField.value.slice(start, end).trim();
             if (!selected || selected.includes("___")) {
-                showToast(currentLanguage === "ru" ? "Сначала выделите слово в тексте." : "Select a word in the text first.");
+                showToast(SlovaI18n.translate(currentLanguage === "ru" ? "Сначала выделите слово в тексте." : "Select a word in the text first.", currentLanguage));
                 return;
             }
             const block = currentBlock();
@@ -4694,7 +4695,7 @@ function bindActivityBlockActions() {
                 refreshRichPreview();
             } catch (error) {
                 console.error("Could not upload an inline lesson image.", error);
-                showToast(error.message || (currentLanguage === "ru" ? "Не удалось загрузить изображение." : "Could not upload the image."));
+                showToast(error.message || (SlovaI18n.translate(currentLanguage === "ru" ? "Не удалось загрузить изображение." : "Could not upload the image.", currentLanguage)));
             } finally {
                 richImageInput.disabled = false;
             }
@@ -4707,7 +4708,7 @@ function bindActivityBlockActions() {
             if (!file || !contentField) return;
             try {
                 mediaFileInput.disabled = true;
-                showToast(currentLanguage === "ru" ? "Загружаю медиафайл…" : "Uploading media…");
+                showToast(SlovaI18n.translate(currentLanguage === "ru" ? "Загружаю медиафайл…" : "Uploading media…", currentLanguage));
                 const url = await uploadLessonMedia(file);
                 contentField.value = url;
                 currentBlock().content = url;
@@ -4715,7 +4716,7 @@ function bindActivityBlockActions() {
                 refreshRichPreview();
             } catch (error) {
                 console.error("Could not upload lesson media.", error);
-                showToast(error.message || (currentLanguage === "ru" ? "Не удалось загрузить медиафайл." : "Could not upload media."));
+                showToast(error.message || (SlovaI18n.translate(currentLanguage === "ru" ? "Не удалось загрузить медиафайл." : "Could not upload media.", currentLanguage)));
             } finally {
                 mediaFileInput.disabled = false;
             }
