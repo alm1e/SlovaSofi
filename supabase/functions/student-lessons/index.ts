@@ -1,3 +1,4 @@
+import "../../../assets/js/table.js";
 import "../../../assets/js/fill-blanks.js";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -7,6 +8,10 @@ const fillBlanks = (globalThis as unknown as { SlovaFillBlanks: {
     check(content: string, answer: string, settings: unknown, response: unknown): boolean[];
 } }).SlovaFillBlanks;
 
+const lessonTable = (globalThis as unknown as { SlovaTable: {
+        parse(content: string, answer?: string, settings?: unknown): {rows: string[][]; groups: string[][]; blankCount: number};
+        check(content: string, answer: string, settings: unknown, response: unknown): boolean;
+    } }).SlovaTable;
 const corsHeaders = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -476,16 +481,11 @@ function safeActivity(activity: Activity): Record<string, unknown> {
             return { type: activity.type, prompt, items: cards.map(({ item, category, media }) => ({ text: item, category, media })), categories: configuredCategories.length ? configuredCategories : [...new Set(pairs.map(({ category }) => category))], gradable: cards.length > 0 };
         }
         case "table": {
-            const rows = contentLines.map((line) => line.split(/\t|\s*\|\s*/).map((cell) => cell.trim()));
-            let blankCount = 0;
-            const hiddenCells = new Set(Array.isArray(settings?.hiddenCells) ? settings.hiddenCells.filter((item): item is number => Number.isInteger(item)) : []);
-            let cellIndex = 0;
-            const safeRows = rows.map((row) => row.map((cell) => {
-                const currentCell = cellIndex++;
-                return hiddenCells.has(currentCell) && !cell.includes("___") ? `{{blank:${blankCount++}}}`
-                    : cell.replace(/___/g, () => `{{blank:${blankCount++}}}`);
-            }));
-            return { type: activity.type, prompt, rows: safeRows, blankCount, cellOptions: record(settings?.cellOptions), hints: record(settings?.hints), gradable: blankCount > 0 && (answerParts(activity.answer).length > 0 || Object.keys(record(settings?.acceptedAnswers)).length > 0) };
+            const settings = (activity as Activity & {settings?: Record<string, unknown>}).settings || {};
+            const table = lessonTable.parse(activity.content, activity.answer, settings);
+            return { type: activity.type, prompt, rows: table.rows, blankCount: table.blankCount,
+                cellOptions: record(settings.cellOptions), hints: record(settings.hints),
+                gradable: table.blankCount > 0 && table.groups.every(group => group.length > 0) };
         }
         case "open-answer":
             return { type: activity.type, prompt, content: activity.content, gradable: false, reviewRequired: true };
@@ -579,20 +579,7 @@ function isCorrect(activity: Activity, response: unknown): boolean {
         return settings?.caseSensitive === true ? collapsed : collapsed.toLocaleLowerCase();
     };
     if (activity.type === "table") {
-        const actual = Array.isArray(response) ? response.map(stringValue) : [stringValue(response)];
-        const configured = settings?.acceptedAnswers;
-        const expectedGroups = Array.isArray(configured)
-            ? configured.map((group) => Array.isArray(group) ? group.filter((item): item is string => typeof item === "string") : [])
-            : answerParts(activity.answer).map((value) => [value]);
-        const tableAnswers = record(configured);
-        const alternatives = activity.type === "table" && !Array.isArray(configured)
-            ? actual.map((_, index) => {
-                const value = tableAnswers[String(index)];
-                return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : answerParts(activity.answer)[index] ? [answerParts(activity.answer)[index]] : [];
-            })
-            : expectedGroups;
-        return alternatives.length > 0 && alternatives.length === actual.length
-            && alternatives.every((values, index) => values.some((value) => normalizeAnswer(value) === normalizeAnswer(actual[index])));
+        return lessonTable.check(activity.content, activity.answer, (activity as Activity & {settings?: unknown}).settings, response);
     }
     if (activity.type === "multiple-choice" || activity.type === "one-of-many") {
         if (activity.type === "one-of-many" && Array.isArray(response)) {
@@ -717,6 +704,10 @@ function answerFeedback(activity: Activity, response: unknown): string {
 }
 
 function isGradable(activity: Activity): boolean {
+    if (activity.type === "table") {
+        const table = lessonTable.parse(activity.content, activity.answer, (activity as Activity & {settings?: unknown}).settings);
+        return table.blankCount > 0 && table.groups.every(group => group.length > 0);
+    }
     if (activity.type === "fill-blank") {
         const blanks = fillBlanks.parse(activity.content, activity.answer, (activity as Activity & {settings?: unknown}).settings);
         return blanks.groups.length > 0 && blanks.groups.every(group => group.length > 0);
