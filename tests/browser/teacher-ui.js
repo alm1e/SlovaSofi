@@ -34,6 +34,17 @@
  const controls=[...doc.querySelectorAll('.rich-toolbar-options button,.rich-toolbar-options select')];
  const outside=controls.filter(el=>{const r=el.getBoundingClientRect(),p=el.closest('.rich-toolbar-group').getBoundingClientRect();return r.right>p.right+1 || r.left<p.left-1;});
  assert(!overflow && !outside.length,'Ширина страницы '+doc.documentElement.scrollWidth+' / '+doc.documentElement.clientWidth+'; элементов за границей: '+outside.length+'; '+[...doc.querySelectorAll('main *,header *,form *')].filter(el=>{const r=el.getBoundingClientRect();return r.width && r.right>width+1;}).slice(0,8).map(el=>el.tagName+'.'+el.className).join(', '));
+ const body=doc.body, sidebar=doc.getElementById('sidebar'), menu=doc.getElementById('menuToggle'), main=doc.querySelector('.main-area');
+ assert(body.classList.contains('lesson-focus')&&sidebar.inert,'Меню не скрыто при открытии урока');
+ assert(Math.abs(main.getBoundingClientRect().left)<1,'Слева осталось пустое место');
+ menu.click();assert(sidebar.classList.contains('open')&&!sidebar.inert,'Меню не открылось');
+ assert(Math.abs(main.getBoundingClientRect().left)<1,'Открытие меню сдвинуло урок');
+ doc.dispatchEvent(new frame.contentWindow.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert(sidebar.inert&&!sidebar.classList.contains('open'),'Escape не закрыл меню');
+ assert(doc.activeElement===menu,'Фокус не вернулся на кнопку');
+ menu.click();doc.getElementById('sidebarBackdrop').click();assert(sidebar.inert,'Фон не закрыл меню');
+ doc.querySelector('[data-workspace-back]').click();assert(!body.classList.contains('lesson-focus'),'Не вышел из режима урока');
+ assert(sidebar.inert===(width<=700),'Не восстановилась обычная навигация');
+
  }finally{frame.remove();}
  });
 

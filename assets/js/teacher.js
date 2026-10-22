@@ -1470,6 +1470,7 @@ function setView(view) {
 }
 
 function render() {
+    window.SlovaLessonNavigation?.sync(Boolean(lessonWorkspaceMode));
     try {
         sessionStorage.setItem(viewStateKey, JSON.stringify({ view: activeView, unit: selectedLessonUnit }));
     } catch {
@@ -4856,16 +4857,6 @@ document.querySelectorAll(".nav-item").forEach((button) => button.addEventListen
     if (button.dataset.view === "lessons") selectedLessonUnit = "";
     setView(button.dataset.view);
 }));
-document.getElementById("menuToggle").addEventListener("click", () => {
-    const isOpen = document.getElementById("sidebar").classList.toggle("open");
-    document.getElementById("sidebarBackdrop").classList.toggle("open", isOpen);
-    document.getElementById("menuToggle").setAttribute("aria-expanded", String(isOpen));
-});
-document.getElementById("sidebarBackdrop").addEventListener("click", () => {
-    document.getElementById("sidebar").classList.remove("open");
-    document.getElementById("sidebarBackdrop").classList.remove("open");
-    document.getElementById("menuToggle").setAttribute("aria-expanded", "false");
-});
 document.querySelectorAll(".language-button").forEach((button) => button.addEventListener("click", () => setLanguage(button.dataset.lang)));
 document.getElementById("themeToggle").addEventListener("click", () => setTheme(currentTheme === "dark" ? "light" : "dark"));
 document.addEventListener("pointerdown", unlockCalendarSound, { once: true });

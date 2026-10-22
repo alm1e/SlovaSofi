@@ -1984,3 +1984,19 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
     .lesson-workspace-fields { grid-template-columns: minmax(0, 1fr); }
     .lesson-workspace-tabs button { min-width: 0; overflow-wrap: anywhere; }
 }
+
+/* An open lesson uses the full window; school navigation opens over the lesson. */
+.platform.lesson-focus .sidebar { transform: translateX(-101%); visibility: hidden; }
+.platform.lesson-focus .sidebar.open { transform: translateX(0); visibility: visible; box-shadow: 10px 0 30px #0004; }
+.platform.lesson-focus .main-area { margin-left: 0; }
+.platform.lesson-focus .menu-toggle { display: inline-grid; place-items: center; flex: 0 0 42px; width: 42px; height: 42px; margin-right: 8px; border-radius: 10px; }
+.platform.lesson-focus .menu-toggle:hover { background: var(--purple-light); }
+.platform.lesson-focus .breadcrumbs { margin-right: auto; }
+.platform.lesson-focus .topbar { position: sticky; top: 0; z-index: 3; }
+.platform.lesson-focus .page-content { width: 100%; max-width: none; }
+.platform.lesson-focus .sidebar-backdrop { position: fixed; inset: 0; z-index: 4; display: block; border: 0; background: #07131980; opacity: 0; pointer-events: none; }
+.platform.lesson-focus .sidebar-backdrop.open { opacity: 1; pointer-events: auto; }
+.platform.lesson-focus .lesson-workspace-section .builder-block,
+.platform.lesson-focus .lesson-workspace-section .lesson-preview-list > :first-child,
+.platform.lesson-focus .lesson-workspace-main .lesson-workspace-section,
+.platform.lesson-focus .student-workspace-main [data-student-section] { scroll-margin-top: 92px; }

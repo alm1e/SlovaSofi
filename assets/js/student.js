@@ -1220,6 +1220,7 @@
 
     function render() {
         document.documentElement.lang = language === "ru" ? "ru" : language === "en" ? "en" : "uk";
+        window.SlovaLessonNavigation?.sync(dashboardStatus === "ready" && Boolean(openedLesson && openedLesson.id === selectedLessonId));
         document.title = `SlovaSofi · ${escapeHtml(text("profileRole"))}`;
         updateIdentity();
         document.getElementById("studentNotificationButton").setAttribute("aria-label", text("notifications"));
@@ -1813,17 +1814,6 @@
         localStorage.setItem("siteLanguage", language);
         render();
     }));
-    document.getElementById("studentMenuToggle").addEventListener("click", () => {
-        const isOpen = sidebar.classList.toggle("open");
-        document.getElementById("studentSidebarBackdrop").classList.toggle("open", isOpen);
-        document.getElementById("studentMenuToggle").setAttribute("aria-expanded", String(isOpen));
-    });
-    document.getElementById("studentSidebarBackdrop").addEventListener("click", () => {
-        sidebar.classList.remove("open");
-        document.getElementById("studentSidebarBackdrop").classList.remove("open");
-        document.getElementById("studentMenuToggle").setAttribute("aria-expanded", "false");
-    });
-    
     // Profile menu for student (like teacher)
     document.querySelectorAll(".profile-trigger").forEach((button) => button.addEventListener("click", () => showUserMenu(button)));
     document.getElementById("studentNotificationButton").addEventListener("click", (event) => showNotifications(event.currentTarget));
