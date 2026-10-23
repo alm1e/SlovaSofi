@@ -503,7 +503,7 @@ function safeActivity(activity: Activity): Record<string, unknown> {
                 .filter((card) => stringValue(card.text).trim() && stringValue(card.category).trim())
                 .map((card) => ({ item: stringValue(card.text).slice(0, 500), category: stringValue(card.category).slice(0, 500), media: stringValue(card.media).slice(0, 2000) })) : [];
             const cards = configuredCards.length ? configuredCards : pairs.map((pair) => ({ ...pair, media: "" }));
-            return { type: activity.type, prompt, items: cards.map(({ item, category, media }) => ({ text: item, category, media })), categories: configuredCategories.length ? configuredCategories : [...new Set(pairs.map(({ category }) => category))], gradable: cards.length > 0 };
+            return { type: activity.type, prompt, items: cards.map(({ item, media }) => ({ text: item, media })), categories: configuredCategories.length ? configuredCategories : [...new Set(pairs.map(({ category }) => category))], gradable: cards.length > 0 };
         }
         case "table": {
             const settings = (activity as Activity & {settings?: Record<string, unknown>}).settings || {};

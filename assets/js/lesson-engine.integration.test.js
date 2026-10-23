@@ -67,6 +67,11 @@ test('progress serialization preserves teacher reviews while saving another acti
     assert.equal(review.teacher_feedback,'Good');assert.equal(review.teacher_correction,'corrected');assert.equal(review.teacher_score,'8');
 });
 
+test('category tasks expose the choices without exposing the correct category for each word',()=>{
+    const e=engine([]),safe=e.ctx.safeActivity({type:'columns',content:'Fruit: apple\nVegetable: carrot',prompt:'Sort',answer:''});
+    assert.equal(safe.items.length,2);assert.equal('category' in safe.items[0],false);assert.equal(safe.categories.length,2);
+});
+
 test('a late legacy write during rollout is merged by timestamp without affecting newly supported types',()=>{
     const e=engine([]),activities=[{id:id(1),legacyProgressIndex:0,type:'true-false',content:'',answer:'true',prompt:''},{id:id(2),type:'find-error',content:'',answer:'',prompt:''}];
     const result=e.ctx.canonicalProgress(activities,{['b'+id(1)]:{response:'old',correct:false,submitted_at:'2026-10-23T10:00:00Z'},a0:{response:'new',correct:true,submitted_at:'2026-10-23T10:01:00Z'}});

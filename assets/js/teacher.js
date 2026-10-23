@@ -4264,6 +4264,7 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
                     <button type="button" class="mini-action builder-block-delete" data-remove-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button>
                 </div>
             </header>
+            ${window.SlovaLessonReadiness?.incomplete(block) ? `<p class="lesson-readiness-warning" role="status">${window.SlovaLessonReadiness.message(currentLanguage)}</p>` : ''}
             <div class="builder-block-fields" ${isExpanded ? "" : "hidden"}>
                 <div class="builder-block-editor">
                 <div class="form-field"><label>${hasQuestions ? activityQuestionText("commonPrompt") : t("field.instruction")}</label><input data-field="prompt" value="${escapeHtml(block.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
@@ -4979,9 +4980,11 @@ function openLessonAssignment(id) {
     if (!hasPermission("view_assign_lessons")) return;
     const lesson = data.lessons.find((item) => item.id === id);
     if (!lesson) return;
+    const incomplete = [...normalizeLessonSections(lesson), ...normalizeHomeworkSections(lesson)].flatMap(section => section.activities.map((activity,index)=>({activity,label:`${section.title} · ${index+1}`}))).filter(item=>window.SlovaLessonReadiness?.incomplete(item.activity));
     openModal(`${modalHeader(assignmentText("dialog"))}
         <form id="lessonAssignmentForm">
             <p class="assignment-hint">${assignmentText("hint")}</p>
+            ${incomplete.length ? `<div class="lesson-readiness-warning" role="status">${window.SlovaLessonReadiness.message(currentLanguage)}<ul>${incomplete.map(item=>`<li>${escapeHtml(item.label)}</li>`).join('')}</ul></div>` : ''}
             <div class="class-assignment-list">${classAssignmentChoices(lessonClassIds(lesson))}</div>
             <div class="modal-actions"><button type="button" class="button secondary" data-close>${t("action.cancel")}</button><button class="button" type="submit">${assignmentText("save")}</button></div>
         </form>`);
@@ -4992,6 +4995,7 @@ function openLessonAssignment(id) {
         if (submitButton.disabled) return;
         const form = new FormData(event.currentTarget);
         const classIds = form.getAll("classIds").map(String).filter((classId) => data.classes.some((item) => item.id === classId));
+        if (incomplete.length && classIds.some(classId=>!lessonClassIds(lesson).includes(classId))) {showToast(window.SlovaLessonReadiness.blocked(currentLanguage));return;}
         const previousData = structuredClone(data);
         data.lessons = data.lessons.map((item) => item.id === id ? { ...item, classIds } : item);
         submitButton.disabled = true;
