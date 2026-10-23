@@ -6,6 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const fillBlanks = (globalThis as unknown as { SlovaFillBlanks: {
     parse(content: string, answer?: string, settings?: unknown): {content: string; groups: string[][]; answers: string[]};
     check(content: string, answer: string, settings: unknown, response: unknown): boolean[];
+    presentation(content: string, answer?: string, settings?: unknown): {gapLayout:string;wordBank:string[]};
 } }).SlovaFillBlanks;
 
 const lessonTable = (globalThis as unknown as { SlovaTable: {
@@ -391,11 +392,12 @@ function safeActivity(activity: Activity): Record<string, unknown> {
             return { type: activity.type, prompt, tokens: shuffle(words), lockedWords, acceptedOrders: settingStringGroups(settings, "acceptedOrders"), gradable: expected.length > 0 };
         }
         case "fill-blank": {
-            const settings = (activity as Activity & { settings?: Record<string, unknown> }).settings || {};
+            const settings = (activity as Activity & {settings?: Record<string, unknown>}).settings || {};
             const blanks = fillBlanks.parse(activity.content, activity.answer, settings);
+            const view = fillBlanks.presentation(activity.content, activity.answer, settings);
             return { type: activity.type, prompt, content: blanks.content, blankCount: blanks.groups.length,
                 hints: Array.isArray(settings.hints) ? settings.hints.filter(value => typeof value === 'string') : [],
-                wordBank: Array.isArray(settings.wordBank) ? settings.wordBank.filter(value => typeof value === 'string') : [],
+                wordBank: shuffle(view.wordBank), gapLayout: view.gapLayout,
                 gradable: blanks.groups.length > 0 && blanks.groups.every(group => group.length > 0) };
         }
         case "multiple-choice":

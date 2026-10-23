@@ -22,7 +22,8 @@ test('inserting before old blanks shifts external answers and configured alterna
 test('escaped brackets stay literal and empty answers do not validate', () => {
     assert.deepEqual(blanks.parse('\\[пример\\] [á]').answers, ['á']);
     assert.deepEqual(blanks.check('___', '', {}, ['']), [false]);
-    assert.equal(blanks.parse('[] [unfinished').groups.length, 0);
+    assert.equal(blanks.parse('[] [unfinished').groups.length, 1);
+    assert.deepEqual(blanks.check('[]','',{},['']),[false]);
 });
 test('server sends only blank content and grading booleans to students', () => {
     const fs = require('node:fs'), vm = require('node:vm');

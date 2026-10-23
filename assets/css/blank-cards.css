@@ -1,0 +1,18 @@
+.gap-word-bank { display:flex; flex-wrap:wrap; gap:8px; padding:14px; border-radius:12px; background:var(--surface-soft,#eef3f0); margin-bottom:18px; }
+.gap-word-bank button { border:1px solid var(--line,#ccd9d1); border-radius:7px; background:var(--surface-raised,#fff); color:inherit; padding:6px 11px; font:inherit; cursor:grab; }
+.gap-word-bank button:disabled { opacity:.35; cursor:default; }
+.gap-word-bank button[aria-pressed=true] { outline:2px solid var(--accent,#208b68); }
+.gap-help { font-size:12px; color:var(--muted,#718277); line-height:1.5; }
+.gap-card-grid .gap-content .activity-rich-text { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr)); gap:20px 16px; }
+.gap-card-grid .gap-content .activity-rich-text > p { display:flex; flex-direction:column; gap:12px; padding:0; margin:0; align-items:stretch; }
+.gap-card-grid .gap-content img { display:block; width:100%; height:145px; object-fit:contain; background:var(--surface-soft,#f0f3f1); border-radius:12px; margin:0; }
+.gap-card-grid .gap-content input { width:100%; max-width:100%; min-width:0; box-sizing:border-box; margin:0; text-align:center; min-height:38px; }
+.gap-settings { padding:14px; border:1px solid var(--line,#d2ddd5); border-radius:12px; display:grid; gap:12px; margin:14px 0; }
+.gap-settings label { display:grid; gap:6px; font-size:13px; }
+.gap-settings label:has(input[type=checkbox]) { display:flex; align-items:center; gap:8px; }
+.gap-settings input[type=checkbox] { width:18px; height:18px; }
+.gap-card-create { display:grid; gap:10px; padding-top:12px; border-top:1px solid var(--line,#d2ddd5); }
+:root[data-theme=dark] .gap-word-bank { background:#132329; }
+:root[data-theme=dark] .gap-word-bank button { background:#1c2e33; border-color:#40544b; }
+:root[data-theme=dark] .gap-card-grid .gap-content img { background:#1c2b30; }
+@media(max-width:480px){.gap-card-grid .gap-content .activity-rich-text{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 10px}.gap-card-grid .gap-content img{height:110px}}

@@ -25,6 +25,7 @@ function createEditorContext() {
     vm.runInContext(fs.readFileSync(`${__dirname}/lesson-notes.js`, "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "activity-ui.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "fill-blanks.js"), "utf8"), context);
+    vm.runInContext(fs.readFileSync(path.join(__dirname, "blank-cards.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "table.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "phrase-list.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "image-gallery.js"), "utf8"), context);
@@ -84,6 +85,15 @@ test("table preview uses slash columns, bracket answers and legacy gaps without 
     for (const answer of ['Bratislava','Košice','Nitra']) assert.ok(html.includes(`placeholder="${answer}"`));
     assert.equal((html.match(/data-table-answer-index=/g)||[]).length,3);
     assert.ok(html.includes('data-preview-settings='));
+    assert.equal(JSON.stringify(activity),before);
+});
+
+test("picture gap editor creates a word bank and keeps the teacher answer hints", () => {
+    const editor=createEditorContext();
+    const activity={type:'fill-blank',prompt:'Flags',content:'![Image](https://example.com/us.png) [Amerika]\n![Image](https://example.com/de.png) []',answer:'Nemecko',settings:{gapLayout:'cards',useWordBank:true,wordBank:['Kanada']}};
+    const before=JSON.stringify(activity),html=editor.renderActivityBlocks([activity]);
+    assert.match(html,/gap-card-grid/);assert.match(html,/data-gap-word="Amerika"/);assert.match(html,/data-gap-word="Nemecko"/);assert.match(html,/data-gap-word="Kanada"/);
+    assert.match(html,/placeholder="Amerika"/);assert.match(html,/data-gap-card-file/);
     assert.equal(JSON.stringify(activity),before);
 });
 

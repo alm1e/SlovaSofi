@@ -87,6 +87,20 @@ test('matching drag works in both directions and retains response order',()=>{
     left[0].dispatchEvent({type:'drop',preventDefault(){}});
     assert.equal(rows[0].select.value,'Zelenina');assert.equal(rows[2].select.value,'Ovocie');
 });
+
+test('picture word bank fills a selected field and supports moving and returning words',()=>{
+    const board=new Element(),bank=new Element(),inputs=[new Element('input'),new Element('input')];inputs.forEach(input=>{input.value='';});
+    const tokens=['Amerika','Nemecko'].map(word=>{const button=new Element('button');button.dataset.gapWord=word;return button;});
+    board.querySelectorAll=selector=>selector.includes('data-gap-word')?tokens:inputs;board.querySelector=()=>bank;
+    const context=vm.createContext({window:{},Event:class{constructor(type){this.type=type;}}});
+    vm.runInContext(fs.readFileSync(`${__dirname}/blank-cards.js`,'utf8'),context);
+    context.window.SlovaBlankCards.bind({querySelectorAll:()=>[board]});
+    tokens[0].click();inputs[1].click();assert.equal(inputs[1].value,'Amerika');assert.equal(tokens[0].disabled,true);
+    inputs[1].dispatchEvent({type:'dragstart',dataTransfer:{setData(){}}});
+    inputs[0].dispatchEvent({type:'drop',preventDefault(){}});assert.equal(inputs[0].value,'Amerika');assert.equal(inputs[1].value,'');
+    inputs[0].dispatchEvent({type:'dragstart',dataTransfer:{setData(){}}});
+    bank.dispatchEvent({type:'drop',preventDefault(){}});assert.equal(inputs[0].value,'');assert.equal(tokens[0].disabled,false);
+});
 test('sorting restores saved answers and preserves separate identities for repeated words',()=>{
     const {rows,bank,grid,chips}=setup(['Ovocie','','Zelenina']);
     assert.equal(grid.children[0].children.filter(x=>x.classList.contains('sorting-chip')).length,1);

@@ -6,7 +6,7 @@
         const parts = [''], groups = [];
         let cursor = 0, plainIndex = 0;
         const source = String(content || '');
-        const tokens = /\\\[|\\\]|___|\[([^\[\]\r\n]+)\]/g;
+        const tokens = /\\\[|\\\]|___|\[([^\[\]\r\n]*)\]/g;
         for (const match of source.matchAll(tokens)) {
             // Formatting tags and Markdown links are text, not answer gaps.
             if (match[1] !== undefined && (/^\/?(?:u|s|border|color(?:=#[\da-f]{3,8})?|size(?:=\d+)?|highlight(?:=#[\da-f]{6})?|align(?:=(?:left|center|right))?)$/i.test(match[1]) || source[match.index + match[0].length] === '(')) {
@@ -17,7 +17,7 @@
             if (match[0].startsWith('\\')) { parts[parts.length - 1] += match[0].slice(1); continue; }
             const inline = match[1];
             let values;
-            if (inline !== undefined) values = inline.split('/');
+            if (inline?.trim()) values = inline.split('/');
             else {
                 values = Array.isArray(configured[plainIndex]) ? configured[plainIndex] : [explicit[plainIndex] || ''];
                 plainIndex += 1;
@@ -45,7 +45,7 @@
             || before.lastIndexOf('[') > before.lastIndexOf(']')
             || (before.endsWith('_') && selected.startsWith('_')) || (selected.endsWith('_') && after.startsWith('_'))) return null;
         // Bracket answers do not occupy slots in the external answer list.
-        const plainIndex = (before.replace(/\[[^\[\]\r\n]*\]/g, '').match(/___/g) || []).length;
+        const plainIndex = (before.replace(/\[\s*\]/g, '___').replace(/\[[^\[\]\r\n]*\]/g, '').match(/___/g) || []).length;
         const answers = String(answer || '').trim() ? String(answer).split(/\s*\/\s*|\r?\n/).map(value => value.trim()) : [];
         while (answers.length < plainIndex) answers.push('');
         answers.splice(plainIndex, 0, selected);
@@ -57,7 +57,15 @@
         }
         return { content: before + '___' + after, answer: answers.join(' / '), settings: nextSettings };
     }
-    const api = { parse, check, insert };
+    function presentation(content, answer = '', settings = {}) {
+        const cards = settings.gapLayout === 'cards' || settings.gapLayout !== 'text' && /!\[[^\]]*\]\(https?:\/\//i.test(content || '');
+        const enabled = settings.useWordBank === true || settings.useWordBank !== false && cards;
+        const configured = Array.isArray(settings.wordBank) ? settings.wordBank.filter(word => typeof word === 'string' && word.trim()).slice(0,200) : [];
+        const words = settings.useWordBank === false ? [] : enabled ? parse(content,answer,settings).answers.filter(Boolean) : [...configured];
+        if (enabled && settings.useWordBank !== false) configured.forEach(word => { if (!words.includes(word)) words.push(word); });
+        return {gapLayout:cards ? 'cards' : 'text',wordBank:words};
+    }
+    const api = { parse, check, insert, presentation };
     globalThis.SlovaFillBlanks = api;
     if (typeof window !== 'undefined') window.SlovaFillBlanks = api;
     if (typeof module !== 'undefined') module.exports = api;

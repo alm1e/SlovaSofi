@@ -2667,7 +2667,9 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         if (!expected.length) checkable = false;
     } else if (type === "fill-blank") {
         const blanks = window.SlovaFillBlanks.parse(content, answer, activity.settings);
+        const view = window.SlovaFillBlanks.presentation(content, answer, activity.settings);
         body = `<div class="preview-instruction lesson-fill-text">${window.SlovaActivityUI.renderBlankText(blanks.parts, blanks.answers.map((value, partIndex) => `<input class="preview-inline-input" data-answer-index="${partIndex}" placeholder="${escapeHtml(value)}" aria-label="${previewText("typeAnswer")} ${partIndex + 1}" autocomplete="off">`))}</div>`;
+        if (window.SlovaBlankCards) body = window.SlovaBlankCards.render(body,view.wordBank,view.gapLayout,currentLanguage);
     } else if (type === "one-of-many" && (lines[0] || "").includes("___")) {
         const [before, ...after] = lines[0].split("___");
         const options = lines.slice(1);
@@ -2970,6 +2972,7 @@ async function savePreviewActivities(lesson, sectionId, activities, successMessa
 }
 
 function bindLessonPreviewActions(container = pageContent, lesson = null, section = null, isHomework = false) {
+    window.SlovaBlankCards?.bind(container);
     window.SlovaActivityUI?.enhancePairing(container, { empty: previewText("choose") });
     container.querySelectorAll("[data-preview-error-word]").forEach((button) => button.addEventListener("click", () => {
         const selected = button.getAttribute("aria-pressed") !== "true";
@@ -4212,6 +4215,7 @@ function renderLessonWorkspace() {
     else bindLessonPreviewActions(pageContent);
     bindTrueFalseEditors(pageContent);
     bindLessonNotes(pageContent);
+    bindBlankCardSettings(pageContent);
 }
 
 function scrollToFirstWorkspaceActivity() {
@@ -4441,7 +4445,7 @@ function activitySettingsField(activity, preview = false) {
         ua: { title: "Розширені налаштування", label: "Технічні налаштування (JSON)", help: "JSON — технічний формат додаткових налаштувань: варіанти відповідей, підказки, медіа та правила перевірки. Для звичайного завдання цей розділ можна не відкривати. Для словника й інтерактивного зображення тут задаються слова та мітки. Наявні налаштування зберігаються; видаляти їх не потрібно." },
         en: { title: "Advanced settings", label: "Technical settings (JSON)", help: "JSON stores additional answer options, hints, media, and checking rules. Ordinary activities do not require editing it. Vocabulary words and interactive image markers are configured here. Existing settings are preserved; do not delete them." }
     })[currentLanguage] || { title: "Advanced settings", label: "Technical settings (JSON)", help: "Optional technical settings. Existing values are preserved." };
-    return `<details class="activity-advanced-settings"><summary>${text.title}</summary><div class="form-field"><p class="activity-settings-help">${text.help}</p><label>${text.label}</label><textarea ${field}="settings" spellcheck="false" aria-label="${text.label}" placeholder="${escapeHtml(activitySettingsPlaceholder(activity.type))}">${escapeHtml(JSON.stringify(settings, null, 2))}</textarea><small data-settings-error class="hint" role="status"></small></div></details>`;
+    return `${activity.type === "fill-blank" ? window.SlovaBlankCards?.controls(activity,currentLanguage) || "" : ""}<details class="activity-advanced-settings"><summary>${text.title}</summary><div class="form-field"><p class="activity-settings-help">${text.help}</p><label>${text.label}</label><textarea ${field}="settings" spellcheck="false" aria-label="${text.label}" placeholder="${escapeHtml(activitySettingsPlaceholder(activity.type))}">${escapeHtml(JSON.stringify(settings, null, 2))}</textarea><small data-settings-error class="hint" role="status"></small></div></details>`;
 }
 
 function updateActivitySettings(activity, input) {
@@ -4783,6 +4787,39 @@ function bindActivityBlockActions() {
         scheduleLessonDraftAutosave();
         render();
     });
+}
+
+function bindBlankCardSettings(root) {
+    const locate = element => {
+        const block = element.closest('[data-block-index]');
+        return { activity:block ? activeDraftSection()?.activities[Number(block.dataset.blockIndex)] : previewActivityEdit?.draft, block };
+    };
+    const save = (activity,block,element) => {
+        if(block){scheduleLessonDraftAutosave();render();}
+        else {const json=element.closest('.preview-inline-editor')?.querySelector('[data-preview-field="settings"]');if(json)json.value=JSON.stringify(activity.settings,null,2);}
+    };
+    root.querySelectorAll('[data-gap-setting]').forEach(input=>input.addEventListener('change',()=>{
+        const {activity,block}=locate(input);if(!activity)return;
+        const field=input.dataset.gapSetting;
+        const value=field==='gapLayout' ? input.checked ? 'cards':'text' : field==='wordBank' ? input.value.split('/').map(word=>word.trim()).filter(Boolean).slice(0,200) : input.checked;
+        activity.settings={...activity.settings,[field]:value};save(activity,block,input);
+    }));
+    root.querySelectorAll('[data-add-gap-card]').forEach(button=>button.addEventListener('click',async()=>{
+        const {activity,block}=locate(button);if(!activity)return;
+        const panel=button.closest('.gap-settings'),word=panel.querySelector('[data-gap-card-word]').value.trim();
+        const file=panel.querySelector('[data-gap-card-file]').files?.[0],rawUrl=panel.querySelector('[data-gap-card-url]').value.trim(),error=panel.querySelector('[data-gap-error]');
+        if(!word||/[\[\]\r\n]/.test(word)||(!file&&!rawUrl)){error.textContent=window.SlovaBlankCards.copy[currentLanguage]?.[8]||'Add a word and image.';return;}
+        button.disabled=true;error.textContent='';
+        try {
+            const url=new URL(file ? await uploadLessonImage(file) : rawUrl);
+            if(!['http:','https:'].includes(url.protocol))throw Error(t('toast.httpUrl'));
+            const safeUrl=url.href.replace(/\(/g,'%28').replace(/\)/g,'%29');
+            activity.content=(activity.content.trimEnd()+'\n'+`![Image](${safeUrl}) [${word}]`).trim();
+            activity.settings={...activity.settings,gapLayout:'cards',useWordBank:true};
+            if(!block){const source=button.closest('.preview-inline-editor')?.querySelector('[data-preview-field="content"]');if(source)source.value=activity.content;panel.querySelector('[data-gap-card-word]').value='';panel.querySelector('[data-gap-card-url]').value='';}
+            save(activity,block,button);
+        } catch(caught){error.textContent=caught.message;} finally{button.disabled=false;}
+    }));
 }
 
 function bindLessonNotes(root) {

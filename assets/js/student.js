@@ -652,7 +652,8 @@
             const parts = String(activity.content || "").split("___");
             const blankCount = Math.max(parts.length - 1, Number(activity.blankCount) || 0);
             const hints = Array.isArray(activity.settings?.hints) ? activity.settings.hints : activity.hints || [];
-            body = `<div class="student-activity-content student-fill-text lesson-fill-text">${window.SlovaActivityUI.renderBlankText(parts, Array.from({length:blankCount}, (_, partIndex) => `<input class="student-inline-answer ${!saved?.draft && saved?.blankResults?.[partIndex] === true ? "blank-correct" : !saved?.draft && saved?.blankResults?.[partIndex] === false ? "blank-incorrect" : ""}" data-blank-answer value="${escapeHtml(savedParts.shift() || "")}" aria-invalid="${!saved?.draft && saved?.blankResults?.[partIndex] === false}" aria-label="${escapeHtml(text("yourAnswer"))} ${partIndex + 1}" autocomplete="off">`))}</div>` + `${hints.map((hint, hintIndex) => `<div><button type="button" class="student-hint" data-show-hint="${hintIndex}">${escapeHtml(text("hint"))} ${hintIndex + 1}</button><span data-hint-content hidden>${escapeHtml(hint)}</span></div>`).join("")}${activity.wordBank?.length ? `<div class="student-word-bank">${activity.wordBank.map((word) => `<button class="student-word-token" type="button" data-word-bank-answer="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}</div>` : ""}`;
+            body = `<div class="student-activity-content student-fill-text lesson-fill-text">${window.SlovaActivityUI.renderBlankText(parts, Array.from({length:blankCount}, (_, partIndex) => `<input class="student-inline-answer ${!saved?.draft && saved?.blankResults?.[partIndex] === true ? "blank-correct" : !saved?.draft && saved?.blankResults?.[partIndex] === false ? "blank-incorrect" : ""}" data-blank-answer value="${escapeHtml(savedParts.shift() || "")}" aria-invalid="${!saved?.draft && saved?.blankResults?.[partIndex] === false}" aria-label="${escapeHtml(text("yourAnswer"))} ${partIndex + 1}" autocomplete="off">`))}</div>` + `${hints.map((hint, hintIndex) => `<div><button type="button" class="student-hint" data-show-hint="${hintIndex}">${escapeHtml(text("hint"))} ${hintIndex + 1}</button><span data-hint-content hidden>${escapeHtml(hint)}</span></div>`).join("")}`;
+            body = window.SlovaBlankCards.render(body,activity.wordBank || [],activity.gapLayout || activity.settings?.gapLayout,language);
             controls = `<input type="hidden" data-answer-kind="blanks">`;
         } else if (activity.type === "multiple-choice" || activity.type === "one-of-many") {
             const rawOptions = Array.isArray(activity.options) ? activity.options : [];
@@ -1256,6 +1257,7 @@
         pageContent.innerHTML = `${activeView === "calendar" ? "" : renderWelcome()}${openedLesson && openedLesson.id === selectedLessonId
             ? renderLessonDetail(openedLesson)
             : activeView === "classes" ? renderClasses() : activeView === "calendar" ? renderStudentCalendar() : renderLessons()}`;
+        window.SlovaBlankCards?.bind(pageContent);
         window.SlovaActivityUI?.enhancePairing(pageContent, { empty: text("choose") });
         pageContent.querySelectorAll("[data-open-lesson]").forEach((button) => {
             button.addEventListener("click", () => openStudentLesson(button.dataset.openLesson));
