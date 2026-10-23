@@ -6,77 +6,54 @@
             board.dataset.pairReady = "true";
             const reuse = board.hasAttribute("data-pair-reuse");
             if (reuse) { enhanceSorting(board); return; }
-            const rows = [...board.querySelectorAll("[data-pair-row]")];
-            const selects = rows.map((row) => row.querySelector("select"));
-            if (!selects.length || selects.some((select) => !select)) return;
-
-            const optionList = [...selects[0].options].map((option, index) => ({ index, value: option.value, label: option.textContent }))
-                .filter((option) => option.value !== "");
-            const bank = document.createElement("div");
-            bank.className = "pair-bank";
-            bank.setAttribute("aria-label", labels.bank || "");
-            const chips = optionList.map((option) => {
-                const chip = document.createElement("button");
-                chip.type = "button";
-                chip.className = "pair-chip";
-                chip.textContent = option.label;
-                chip.dataset.pairValue = option.value;
-                bank.append(chip);
-                return chip;
-            });
-            board.after(bank);
-
-            const slots = rows.map((row, rowIndex) => {
-                const select = selects[rowIndex];
-                select.hidden = true;
-                select.classList.add("teacher-select-native", "pair-native");
-                const slot = document.createElement("button");
-                slot.type = "button";
-                slot.className = "pair-slot";
-                row.append(slot);
-                return slot;
-            });
-
-            let active = -1;
-            const refresh = () => {
-                slots.forEach((slot, rowIndex) => {
-                    const value = selects[rowIndex].value;
-                    const option = optionList.find((item) => item.value === value);
-                    const correctLabel = rows[rowIndex].dataset.pairCorrect || "";
-                    slot.textContent = option ? option.label : correctLabel || labels.empty || "";
-                    slot.classList.toggle("is-filled", Boolean(option));
-                    slot.classList.toggle("is-correct-hint", !option && Boolean(correctLabel));
-                    slot.classList.toggle("is-active", rowIndex === active);
-                });
-                const used = new Set(selects.map((select) => select.value).filter(Boolean));
-                chips.forEach((chip) => chip.classList.toggle("is-used", !reuse && used.has(chip.dataset.pairValue)));
-            };
-            const setValue = (rowIndex, value) => {
-                selects[rowIndex].value = value;
-                selects[rowIndex].dispatchEvent(new Event("change", { bubbles: true }));
-            };
-
-            slots.forEach((slot, rowIndex) => slot.addEventListener("click", () => {
-                if (selects[rowIndex].value) {
-                    setValue(rowIndex, "");
-                    active = rowIndex;
-                } else {
-                    active = active === rowIndex ? -1 : rowIndex;
-                }
-                refresh();
-            }));
-            chips.forEach((chip) => chip.addEventListener("click", () => {
-                if (chip.classList.contains("is-used")) return;
-                let target = active >= 0 && !selects[active].value ? active : selects.findIndex((select) => !select.value);
-                if (target < 0 && active >= 0) target = active;
-                if (target < 0) return;
-                setValue(target, chip.dataset.pairValue);
-                active = selects.findIndex((select, index) => index > target && !select.value);
-                refresh();
-            }));
-            board.addEventListener("pair-refresh", refresh);
-            refresh();
+            enhanceMatching(board);
         });
+    }
+
+    function enhanceMatching(board) {
+        const rows = [...board.querySelectorAll('[data-pair-row]')], selects = rows.map(row=>row.querySelector('select'));
+        if(!selects.length||selects.some(select=>!select))return;
+        const lang=typeof localStorage!=='undefined'?localStorage.getItem('siteLanguage'):'ru';
+        const hint=({ru:'Соедините пары перетаскиванием или нажатием на две карточки. Повторное нажатие отменяет выбор.',ua:'З’єднайте пари перетягуванням або натисканням на дві картки. Повторне натискання скасовує вибір.',en:'Match pairs by dragging or selecting two cards. Select again to undo.',sk:'Spojte dvojice presunutím alebo kliknutím na dve kartičky. Opätovným kliknutím výber zrušíte.',kk:'Карточкаларды сүйреп немесе екеуін басып жұптастырыңыз. Қайта басу таңдауды жояды.'})[lang]||'Match pairs';
+        board.classList.add('matching-board'); rows.forEach(row=>{row.hidden=true;});
+        const instruction=document.createElement('p');instruction.className='matching-instructions';instruction.textContent=hint;board.append(instruction);
+        const grid=document.createElement('div');grid.className='matching-grid';board.append(grid);
+        const status=document.createElement('p');status.className='sorting-status';status.setAttribute('role','status');board.append(status);
+        let active=-1, chosen=null, dragging=false;
+        const left=rows.map((row,index)=>{
+            const button=card('matching-left'),content=row.querySelector('span');if(content)button.append(content.cloneNode(true));
+            if(row.dataset.pairCorrect){const hint=document.createElement('small');hint.className='sorting-correct-hint';hint.textContent=`→ ${row.dataset.pairCorrect}`;button.append(hint);}
+            button.style.gridColumn='1';button.style.gridRow=String(index+1);
+            const line=document.createElement('span');line.className='matching-line';line.style.gridColumn='2';line.style.gridRow=String(index+1);line.setAttribute('aria-hidden','true');grid.append(line);
+            button.addEventListener('click',()=>{if(chosen!==null){connect(index,chosen);return;}if(active===index){set(index,'');active=-1;}else active=index;refresh();});
+            button.addEventListener('dragstart',event=>{active=index;chosen=null;start(event);});
+            drop(button,()=>{if(chosen!==null)connect(index,chosen);});return{button,line};
+        });
+        const options=[...selects[0].options].filter(option=>option.value).map(option=>({value:option.value,label:option.textContent}));
+        for(let i=options.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[options[i],options[j]]=[options[j],options[i]];}
+        const right=options.map(option=>{
+            const button=card('matching-right');button.textContent=option.label;button.style.gridColumn='3';
+            button.addEventListener('click',()=>{if(active>=0){connect(active,option.value);return;}if(chosen===option.value){const owner=selects.findIndex(select=>select.value===option.value);if(owner>=0)set(owner,'');chosen=null;}else chosen=option.value;refresh();});
+            button.addEventListener('dragstart',event=>{chosen=option.value;active=-1;start(event);});
+            drop(button,()=>{if(active>=0)connect(active,option.value);});return{...option,button};
+        });
+        function card(side){const button=document.createElement('button');button.type='button';button.className=`matching-card ${side}`;button.draggable=true;grid.append(button);return button;}
+        function start(event){dragging=true;event.dataTransfer.setData('text/plain','match');event.dataTransfer.effectAllowed='move';refresh();}
+        function drop(button,action){
+            button.addEventListener('dragover',event=>{if(!dragging)return;event.preventDefault();event.dataTransfer.dropEffect='move';button.classList.add('is-over');});
+            button.addEventListener('dragleave',()=>button.classList.remove('is-over'));
+            button.addEventListener('drop',event=>{event.preventDefault();button.classList.remove('is-over');if(dragging)action();dragging=false;});
+            button.addEventListener('dragend',()=>{dragging=false;[...left.map(item=>item.button),...right.map(item=>item.button)].forEach(node=>node.classList.remove('is-over'));});
+        }
+        function set(index,value){selects[index].value=value;delete rows[index].dataset.pairResult;selects[index].dispatchEvent(new Event('change',{bubbles:true}));}
+        function connect(index,value){selects.forEach((select,other)=>{if(other!==index&&select.value===value)set(other,'');});set(index,value);active=-1;chosen=null;refresh();status.textContent=left[index].button.textContent+' ↔ '+right.find(item=>item.value===value)?.label;}
+        function paint(button,result,linked,selected){button.classList.toggle('is-linked',linked);button.classList.toggle('is-selected',selected);button.classList.toggle('is-correct',result==='true');button.classList.toggle('is-incorrect',result==='false');button.setAttribute('aria-pressed',String(selected));button.setAttribute('aria-invalid',String(result==='false'));}
+        function refresh(){
+            left.forEach(({button,line},index)=>{const linked=Boolean(selects[index].value),result=rows[index].dataset.pairResult;paint(button,result,linked,active===index);line.classList.toggle('is-linked',linked);line.classList.toggle('is-correct',result==='true');line.classList.toggle('is-incorrect',result==='false');});
+            const occupied=new Set();right.forEach(item=>{const owner=selects.findIndex(select=>select.value===item.value);if(owner>=0){item.button.style.gridRow=String(owner+1);occupied.add(owner+1);}paint(item.button,owner>=0?rows[owner].dataset.pairResult:undefined,owner>=0,chosen===item.value);});
+            let free=1;right.filter(item=>!selects.some(select=>select.value===item.value)).forEach(item=>{while(occupied.has(free))free++;item.button.style.gridRow=String(free++);});
+        }
+        selects.forEach(select=>select.addEventListener('change',refresh));board.addEventListener('pair-refresh',refresh);refresh();
     }
 
     function enhanceSorting(board) {

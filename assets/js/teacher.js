@@ -2833,6 +2833,8 @@ function checkPreviewActivity(card) {
         correct = actual.length === normalizedExpected.length && actual.every((value, index) => value === normalizedExpected[index]);
     } else if (type === "match") {
         const selects = Array.from(card.querySelectorAll("[data-match-index]"));
+        selects.forEach((select,index) => {select.closest('[data-pair-row]').dataset.pairResult=String(select.value===String(index));});
+        card.querySelector('[data-pair-board]')?.dispatchEvent(new Event('pair-refresh'));
         correct = selects.length > 0 && selects.every((select, index) => select.value === String(index));
     } else if (type === "columns") {
         const expectedCategories = previewLines(card.dataset.previewContent).map((line) => line.split(":")[0]?.trim());

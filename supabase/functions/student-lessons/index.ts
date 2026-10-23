@@ -35,7 +35,7 @@ type JsonRecord = Record<string, unknown>;
 type ActivityQuestion = { id: string; prompt: string; content: string; answer: string };
 type ActivityCard = { front: string; back: string; audio?: string };
 type Activity = { id?: string; legacyProgressIndex?: number; type: string; prompt: string; content: string; answer: string; questions?: ActivityQuestion[]; cards?: ActivityCard[]; settings?: JsonRecord };
-type ProgressAnswer = { blankResults?: boolean[]; response: unknown; correct: boolean | null; submitted_at: string; draft?: boolean; feedback?: string };
+type ProgressAnswer = { matchResults?: boolean[]; blankResults?: boolean[]; response: unknown; correct: boolean | null; submitted_at: string; draft?: boolean; feedback?: string };
 type ActivityProgressItem = { activity: Activity; key: string; fallbackKeys?: string[] };
 type OpenAnswerResponse = { text: string; attachments: string[] };
 
@@ -567,6 +567,18 @@ function normalized(value: string): string {
     return value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
 }
 
+function matchingResults(activity: Activity, response: unknown): boolean[] | undefined {
+    if (activity.type !== "match") return undefined;
+    const settings = record((activity as Activity & {settings?: unknown}).settings);
+    const configured = Array.isArray(settings.pairs) ? settings.pairs.map(pair => record(pair))
+        .filter(pair => stringValue(pair.left).trim() && stringValue(pair.right).trim())
+        .map(pair => stringValue(pair.right)) : [];
+    const expected = configured.length ? configured : lines(activity.content).map(line => line.split("=").map(part => part.trim()))
+        .filter(pair => pair.length >= 2 && pair[0] && pair[1]).map(pair => pair[1]);
+    const actual = Array.isArray(response) ? response : [];
+    return expected.map((value,index) => normalized(value) === normalized(stringValue(actual[index])));
+}
+
 function isCorrect(activity: Activity, response: unknown): boolean {
     if (activity.type === "fill-blank") {
         const checks = fillBlanks.check(activity.content, activity.answer, (activity as Activity & {settings?: unknown}).settings, response);
@@ -741,6 +753,7 @@ function publicProgress(value: unknown): Record<string, ProgressAnswer> {
         if (typeof entry.correct !== "boolean" && entry.correct !== null) continue;
         result[key] = {
             response: entry.response,
+            ...(Array.isArray(entry.matchResults) && entry.matchResults.every(value => typeof value === "boolean") ? {matchResults: entry.matchResults.slice(0, 1000) as boolean[]} : {}),
             ...(Array.isArray(entry.blankResults) && entry.blankResults.every(value => typeof value === "boolean") ? {blankResults: entry.blankResults.slice(0, 1000) as boolean[]} : {}),
             correct: entry.correct as boolean | null,
             submitted_at: stringValue(entry.submitted_at),
@@ -1055,11 +1068,12 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(400, { error: "The submitted answer has an invalid format." }, allowedOrigin);
     }
     const correct = isCorrect(answerActivity, response);
+    const matchResults = matchingResults(answerActivity, response);
     const blankResults = answerActivity.type === "fill-blank"
         ? fillBlanks.check(answerActivity.content, answerActivity.answer, (answerActivity as Activity & {settings?: unknown}).settings, response) : undefined;
     const feedback = answerFeedback(answerActivity, response);
     const answers = publicProgress(progress?.answers);
-    answers[answerKey] = { response, correct, ...(blankResults ? {blankResults} : {}), submitted_at: new Date().toISOString(), ...(feedback ? { feedback } : {}) };
+    answers[answerKey] = { response, correct, ...(matchResults ? {matchResults} : {}), ...(blankResults ? {blankResults} : {}), submitted_at: new Date().toISOString(), ...(feedback ? { feedback } : {}) };
     const completed = allGradableAnswersCorrect(allActivities, answers);
     const { error: saveError } = await admin.from("student_lesson_progress").upsert({
         student_id: assignment.memberId,
@@ -1073,5 +1087,5 @@ Deno.serve(async (request: Request) => {
         console.error("Could not save student progress.", saveError);
         return jsonResponse(500, { error: "Could not save your progress. Please try again." }, allowedOrigin);
     }
-    return jsonResponse(200, { correct, blankResults, feedback, reviewRequired: false, answers, completed }, allowedOrigin);
+    return jsonResponse(200, { correct, matchResults, blankResults, feedback, reviewRequired: false, answers, completed }, allowedOrigin);
 });

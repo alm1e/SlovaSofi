@@ -685,7 +685,7 @@
             body = `<div class="student-match-list" data-pair-board ${activity.type === "columns" ? "data-pair-reuse" : ""}>${rows.map((rawItem, itemIndex) => {
                 const item = typeof rawItem === "string" ? { text: rawItem, media: "" } : rawItem;
                 const choiceOptions = options.map((rawOption) => typeof rawOption === "string" ? { text: rawOption, media: "" } : rawOption);
-                return `<div class="student-match-row" data-pair-row><span>${optionMediaMarkup(item.media)}${escapeHtml(item.text)}</span><select data-match-answer aria-label="${escapeHtml(item.text)}"><option value="">${escapeHtml(text("choose"))}</option>${choiceOptions.map((option) => `<option value="${escapeHtml(option.text)}" ${savedChoices[itemIndex] === option.text ? "selected" : ""}>${escapeHtml(option.text)}</option>`).join("")}</select></div>`;
+                return `<div class="student-match-row" data-pair-row ${activity.type === 'match' && !saved?.draft && typeof saved?.matchResults?.[itemIndex] === 'boolean' ? `data-pair-result="${saved.matchResults[itemIndex]}"` : ''}><span>${optionMediaMarkup(item.media)}${escapeHtml(item.text)}</span><select data-match-answer aria-label="${escapeHtml(item.text)}"><option value="">${escapeHtml(text("choose"))}</option>${choiceOptions.map((option) => `<option value="${escapeHtml(option.text)}" ${savedChoices[itemIndex] === option.text ? "selected" : ""}>${escapeHtml(option.text)}</option>`).join("")}</select></div>`;
             }).join("")}</div>`;
             controls = `<input type="hidden" data-answer-kind="matches">`;
         } else if (activity.type === "table") {
@@ -1157,6 +1157,12 @@
             }));
             draftSaveQueue = submission;
             const result = await submission;
+            element.querySelectorAll('[data-match-answer]').forEach((select,index) => {
+                const row=select.closest('[data-pair-row]');
+                if (typeof result.matchResults?.[index] === 'boolean') row.dataset.pairResult=String(result.matchResults[index]);
+                else delete row.dataset.pairResult;
+            });
+            element.querySelector('[data-pair-board]')?.dispatchEvent(new Event('pair-refresh'));
             element.querySelectorAll('[data-blank-answer]').forEach((input, index) => {
                 const checked = result.blankResults?.[index];
                 input.classList.toggle('blank-correct', checked === true);

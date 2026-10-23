@@ -1,0 +1,17 @@
+.matching-board { display:block; min-width:0; }
+.matching-board [data-pair-row][hidden] { display:none !important; }
+.matching-instructions { font-size:13px; color:var(--muted,#77837c); margin:0 0 16px; }
+.matching-grid { display:grid; grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr); row-gap:14px; align-items:stretch; }
+.matching-card { min-width:0; min-height:48px; padding:10px 12px; border:1px solid var(--line,#d4ded8); border-radius:9px; background:var(--surface-raised,#fff); color:inherit; font:inherit; text-align:center; cursor:grab; overflow-wrap:anywhere; display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:4px; }
+.matching-card img { max-width:100%; max-height:100px; }
+.matching-card.is-linked { border-color:#81a99a; }
+.matching-card.is-selected,.matching-card.is-over { outline:2px solid var(--accent,#1a9975); outline-offset:2px; }
+.matching-card.is-correct { border-color:#1aa16d; background:color-mix(in srgb,#1aa16d 8%,transparent); }
+.matching-card.is-incorrect { border-color:#b96969; background:color-mix(in srgb,#b96969 7%,transparent); }
+.matching-line { align-self:center; height:2px; background:transparent; }
+.matching-line.is-linked { background:#81a99a; }.matching-line.is-correct { background:#1aa16d; }.matching-line.is-incorrect { background:#b96969; }
+.matching-card:focus-visible { outline:2px solid var(--accent,#1a9975); outline-offset:3px; }
+:root[data-theme="dark"] .matching-card { background:#18272c; border-color:#44564e; color:#e8efeb; }
+:root[data-theme="dark"] .matching-card.is-correct { border-color:#30bc88; background:#19362d; }
+:root[data-theme="dark"] .matching-card.is-incorrect { border-color:#bc7777; background:#32272b; }
+@media(max-width:480px){.matching-grid{grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr);row-gap:10px}.matching-card{padding:8px;font-size:14px;min-height:48px}}
