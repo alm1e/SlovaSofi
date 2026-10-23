@@ -1,0 +1,21 @@
+.sorting-board { display: block; min-width: 0; }
+.sorting-board [data-pair-row][hidden] { display: none !important; }
+.sorting-instructions { color: var(--muted, #74837f); font-size: 13px; margin: 0 0 12px; }
+.sorting-bank { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; min-height: 76px; padding: 14px; border-radius: 14px; background: var(--surface-soft, #eff3f1); border: 1px solid var(--line, #dce4df); }
+.sorting-categories { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 16px; margin-top: 18px; }
+.sorting-category { min-height: 190px; border: 1px solid var(--line, #d4dfd9); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; background: var(--surface-raised, #fff); }
+.sorting-category-target { width: 100%; border: 0; padding: 6px 0 15px; display: grid; gap: 12px; background: transparent; color: inherit; cursor: pointer; }
+.sorting-category-target strong { font-size: 16px; overflow-wrap: anywhere; }
+.sorting-category-target span { color: var(--muted, #74837f); font-size: 12px; line-height: 1.5; }
+.sorting-chip { display: inline-flex; align-items: center; justify-content: center; max-width: 100%; padding: 8px 13px; background: var(--surface-raised, #fff); border: 1px solid var(--line, #ccd9d1); border-radius: 9px; font: inherit; color: inherit; cursor: grab; overflow-wrap: anywhere; box-shadow: 0 2px 4px #00000006; }
+.sorting-chip img { max-height: 70px; max-width: 110px; display: block; }
+.sorting-correct-hint { margin-left: 8px; color: var(--accent, #17896c); font-size: 11px; }
+.sorting-chip.is-selected { border-color: var(--accent, #17896c); outline: 2px solid var(--accent, #17896c); outline-offset: 2px; }
+.sorting-category.is-over, .sorting-bank.is-over { border-color: var(--accent, #17896c); background: color-mix(in srgb, var(--accent, #17896c) 10%, transparent); }
+.sorting-bank-return { border: 0; background: transparent; color: var(--muted, #74837f); padding: 6px; font: inherit; font-size: 12px; cursor: pointer; }
+.sorting-board button:focus-visible { outline: 2px solid var(--accent, #17896c); outline-offset: 3px; }
+.sorting-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+:root[data-theme="dark"] .sorting-category, :root[data-theme="dark"] .sorting-chip { background: #18272c; border-color: #38494d; color: #e5eeea; }
+:root[data-theme="dark"] .sorting-bank { background: #122126; border-color: #38494d; }
+:root[data-theme="dark"] .sorting-category-target span, :root[data-theme="dark"] .sorting-instructions, :root[data-theme="dark"] .sorting-bank-return { color: #a8b8b2; }
+@media (max-width: 480px) { .sorting-category { min-height: 140px; } .sorting-chip { min-height: 42px; } }

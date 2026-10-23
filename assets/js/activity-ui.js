@@ -5,6 +5,7 @@
         root.querySelectorAll("[data-pair-board]:not([data-pair-ready])").forEach((board) => {
             board.dataset.pairReady = "true";
             const reuse = board.hasAttribute("data-pair-reuse");
+            if (reuse) { enhanceSorting(board); return; }
             const rows = [...board.querySelectorAll("[data-pair-row]")];
             const selects = rows.map((row) => row.querySelector("select"));
             if (!selects.length || selects.some((select) => !select)) return;
@@ -76,6 +77,94 @@
             board.addEventListener("pair-refresh", refresh);
             refresh();
         });
+    }
+
+    function enhanceSorting(board) {
+        const rows = [...board.querySelectorAll('[data-pair-row]')];
+        const selects = rows.map(row => row.querySelector('select'));
+        if (!selects.length || selects.some(select => !select)) return;
+        const language = typeof localStorage !== 'undefined' ? localStorage.getItem('siteLanguage') : 'ru';
+        const words = ({
+            ru: ['Слова', 'Перетащите слово сюда или выберите его и нажмите на категорию', 'Вернуть слова сюда', 'Выбрано слово', 'Выберите слово, затем категорию'],
+            ua: ['Слова', 'Перетягніть слово сюди або виберіть його та натисніть категорію', 'Повернути слова сюди', 'Вибрано слово', 'Виберіть слово, потім категорію'],
+            en: ['Words', 'Drag a word here, or select it and choose a category', 'Return words here', 'Word selected', 'Select a word, then a category'],
+            sk: ['Slová', 'Presuňte slovo sem alebo ho vyberte a kliknite na kategóriu', 'Vrátiť slová sem', 'Vybrané slovo', 'Vyberte slovo a potom kategóriu'],
+            kk: ['Сөздер', 'Сөзді осында сүйреңіз немесе таңдап, санатты басыңыз', 'Сөздерді осында қайтару', 'Таңдалған сөз', 'Сөзді, содан кейін санатты таңдаңыз']
+        })[language] || ['Words', 'Drag a word here, or select it and choose a category', 'Return words here', 'Word selected', 'Select a word, then a category'];
+        const categories = [...selects[0].options].filter(option => option.value).map(option => ({value:option.value,label:option.textContent}));
+        board.classList.add('sorting-board');
+        rows.forEach(row => { row.hidden = true; });
+        const instructions = document.createElement('p');
+        instructions.className = 'sorting-instructions'; instructions.textContent = words[4];
+        board.append(instructions);
+        const bank = document.createElement('div');
+        bank.className = 'sorting-bank'; bank.setAttribute('aria-label', words[0]);
+        const bankButton = document.createElement('button');
+        bankButton.type = 'button'; bankButton.className = 'sorting-bank-return'; bankButton.textContent = `↶ ${words[2]}`;
+        bank.append(bankButton); board.append(bank);
+        const grid = document.createElement('div'); grid.className = 'sorting-categories'; board.append(grid);
+        const zones = categories.map(category => {
+            const zone = document.createElement('section'); zone.className = 'sorting-category';
+            const target = document.createElement('button'); target.type = 'button'; target.className = 'sorting-category-target';
+            const title = document.createElement('strong'); title.textContent = category.label;
+            const hint = document.createElement('span'); hint.textContent = `↓ ${words[1]}`;
+            target.append(title,hint); zone.append(target); grid.append(zone);
+            return {zone,target,value:category.value};
+        });
+        const status = document.createElement('p'); status.className = 'sorting-status'; status.setAttribute('role','status'); board.append(status);
+        let selected = -1, dragged = -1;
+        const chips = rows.map((row,index) => {
+            const chip = document.createElement('button'); chip.type = 'button'; chip.className = 'sorting-chip'; chip.draggable = true;
+            const content = row.querySelector('span');
+            if (content) chip.append(content.cloneNode(true));
+            else chip.textContent = selects[index].getAttribute('aria-label') || String(index + 1);
+            if (row.dataset.pairCorrect) {
+                const correctHint = document.createElement('small');
+                correctHint.className = 'sorting-correct-hint';
+                correctHint.textContent = `→ ${row.dataset.pairCorrect}`;
+                chip.append(correctHint);
+            }
+            chip.addEventListener('click', () => {
+                selected = selected === index ? -1 : index;
+                refresh(); status.textContent = selected < 0 ? words[4] : `${words[3]}: ${chip.textContent}`;
+            });
+            chip.addEventListener('dragstart', event => {
+                dragged = index; selected = index;
+                event.dataTransfer.setData('text/plain', String(index)); event.dataTransfer.effectAllowed = 'move';
+            });
+            chip.addEventListener('dragend', () => { dragged = -1; zones.forEach(({zone}) => zone.classList.remove('is-over')); bank.classList.remove('is-over'); });
+            return chip;
+        });
+        const order = chips.map((_,index) => index);
+        for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i+1)); [order[i],order[j]] = [order[j],order[i]]; }
+        function refresh() {
+            for (const index of order) {
+                const destination = zones.find(zone => zone.value === selects[index].value)?.zone || bank;
+                const chip = chips[index];
+                if (chip.parentElement !== destination) destination.append(chip);
+                chip.setAttribute('aria-pressed', String(selected === index));
+                chip.classList.toggle('is-selected', selected === index);
+            }
+        }
+        function move(value) {
+            const index = dragged >= 0 ? dragged : selected;
+            if (index < 0 || !selects[index]) return;
+            selects[index].value = value;
+            selects[index].dispatchEvent(new Event('change', {bubbles:true}));
+            selected = -1; dragged = -1; status.textContent = words[4]; refresh();
+            chips[index].focus();
+        }
+        function dropTarget(element, value, button) {
+            button.addEventListener('click', () => move(value));
+            element.addEventListener('dragover', event => { if (dragged < 0) return; event.preventDefault(); element.classList.add('is-over'); event.dataTransfer.dropEffect = 'move'; });
+            element.addEventListener('dragleave', event => { if (!element.contains(event.relatedTarget)) element.classList.remove('is-over'); });
+            element.addEventListener('drop', event => { event.preventDefault(); element.classList.remove('is-over'); if (dragged >= 0) move(value); });
+        }
+        dropTarget(bank,'',bankButton);
+        zones.forEach(({zone,target,value}) => dropTarget(zone,value,target));
+        board.addEventListener('pair-refresh',refresh);
+        selects.forEach(select => select.addEventListener('change',refresh));
+        refresh();
     }
 
     const escapeNote = (value) => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);

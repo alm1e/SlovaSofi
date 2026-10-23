@@ -4382,6 +4382,7 @@ function richTextToolbar() {
 }
 
 function contentPlaceholder(type) {
+    if (type === "columns") return "Ovocie: jablko\nOvocie: banán\nZelenina: mrkva\nZelenina: uhorka";
     if (type === "table") return "Meno / Mesto / Jazyk\nAnna / [Bratislava] / []\nPeter / ___ / [slovenčina]";
     if (["vocabulary", "phrase-list"].includes(type)) return "Ďakujem | Дякую\nProsím | Будь ласка\nŠťastnú cestu! | Щасливої дороги";
     const examples = SlovaI18n.locales({
