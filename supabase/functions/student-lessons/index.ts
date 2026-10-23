@@ -202,6 +202,14 @@ function activityProgressKey(activity: Activity, activityIndex: number): string 
     return activity.id && uuidPattern.test(activity.id) ? `b${activity.id}` : `a${activityIndex}`;
 }
 
+function resolveActivityIndex(activities: Activity[], payload: JsonRecord, revision: string): number {
+    const id = stringValue(payload.activityId);
+    // Position alone is unsafe for an old page opened before the teacher reordered the lesson.
+    if (!id || !uuidPattern.test(id)) return -1;
+    if (!revision || stringValue(payload.lessonRevision) !== revision) return -1;
+    return activities.findIndex(activity => activity.id === id);
+}
+
 function legacyActivityProgressIndex(activity: Activity, activityIndex: number): number | null {
     if (!activity.id || !uuidPattern.test(activity.id)) return activityIndex;
     const legacyProgressIndex = activity.legacyProgressIndex;
@@ -236,6 +244,21 @@ function activityProgressItems(activities: Activity[]): ActivityProgressItem[] {
 
 function progressEntry(answers: Record<string, ProgressAnswer>, item: ActivityProgressItem): ProgressAnswer | undefined {
     return answers[item.key] || item.fallbackKeys?.map((key) => answers[key]).find(Boolean);
+}
+
+function canonicalProgress(activities: Activity[], value: unknown): Record<string, ProgressAnswer> {
+    const answers = publicProgress(value);
+    const items = activityProgressItems(activities), stableKeys = new Set(items.map(item => item.key));
+    for (const item of items) {
+        let best = answers[item.key];
+        for (const alias of item.fallbackKeys || []) {
+            const candidate = answers[alias];
+            if (candidate && (!best || Date.parse(candidate.submitted_at) > Date.parse(best.submitted_at))) best = candidate;
+        }
+        if (best) answers[item.key] = best;
+    }
+    for (const item of items) for (const alias of item.fallbackKeys || []) if (!stableKeys.has(alias)) delete answers[alias];
+    return answers;
 }
 
 function allGradableAnswersCorrect(activities: Activity[], answers: Record<string, ProgressAnswer>): boolean {
@@ -760,6 +783,9 @@ function publicProgress(value: unknown): Record<string, ProgressAnswer> {
             correct: entry.correct as boolean | null,
             submitted_at: stringValue(entry.submitted_at),
             draft: entry.draft === true,
+            ...(stringValue(entry.teacher_feedback) ? { teacher_feedback: stringValue(entry.teacher_feedback).slice(0,2000) } : {}),
+            ...(stringValue(entry.teacher_correction) ? { teacher_correction: stringValue(entry.teacher_correction).slice(0,2000) } : {}),
+            ...(stringValue(entry.teacher_score) ? { teacher_score: stringValue(entry.teacher_score).slice(0,50) } : {}),
             ...(stringValue(entry.feedback) ? { feedback: stringValue(entry.feedback).slice(0, 2000) } : {})
         };
     }
@@ -795,7 +821,7 @@ function normalizeOpenAnswerResponse(response: unknown): OpenAnswerResponse | nu
 }
 
 function progressSummary(activities: Activity[], value: unknown): { progressActivityCount: number; answeredCount: number } {
-    const answers = publicProgress(value);
+    const answers = canonicalProgress(activities, value);
     const answerableItems = activityProgressItems(activities).filter(({ activity }) => answerableTypes.has(activity.type));
     const answeredCount = answerableItems.filter((item) => hasAnswerResponse(progressEntry(answers, item)?.response)).length;
     return { progressActivityCount: answerableItems.length, answeredCount };
@@ -875,7 +901,7 @@ Deno.serve(async (request: Request) => {
     }
 
     const { data: assignments, error: assignmentsError } = await admin.from("class_lesson_assignments")
-        .select("class_id,lesson_id,teacher_lessons(id,title,unit,activities)")
+        .select("class_id,lesson_id,teacher_lessons(id,title,unit,activities,updated_at)")
         .in("class_id", classIds);
     if (assignmentsError) {
         console.error("Could not load assigned lessons.", assignmentsError);
@@ -946,9 +972,11 @@ Deno.serve(async (request: Request) => {
     if (!assignment) return jsonResponse(404, { error: "This lesson is not assigned to your classes." }, allowedOrigin);
     const allActivities = flattenActivities(assignment.lesson.activities);
     const progress = progressByLesson.get(`${assignment.memberId}:${lessonId}`);
+    if (progress) progress.answers = canonicalProgress(allActivities, progress.answers);
     if (action === "load") {
         const safeLesson = {
             id: lessonId,
+            revision: stringValue(assignment.lesson.updated_at),
             title: stringValue(assignment.lesson.title),
             unit: stringValue(assignment.lesson.unit),
             classId: assignment.classId,
@@ -964,11 +992,9 @@ Deno.serve(async (request: Request) => {
         }, allowedOrigin);
     }
 
-    const activityIndex = payload.activityIndex;
-    if (!Number.isInteger(activityIndex) || Number(activityIndex) < 0 || Number(activityIndex) >= allActivities.length) {
-        return jsonResponse(400, { error: "Choose a valid activity." }, allowedOrigin);
-    }
-    const activity = allActivities[Number(activityIndex)];
+    const activityIndex = resolveActivityIndex(allActivities, payload, stringValue(assignment.lesson.updated_at));
+    if (activityIndex < 0) return jsonResponse(409, { error: "The lesson has changed. Reload it before saving your answer.", code: "LESSON_CHANGED" }, allowedOrigin);
+    const activity = allActivities[activityIndex];
     let answerActivity = activity;
     let answerKey = activityProgressKey(activity, Number(activityIndex));
     if (activity.questions?.length) {

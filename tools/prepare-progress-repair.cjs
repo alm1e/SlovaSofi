@@ -1,0 +1,10 @@
+const fs=require('node:fs'),{migrateLessonProgress}=require('../assets/js/progress-migration.js');
+const file='artifacts/private-backups/lesson-repair-2026-10-23.json';
+const snapshot=JSON.parse(fs.readFileSync(file,'utf8')),plan=migrateLessonProgress(snapshot);
+fs.writeFileSync('artifacts/private-backups/progress-repair-plan.json',JSON.stringify(plan,null,2));
+const quote=value=>"'"+JSON.stringify(value).replace(/'/g,"''")+"'::jsonb";
+const statements=[];
+snapshot.lessons.forEach((old,index)=>{const row=plan.lessons[index];statements.push(`UPDATE public.teacher_lessons SET activities=${quote(row.activities)} WHERE id='${old.id}'::uuid AND activities=${quote(old.activities)}; GET DIAGNOSTICS changed = ROW_COUNT; IF changed <> 1 THEN RAISE EXCEPTION 'Lesson changed during repair'; END IF;`);});
+snapshot.progress.forEach((old,index)=>{const row=plan.progress[index];statements.push(`UPDATE public.student_lesson_progress SET answers=${quote(row.answers)} WHERE student_id='${old.student_id}'::uuid AND lesson_id='${old.lesson_id}'::uuid AND answers=${quote(old.answers)}; GET DIAGNOSTICS changed = ROW_COUNT; IF changed <> 1 THEN RAISE EXCEPTION 'Progress changed during repair'; END IF;`);});
+fs.writeFileSync('artifacts/private-backups/progress-repair.sql',`DO $repair$ DECLARE changed integer; BEGIN PERFORM pg_advisory_xact_lock(hashtext('slovasofi-progress-repair'));\n${statements.join('\n')}\nEND $repair$;`);
+console.log(JSON.stringify({lessons:plan.lessons.length,progressRows:plan.progress.length,renamed:plan.renamed}));

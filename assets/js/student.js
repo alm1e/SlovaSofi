@@ -163,6 +163,7 @@
         hotspotAudio: "Play pronunciation", microphonePermission: "Allow microphone access.",
         playsRemaining: "Listens remaining: {count}", transcript: "Transcript"
     });
+    for (const [locale,message] of Object.entries({ua:'Урок змінився. Відкрийте його знову перед збереженням відповіді.',ru:'Урок изменился. Откройте его заново перед сохранением ответа.',en:'The lesson changed. Reopen it before saving an answer.',sk:'Lekcia sa zmenila. Pred uložením odpovede ju znova otvorte.',kk:'Сабақ өзгерді. Жауапты сақтамас бұрын оны қайта ашыңыз.'})) copy[locale].lessonChanged=message;
     const languageChoices = ["ua", "ru", "en", "sk", "kk"];
     let language = languageChoices.includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
     let user = null;
@@ -645,7 +646,7 @@
                 const tokenIndex = remaining.indexOf(word);
                 if (tokenIndex >= 0) remaining.splice(tokenIndex, 1);
             });
-            body = `<p class="student-muted">${escapeHtml(text("addWords"))}</p><div class="student-word-bank" data-word-bank>${remaining.map((word) => `<button class="student-word-token" type="button" draggable="true" data-word-token="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}</div><div class="student-answer-zone" data-word-answer aria-label="${escapeHtml(text("yourAnswer"))}">${selected.map((word) => lockedWords.includes(word) ? `<span class="student-word-token selected is-locked" aria-label="${escapeHtml(text("locked"))}">${escapeHtml(word)} 🔒</span>` : `<button class="student-word-token selected" type="button" draggable="true" data-remove-word="${escapeHtml(word)}">${escapeHtml(word)} ×</button>`).join("")}</div>`;
+            body = `<p class="student-muted">${escapeHtml(text("addWords"))}</p><div class="student-word-bank" data-word-bank>${remaining.map((word) => `<button class="student-word-token" type="button" draggable="true" data-word-token="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}</div><div class="student-answer-zone" data-word-answer aria-label="${escapeHtml(text("yourAnswer"))}">${selected.map((word) => lockedWords.includes(word) ? `<span class="student-word-token selected is-locked" data-locked-word="${escapeHtml(word)}" aria-label="${escapeHtml(text("locked"))}">${escapeHtml(word)} 🔒</span>` : `<button class="student-word-token selected" type="button" draggable="true" data-remove-word="${escapeHtml(word)}">${escapeHtml(word)} ×</button>`).join("")}</div>`;
             controls = `<input type="hidden" data-answer-kind="words">`;
         } else if (activity.type === "fill-blank") {
             const savedParts = Array.isArray(savedResponse) ? [...savedResponse] : [];
@@ -724,12 +725,13 @@
             body = `${activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : ""}<button class="button secondary small" type="button" data-recording-toggle>${escapeHtml(text("recordPronunciation"))}</button><p class="student-muted" data-recording-status aria-live="polite">${savedPath ? escapeHtml(text("recordingSaved")) : ""}</p><audio class="student-activity-media" data-recording-preview controls preload="none" ${savedPath ? "" : "hidden"}></audio>`;
             controls = `<input type="hidden" data-answer-kind="recording" data-recording-path value="${escapeHtml(savedPath)}">`;
         } else if (activity.type === "find-error") {
+            const draft = restoreFindErrorDraft(savedResponse);
             let wordIndex = 0;
             const words = String(activity.content || "").match(/\S+|\s+/g) || [];
             body = `<p class="student-error-text">${words.map((word) => /^\s+$/.test(word)
                 ? escapeHtml(word)
-                : `<button type="button" class="student-error-word" data-error-word-index="${wordIndex++}">${escapeHtml(word)}</button>`).join("")}</p><label class="student-error-correction">${escapeHtml(text("correction"))}<input class="student-inline-answer" data-error-correction autocomplete="off"></label><p class="student-muted" data-error-selection>${escapeHtml(text("chooseErrorWord"))}</p>`;
-            controls = `<input type="hidden" data-answer-kind="find-error" data-error-selected value="">`;
+                : `<button type="button" class="student-error-word ${draft.index === String(wordIndex) ? "is-selected" : ""}" data-error-word-index="${wordIndex++}">${escapeHtml(word)}</button>`).join("")}</p><label class="student-error-correction">${escapeHtml(text("correction"))}<input class="student-inline-answer" data-error-correction value="${escapeHtml(draft.correction)}" autocomplete="off"></label><p class="student-muted" data-error-selection>${escapeHtml(text("chooseErrorWord"))}</p>`;
+            controls = `<input type="hidden" data-answer-kind="find-error" data-error-selected value="${escapeHtml(draft.index)}">`;
         } else if (activity.type === "interactive-image") {
             const image = mediaUrl(activity.content);
             const hotspots = Array.isArray(activity.hotspots) ? activity.hotspots : [];
@@ -820,7 +822,16 @@
         });
     }
 
+    function lessonWriteIdentity(lesson, index, lessonId) {
+        const activity = lesson?.id === lessonId ? activitiesFor(lesson).find(activity => activity.index === Number(index)) : null;
+        if (!activity?.id || !lesson.revision) throw new Error(text('lessonChanged'));
+        return {activityId:activity.id,lessonRevision:lesson.revision};
+    }
+
     async function invokeLessonApi(payload) {
+        if (['submit','save-draft'].includes(payload.action) && !payload.activityId) {
+            payload = {...payload,...lessonWriteIdentity(openedLesson,payload.activityIndex,payload.lessonId)};
+        }
         // Retry only reads: a failed submission may already have reached the server.
         let data, error;
         const attempts = ["list", "load"].includes(payload.action) ? 3 : 1;
@@ -843,7 +854,7 @@
                 const responseText = await error.context.text();
                 try {
                     const responseBody = JSON.parse(responseText);
-                    if (responseBody?.error) message = responseBody.error;
+                    if (responseBody?.error) message = responseBody.code === 'LESSON_CHANGED' ? text('lessonChanged') : responseBody.error;
                 } catch {
                     if (responseText) message = responseText;
                 }
@@ -854,10 +865,18 @@
         return data;
     }
 
+    function restoreFindErrorDraft(response) {
+        let draft = response;
+        if (typeof draft === 'string') {try {draft = JSON.parse(draft);} catch {draft = null;}}
+        if (!draft || typeof draft !== 'object' || Array.isArray(draft)) return {index:'',correction:''};
+        const index = draft.index !== '' && draft.index !== null && draft.index !== undefined ? Number(draft.index) : NaN;
+        return {index:Number.isInteger(index) && index >= 0 ? String(index) : '', correction:typeof draft.correction === 'string' ? draft.correction : ''};
+    }
+
     function responseForActivity(element) {
         const kind = element.querySelector("[data-answer-kind]")?.dataset.answerKind;
         if (kind === "words") {
-            return [...element.querySelectorAll("[data-word-answer] [data-remove-word]")].map((button) => button.dataset.removeWord);
+            return [...element.querySelectorAll("[data-word-answer] [data-remove-word], [data-word-answer] [data-locked-word]")].map((button) => button.dataset.removeWord ?? button.dataset.lockedWord);
         }
         if (kind === "blanks") return [...element.querySelectorAll("[data-blank-answer]")].map((input) => input.value.trim());
         if (kind === "choice-list") return [...element.querySelectorAll("[data-choice-select]")].map((select) => select.value);
@@ -933,6 +952,7 @@
 
     function queueDraftSave(lessonId, draftKey, activityIndex, questionId, response) {
         const snapshot = structuredClone(response);
+        const identity = lessonWriteIdentity(openedLesson, activityIndex, lessonId);
         const save = draftSaveQueue.catch((error) => {
             console.warn("Continuing the progress-save queue after an earlier draft failed.", error);
         }).then(async () => {
@@ -941,7 +961,8 @@
                 lessonId,
                 activityIndex,
                 ...(questionId ? { questionId } : {}),
-                response: snapshot
+                response: snapshot,
+                ...identity
             });
             updateLessonProgress(lessonId, result.answers, result.completed);
             const pending = pendingDrafts.get(draftKey);
@@ -997,7 +1018,7 @@
     }
 
     function lockLessonControls() {
-        const controls = [...pageContent.querySelectorAll('.student-activity input:not([type="hidden"]), .student-activity select, .student-activity textarea, .student-activity [data-word-token], .student-activity [data-remove-word], .student-activity [data-move-item], .student-activity [data-submit-answer], [data-submit-activity-group]')];
+        const controls = [...pageContent.querySelectorAll('.student-activity input:not([type="hidden"]), .student-activity select, .student-activity textarea, .student-activity button, [data-submit-activity-group]')];
         const previousStates = controls.map((control) => control.disabled);
         controls.forEach((control) => { control.disabled = true; });
         return () => controls.forEach((control, index) => {
@@ -1123,6 +1144,7 @@
         const draftKey = activityDraftKey(index, questionId);
         const feedback = element.querySelector("[data-answer-feedback]");
         const lessonId = openedLesson.id;
+        const identity = lessonWriteIdentity(openedLesson,index,lessonId);
         const unlockControls = lockLessonControls();
         clearTimeout(draftSaveTimers.get(draftKey));
         draftSaveTimers.delete(draftKey);
@@ -1154,7 +1176,7 @@
                 lessonId,
                 activityIndex: index,
                 ...(questionId ? { questionId } : {}),
-                response
+                response, ...identity
             }));
             draftSaveQueue = submission;
             const result = await submission;

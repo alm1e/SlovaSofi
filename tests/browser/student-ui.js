@@ -25,7 +25,7 @@
         {type:'pronunciation-recording',content:'Прочитайте текст'},
         {type:'listening-questions',content:'http://127.0.0.1:1/qa.wav',options:['dom','škola']}
     ].map((activity,index)=>({...activity,id:'qa-'+index,index,prompt:activity.type,gradable:!['text','audio','video','image','interactive-image','pronunciation-recording','flashcards','vocabulary'].includes(activity.type),reviewRequired:activity.type==='open-answer'}));
-    const qaLesson = {id:'qa-lesson',title:'QA · Кабинет ученика',unit:'A1',className:'Тестовый класс',progress:{},sections:[{id:'intro',title:'Урок',activities:[]},{id:'second',title:'Второй раздел',activities:[]},{id:'homework',title:'Домашняя работа',homework:true,activities:[qaActivities.find(a=>a.type==='open-answer')]}]};
+    const qaLesson = {id:'qa-lesson',revision:'qa-v1',title:'QA · Кабинет ученика',unit:'A1',className:'Тестовый класс',progress:{},sections:[{id:'intro',title:'Урок',activities:[]},{id:'second',title:'Второй раздел',activities:[]},{id:'homework',title:'Домашняя работа',homework:true,activities:[qaActivities.find(a=>a.type==='open-answer')]}]};
     const qaReset = (type='text') => {
         draftSaveTimers.forEach(clearTimeout);draftSaveTimers.clear();pendingDrafts.clear();
         openedLesson=structuredClone(qaLesson);openedLesson.sections[0].activities=[structuredClone(qaActivities.find(a=>a.type===type))];
@@ -46,8 +46,8 @@
         await run('Перенос и возврат слова',()=>{const card=qaReset('drag-words');card.querySelector('[data-word-token]').click();assert(card.querySelector('[data-remove-word]'),'Слово не перенеслось');card.querySelector('[data-remove-word]').click();assert(!card.querySelector('[data-remove-word]'),'Слово не вернулось');});
         await run('Перестановка элементов',()=>{const card=qaReset('order-items');card.querySelector('[data-move-item="1"]').click();assert(card.querySelector('[data-order-item]').dataset.orderItem==='škola','Порядок не изменился');});
         await run('Подсказка',()=>{const card=qaReset('fill-blank');card.querySelector('[data-show-hint]').click();assert(!card.querySelector('[data-hint-content]').hidden,'Подсказка скрыта');});
-        await run('Слово в пропуск',()=>{const card=qaReset('fill-blank');card.querySelector('[data-word-bank-answer]').click();assert(card.querySelector('[data-blank-answer]').value==='som','Слово не вставилось');});
-        await run('Подбор пары',()=>{const card=qaReset('match');card.querySelector('.pair-slot').click();card.querySelector('.pair-chip').click();assert(card.querySelector('[data-match-answer]').value,'Пара не выбрана');});
+        await run('Слово в пропуск',()=>{const card=qaReset('fill-blank');card.querySelector('[data-gap-word]').click();card.querySelector('[data-blank-answer]').click();assert(card.querySelector('[data-blank-answer]').value==='som','Слово не вставилось');});
+        await run('Подбор пары',()=>{const card=qaReset('match');card.querySelector('.matching-left').click();card.querySelector('.matching-right').click();assert(card.querySelector('[data-match-answer]').value,'Пара не выбрана');});
         await run('Переворот карточки',()=>{const card=qaReset('flashcards');card.querySelector('[data-front]').click();assert(card.querySelector('.student-flashcard-face').textContent==='дім','Карточка не перевернулась');});
         await run('Метка на изображении',()=>{const card=qaReset('interactive-image');card.querySelector('[data-hotspot-index]').click();assert(card.querySelector('[data-hotspot-detail]').textContent.includes('дім'),'Метка не открылась');});
         await run('Скорость аудио до других действий',()=>{const card=qaReset('audio');const select=card.querySelector('[data-media-speed]');select.value='1.5';select.dispatchEvent(new Event('change',{bubbles:true}));assert(card.querySelector('audio').playbackRate===1.5,'Скорость не изменилась');});

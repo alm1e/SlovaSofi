@@ -1,0 +1,171 @@
+[
+  {
+    "type": "drag-words",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false,
+    "localCorrect": true,
+    "liveCorrect": true
+  },
+  {
+    "type": "fill-blank",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false,
+    "localCorrect": true,
+    "liveCorrect": true
+  },
+  {
+    "type": "multiple-choice",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false,
+    "localCorrect": true,
+    "liveCorrect": true
+  },
+  {
+    "type": "one-of-many",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false,
+    "localCorrect": true,
+    "liveCorrect": true
+  },
+  {
+    "type": "order-items",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false,
+    "localCorrect": true,
+    "liveCorrect": true
+  },
+  {
+    "type": "sentence-order",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false,
+    "localCorrect": true,
+    "liveCorrect": true
+  },
+  {
+    "type": "true-false",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false,
+    "localCorrect": true,
+    "liveCorrect": true
+  },
+  {
+    "type": "table",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false,
+    "localCorrect": true,
+    "liveCorrect": true
+  },
+  {
+    "type": "match",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false,
+    "localCorrect": true,
+    "liveCorrect": true
+  },
+  {
+    "type": "columns",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false,
+    "localCorrect": true,
+    "liveCorrect": true
+  },
+  {
+    "type": "open-answer",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false
+  },
+  {
+    "type": "flashcards",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false
+  },
+  {
+    "type": "text",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false
+  },
+  {
+    "type": "image",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false
+  },
+  {
+    "type": "audio",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false
+  },
+  {
+    "type": "video",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false
+  },
+  {
+    "type": "pronunciation-recording",
+    "localVisible": true,
+    "liveVisible": false,
+    "localStableId": true,
+    "liveStableId": false
+  },
+  {
+    "type": "listening-questions",
+    "localVisible": true,
+    "liveVisible": false,
+    "localStableId": true,
+    "liveStableId": false
+  },
+  {
+    "type": "find-error",
+    "localVisible": true,
+    "liveVisible": false,
+    "localStableId": true,
+    "liveStableId": false,
+    "localCorrect": true,
+    "liveCorrect": false
+  },
+  {
+    "type": "interactive-image",
+    "localVisible": true,
+    "liveVisible": false,
+    "localStableId": true,
+    "liveStableId": false
+  },
+  {
+    "type": "vocabulary",
+    "localVisible": true,
+    "liveVisible": true,
+    "localStableId": true,
+    "liveStableId": false
+  }
+]

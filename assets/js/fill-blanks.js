@@ -6,10 +6,13 @@
         const parts = [''], groups = [];
         let cursor = 0, plainIndex = 0;
         const source = String(content || '');
+        const links = [...source.matchAll(/!?\[[^\]\r\n]*\]\(https?:\/\/[^\s)]+\)/gi)].map(match => [match.index, match.index + match[0].length]);
         const tokens = /\\\[|\\\]|___|\[([^\[\]\r\n]*)\]/g;
         for (const match of source.matchAll(tokens)) {
+            if (links.some(([start,end]) => match.index >= start && match.index < end)) continue;
             // Formatting tags and Markdown links are text, not answer gaps.
-            if (match[1] !== undefined && (/^\/?(?:u|s|border|color(?:=#[\da-f]{3,8})?|size(?:=\d+)?|highlight(?:=#[\da-f]{6})?|align(?:=(?:left|center|right))?)$/i.test(match[1]) || source[match.index + match[0].length] === '(')) {
+            const format = match[1]?.match(/^(\/?)(u|s|border|color|size|highlight|align)(?:=[^\]]+)?$/i);
+            if (format && (format[1] || source.slice(match.index + match[0].length).toLowerCase().includes(`[/${format[2].toLowerCase()}]`))) {
                 continue;
             }
             parts[parts.length - 1] += source.slice(cursor, match.index);
@@ -26,7 +29,9 @@
             parts.push('');
         }
         parts[parts.length - 1] += source.slice(cursor);
-        return { parts, content: parts.join('___'), groups, answers: groups.map(group => group[0] || '') };
+        // Keep literal ___ in image/link URLs from becoming extra gaps in the public string format.
+        const publicContent = parts.join('___').replace(/\]\(https?:\/\/[^\s)]+\)/gi, link => link.replace(/___/g, '%5F%5F%5F'));
+        return { parts, content: publicContent, groups, answers: groups.map(group => group[0] || '') };
     }
     function check(content, answer, settings, response) {
         const { groups } = parse(content, answer, settings);
