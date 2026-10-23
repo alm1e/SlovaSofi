@@ -23,6 +23,16 @@ test('phrase rendering escapes words, translations and attributes', () => {
     assert.match(html, /&lt;img/);
     assert.match(html, /data-phrase-all disabled/);
 });
+
+test('multiline examples display separately and do not contaminate saved translations', () => {
+    const phrases=setup(), words=phrases.parse('Ďakujem / Дякую <Ďakujem za pomoc.\nĎakujem pekne.>\nProsím / Будь ласка');
+    assert.equal(words.length,2);
+    assert.equal(words[0].translation,'Дякую');
+    assert.equal(words[0].example,'Ďakujem za pomoc.\nĎakujem pekne.');
+    const html=phrases.render(words,'en');
+    assert.match(html,/class="phrase-example">Ďakujem za pomoc.<br>Ďakujem pekne./);
+    assert.match(html,/data-phrase-translation="Дякую"/);
+});
 test('saved vocabulary is scoped to the signed-in user and survives rendering', () => {
     const list = setup({'slovasofi:vocabulary:alice': JSON.stringify([{word:'Ďakujem',translation:'Дякую'}])});
     const words = list.parse('Ďakujem | Дякую');

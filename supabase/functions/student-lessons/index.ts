@@ -112,7 +112,7 @@ function publicActivitySettings(type: string, settings: JsonRecord | undefined):
         "one-of-many": ["multipleAnswers"],
         "order-items": ["items", "groups"],
         "sentence-order": ["items", "groups"],
-        "true-false": ["allowNotStated", "explanation"],
+        "true-false": ["allowNotStated", "explanation", "choiceLabels"],
         table: ["cellOptions", "hints"],
         columns: ["categories"],
         "open-answer": ["allowAttachments"],
@@ -126,7 +126,7 @@ function publicActivitySettings(type: string, settings: JsonRecord | undefined):
         "pronunciation-recording": ["maxSeconds"]
     };
     const result: JsonRecord = {};
-    for (const key of keysByType[type] || []) {
+    for (const key of [...(keysByType[type] || []), "description", "helperText"]) {
         if (settings[key] !== undefined) result[key] = settings[key];
     }
     return Object.keys(result).length ? result : undefined;
@@ -453,7 +453,7 @@ function safeActivity(activity: Activity): Record<string, unknown> {
         case "true-false": {
             const options = [{ value: "true", label: "true" }, { value: "false", label: "false" }];
             if (settings?.allowNotStated === true) options.push({ value: "not-stated", label: "not-stated" });
-            return { type: activity.type, prompt, content: activity.content, options, explanation: stringValue(settings?.explanation), gradable: Boolean(activity.answer.trim()) };
+            return { type: activity.type, prompt, content: activity.content, options, choiceLabels: settingStrings(settings, "choiceLabels").slice(0, 3), explanation: stringValue(settings?.explanation), gradable: Boolean(activity.answer.trim()) };
         }
         case "order-items":
         case "sentence-order": {

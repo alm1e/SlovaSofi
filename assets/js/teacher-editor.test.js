@@ -29,6 +29,7 @@ function createEditorContext() {
     vm.runInContext(fs.readFileSync(path.join(__dirname, "table.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "phrase-list.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "image-gallery.js"), "utf8"), context);
+    vm.runInContext(fs.readFileSync(path.join(__dirname, "lesson-import-ui.js"), "utf8"), context);
     const liveTypesStart = source.indexOf("const liveAnswerActivityTypes =");
     vm.runInContext(source.slice(liveTypesStart, source.indexOf("\n]);", liveTypesStart) + 4), context);
     for (const name of ["activityTypes", "activityQuestionLabels", "previewLabels", "previewGroupCheckLabels"]) {
@@ -41,10 +42,10 @@ function createEditorContext() {
         "renderTrueFalseEditor", "moveTrueFalseQuestion", "escapeHtml", "activityQuestionText", "createActivityQuestionId", "ensureActivityQuestionIds",
         "addActivityQuestion", "renderActivityQuestionEditor", "activitySummary", "activityEditorMeta",
         "duplicateBlockButton", "previewText", "previewTokens", "previewLines", "previewMediaUrl",
-        "previewFlashcardSideMarkup", "previewVideoEmbedUrl", "renderPreviewActivity",
+        "previewFlashcardSideMarkup", "previewVideoEmbedUrl", "renderPreviewActivity", "checkPreviewActivity",
         "renderSupplementaryPreview", "renderActivityBlocks", "activityEditorIcon", "renderBuilderPreview",
         "previewRichContent", "contentHint", "answerHint", "contentPlaceholder", "answerPlaceholder",
-        "richTextToolbar", "activitySettingsPlaceholder", "activitySettingsField", "updateActivitySettings"
+        "richTextToolbar", "activitySettingsPlaceholder", "activityMetadataEditor", "activitySettingsField", "updateActivitySettings"
     ]) {
         const start = source.indexOf(`function ${name}(`);
         assert.notEqual(start, -1, `Missing function ${name}`);
@@ -121,7 +122,7 @@ test("true/false uses compact answer selects for new and legacy statements", () 
     assert.match(html, /class="tf-row"/);
     assert.match(html, /value="false" selected/);
     assert.match(html, /data-field="content" value="Slon je malý"/);
-    assert.doesNotMatch(html, /<textarea|<input data-field="answer"/);
+    assert.doesNotMatch(html, /<textarea data-field=|<input data-field="answer"/);
     assert.equal(JSON.stringify(single),original);
     const group = {type:'true-false',questions:[{id:'q1',prompt:'Strom je vysoký',content:'',answer:'true'},{id:'q2',prompt:'Context',content:'Slimák je rýchly',answer:'false'}]};
     const rows = editor.renderActivityQuestionEditor(group);
@@ -250,4 +251,29 @@ test("invalid JSON keeps the last valid settings and displays a field error", ()
     assert.equal(JSON.stringify(block.settings), '{"hints":["updated"]}');
     assert.equal(validity, "");
     assert.equal(error.textContent, "");
+});
+
+test('imported multi-answer choices and custom third true/false label remain usable in previews', () => {
+    const editor=createEditorContext();
+    const html=editor.renderPreviewActivity({type:'multiple-choice',prompt:'Fruit',content:'apple\npear\ncarrot',answer:'apple / pear',settings:{multipleAnswers:true,options:[{text:'apple',correct:true},{text:'pear',correct:true},{text:'carrot',correct:false}]}},0);
+    assert.equal((html.match(/type="checkbox"/g)||[]).length,3);
+    assert.equal((html.match(/preview-option is-correct-option/g)||[]).length,2);
+    const boolean={type:'true-false',prompt:'Evaluate',content:'A statement',answer:'not-stated',settings:{allowNotStated:true,choiceLabels:['Right','Wrong','Depends']}};
+    const preview=editor.renderPreviewActivity(boolean,0);
+    assert.match(preview,/is-correct-option[^]*value="2"[^]*Depends/);
+    assert.match(editor.renderTrueFalseEditor(boolean),/value="not-stated" selected>Depends/);
+    const result={},choices=[true,true,false].map(correct=>({correct,checked:correct,classList:{contains(){return this.owner.correct;}}}));
+    choices.forEach(option=>{option.classList.owner=option;option.querySelector=()=>option;});
+    const card={dataset:{previewAnswer:'apple / pear',previewType:'multiple-choice'},classList:{contains:()=>false},querySelector:selector=>selector==='[data-preview-result]'?result:null,querySelectorAll:()=>choices};
+    editor.checkPreviewActivity(card);assert.match(result.className,/correct/);assert.doesNotMatch(result.className,/incorrect/);
+    choices[1].checked=false;editor.checkPreviewActivity(card);assert.match(result.className,/incorrect/);
+});
+
+test('metadata remains editable and is escaped in student-style previews', () => {
+    const editor=createEditorContext(),activity={type:'fill-blank',prompt:'Fill',content:'I [am] here.',settings:{description:'<img src=x onerror=alert(1)>',helperText:'Hint'}};
+    const html=editor.renderActivityBlocks([activity]);
+    assert.match(html,/data-activity-meta="description"/);
+    assert.match(html,/activity-description">&lt;img/);
+    assert.doesNotMatch(html,/<img src=x/);
+    assert.match(html,/class="activity-helper">Hint/);
 });

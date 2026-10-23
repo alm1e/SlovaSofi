@@ -7,7 +7,18 @@
     const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
     const safeAudio = value => { try { const url = new URL(value); return ['https:', 'http:'].includes(url.protocol) ? url.href : ''; } catch { return ''; } };
     function parse(content) {
-        return String(content || '').split(/\r?\n/).flatMap(line => {
+        const rows = [];
+        let pending = '';
+        for (const line of String(content || '').split(/\r?\n/)) {
+            pending += (pending ? '\n' : '') + line;
+            if (pending.includes('<') && !pending.includes('>')) continue;
+            rows.push(pending); pending = '';
+        }
+        if (pending) rows.push(pending);
+        return rows.flatMap(line => {
+            const examples = line.match(/\s*<([\s\S]*?)>\s*$/);
+            const example = examples ? examples[1].trim() : '';
+            if (examples) line = line.slice(0, examples.index);
             let word, translation, audio = '';
             if (line.includes('|')) [word, translation, audio = ''] = line.split('|').map(part => part.trim());
             else {
@@ -19,7 +30,7 @@
                 if (delimiter < 0) return [];
                 word = line.slice(0, delimiter).trim(); translation = line.slice(delimiter + width).trim();
             }
-            return word && translation ? [{ word, translation, audio: safeAudio(audio) }] : [];
+            return word && translation ? [{ word, translation, audio: safeAudio(audio), ...(example ? { example } : {}) }] : [];
         }).slice(0, 100);
     }
     const key = word => JSON.stringify([word.word.trim().toLocaleLowerCase('sk'), word.translation.trim().toLocaleLowerCase()]);
@@ -38,7 +49,7 @@
         const saved = new Set(user ? read(user).map(key) : []);
         const rows = words.slice(0, 100).map(word => {
             const added = saved.has(key(word));
-            return `<li class="phrase-row" data-phrase-word="${escape(word.word)}" data-phrase-translation="${escape(word.translation)}" data-phrase-audio="${escape(safeAudio(word.audio))}"><button type="button" class="phrase-icon" data-phrase-add aria-label="${escape((added ? text.added : text.add) + ': ' + word.word)}" title="${escape(added ? text.added : text.add)}" ${!user || added ? 'disabled' : ''}>${icon(added ? 'check' : 'add')}</button><button type="button" class="phrase-icon phrase-listen" data-phrase-listen aria-label="${escape(text.listen + ': ' + word.word)}" title="${escape(text.listen)}">${icon('listen')}</button><div class="phrase-copy"><strong>${escape(word.word)}</strong><span>${escape(word.translation)}</span></div></li>`;
+            return `<li class="phrase-row" data-phrase-word="${escape(word.word)}" data-phrase-translation="${escape(word.translation)}" data-phrase-audio="${escape(safeAudio(word.audio))}"><button type="button" class="phrase-icon" data-phrase-add aria-label="${escape((added ? text.added : text.add) + ': ' + word.word)}" title="${escape(added ? text.added : text.add)}" ${!user || added ? 'disabled' : ''}>${icon(added ? 'check' : 'add')}</button><button type="button" class="phrase-icon phrase-listen" data-phrase-listen aria-label="${escape(text.listen + ': ' + word.word)}" title="${escape(text.listen)}">${icon('listen')}</button><div class="phrase-copy"><strong>${escape(word.word)}</strong><span>${escape(word.translation)}</span>${word.example ? `<small class="phrase-example">${escape(word.example).replace(/\n/g, '<br>')}</small>` : ''}</div></li>`;
         }).join('');
         return `<section class="phrase-list" data-phrase-list data-phrase-user="${escape(user)}" data-phrase-language="${escape(language)}"><button type="button" class="phrase-add-all" data-phrase-all ${!user || !words.length || words.every(w => saved.has(key(w))) ? 'disabled' : ''}>${icon('add')}<span>${text.all}</span></button>${rows ? `<ul class="phrase-rows">${rows}</ul>` : `<p class="phrase-hint">${text.empty}</p>`}<p class="phrase-hint">${user ? text.local : text.preview}</p><p class="phrase-status" role="status" aria-live="polite"></p>${user ? `<details class="phrase-saved"><summary>${text.saved}</summary><div data-phrase-saved></div></details>` : ''}</section>`;
     }

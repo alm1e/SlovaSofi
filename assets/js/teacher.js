@@ -890,7 +890,7 @@ function renderTrueFalseEditor(activity, preview = false) {
         const contentField = grouped && !question.content && question.prompt ? "prompt" : "content";
         return `<div class="tf-row" data-tf-index="${index}" ${grouped ? `${indexAttr}="${index}"` : ""}>
             <span class="tf-drag" data-tf-drag draggable="${grouped}" aria-hidden="true" title="${text.move}">⠿</span>
-            <select ${field}="answer" data-tf-answer aria-label="${text.choose} ${index + 1}"><option value="" ${!value ? "selected" : ""}>${text.choose}</option><option value="true" ${value === "true" ? "selected" : ""}>${text.yes}</option><option value="false" ${value === "false" ? "selected" : ""}>${text.no}</option>${value && !["true", "false"].includes(value) ? `<option value="${escapeHtml(value)}" selected>${escapeHtml(value)}</option>` : ""}</select>
+            <select ${field}="answer" data-tf-answer aria-label="${text.choose} ${index + 1}"><option value="" ${!value ? "selected" : ""}>${text.choose}</option><option value="true" ${value === "true" ? "selected" : ""}>${escapeHtml(activity.settings?.choiceLabels?.[0] || text.yes)}</option><option value="false" ${value === "false" ? "selected" : ""}>${escapeHtml(activity.settings?.choiceLabels?.[1] || text.no)}</option>${activity.settings?.allowNotStated ? `<option value="not-stated" ${value === "not-stated" ? "selected" : ""}>${escapeHtml(activity.settings?.choiceLabels?.[2] || "Not stated")}</option>` : ""}${value && !["true", "false", ...(activity.settings?.allowNotStated ? ["not-stated"] : [])].includes(value) ? `<option value="${escapeHtml(value)}" selected>${escapeHtml(value)}</option>` : ""}</select>
             <div class="tf-statement"><input ${field}="${contentField}" value="${escapeHtml(question[contentField] || "")}" placeholder="${text.statement}" aria-label="${text.statement} ${index + 1}">${grouped && question.prompt && question.content ? `<small>${escapeHtml(question.prompt)}</small>` : ""}</div>
             <div class="tf-row-actions"><button type="button" data-tf-move="-1" aria-label="${text.up}" title="${text.up}" ${index === 0 ? "disabled" : ""}>↑</button><button type="button" data-tf-move="1" aria-label="${text.down}" title="${text.down}" ${index === rows.length - 1 ? "disabled" : ""}>↓</button><button type="button" ${preview ? "data-preview-remove-question" : "data-remove-question"} aria-label="${text.remove}" title="${text.remove}" ${!grouped || rows.length <= 1 ? "disabled" : ""}>×</button></div>
         </div>`;
@@ -2635,7 +2635,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
                     : `<div class="form-field"><label>${activityType?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(type))}</span></label><textarea data-preview-field="content" placeholder="${escapeHtml(contentPlaceholder(type))}">${escapeHtml(activity.content || "")}</textarea></div>
                     ${hasAnswer ? `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(type))}</span></label><input data-preview-field="answer" value="${escapeHtml(activity.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(type))}"></div>` : ""}
                     ${renderActivityQuestionEditor(activity, true)}`}
-                ${activitySettingsField(activity, true)}
+                ${activityMetadataEditor(activity, true)}${activitySettingsField(activity, true)}
             </div>
         </article>`;
     }
@@ -2651,7 +2651,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         }, index, false, false, questionAnswers[itemIndex] || "", itemIndex)).join("");
         return `<article class="preview-activity preview-activity-group ${canEdit ? "preview-activity-editable" : ""}" data-preview-activity="${index}">
             <header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}<h3>${index + 1}. ${escapeHtml(activity.prompt || t(activityTypes.find((item) => item.id === type)?.nameKey || "activity.task"))}</h3>${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>
-            ${type === "listening-questions" ? renderSupplementaryPreview(activity) : ""}
+            ${window.SlovaActivityUI.renderMetadata(activity)}${type === "listening-questions" ? renderSupplementaryPreview(activity) : ""}
             <div class="preview-question-list">${questionsMarkup}</div>
             ${liveAnswerActivityTypes.has(type) ? `<div class="preview-actions"><button class="button preview-check" type="button" data-check-activity-group>${previewGroupCheckLabels[currentLanguage]}</button></div>` : ""}
         </article>`;
@@ -2680,18 +2680,23 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         body = `<p class="preview-instruction">${escapeHtml(before)}<select class="preview-inline-select" data-inline-choice aria-label="${previewText("choose")}"><option value="">---</option>${options.map((option, optionIndex) => `<option value="${optionIndex + 1}" ${option.toLocaleLowerCase() === correctOption.toLocaleLowerCase() ? "data-correct-option" : ""}>${escapeHtml(option)}</option>`).join("")}</select>${escapeHtml(after.join("___"))}</p>`;
         if (!answer) checkable = false;
     } else if (type === "multiple-choice" || type === "one-of-many" || type === "true-false") {
-        const options = type === "true-false" ? [previewText("true"), previewText("false")] : lines;
+        const options = type === "true-false" ? (activity.settings?.choiceLabels || [previewText("true"), previewText("false"), ...(activity.settings?.allowNotStated ? ["Not stated"] : [])]) : lines;
         const statement = type === "true-false" && displayContent ? `<p class="preview-instruction">${escapeHtml(displayContent)}</p>` : "";
         const radioName = isQuestion ? `preview-${index}-q${questionIndex}` : `preview-${index}`;
         const answerIndex = Number(answer);
         const booleanAnswerIndex = /^(true|yes|так|да|правда|0)$/i.test(answer) ? 0
-            : /^(false|no|ні|нет|неправда|1)$/i.test(answer) ? 1 : -1;
+            : /^(false|no|ні|нет|неправда|1)$/i.test(answer) ? 1 : answer === "not-stated" ? 2 : -1;
         const correctOption = type === "true-false" && booleanAnswerIndex >= 0
-            ? options[booleanAnswerIndex].toLocaleLowerCase()
+            ? (options[booleanAnswerIndex]?.toLocaleLowerCase() || answer.toLocaleLowerCase())
             : Number.isInteger(answerIndex) && answer !== "" && options[answerIndex] !== undefined
                 ? options[answerIndex].toLocaleLowerCase()
                 : answer.toLocaleLowerCase();
-        body = `${statement}<div class="preview-options">${options.map((option, optionIndex) => `<label class="preview-option ${option.toLocaleLowerCase() === correctOption ? "is-correct-option" : ""}"><input type="radio" name="${radioName}" value="${optionIndex}"><span>${escapeHtml(option)}</span>${option.toLocaleLowerCase() === correctOption ? `<span class="preview-correct-mark" title="${liveStudentText("correctAnswer")}" aria-label="${liveStudentText("correctAnswer")}">✓</span>` : ""}</label>`).join("")}</div>`;
+        const multiple = activity.settings?.multipleAnswers === true;
+        const configured = Array.isArray(activity.settings?.options) ? activity.settings.options : [];
+        const isCorrect = (option, optionIndex) => configured.length && type !== "true-false"
+            ? configured.some(item => item.text === option && item.correct === true)
+            : option.toLocaleLowerCase() === correctOption;
+        body = `${statement}<div class="preview-options">${options.map((option, optionIndex) => `<label class="preview-option ${isCorrect(option, optionIndex) ? "is-correct-option" : ""}"><input type="${multiple ? "checkbox" : "radio"}" name="${radioName}" value="${optionIndex}"><span>${escapeHtml(option)}</span>${isCorrect(option, optionIndex) ? `<span class="preview-correct-mark" title="${liveStudentText("correctAnswer")}" aria-label="${liveStudentText("correctAnswer")}">&#10003;</span>` : ""}</label>`).join("")}</div>`;
         if (!answer) checkable = false;
     } else if (type === "order-items" || type === "sentence-order") {
         const items = lines.map((line, itemIndex) => ({ text: line.replace(/^\d+[.)]\s*/, ""), itemIndex }));
@@ -2762,7 +2767,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         ? `<div class="preview-actions"><button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button></div>`
         : "";
     const correctMarkup = "";
-    return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${["fill-blank", "table"].includes(type) ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}${isQuestion ? `<span class="preview-q-badge">${questionIndex + 1}</span>` : `<h3>${previewItemNumber}. ${prompt}</h3>`}${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${isQuestion && activity.prompt?.trim() ? `<p class="preview-q-prompt">${prompt}</p>` : ""}${liveAnswerMarkup}${resultMarkup}${body}${correctMarkup}${checkButton}</article>`;
+    return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${["fill-blank", "table"].includes(type) ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}${isQuestion ? `<span class="preview-q-badge">${questionIndex + 1}</span>` : `<h3>${previewItemNumber}. ${prompt}</h3>`}${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${isQuestion && activity.prompt?.trim() ? `<p class="preview-q-prompt">${prompt}</p>` : ""}${!isQuestion ? window.SlovaActivityUI.renderMetadata(activity) : ""}${liveAnswerMarkup}${resultMarkup}${body}${correctMarkup}${checkButton}</article>`;
 }
 
 function renderSupplementaryPreview(activity) {
@@ -2818,14 +2823,11 @@ function checkPreviewActivity(card) {
         correct = window.SlovaTable.check(card.dataset.previewContent, answer, JSON.parse(card.dataset.previewSettings || '{}'), actual);
     } else if (type === "multiple-choice" || type === "one-of-many" || type === "true-false") {
         const inlineChoice = card.querySelector("[data-inline-choice]");
-        const selected = inlineChoice ? (inlineChoice.value ? inlineChoice : null) : card.querySelector('input[type="radio"]:checked');
-        const options = type === "true-false" ? [previewText("true"), previewText("false")] : previewLines(card.dataset.previewContent);
-        const answerIndex = Number(answer);
-        if (type === "true-false" && /^(true|yes|так|да)$/i.test(answer)) correct = selected?.value === "0";
-        else if (type === "true-false" && /^(false|no|ні|нет)$/i.test(answer)) correct = selected?.value === "1";
+        if (inlineChoice) correct = Boolean(inlineChoice.value && inlineChoice.selectedOptions[0]?.hasAttribute('data-correct-option'));
         else {
-            const expected = Number.isInteger(answerIndex) && answer !== "" ? options[answerIndex] : answer;
-            correct = Boolean(selected && options[Number(selected.value)]?.toLocaleLowerCase() === expected.toLocaleLowerCase());
+            const options = Array.from(card.querySelectorAll('.preview-option'));
+            correct = options.some(option => option.classList.contains('is-correct-option'))
+                && options.every(option => option.querySelector('input').checked === option.classList.contains('is-correct-option'));
         }
     } else if (type === "order-items" || type === "sentence-order") {
         const actual = Array.from(card.querySelectorAll("[data-order-list] .preview-order-item"), (item) => item.querySelector("span").textContent.trim().toLocaleLowerCase());
@@ -3961,7 +3963,7 @@ function renderLessonWorkspace() {
     const lessonSectionMenu = renderSectionMenu(lessonSections, false);
     const homeworkSectionMenu = renderSectionMenu(homeworkSections, true);
     const sectionBody = isEditing
-        ? `<div class="form-field section-name-field"><label for="sectionTitle">${lessonSectionText("rename")}</label><input id="sectionTitle" data-section-title="${escapeHtml(section.id)}" maxlength="80" value="${escapeHtml(section.title)}"></div><div class="builder-heading"><h3>${isHomework ? lessonSectionText("homeworkActivities") : t("lesson.activities")}</h3><span data-lesson-autosave-status role="status" aria-live="polite"></span><button type="button" class="button secondary small" data-action="choose-activity">${t("activity.addBlock")}</button></div><div id="activityBlocks">${renderActivityBlocks(section.activities)}</div>`
+        ? `<div class="form-field section-name-field"><label for="sectionTitle">${lessonSectionText("rename")}</label><input id="sectionTitle" data-section-title="${escapeHtml(section.id)}" maxlength="80" value="${escapeHtml(section.title)}"></div><div class="builder-heading"><h3>${isHomework ? lessonSectionText("homeworkActivities") : t("lesson.activities")}</h3><span data-lesson-autosave-status role="status" aria-live="polite"></span><button type="button" class="button secondary small" data-action="choose-activity">${t("activity.addBlock")}</button></div><button type="button" class="button secondary small lesson-import-launch" data-import-lesson>${escapeHtml(window.SlovaLessonImportUI.labels(currentLanguage)[0])}</button><div id="activityBlocks">${renderActivityBlocks(section.activities)}</div>`
         : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map((activity, index) => {
             const progressIndex = progressIndexes.get(`${section.id}:${index}`);
             const liveAnswerMarkup = liveGroup && liveAnswerActivityTypes.has(activity.type) && progressIndex !== undefined
@@ -4144,6 +4146,7 @@ function renderLessonWorkspace() {
         column?.querySelector("[data-toggle-live-monitor]")?.setAttribute("aria-expanded", "false");
         column?.querySelector("[data-close-live-monitor]")?.setAttribute("hidden", "");
     });
+    pageContent.querySelectorAll("[data-import-lesson]").forEach(button => button.addEventListener("click", openLessonTextImport));
     pageContent.querySelectorAll('[data-action="choose-activity"]').forEach((button) => button.addEventListener("click", openActivityPicker));
     pageContent.querySelectorAll("[data-select-section]").forEach((button) => button.addEventListener("click", () => {
         if (previewActivityEdit) return;
@@ -4275,7 +4278,7 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
                     <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(["vocabulary", "phrase-list"].includes(block.type) ? window.SlovaPhraseList.editorContent(block) : block.content || "")}</textarea>${block.type === "fill-blank" ? `<button type="button" class="button secondary small" data-hide-selected-word>${SlovaI18n.translate(currentLanguage === "ru" ? "Скрыть выделенное слово" : currentLanguage === "ua" ? "Приховати виділене слово" : "Hide selected word", currentLanguage)}</button>` : ""}                    ${block.type === "text" ? `<div class="image-upload-row rich-text-actions"><button type="button" class="button secondary small" data-pick-rich-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-rich-image-file hidden><button type="button" class="button secondary small" data-rich-add-item>${SlovaI18n.translate(currentLanguage === "ru" ? "＋ Добавить пункт" : currentLanguage === "ua" ? "＋ Додати пункт" : "＋ Add item", currentLanguage)}</button></div>` : ""}${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div><small class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</small>` : ""}${["audio", "video"].includes(block.type) ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-media>${SlovaI18n.translate(currentLanguage === "ru" ? "Загрузить файл" : currentLanguage === "ua" ? "Завантажити файл" : "Upload file", currentLanguage)}</button><input type="file" accept="${block.type}/*" data-media-file hidden></div><small class="hint">${SlovaI18n.translate(currentLanguage === "ru" ? "До 50 МБ; поддерживаются MP3/M4A/WAV/OGG/AAC и MP4/WebM/MOV." : currentLanguage === "ua" ? "До 50 МБ; підтримуються MP3/M4A/WAV/OGG/AAC і MP4/WebM/MOV." : "Up to 50 MB; MP3/M4A/WAV/OGG/AAC and MP4/WebM/MOV supported.", currentLanguage)}</small>` : ""}</div>
                     ${["vocabulary", "phrase-list"].includes(block.type) || block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
                     ${renderActivityQuestionEditor(block)}`}
-                        ${activitySettingsField(block)}
+                        ${activityMetadataEditor(block)}${activitySettingsField(block)}
                 </div>
                 ${preview}
             </div>
@@ -4306,7 +4309,7 @@ function previewRichContent(block) {
     const note = window.SlovaActivityUI?.renderNote(content, block.prompt, block.settings);
     if (note) return note;
     const rendered = window.SlovaActivityUI?.renderRichText(content);
-    return rendered || `<div class="preview-material">${escapeHtml(content).replace(/\n/g, "<br>")}</div>`;
+    return `<h3>${escapeHtml(block.prompt || '')}</h3>${window.SlovaActivityUI.renderMetadata(block)}${rendered || `<div class="preview-material">${escapeHtml(content).replace(/\n/g, "<br>")}</div>`}`;
 }
 
 function contentHint(type) {
@@ -4431,6 +4434,11 @@ function activitySettingsPlaceholder(type) {
         "pronunciation-recording": { maxSeconds: 60 }
     };
     return JSON.stringify(examples[type] || {}, null, 2);
+}
+
+function activityMetadataEditor(activity, preview = false) {
+    const text = window.SlovaLessonImportUI.labels(currentLanguage);
+    return `<details class="activity-metadata-settings"><summary>${escapeHtml(text[17])} / ${escapeHtml(text[18])}</summary>${['description', 'helperText'].map((field, index) => `<div class="form-field"><label>${escapeHtml(text[17 + index])}<textarea data-activity-meta="${field}" maxlength="2000" data-meta-preview="${preview}">${escapeHtml(activity.settings?.[field] || '')}</textarea></label></div>`).join('')}</details>`;
 }
 
 function activitySettingsField(activity, preview = false) {
@@ -4791,6 +4799,22 @@ function bindActivityBlockActions() {
 }
 
 function bindBlankCardSettings(root) {
+    root.querySelectorAll('[data-activity-meta]').forEach(input => input.addEventListener('input', () => {
+        const block = input.closest('[data-block-index]');
+        const activity = block ? activeDraftSection()?.activities[Number(block.dataset.blockIndex)] : previewActivityEdit?.draft;
+        if (!activity) return;
+        activity.settings = {...activity.settings, [input.dataset.activityMeta]:input.value};
+        const settingsField = input.closest('.builder-block-editor, .preview-inline-editor')?.querySelector('[data-field="settings"], [data-preview-field="settings"]');
+        if (settingsField) settingsField.value = JSON.stringify(activity.settings, null, 2);
+        if (block) {
+            scheduleLessonDraftAutosave();
+            const preview = block.querySelector('[data-builder-preview]');
+            if (preview) { preview.innerHTML = renderBuilderPreview(activity, Number(block.dataset.blockIndex)); bindLessonPreviewActions(preview); }
+        } else {
+            const settings = input.closest('.preview-inline-editor')?.querySelector('[data-preview-field="settings"]');
+            if (settings) settings.value = JSON.stringify(activity.settings, null, 2);
+        }
+    }));
     const locate = element => {
         const block = element.closest('[data-block-index]');
         return { activity:block ? activeDraftSection()?.activities[Number(block.dataset.blockIndex)] : previewActivityEdit?.draft, block };
@@ -4849,6 +4873,24 @@ function bindLessonNotes(root) {
         pageContent.querySelector(`[data-block-index="${index}"]`)?.scrollIntoView({block:'nearest'});
     }));
 }
+function openLessonTextImport() {
+    if (!hasPermission("edit_lessons") || !activeDraftSection()) return;
+    const section = activeDraftSection();
+    window.SlovaLessonImportUI.open({
+        language: currentLanguage, types: activityTypes, translate: t,
+        openModal, header: modalHeader, modal: modalCard,
+        preview: (activity, index) => renderPreviewActivity(activity, index),
+        enhance: root => { bindLessonPreviewActions(root); enhanceSelects(root); },
+        append: activities => {
+            if (!hasPermission("edit_lessons") || activeDraftSection() !== section) return;
+            section.activities.push(...activities);
+            scheduleLessonDraftAutosave();
+            closeModal(); render();
+            pageContent.querySelector("#activityBlocks")?.lastElementChild?.scrollIntoView({block:"nearest"});
+        }
+    });
+}
+
 function openActivityPicker() {
     const categories = [{ id: "all", label: t("picker.all") }, { id: "tests", label: t("picker.tests") }, { id: "media", label: t("picker.media") }, { id: "other", label: t("picker.other") }];
     const choices = [...activityTypes, {id:"lesson-note",nameKey:"note.title",descKey:"note.description",category:"other"}].filter((item) => (selectedActivityCategory === "all" || item.category === selectedActivityCategory) && `${t(item.nameKey)} ${t(item.descKey)}`.toLowerCase().includes(activitySearch.toLowerCase()));

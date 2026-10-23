@@ -596,7 +596,7 @@
             const note = window.SlovaActivityUI?.renderNote(activity.content, activity.prompt, activity.settings);
             if (note) return note;
             const richText = window.SlovaActivityUI?.renderRichText(activity.content);
-            if (richText) return richText;
+            if (richText) return `<section class="student-text-block"><h3>${escapeHtml(activity.prompt || "")}</h3>${window.SlovaActivityUI.renderMetadata(activity)}${richText}</section>`;
         }
         if (Array.isArray(activity.questions) && activity.questions.length) {
             const canSubmit = activity.questions.some((question) => question.gradable || question.reviewRequired);
@@ -619,7 +619,7 @@
                 : "";
             return `<section class="student-activity-group">
                 <header class="student-activity-group-heading"><span class="student-activity-number">${index + 1}</span><h3>${escapeHtml(activity.prompt || text("activity"))}</h3></header>
-                ${listening}
+                ${window.SlovaActivityUI.renderMetadata(activity)}${listening}
                 <div class="student-activity-subitems">${questions.map(({ question, questionIndex, saved }) => renderActivityItem(
                     question,
                     index,
@@ -673,7 +673,7 @@
             }
         } else if (activity.type === "true-false") {
             const options = Array.isArray(activity.options) ? activity.options : [{ value: "true", label: text("true") }, { value: "false", label: text("false") }];
-            body = `<p class="student-activity-content">${escapeHtml(activity.content || "")}</p><div class="student-answer-options">${options.map(({ value, label }) => `<label class="student-answer-option"><input type="radio" name="${radioName}" value="${escapeHtml(value)}" ${savedResponse === value ? "checked" : ""}><span>${escapeHtml(value === "true" ? text("true") : value === "false" ? text("false") : label)}</span></label>`).join("")}</div>`;
+            body = `<p class="student-activity-content">${escapeHtml(activity.content || "")}</p><div class="student-answer-options">${options.map(({ value, label }) => `<label class="student-answer-option"><input type="radio" name="${radioName}" value="${escapeHtml(value)}" ${savedResponse === value ? "checked" : ""}><span>${escapeHtml(activity.choiceLabels?.[value === "true" ? 0 : value === "false" ? 1 : 2] || activity.settings?.choiceLabels?.[value === "true" ? 0 : value === "false" ? 1 : 2] || (value === "true" ? text("true") : value === "false" ? text("false") : label))}</span></label>`).join("")}</div>`;
             controls = `<input type="hidden" data-answer-kind="choice">`;
         } else if (activity.type === "order-items" || activity.type === "sentence-order") {
             const savedItems = Array.isArray(savedResponse) ? savedResponse.map(String) : [];
@@ -769,7 +769,7 @@
             : "";
         const itemNumber = isQuestion ? `${index + 1}.${questionIndex + 1}` : String(index + 1);
         const title = activity.prompt || (isQuestion ? questionItemLabel(questionIndex) : text("activity"));
-        return `<article class="student-activity" data-activity-index="${index}" ${questionAttributes} data-activity-type="${escapeHtml(activity.type)}"><span class="student-activity-number">${itemNumber}</span><div class="student-activity-main"><h3>${escapeHtml(title)}</h3>${isQuestion ? feedbackMarkup : ""}${body}${submitMarkup}</div></article>`;
+        return `<article class="student-activity" data-activity-index="${index}" ${questionAttributes} data-activity-type="${escapeHtml(activity.type)}"><span class="student-activity-number">${itemNumber}</span><div class="student-activity-main"><h3>${escapeHtml(title)}</h3>${!isQuestion ? window.SlovaActivityUI.renderMetadata(activity) : ""}${isQuestion ? feedbackMarkup : ""}${body}${submitMarkup}</div></article>`;
     }
 
     function renderLessonDetail(lesson) {

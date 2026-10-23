@@ -2137,3 +2137,18 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
     .topbar-right { gap: 4px; }
     .language-button { min-width: 25px; padding-inline: 4px; }
 }
+.lesson-import-launch { margin-block: 8px 18px; }
+.lesson-import-prompt { margin-block: 16px; }
+.lesson-import-prompt summary { cursor: pointer; font-weight: 650; margin-bottom: 12px; }
+.lesson-import-prompt textarea { width: 100%; min-height: 190px; margin-bottom: 10px; }
+.lesson-import-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.lesson-import-layout > *, .lesson-import-preview { min-width: 0; }
+.lesson-import-layout #lessonImportSource { width: 100%; min-height: 420px; max-height: 70vh; resize: vertical; font-family: ui-monospace, monospace; font-size: 14px; line-height: 1.65; }
+.lesson-import-preview { max-height: 64vh; overflow: auto; overflow-wrap: anywhere; }
+.lesson-import-preview .preview-activity { padding: 16px; }
+.lesson-import-preview .preview-drag-layout { grid-template-columns: 1fr; }
+.activity-description { margin: 6px 0 12px; white-space: normal; }
+.activity-helper, .phrase-example { margin: 6px 0 14px; color: var(--muted); font-size: .88rem; white-space: normal; }
+.phrase-example { display: block; }
+.student-text-block { padding-block: 10px; }
+@media (max-width: 760px) { .lesson-import-layout { grid-template-columns: minmax(0, 1fr); } .lesson-import-layout #lessonImportSource { min-height: 280px; } }

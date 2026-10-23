@@ -72,6 +72,29 @@ test('category tasks expose the choices without exposing the correct category fo
     assert.equal(safe.items.length,2);assert.equal('category' in safe.items[0],false);assert.equal(safe.categories.length,2);
 });
 
+test('imported lessons load and grade through the real engine without leaking private notes or gap answers',async()=>{
+    require('./table.js'); require('./fill-blanks.js');
+    const {parse}=require('./lesson-import.js');
+    const result=parse('#TeacherNote: Secret\nNever send this to a student.\n#GapFill: Gaps\n+Description\n++Helper\nJa [bývam/žijem] tu.\n#DropDown: Choose\nOna [má/majú] knihu.\n#MultipleChoice: Fruit\n?Choose fruit\n*apple\n*pear\ncarrot\n#TrueFalse: Evaluate | Right / Wrong / Depends\nA. / Depends\n#Unscramble: Sentence\nI go to school.\n#Table: Table\nA / B\nx / [y/z]');
+    assert.deepEqual(result.errors,[]);
+    const activities=result.activities,e=engine(activities),loaded=await e.request({action:'load'});
+    assert.equal(loaded.status,200);
+    const publicActivities=loaded.body.lesson.sections[0].activities;
+    assert.equal(publicActivities.length,6);
+    assert.doesNotMatch(JSON.stringify(loaded.body),/Never send|bývam|žijem/);
+    assert.equal(publicActivities[0].settings.description,'Description');
+    assert.equal(publicActivities[0].settings.helperText,'Helper');
+    assert.equal(publicActivities[1].questions[0].options[0].text,'Ona ___ knihu.');
+    assert.deepEqual(publicActivities[3].questions[0].choiceLabels,['Right','Wrong','Depends']);
+    assert.equal((await e.write(1,['žijem'])).body.correct,true);
+    assert.equal((await e.write(2,['má'],'submit',{questionId:activities[2].questions[0].id})).body.correct,true);
+    assert.equal((await e.write(3,['apple','pear'])).body.correct,true);
+    assert.equal((await e.write(3,['apple','carrot'])).body.correct,false);
+    assert.equal((await e.write(4,'not-stated','submit',{questionId:activities[4].questions[0].id})).body.correct,true);
+    assert.equal((await e.write(5,['I','go','to','school.'],'submit',{questionId:activities[5].questions[0].id})).body.correct,true);
+    assert.equal((await e.write(6,['z'])).body.correct,true);
+});
+
 test('a late legacy write during rollout is merged by timestamp without affecting newly supported types',()=>{
     const e=engine([]),activities=[{id:id(1),legacyProgressIndex:0,type:'true-false',content:'',answer:'true',prompt:''},{id:id(2),type:'find-error',content:'',answer:'',prompt:''}];
     const result=e.ctx.canonicalProgress(activities,{['b'+id(1)]:{response:'old',correct:false,submitted_at:'2026-10-23T10:00:00Z'},a0:{response:'new',correct:true,submitted_at:'2026-10-23T10:01:00Z'}});
