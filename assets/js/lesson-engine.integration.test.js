@@ -8,7 +8,7 @@ function engine(activities){
     let saved=null,writes=0,handler;
     const tables=()=>({profiles:{role:'student'},class_students:[{id:memberId,class_id:classId,teacher_classes:{id:classId,name:'Class',teacher_id:id(105)}}],class_lesson_assignments:[{class_id:classId,lesson_id:lessonId,teacher_lessons:lesson}],student_lesson_progress:saved?[saved]:[],calendar_events:[]});
     const client={auth:{getUser:async()=>({data:{user:{id:userId}},error:null})},from(table){const chain={};for(const op of ['select','eq','in','gte','order'])chain[op]=()=>chain;chain.maybeSingle=async()=>({data:tables()[table],error:null});chain.then=(resolve,reject)=>Promise.resolve({data:tables()[table],error:null}).then(resolve,reject);chain.upsert=async row=>{saved=structuredClone(row);writes++;return{error:null};};return chain;}};
-    const ctx=vm.createContext({URL,Request,Response,crypto:require('node:crypto').webcrypto,createClient:()=>client,console,SlovaTable:require('./table.js'),SlovaFillBlanks:require('./fill-blanks.js'),Deno:{env:{get:key=>({APP_URL:'https://school.example',SUPABASE_URL:'https://db.example',SUPABASE_ANON_KEY:'test',SUPABASE_SERVICE_ROLE_KEY:'test'})[key]},serve:fn=>{handler=fn;}}});
+    const ctx=vm.createContext({SlovaExerciseFormat:require("./exercise-format.js"),URL,Request,Response,crypto:require('node:crypto').webcrypto,createClient:()=>client,console,SlovaTable:require('./table.js'),SlovaFillBlanks:require('./fill-blanks.js'),Deno:{env:{get:key=>({APP_URL:'https://school.example',SUPABASE_URL:'https://db.example',SUPABASE_ANON_KEY:'test',SUPABASE_SERVICE_ROLE_KEY:'test'})[key]},serve:fn=>{handler=fn;}}});
     const path=process.env.LESSON_ENGINE_TEST_SOURCE||`${__dirname}/../../supabase/functions/student-lessons/index.ts`;
     vm.runInContext(stripTypeScriptTypes(fs.readFileSync(path,'utf8').replace(/^import .*;\r?\n/gm,'')),ctx);
     async function request(payload){const response=await handler(new Request('https://db.example/functions/v1/student-lessons',{method:'POST',headers:{Origin:'https://school.example',Authorization:'Bearer test'},body:JSON.stringify({lessonId,...payload})}));return{status:response.status,body:await response.json()};}
@@ -70,6 +70,55 @@ test('progress serialization preserves teacher reviews while saving another acti
 test('category tasks expose the choices without exposing the correct category for each word',()=>{
     const e=engine([]),safe=e.ctx.safeActivity({type:'columns',content:'Fruit: apple\nVegetable: carrot',prompt:'Sort',answer:''});
     assert.equal(safe.items.length,2);assert.equal('category' in safe.items[0],false);assert.equal(safe.categories.length,2);
+});
+
+test('simple authoring grades source sequences, bracket dropdowns, tables and translated cards without separate answers',async()=>{
+    const activities=[
+        {id:id(1),type:'drag-words',prompt:'Build',content:'Ja každý_deň čítam knihu.',answer:''},
+        {id:id(2),type:'sentence-order',prompt:'Order',content:'Ráno vstávam.\nPotom raňajkujem.\nIdem do školy.',answer:''},
+        {id:id(3),type:'one-of-many',prompt:'Choose',content:'Ja [bývam/bývaš] v [Bratislave/Košiciach].',answer:''},
+        {id:id(4),type:'table',prompt:'Table',content:'Meno / Mesto\nAnna / [Bratislava/Košice]',answer:''},
+        {id:id(5),type:'flashcards',prompt:'Cards',content:'auto [машина]\ndom [дом]',answer:''}
+    ];
+    const e=engine(activities),loaded=await e.request({action:'load'}),publicItems=loaded.body.lesson.sections[0].activities;
+    assert.equal(loaded.status,200);assert.equal(publicItems[0].gradable,true);
+    assert.notDeepEqual(publicItems[0].tokens,['Ja','každý deň','čítam','knihu.']);
+    assert.notDeepEqual(publicItems[1].items.map(item=>item.text),activities[1].content.split('\n'));
+    assert.equal(publicItems[2].options[0].text,'Ja ___ v ___.');
+    assert.equal(publicItems[2].choicesByBlank.length,2);assert.equal('answers' in publicItems[2],false);
+    assert.equal((await e.write(0,['Ja','každý deň','čítam','knihu.'])).body.correct,true);
+    assert.equal((await e.write(0,['knihu.','Ja','každý deň','čítam'])).body.correct,false);
+    assert.equal((await e.write(1,activities[1].content.split('\n'))).body.correct,true);
+    assert.equal((await e.write(2,['bývam','Bratislave'])).body.correct,true);
+    assert.equal((await e.write(2,['bývaš','Bratislave'])).body.correct,false);
+    assert.equal((await e.write(3,['Košice'])).body.correct,true);
+    assert.equal(publicItems[4].cards.length,2);assert.ok(publicItems[4].cards.some(card=>card.front==='auto'&&card.back==='машина'));
+    assert.equal((await e.write(4,['know','repeat'],'save-draft')).status,200);
+});
+
+test('all bracket solutions grade on the server and stay out of student statements and prompts',async()=>{
+    const activities=[
+        {id:id(1),type:'multiple-choice',prompt:'Choose',content:'[apple]\n[pear]\ncarrot',answer:''},
+        {id:id(2),type:'true-false',prompt:'Evaluate',content:'A statement [false]',answer:''},
+        {id:id(3),type:'match',prompt:'Match',content:'auto [car]\ndom [house]',answer:''},
+        {id:id(4),type:'columns',prompt:'Sort',content:'apple [Fruit]\ncarrot [Vegetable]',answer:''},
+        {id:id(5),type:'find-error',prompt:'Correct',content:'Ja [bývať/bývam] tu.',answer:''},
+        {id:id(6),type:'open-answer',prompt:'Write',content:'Where? [Private sample answer]',answer:''},
+        {id:id(7),type:'multiple-choice',prompt:'Grouped',content:'',answer:'',questions:[{id:'q1',prompt:'Fruit',content:'[apple]\n[pear]\ncarrot',answer:''},{id:'q2',prompt:'City',content:'[Bratislava]\nLondon',answer:''}]}
+    ];
+    const e=engine(activities),loaded=await e.request({action:'load'}),items=loaded.body.lesson.sections[0].activities;
+    assert.equal(loaded.status,200);assert.equal(items[0].multipleAnswers,true);assert.equal(items[1].content,'A statement');
+    assert.equal(items[4].content,'Ja bývať tu.');assert.equal(items[5].content,'Where?');
+    assert.doesNotMatch(JSON.stringify(loaded.body),/Private sample answer|\[false\]|bývam/);
+    assert.equal((await e.write(0,['apple','pear'])).body.correct,true);
+    assert.equal((await e.write(0,['apple','carrot'])).body.correct,false);
+    assert.equal((await e.write(1,'false')).body.correct,true);
+    assert.equal((await e.write(2,['car','house'])).body.correct,true);
+    assert.equal((await e.write(3,['Fruit','Vegetable'])).body.correct,true);
+    assert.equal((await e.write(4,JSON.stringify({index:1,correction:'bývam'}))).body.correct,true);
+    assert.equal(items[6].questions[0].multipleAnswers,true);
+    assert.equal((await e.write(6,['apple','pear'],'submit',{questionId:'q1'})).body.correct,true);
+    assert.equal((await e.write(6,'Bratislava','submit',{questionId:'q2'})).body.correct,true);
 });
 
 test('imported lessons load and grade through the real engine without leaking private notes or gap answers',async()=>{

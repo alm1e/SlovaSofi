@@ -181,7 +181,7 @@
                     activity.questions = records(content).map(record => {
                         const tokens = record.text.split(/\s+/).filter(Boolean).map(word => word.replace(/_/g, ' '));
                         if (tokens.length < 2 || tokens.some(word => word.includes('/'))) throw Error('words');
-                        return question(record.extra, record.text.replace(/_/g, ' '), tokens.join(' / '));
+                        return question(record.extra, record.text, tokens.join(' / '));
                     });
                     activity.content = '';
                 } else if (type === 'sentence-order') {
@@ -194,6 +194,7 @@
                     activity.content = groups.flatMap(([category, ...words]) => words.map(word => `${category}: ${word}`)).join('\n');
                 } else if (type === 'flashcards') {
                     activity.content = records(content).map(record => {
+                        if(!record.extra){const bracket=record.text.match(/^(.+?)\s+\[(.+)\]$/);if(bracket){record.text=bracket[1];record.extra=bracket[2];}}
                         if (!record.text || !record.extra || /[|]/.test(record.text + record.extra)) throw Error('cards');
                         return `${record.text} | ${record.extra.replace(/\n/g, ' ')}`;
                     }).join('\n');

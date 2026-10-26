@@ -856,6 +856,7 @@ function renderActivityQuestionEditor(activity, preview = false) {
         return renderTrueFalseEditor(activity, preview);
     }
     if (["vocabulary", "phrase-list"].includes(activity.type)) return "";
+    const questionType=activity.type==="listening-questions"?"multiple-choice":activity.type;
     const questions = Array.isArray(activity.questions) ? activity.questions : [];
     if (activity.type === "text" && !questions.length) return "";
     ensureActivityQuestionIds(activity);
@@ -868,8 +869,8 @@ function renderActivityQuestionEditor(activity, preview = false) {
     const items = questions.map((question, index) => `<section class="activity-question-editor-item" ${indexAttribute}="${index}">
         <header class="activity-question-editor-heading"><strong>${activityQuestionText("item")} ${index + 1}</strong><button type="button" class="mini-action activity-question-remove" ${removeAttribute} aria-label="${activityQuestionText("remove")}" title="${activityQuestionText("remove")}" ${questions.length <= 1 ? "disabled" : ""}>×</button></header>
         <div class="form-field"><label>${activityQuestionText("itemPrompt")}</label><input ${fieldAttribute}="prompt" value="${escapeHtml(question.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
-        <div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(activity.type))}</span></label><textarea ${fieldAttribute}="content" placeholder="${escapeHtml(contentPlaceholder(activity.type))}">${escapeHtml(question.content || "")}</textarea></div>
-        ${hasAnswer ? `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(activity.type))}</span></label><input ${fieldAttribute}="answer" value="${escapeHtml(question.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(activity.type))}"></div>` : ""}
+        <div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(questionType))}</span></label><textarea ${fieldAttribute}="content" placeholder="${escapeHtml(contentPlaceholder(questionType))}">${escapeHtml(window.SlovaExerciseFormat.editorContent({...question,type:questionType,settings:activity.settings}))}</textarea></div>
+        ${hasAnswer ? renderActivityAnswerField({...question,type:questionType,settings:activity.settings},fieldAttribute) : ""}
     </section>`).join("");
     return `<div class="activity-question-editor">${items}<button type="button" class="button secondary small activity-question-add" ${addAttribute} ${questions.length >= MAX_ACTIVITY_QUESTIONS ? "disabled" : ""} title="${activityQuestionText("limit")}">${activityQuestionText("add")}</button></div>`;
 }
@@ -887,11 +888,11 @@ function renderTrueFalseEditor(activity, preview = false) {
     return `<div class="tf-editor" data-tf-editor data-tf-preview="${preview}"><strong class="tf-editor-heading">${text.title}</strong><div class="tf-rows">${rows.map((question, index) => {
         const answer = String(question.answer || "").trim();
         const value = /^(true|yes|так|да|правда|0)$/i.test(answer) ? "true" : /^(false|no|ні|нет|неправда|1)$/i.test(answer) ? "false" : answer;
-        const contentField = grouped && !question.content && question.prompt ? "prompt" : "content";
+        const contentField = "content";
         return `<div class="tf-row" data-tf-index="${index}" ${grouped ? `${indexAttr}="${index}"` : ""}>
             <span class="tf-drag" data-tf-drag draggable="${grouped}" aria-hidden="true" title="${text.move}">⠿</span>
-            <select ${field}="answer" data-tf-answer aria-label="${text.choose} ${index + 1}"><option value="" ${!value ? "selected" : ""}>${text.choose}</option><option value="true" ${value === "true" ? "selected" : ""}>${escapeHtml(activity.settings?.choiceLabels?.[0] || text.yes)}</option><option value="false" ${value === "false" ? "selected" : ""}>${escapeHtml(activity.settings?.choiceLabels?.[1] || text.no)}</option>${activity.settings?.allowNotStated ? `<option value="not-stated" ${value === "not-stated" ? "selected" : ""}>${escapeHtml(activity.settings?.choiceLabels?.[2] || "Not stated")}</option>` : ""}${value && !["true", "false", ...(activity.settings?.allowNotStated ? ["not-stated"] : [])].includes(value) ? `<option value="${escapeHtml(value)}" selected>${escapeHtml(value)}</option>` : ""}</select>
-            <div class="tf-statement"><input ${field}="${contentField}" value="${escapeHtml(question[contentField] || "")}" placeholder="${text.statement}" aria-label="${text.statement} ${index + 1}">${grouped && question.prompt && question.content ? `<small>${escapeHtml(question.prompt)}</small>` : ""}</div>
+
+            <div class="tf-statement"><input ${field}="${contentField}" value="${escapeHtml(window.SlovaExerciseFormat.editorContent({...question,type:"true-false",settings:activity.settings}))}" placeholder="${text.statement}" aria-label="${text.statement} ${index + 1}">${grouped && question.prompt && question.content ? `<small>${escapeHtml(question.prompt)}</small>` : ""}</div>
             <div class="tf-row-actions"><button type="button" data-tf-move="-1" aria-label="${text.up}" title="${text.up}" ${index === 0 ? "disabled" : ""}>↑</button><button type="button" data-tf-move="1" aria-label="${text.down}" title="${text.down}" ${index === rows.length - 1 ? "disabled" : ""}>↓</button><button type="button" ${preview ? "data-preview-remove-question" : "data-remove-question"} aria-label="${text.remove}" title="${text.remove}" ${!grouped || rows.length <= 1 ? "disabled" : ""}>×</button></div>
         </div>`;
     }).join("")}</div><button type="button" class="button secondary tf-add" ${preview ? "data-add-preview-question" : "data-add-question"} ${rows.length >= MAX_ACTIVITY_QUESTIONS ? "disabled" : ""}>${text.add}</button></div>`;
@@ -2605,6 +2606,7 @@ function previewVideoEmbedUrl(value) {
 }
 
 function renderPreviewActivity(activity, index, canEdit = false, quickEditing = false, liveAnswerMarkup = "", questionIndex = null) {
+    activity=window.SlovaExerciseFormat.prepare(activity);
     const type = activity.type;
     const isQuestion = Number.isInteger(questionIndex);
     const prompt = escapeHtml(activity.prompt || (isQuestion
@@ -2614,7 +2616,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
     const contentMatchesPrompt = Boolean(activity.prompt?.trim())
         && content.trim().replace(/\s+/g, " ").toLocaleLowerCase() === activity.prompt.trim().replace(/\s+/g, " ").toLocaleLowerCase();
     const displayContent = contentMatchesPrompt ? "" : content;
-    const answer = String(activity.answer || "").trim();
+    const answer = String(window.SlovaExerciseFormat.sequenceTypes.includes(type) ? window.SlovaExerciseFormat.sequenceAnswer(type, content) : activity.answer || "").trim();
     const lines = previewLines(content);
     let body = "";
     let checkable = true;
@@ -2632,8 +2634,8 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
                 <div class="form-field"><label>${hasQuestions ? activityQuestionText("commonPrompt") : t("field.instruction")}</label><input data-preview-field="prompt" value="${escapeHtml(activity.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
                 ${hasQuestions || type === "true-false"
                     ? renderActivityQuestionEditor(activity, true)
-                    : `<div class="form-field"><label>${activityType?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(type))}</span></label><textarea data-preview-field="content" placeholder="${escapeHtml(contentPlaceholder(type))}">${escapeHtml(activity.content || "")}</textarea></div>
-                    ${hasAnswer ? `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(type))}</span></label><input data-preview-field="answer" value="${escapeHtml(activity.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(type))}"></div>` : ""}
+                    : `<div class="form-field"><label>${activityType?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${escapeHtml(contentHint(type))}</span></label><textarea data-preview-field="content" placeholder="${escapeHtml(contentPlaceholder(type))}">${escapeHtml(window.SlovaExerciseFormat.editorContent(activity))}</textarea></div>
+                    ${hasAnswer ? renderActivityAnswerField(activity,"data-preview-field") : ""}
                     ${renderActivityQuestionEditor(activity, true)}`}
                 ${activityMetadataEditor(activity, true)}${activitySettingsField(activity, true)}
             </div>
@@ -2657,7 +2659,10 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         </article>`;
     }
 
-    if (type === "drag-words") {
+    if (type === "one-of-many" && window.SlovaExerciseFormat.dropdown(content)) {
+        const inline=window.SlovaExerciseFormat.dropdown(content);
+        body=`<p class="preview-instruction">${inline.content.split('___').map((part,i)=>escapeHtml(part)+(inline.choices[i]?`<select data-inline-choice aria-label="${previewText('choose')}"><option value="">---</option>${[...inline.choices[i]].reverse().map(option=>`<option value="${escapeHtml(option)}" ${option===inline.answers[i]?'data-correct-option':''}>${escapeHtml(option)}</option>`).join('')}</select>`:'')).join('')}</p>`;
+    } else if (type === "drag-words") {
         const expected = answer ? previewTokens(answer) : content.trim().split(/\s+/).filter(Boolean);
         const correctOrder = answer ? expected.join(" ") : content.trim();
         const tokens = expected.map((word, wordIndex) => ({ word, wordIndex }));
@@ -2668,7 +2673,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
     } else if (type === "fill-blank") {
         const blanks = window.SlovaFillBlanks.parse(content, answer, activity.settings);
         const view = window.SlovaFillBlanks.presentation(content, answer, activity.settings);
-        body = `<div class="preview-instruction lesson-fill-text">${window.SlovaActivityUI.renderBlankText(blanks.parts, blanks.answers.map((value, partIndex) => `<input class="preview-inline-input" data-answer-index="${partIndex}" placeholder="${escapeHtml(value)}" aria-label="${previewText("typeAnswer")} ${partIndex + 1}" autocomplete="off">`))}</div>`;
+        body = `<div class="preview-instruction lesson-fill-text">${window.SlovaActivityUI.renderBlankText(blanks.parts, blanks.answers.map((value, partIndex) => `<input class="preview-inline-input" data-answer-index="${partIndex}" placeholder="..." data-correct-placeholder="${escapeHtml(value)}" aria-label="${previewText("typeAnswer")} ${partIndex + 1}" autocomplete="off">`))}</div>`;
         if (window.SlovaBlankCards) body = window.SlovaBlankCards.render(body,view.wordBank,view.gapLayout,currentLanguage);
     } else if (type === "one-of-many" && (lines[0] || "").includes("___")) {
         const [before, ...after] = lines[0].split("___");
@@ -2716,13 +2721,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         body = `${displayContent ? `<p class="preview-material">${escapeHtml(displayContent)}</p>` : ""}<textarea class="preview-text-answer" data-open-answer placeholder="${previewText("typeAnswer")}"></textarea>`;
         if (!answer) checkable = false;
     } else if (type === "flashcards") {
-        body = `<div class="preview-flashcards">${lines.map((line) => {
-            const delimiter = line.includes("|") ? "|" : ":";
-            const separator = line.indexOf(delimiter);
-            const front = (separator < 0 ? line : line.slice(0, separator)).trim();
-            const back = separator < 0 ? "" : line.slice(separator + 1).trim();
-            return `<div class="preview-flashcard" data-front="${escapeHtml(front)}" data-back="${escapeHtml(back)}"><strong>${previewFlashcardSideMarkup(front)}</strong><button type="button" class="preview-flashcard-flip" aria-pressed="false">${previewText("flip")}</button></div>`;
-        }).join("") || `<p class="preview-material">${escapeHtml(displayContent)}</p>`}</div>`;
+        body = window.SlovaFlashcardDeck.render(`<div class="preview-flashcards">${window.SlovaExerciseFormat.cardsFor(activity).map(card=>`<div class="preview-flashcard" data-front="${escapeHtml(card.front)}" data-back="${escapeHtml(card.back)}"><strong>${previewFlashcardSideMarkup(card.front)}</strong><button type="button" class="preview-flashcard-flip" aria-pressed="false">${previewText("flip")}</button></div>`).join('')}</div>`,currentLanguage);
         checkable = false;
     } else if (type === "image") {
         const images = window.slovaGallery.parse(content, true);
@@ -2737,7 +2736,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         const table = window.SlovaTable.parse(content, answer, activity.settings);
         body = `<div class="preview-table-wrap"><table class="preview-table"><tbody>${table.rows.map(row => `<tr>${row.map(cell => `<td>${cell.split(/(\{\{blank:\d+\}\})/g).map(part => {
             const match = part.match(/^\{\{blank:(\d+)\}\}$/);
-            return match ? `<input class="preview-inline-input" data-table-answer-index="${match[1]}" placeholder="${escapeHtml(table.answers[Number(match[1])])}" aria-label="${previewText("typeAnswer")}" autocomplete="off">` : escapeHtml(part);
+            return match ? `<input class="preview-inline-input" data-table-answer-index="${match[1]}" placeholder="..." data-correct-placeholder="${escapeHtml(table.answers[Number(match[1])])}" aria-label="${previewText("typeAnswer")}" autocomplete="off">` : escapeHtml(part);
         }).join("")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
         checkable = table.blankCount > 0;
     } else if (type === "text") {
@@ -2766,7 +2765,8 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
     const checkButton = checkable && !isQuestion
         ? `<div class="preview-actions"><button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button></div>`
         : "";
-    const correctMarkup = "";
+    const hintLabels={ru:"Показать ответы",ua:"Показати відповіді",en:"Show answers",sk:"Zobraziť odpovede",kk:"Жауаптарды көрсету"};
+    const correctMarkup = body.includes('data-correct-placeholder') ? `<button type="button" class="button secondary small" data-preview-reveal aria-pressed="false">${escapeHtml(hintLabels[currentLanguage]||hintLabels.en)}</button>` : "";
     return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${["fill-blank", "table"].includes(type) ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}${isQuestion ? `<span class="preview-q-badge">${questionIndex + 1}</span>` : `<h3>${previewItemNumber}. ${prompt}</h3>`}${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${isQuestion && activity.prompt?.trim() ? `<p class="preview-q-prompt">${prompt}</p>` : ""}${!isQuestion ? window.SlovaActivityUI.renderMetadata(activity) : ""}${liveAnswerMarkup}${resultMarkup}${body}${correctMarkup}${checkButton}</article>`;
 }
 
@@ -2802,7 +2802,7 @@ function checkPreviewActivity(card) {
     if (!result) return;
     const answer = card.dataset.previewAnswer.trim();
     const resultClass = (status = "") => `preview-result${card.classList.contains("preview-question-activity") ? " preview-question-result" : ""}${status ? ` ${status}` : ""}`;
-    if (!answer && !["match", "columns", "fill-blank", "table"].includes(card.dataset.previewType)) {
+    if (!answer && !["match", "columns", "fill-blank", "table"].includes(card.dataset.previewType) && !card.querySelector("[data-inline-choice]")) {
         result.textContent = previewText("noAnswer");
         result.className = resultClass();
         return;
@@ -2823,7 +2823,7 @@ function checkPreviewActivity(card) {
         correct = window.SlovaTable.check(card.dataset.previewContent, answer, JSON.parse(card.dataset.previewSettings || '{}'), actual);
     } else if (type === "multiple-choice" || type === "one-of-many" || type === "true-false") {
         const inlineChoice = card.querySelector("[data-inline-choice]");
-        if (inlineChoice) correct = Boolean(inlineChoice.value && inlineChoice.selectedOptions[0]?.hasAttribute('data-correct-option'));
+        if (inlineChoice) correct = Array.from(card.querySelectorAll("[data-inline-choice]")).every(select=>Boolean(select.value && select.selectedOptions[0]?.hasAttribute("data-correct-option")));
         else {
             const options = Array.from(card.querySelectorAll('.preview-option'));
             correct = options.some(option => option.classList.contains('is-correct-option'))
@@ -2974,6 +2974,11 @@ async function savePreviewActivities(lesson, sectionId, activities, successMessa
 }
 
 function bindLessonPreviewActions(container = pageContent, lesson = null, section = null, isHomework = false) {
+    container.querySelectorAll('[data-preview-reveal]').forEach(button=>button.addEventListener('click',()=>{
+        const show=button.getAttribute('aria-pressed')!=='true';button.setAttribute('aria-pressed',String(show));
+        button.closest('[data-preview-activity]')?.querySelectorAll('[data-correct-placeholder]').forEach(input=>{input.placeholder=show?input.dataset.correctPlaceholder:'...';});
+    }));
+    window.SlovaFlashcardDeck?.bind(container);
     window.SlovaBlankCards?.bind(container);
     window.SlovaActivityUI?.enhancePairing(container, { empty: previewText("choose") });
     container.querySelectorAll("[data-preview-error-word]").forEach((button) => button.addEventListener("click", () => {
@@ -3007,14 +3012,21 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
                 && previewActivityEdit.isHomework === isHomework) {
             if (input.dataset.previewField === "settings") {
                 updateActivitySettings(previewActivityEdit.draft, input);
-            } else previewActivityEdit.draft[input.dataset.previewField] = input.value;
+            } else { previewActivityEdit.draft[input.dataset.previewField] = input.value; if(input.dataset.previewField === "content")window.SlovaExerciseFormat.applyContent(previewActivityEdit.draft,input.value); }
+            const legacy=input.closest('.preview-inline-editor')?.querySelector('[data-legacy-answer-field]');if(legacy)legacy.hidden=!window.SlovaExerciseFormat.answerFieldNeeded(previewActivityEdit.draft);
             }
         }));
         container.querySelectorAll("[data-preview-question-field]").forEach((input) => input.addEventListener("input", () => {
             const edit = previewActivityEdit;
             if (edit?.lessonId !== lesson.id || edit.sectionId !== section.id || edit.isHomework !== isHomework) return;
             const question = edit.draft.questions?.[Number(input.closest("[data-preview-question-index]")?.dataset.previewQuestionIndex)];
-            if (question) question[input.dataset.previewQuestionField] = input.value;
+            if (question) {
+                question[input.dataset.previewQuestionField] = input.value;
+                if(input.dataset.previewQuestionField==="content"||edit.draft.type==="true-false")window.SlovaExerciseFormat.applyQuestionContent(edit.draft,question,input.value);
+                if(input.dataset.previewQuestionField==='content'&&window.SlovaExerciseFormat.sequenceTypes.includes(edit.draft.type))question.answer=window.SlovaExerciseFormat.sequenceAnswer(edit.draft.type,question.content);
+                const legacy=input.closest('[data-preview-question-index]')?.querySelector('[data-legacy-answer-field]');
+                if(legacy)legacy.hidden=!window.SlovaExerciseFormat.answerFieldNeeded({...question,type:edit.draft.type,settings:edit.draft.settings});
+            }
         }));
         container.querySelectorAll("[data-add-preview-question]").forEach((button) => button.addEventListener("click", () => {
             const edit = previewActivityEdit;
@@ -4214,6 +4226,7 @@ function renderLessonWorkspace() {
     });
     enhanceSelects(pageContent);
     if (isHomework) bindHomeworkCopySource();
+    pageContent.querySelectorAll('.lesson-workspace form, #lessonForm').forEach(form => form.addEventListener('keydown',preventLessonInputSubmit));
     if (isEditing) bindActivityBlockActions();
     else bindLessonPreviewActions(pageContent);
     bindTrueFalseEditors(pageContent);
@@ -4267,7 +4280,7 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
                     <button type="button" class="mini-action builder-block-delete" data-remove-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button>
                 </div>
             </header>
-            ${window.SlovaLessonReadiness?.incomplete(block) ? `<p class="lesson-readiness-warning" role="status">${window.SlovaLessonReadiness.message(currentLanguage)}</p>` : ''}
+            <p class="lesson-readiness-warning" data-block-readiness role="status" ${window.SlovaLessonReadiness?.incomplete(block)?'':'hidden'}>${window.SlovaLessonReadiness?.message(currentLanguage)||''}</p>
             <div class="builder-block-fields" ${isExpanded ? "" : "hidden"}>
                 <div class="builder-block-editor">
                 <div class="form-field"><label>${hasQuestions ? activityQuestionText("commonPrompt") : t("field.instruction")}</label><input data-field="prompt" value="${escapeHtml(block.prompt || "")}" placeholder="${t("field.instructionExample")}"></div>
@@ -4275,8 +4288,8 @@ function renderActivityBlocks(activities = activeDraftSection()?.activities || [
                     ? `${block.type === "listening-questions" ? `<div class="form-field"><label>${t("field.mediaContent")}</label><textarea data-field="content" placeholder="https://…">${escapeHtml(block.content || "")}</textarea></div>` : ""}${renderActivityQuestionEditor(block)}`
                     : `<div class="form-field"><label>${type?.category === "media" ? t("field.mediaContent") : t("field.taskText")} <span class="hint">${block.type === "text" ? "" : escapeHtml(contentHint(block.type))}</span></label>
                     ${["text", "fill-blank"].includes(block.type) ? richTextToolbar() : ""}
-                    <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(["vocabulary", "phrase-list"].includes(block.type) ? window.SlovaPhraseList.editorContent(block) : block.content || "")}</textarea>${block.type === "fill-blank" ? `<button type="button" class="button secondary small" data-hide-selected-word>${SlovaI18n.translate(currentLanguage === "ru" ? "Скрыть выделенное слово" : currentLanguage === "ua" ? "Приховати виділене слово" : "Hide selected word", currentLanguage)}</button>` : ""}                    ${block.type === "text" ? `<div class="image-upload-row rich-text-actions"><button type="button" class="button secondary small" data-pick-rich-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-rich-image-file hidden><button type="button" class="button secondary small" data-rich-add-item>${SlovaI18n.translate(currentLanguage === "ru" ? "＋ Добавить пункт" : currentLanguage === "ua" ? "＋ Додати пункт" : "＋ Add item", currentLanguage)}</button></div>` : ""}${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div><small class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</small>` : ""}${["audio", "video"].includes(block.type) ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-media>${SlovaI18n.translate(currentLanguage === "ru" ? "Загрузить файл" : currentLanguage === "ua" ? "Завантажити файл" : "Upload file", currentLanguage)}</button><input type="file" accept="${block.type}/*" data-media-file hidden></div><small class="hint">${SlovaI18n.translate(currentLanguage === "ru" ? "До 50 МБ; поддерживаются MP3/M4A/WAV/OGG/AAC и MP4/WebM/MOV." : currentLanguage === "ua" ? "До 50 МБ; підтримуються MP3/M4A/WAV/OGG/AAC і MP4/WebM/MOV." : "Up to 50 MB; MP3/M4A/WAV/OGG/AAC and MP4/WebM/MOV supported.", currentLanguage)}</small>` : ""}</div>
-                    ${["vocabulary", "phrase-list"].includes(block.type) || block.type === "text" || block.type === "image" || block.type === "video" || block.type === "audio" ? "" : `<div class="form-field"><label>${t("field.answer")} <span class="hint">${escapeHtml(answerHint(block.type))}</span></label><input data-field="answer" value="${escapeHtml(block.answer || "")}" placeholder="${escapeHtml(answerPlaceholder(block.type))}"></div>`}
+                    <textarea data-field="content" placeholder="${escapeHtml(contentPlaceholder(block.type))}">${escapeHtml(window.SlovaExerciseFormat.editorContent(block))}</textarea>${block.type === "fill-blank" ? `<button type="button" class="button secondary small" data-hide-selected-word>${SlovaI18n.translate(currentLanguage === "ru" ? "Скрыть выделенное слово" : currentLanguage === "ua" ? "Приховати виділене слово" : "Hide selected word", currentLanguage)}</button>` : ""}                    ${block.type === "text" ? `<div class="image-upload-row rich-text-actions"><button type="button" class="button secondary small" data-pick-rich-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-rich-image-file hidden><button type="button" class="button secondary small" data-rich-add-item>${SlovaI18n.translate(currentLanguage === "ru" ? "＋ Добавить пункт" : currentLanguage === "ua" ? "＋ Додати пункт" : "＋ Add item", currentLanguage)}</button></div>` : ""}${block.type === "image" ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-image>${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).chooseFile)}</button><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple data-image-file hidden></div><small class="hint">${escapeHtml((imageUploadMessages[currentLanguage] || imageUploadMessages.ru).galleryHint)}</small>` : ""}${["audio", "video"].includes(block.type) ? `<div class="image-upload-row"><button type="button" class="button secondary small" data-pick-media>${SlovaI18n.translate(currentLanguage === "ru" ? "Загрузить файл" : currentLanguage === "ua" ? "Завантажити файл" : "Upload file", currentLanguage)}</button><input type="file" accept="${block.type}/*" data-media-file hidden></div><small class="hint">${SlovaI18n.translate(currentLanguage === "ru" ? "До 50 МБ; поддерживаются MP3/M4A/WAV/OGG/AAC и MP4/WebM/MOV." : currentLanguage === "ua" ? "До 50 МБ; підтримуються MP3/M4A/WAV/OGG/AAC і MP4/WebM/MOV." : "Up to 50 MB; MP3/M4A/WAV/OGG/AAC and MP4/WebM/MOV supported.", currentLanguage)}</small>` : ""}</div>
+                    ${renderActivityAnswerField(block)}
                     ${renderActivityQuestionEditor(block)}`}
                         ${activityMetadataEditor(block)}${activitySettingsField(block)}
                 </div>
@@ -4313,6 +4326,11 @@ function previewRichContent(block) {
 }
 
 function contentHint(type) {
+    if(window.SlovaExerciseFormat.sequenceTypes.includes(type))return contentPlaceholder(type);
+    if(['vocabulary','phrase-list'].includes(type))return 'auto [машина]';
+    const bracketExamples={"multiple-choice":"[Bratislava]\nKošice\nŽilina","true-false":"Slon je malý [false]",match:"auto [машина]",columns:"jablko [Ovocie]","find-error":"Ja [bývať/bývam] v Bratislave.","open-answer":"Otázka? [Ukážková odpoveď]"};
+    if(bracketExamples[type])return bracketExamples[type];
+    const simple=window.SlovaExerciseFormat.hint(type,currentLanguage); if(simple)return simple;
     if (type === "table") return ({ru:"Столбцы через /, каждая строка с новой строки. Пропуски: ___, [] или [ответ]. Ответы для ___ и [] — по порядку через /.",ua:"Стовпці через /, кожен рядок з нового рядка. Пропуски: ___, [] або [відповідь]. Відповіді для ___ та [] — за порядком через /.",en:"Separate columns with / and rows with a new line. Blanks: ___, [] or [answer]. Answers for ___ and [] go in order, separated by /.",sk:"Stĺpce oddeľte / a riadky novým riadkom. Medzery: ___, [] alebo [odpoveď]. Odpovede pre ___ a [] zadajte v poradí cez /.",kk:"Бағандарды / арқылы бөліп, әр жолды жаңа жолдан бастаңыз. Бос орындар: ___, [] немесе [жауап]. ___ және [] жауаптарын ретімен / арқылы бөліңіз."})[currentLanguage];
     if (type === "fill-blank") return (SlovaI18n.locales({ ru: "Пропуски: ___ или [ответ], например širok[á]. Варианты: [bývam / žijem]. Отдельное поле ответов — только для ___, по порядку через /.", ua: "Пропуски: ___ або [відповідь], наприклад širok[á]. Варіанти: [bývam / žijem]. Окреме поле відповідей — лише для ___, по порядку через /.", en: "Use ___ or [answer], e.g. širok[á]. Alternatives: [bývam / žijem]. The answer field is only for ___ blanks, in order separated by /." }))[currentLanguage];
     if (["vocabulary", "phrase-list"].includes(type)) return (SlovaI18n.locales({ ru: "Каждая строка: слово | перевод | URL аудио (необязательно). До 100 строк. Без аудио используется словацкая озвучка браузера.", ua: "Кожен рядок: слово | переклад | URL аудіо (необов’язково). До 100 рядків. Без аудіо використовується словацька вимова браузера.", en: "One row per word: word / translation / audio URL (optional). Up to 100 rows. Without audio, browser Slovak speech is used." }))[currentLanguage];
@@ -4392,6 +4410,11 @@ function richTextToolbar() {
 }
 
 function contentPlaceholder(type) {
+    if(['vocabulary','phrase-list'].includes(type))return 'auto [машина]\ndom [дом]';
+    const bracketExamples={"multiple-choice":"[Bratislava]\nKošice\nŽilina","true-false":"Slon je malý [false]",match:"auto [машина]\ndom [дом]",columns:"jablko [Ovocie]\nmrkva [Zelenina]","find-error":"Ja [bývať/bývam] v Bratislave.","open-answer":"Kde bývaš? [Bývam v Bratislave.]","drag-words":"[Ja bývam v Bratislave.]","order-items":"[ráno]\n[poludnie]\n[večer]","sentence-order":"[Ráno vstávam.]\n[Potom raňajkujem.]"};
+    if(bracketExamples[type])return bracketExamples[type];
+    const examplesSimple={"fill-blank":"Ja [bývam] v Bratislave.","drag-words":"Ja bývam v Bratislave.","order-items":"ráno\npopoludní\nvečer","sentence-order":"Ráno vstávam.\nPotom raňajkujem.\nIdem do školy.",table:"Meno / Mesto / Jazyk\nAnna / [Bratislava] / [slovenčina]\nPeter / [Košice] / [angličtina]",flashcards:currentLanguage==='ru'||currentLanguage==='ua'?"auto [машина]\ndom [дом]":"auto [car]\ndom [house]","one-of-many":"Ja [bývam/bývaš/býva] v Bratislave."};
+    if(examplesSimple[type])return examplesSimple[type];
     if (type === "columns") return "Ovocie: jablko\nOvocie: banán\nZelenina: mrkva\nZelenina: uhorka";
     if (type === "table") return "Meno / Mesto / Jazyk\nAnna / [Bratislava] / []\nPeter / ___ / [slovenčina]";
     if (["vocabulary", "phrase-list"].includes(type)) return "Ďakujem | Дякую\nProsím | Будь ласка\nŠťastnú cestu! | Щасливої дороги";
@@ -4401,6 +4424,12 @@ function contentPlaceholder(type) {
         en: { match: "dom = house\nškola = school", columns: "Verbs: ísť\nNouns: dom", "listening-questions": "https://example.com/listening.mp3", "interactive-image": "https://example.com/room.jpg", "find-error": "Ja bývať v Bratislave." }
     });
     return examples[currentLanguage][type] || ({ "drag-words": "Napríklad: Ja bývam v Bratislave.", "fill-blank": "Ja ___ v Bratislave.", "multiple-choice": "Bratislava\nKošice\nŽilina", "order-items": "1. ráno\n2. popoludní\n3. večer" })[type] || t("field.enterText");
+}
+
+function renderActivityAnswerField() { return ""; }
+
+function preventLessonInputSubmit(event) {
+    if(event.key==='Enter'&&event.target.matches('input:not([type="submit"])'))event.preventDefault();
 }
 
 function answerHint(type) {
@@ -4535,6 +4564,8 @@ function bindActivityBlockActions() {
         let visualEditor = null;
         const refreshRichPreview = () => {
             visualEditor?.refresh();
+            const warning=blockElement.querySelector('[data-block-readiness]');
+            if(warning)warning.hidden=!window.SlovaLessonReadiness?.incomplete(currentBlock());
             if (!previewBox || !blockElement.classList.contains("is-expanded")) return;
             const scrollTop = previewBox.scrollTop;
             previewBox.innerHTML = renderBuilderPreview(currentBlock(), Number(blockElement.dataset.blockIndex));
@@ -4548,6 +4579,8 @@ function bindActivityBlockActions() {
                 const question = block.questions[Number(questionElement.dataset.questionIndex)];
                 if (question) {
                     question[input.dataset.field] = input.value;
+                    if(input.dataset.field==="content"||block.type==="true-false")window.SlovaExerciseFormat.applyQuestionContent(block,question,input.value);
+                    if(input.dataset.field === "content" && window.SlovaExerciseFormat.sequenceTypes.includes(block.type)) question.answer=window.SlovaExerciseFormat.sequenceAnswer(block.type,question.content);
                     scheduleLessonDraftAutosave();
                 }
             } else if (input.dataset.field === "settings") {
@@ -4555,11 +4588,14 @@ function bindActivityBlockActions() {
                 scheduleLessonDraftAutosave();
             } else {
                 block[input.dataset.field] = input.value;
+                if(input.dataset.field === "content") window.SlovaExerciseFormat.applyContent(block,input.value);
                 if (["vocabulary", "phrase-list"].includes(block.type) && input.dataset.field === "content") {
-                    block.settings = { ...block.settings, vocabularyFormat: "slash", words: window.SlovaPhraseList.parse(input.value) };
+                    block.settings = { ...block.settings, vocabularyFormat: "slash", words: window.SlovaPhraseList.parse(window.SlovaExerciseFormat.prepare(block).content) };
                 }
                 scheduleLessonDraftAutosave();
             }
+            const legacy=(questionElement||blockElement).querySelector('[data-legacy-answer-field]');
+            if(legacy)legacy.hidden=!window.SlovaExerciseFormat.answerFieldNeeded(questionElement?{...block.questions[Number(questionElement.dataset.questionIndex)],type:block.type,settings:block.settings}:block);
             refreshRichPreview();
         }));
         const contentField = blockElement.querySelector(':scope > .builder-block-fields > .builder-block-editor > .form-field > textarea[data-field="content"]');
@@ -4899,7 +4935,7 @@ function openActivityPicker() {
         <div class="form-field"><input type="search" id="activitySearch" value="${escapeHtml(activitySearch)}" placeholder="${t("picker.search")}" aria-label="${t("picker.search")}"></div>
         <div class="activity-grid">${choices.map((choice) => `<button type="button" class="activity-choice activity-choice-${choice.category}" data-add-activity="${choice.id}" aria-label="${escapeHtml(`${t(choice.nameKey)}. ${t(choice.descKey)}`)}">
             <span class="activity-illustration">${activityIllustration(choice.id)}</span>
-            <span class="activity-choice-copy"><strong>${escapeHtml(t(choice.nameKey))}</strong><small>${escapeHtml(t(choice.descKey))}</small></span>
+            <span class="activity-choice-copy"><strong>${escapeHtml(["multiple-choice","one-of-many"].includes(choice.id)?window.SlovaExerciseFormat.copy[currentLanguage][choice.id==="multiple-choice"?6:7]:t(choice.nameKey))}</strong><small>${escapeHtml(["multiple-choice","one-of-many"].includes(choice.id)?window.SlovaExerciseFormat.hint(choice.id,currentLanguage):t(choice.descKey))}</small></span>
         </button>`).join("") || emptyMessage(t("empty.search"), t("empty.changeSearch"))}</div>
         <div class="modal-actions"><button type="button" class="button secondary" data-back-editor>${t("picker.back")}</button></div>`, true);
     refreshModal = openActivityPicker;
@@ -4990,6 +5026,7 @@ async function saveLesson(event) {
         return;
     }
     const existingLesson = data.lessons.find((current) => current.id === editingLessonId);
+    [...draftSections,...draftHomeworkSections].forEach(section=>section.activities.forEach(activity=>{if(window.SlovaExerciseFormat.sequenceTypes.includes(activity.type)){window.SlovaExerciseFormat.contentEdited(activity);activity.questions?.forEach(question=>{question.answer=window.SlovaExerciseFormat.sequenceAnswer(activity.type,question.content);});}}));
     const lesson = { id: editingLessonId || crypto.randomUUID(), teacherId: existingLesson?.teacherId || currentUser?.id, title, unit, classIds: existingLesson ? lessonClassIds(existingLesson) : [], sections: structuredClone(draftSections), homeworkSections: structuredClone(draftHomeworkSections), activities: draftSections.flatMap((section) => section.activities) };
     const previousData = structuredClone(data);
     const wasEditing = Boolean(editingLessonId);

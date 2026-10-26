@@ -714,10 +714,10 @@
             controls = `<input type="hidden" data-answer-kind="open">`;
         } else if (activity.type === "flashcards") {
             const ratings = Array.isArray(savedResponse) ? savedResponse : [];
-            body = `<button class="button secondary small student-flashcard-hard-toggle" type="button" data-flashcards-hard-only aria-pressed="false">${escapeHtml(flashcardChoiceText("hard"))}</button><div class="student-flashcard-list">${(activity.cards || []).map((item) => {
+            body = `<button class="button secondary small student-flashcard-hard-toggle" type="button" data-flashcards-hard-only aria-pressed="false">${escapeHtml(flashcardChoiceText("hard"))}</button>${window.SlovaFlashcardDeck.render(`<div class="student-flashcard-list">${(activity.cards || []).map((item) => {
                 const rating = ratings[item.cardIndex] || "";
                 return `<div class="student-flashcard-card" data-flashcard-card data-card-index="${item.cardIndex}" data-rating="${escapeHtml(rating)}"><div class="student-flashcard"><strong class="student-flashcard-face">${flashcardSideMarkup(item.front)}</strong><button class="student-flashcard-flip" type="button" data-front="${escapeHtml(item.front)}" data-back="${escapeHtml(item.back)}">${escapeHtml(text("flip"))}</button></div><div class="student-flashcard-rating"><button class="button secondary small" type="button" data-flashcard-rating="know" data-card-index="${item.cardIndex}" aria-pressed="${rating === "know"}">${escapeHtml(flashcardChoiceText("know"))}</button><button class="button secondary small" type="button" data-flashcard-rating="repeat" data-card-index="${item.cardIndex}" aria-pressed="${rating === "repeat"}">${escapeHtml(flashcardChoiceText("repeat"))}</button></div></div>`;
-            }).join("")}</div>`;
+            }).join("")}</div>`,language)}`;
         } else if (["vocabulary", "phrase-list"].includes(activity.type)) {
             body = window.SlovaPhraseList.render(window.SlovaPhraseList.wordsFor(activity), language, user?.id || "");
         } else if (activity.type === "pronunciation-recording") {
@@ -1523,6 +1523,7 @@
                 scheduleDraftSave(activity);
             });
         });
+        window.SlovaFlashcardDeck?.bind(pageContent);
         pageContent.querySelectorAll("[data-front][data-back]").forEach((button) => {
             button.addEventListener("click", () => {
                 const flipped = button.classList.toggle("is-flipped");
@@ -1537,6 +1538,7 @@
                 button.closest("[data-activity-index]")?.querySelectorAll("[data-flashcard-card]").forEach((card) => {
                     card.hidden = hardOnly && card.dataset.rating === "know";
                 });
+                const deck=button.closest("[data-activity-index]")?.querySelector("[data-flashcard-deck]");if(deck)window.SlovaFlashcardDeck.refresh(deck);
             });
         });
         pageContent.querySelectorAll("[data-flashcard-rating]").forEach((button) => {
@@ -1561,6 +1563,7 @@
                 ratings[cardIndex] = rating;
                 const hardOnly = activity.querySelector("[data-flashcards-hard-only]")?.getAttribute("aria-pressed") === "true";
                 card.hidden = hardOnly && rating === "know";
+                const deck=activity.querySelector("[data-flashcard-deck]");if(deck)window.SlovaFlashcardDeck.refresh(deck);
                 queueDraftSave(openedLesson.id, activityDraftKey(activityIndex, null), activityIndex, null, ratings);
             });
         });

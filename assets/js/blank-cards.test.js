@@ -15,7 +15,7 @@ test('picture gaps keep Markdown images and external gap order, and build an opt
 });
 for(const file of ['../../supabase/functions/student-lessons/index.ts','../../artifacts/student-lessons-gap-cards.ts']) {
     test(`picture bank is public but does not reveal answer-to-image mapping: ${file}`,()=>{
-        const ctx=vm.createContext({URL,crypto:require('node:crypto').webcrypto,Deno:{serve(){}},SlovaTable:require('./table.js'),SlovaFillBlanks:blanks});
+        const ctx=vm.createContext({SlovaExerciseFormat:require("./exercise-format.js"),URL,crypto:require('node:crypto').webcrypto,Deno:{serve(){}},SlovaTable:require('./table.js'),SlovaFillBlanks:blanks});
         const code=fs.readFileSync(`${__dirname}/${file}`,'utf8').replace(/^import .*;\r?\n/gm,'');vm.runInContext(stripTypeScriptTypes(code),ctx);
         const activity={type:'fill-blank',prompt:'Flags',content:'![Image](https://example.com/us.png) [Amerika]\n![Image](https://example.com/de.png) []',answer:'Nemecko',settings:{wordBank:['Čína']}};
         const safe=ctx.safeActivity(activity);

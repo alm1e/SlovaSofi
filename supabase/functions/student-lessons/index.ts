@@ -1,5 +1,6 @@
 import "../../../assets/js/table.js";
 import "../../../assets/js/fill-blanks.js";
+import "../../../assets/js/exercise-format.js";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 
@@ -13,6 +14,12 @@ const lessonTable = (globalThis as unknown as { SlovaTable: {
         parse(content: string, answer?: string, settings?: unknown): {rows: string[][]; groups: string[][]; blankCount: number};
         check(content: string, answer: string, settings: unknown, response: unknown): boolean;
     } }).SlovaTable;
+const exerciseFormat = (globalThis as unknown as {SlovaExerciseFormat:{
+    prepare(activity: unknown): unknown;
+    cardsFor(activity: unknown): {front:string;back:string}[];
+    sequenceAnswer(type:string,content:string): string;
+    dropdown(content:string): {content:string;choices:string[][];answers:string[]}|null;
+}}).SlovaExerciseFormat;
 const corsHeaders = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -275,6 +282,12 @@ function shuffle<T>(items: T[]): T[] {
     return result;
 }
 
+function shuffledExercise<T>(items:T[]):T[] {
+    const result=shuffle(items);
+    if(result.length>1&&result.every((item,index)=>item===items[index]))result.push(result.shift()!);
+    return result;
+}
+
 function groupItems(items: Array<string | { text: string; media: string }>, rawGroups: unknown) {
     if (!Array.isArray(rawGroups)) return items;
     const grouped = new Map<number, number[]>();
@@ -379,6 +392,7 @@ function sectionsWithSafeActivities(activities: unknown) {
 }
 
 function safeActivity(activity: Activity): Record<string, unknown> {
+    activity=exerciseFormat.prepare(activity) as Activity;
     if (activity.type === "text" && activity.settings?.studentVisible === false) return {};
     const contentLines = lines(activity.content);
     const prompt = activity.prompt;
@@ -409,10 +423,10 @@ function safeActivity(activity: Activity): Record<string, unknown> {
     }
     switch (activity.type) {
         case "drag-words": {
-            const expected = answerParts(activity.answer);
+            const expected = answerParts(settings?.answerFromContent === true || !activity.answer.trim() ? exerciseFormat.sequenceAnswer(activity.type,activity.content) : activity.answer);
             const words = expected.length ? [...expected, ...settingStrings(settings, "distractors")] : lines(activity.content).flatMap((line) => line.split(/\s+/)).filter(Boolean);
             const lockedWords = settingStrings(settings, "lockedWords");
-            return { type: activity.type, prompt, tokens: shuffle(words), lockedWords, acceptedOrders: settingStringGroups(settings, "acceptedOrders"), gradable: expected.length > 0 };
+            return { type: activity.type, prompt, tokens: shuffledExercise(words), lockedWords, acceptedOrders: settingStringGroups(settings, "acceptedOrders"), gradable: expected.length > 0 };
         }
         case "fill-blank": {
             const settings = (activity as Activity & {settings?: Record<string, unknown>}).settings || {};
@@ -425,6 +439,8 @@ function safeActivity(activity: Activity): Record<string, unknown> {
         }
         case "multiple-choice":
         case "one-of-many": {
+            const inline=activity.type==='one-of-many'?exerciseFormat.dropdown(activity.content):null;
+            if(inline)return {type:activity.type,prompt,options:[{text:inline.content}],choicesByBlank:inline.choices.map(choices=>shuffle(choices)),gradable:true};
             const configuredOptions = Array.isArray(settings?.options) ? settings.options.map((raw) => record(raw))
                 .filter((option) => stringValue(option.text).trim())
                 .map((option) => ({
@@ -467,7 +483,7 @@ function safeActivity(activity: Activity): Record<string, unknown> {
             const groupedItems = activity.type === "sentence-order"
                 ? groupItems(items, settings?.groups).map((item) => typeof item === "string" ? { text: item, media: "" } : item)
                 : items;
-            return { type: activity.type, prompt, items: shuffle(groupedItems.map((item, sourceIndex) => ({ ...item, sourceIndex }))), acceptedOrders: settings?.acceptedOrders || [], groups: settings?.groups || [], gradable: activity.answer.trim().length > 0 || groupedItems.length > 0 };
+            return { type: activity.type, prompt, items: shuffledExercise(groupedItems.map((item, sourceIndex) => ({ ...item, sourceIndex }))), acceptedOrders: settings?.acceptedOrders || [], groups: settings?.groups || [], gradable: activity.answer.trim().length > 0 || groupedItems.length > 0 };
         }
         case "match": {
             const configuredPairs = Array.isArray(settings?.pairs) ? settings.pairs.map((raw) => record(raw))
@@ -515,11 +531,7 @@ function safeActivity(activity: Activity): Record<string, unknown> {
         case "open-answer":
             return { type: activity.type, prompt, content: activity.content, gradable: false, reviewRequired: true };
         case "flashcards": {
-            const cards = activity.cards || contentLines.map((line) => {
-                const separator = line.includes("|") ? line.indexOf("|") : line.indexOf(":");
-                if (separator < 0) return { front: "", back: "" };
-                return { front: line.slice(0, separator).trim(), back: line.slice(separator + 1).trim() };
-            }).filter((card) => card.front && card.back);
+            const cards = exerciseFormat.cardsFor(activity).filter(card=>card.front&&card.back);
             return {
                 type: activity.type,
                 prompt,
@@ -593,6 +605,7 @@ function normalized(value: string): string {
 }
 
 function matchingResults(activity: Activity, response: unknown): boolean[] | undefined {
+    activity=exerciseFormat.prepare(activity) as Activity;
     if (activity.type !== "match") return undefined;
     const settings = record((activity as Activity & {settings?: unknown}).settings);
     const configured = Array.isArray(settings.pairs) ? settings.pairs.map(pair => record(pair))
@@ -605,6 +618,7 @@ function matchingResults(activity: Activity, response: unknown): boolean[] | und
 }
 
 function isCorrect(activity: Activity, response: unknown): boolean {
+    activity=exerciseFormat.prepare(activity) as Activity;
     if (activity.type === "fill-blank") {
         const checks = fillBlanks.check(activity.content, activity.answer, (activity as Activity & {settings?: unknown}).settings, response);
         return checks.length > 0 && Array.isArray(response) && response.length === checks.length && checks.every(Boolean);
@@ -619,6 +633,8 @@ function isCorrect(activity: Activity, response: unknown): boolean {
         return lessonTable.check(activity.content, activity.answer, (activity as Activity & {settings?: unknown}).settings, response);
     }
     if (activity.type === "multiple-choice" || activity.type === "one-of-many") {
+        const inline=activity.type==='one-of-many'?exerciseFormat.dropdown(activity.content):null;
+        if(inline)return Array.isArray(response)&&response.length===inline.answers.length&&inline.answers.every((answer,index)=>normalizeAnswer(answer)===normalizeAnswer(stringValue(response[index])));
         if (activity.type === "one-of-many" && Array.isArray(response)) {
             const actual = response.map(stringValue);
             const expectedGroups = Array.isArray(settings?.correctAnswers)
@@ -671,7 +687,7 @@ function isCorrect(activity: Activity, response: unknown): boolean {
         return Boolean(expected && correction && normalized(correction) === normalized(stringValue(expected.correction)));
     }
     if (activity.type === "drag-words") {
-        const expected = answerParts(activity.answer);
+        const expected = answerParts(settings?.answerFromContent === true || !activity.answer.trim() ? exerciseFormat.sequenceAnswer(activity.type,activity.content) : activity.answer);
         const actual = Array.isArray(response) ? response.map(stringValue) : [];
         const acceptedOrders = settingStringGroups(settings, "acceptedOrders");
         if (acceptedOrders.length && acceptedOrders.some((order) => order.length === actual.length
@@ -681,7 +697,7 @@ function isCorrect(activity: Activity, response: unknown): boolean {
     }
     if (activity.type === "order-items" || activity.type === "sentence-order") {
         const actual = Array.isArray(response) ? response.map(stringValue) : [];
-        const expected = answerParts(activity.answer);
+        const expected = answerParts(settings?.answerFromContent === true ? exerciseFormat.sequenceAnswer(activity.type,activity.content) : activity.answer);
         const configuredItems = Array.isArray(settings?.items) ? settings.items.map((item) => stringValue(record(item).text)).filter(Boolean) : [];
         let source = configuredItems.length ? configuredItems : contentLines.map((line) => line.replace(/^\d+[.)]\s*/, ""));
         if (activity.type === "sentence-order" && settings?.autoSplitSentences === true) {
@@ -728,6 +744,7 @@ function isCorrect(activity: Activity, response: unknown): boolean {
 }
 
 function answerFeedback(activity: Activity, response: unknown): string {
+    activity=exerciseFormat.prepare(activity) as Activity;
     const settings = activity.settings;
     if (activity.type === "multiple-choice" || activity.type === "one-of-many") {
         const selected = Array.isArray(response) ? response.map(stringValue) : [stringValue(response)];
@@ -741,6 +758,9 @@ function answerFeedback(activity: Activity, response: unknown): string {
 }
 
 function isGradable(activity: Activity): boolean {
+    activity=exerciseFormat.prepare(activity) as Activity;
+    if(activity.type==='drag-words'&&activity.content.trim())return true;
+    if(activity.type==='one-of-many'&&exerciseFormat.dropdown(activity.content))return true;
     if (activity.type === "table") {
         const table = lessonTable.parse(activity.content, activity.answer, (activity as Activity & {settings?: unknown}).settings);
         return table.blankCount > 0 && table.groups.every(group => group.length > 0);

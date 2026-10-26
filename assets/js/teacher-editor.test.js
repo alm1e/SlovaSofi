@@ -30,6 +30,8 @@ function createEditorContext() {
     vm.runInContext(fs.readFileSync(path.join(__dirname, "phrase-list.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "image-gallery.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "lesson-import-ui.js"), "utf8"), context);
+    vm.runInContext(fs.readFileSync(`${__dirname}/exercise-format.js`, "utf8"), context);
+    vm.runInContext(fs.readFileSync(`${__dirname}/flashcard-deck.js`, "utf8"), context);
     const liveTypesStart = source.indexOf("const liveAnswerActivityTypes =");
     vm.runInContext(source.slice(liveTypesStart, source.indexOf("\n]);", liveTypesStart) + 4), context);
     for (const name of ["activityTypes", "activityQuestionLabels", "previewLabels", "previewGroupCheckLabels"]) {
@@ -44,7 +46,7 @@ function createEditorContext() {
         "duplicateBlockButton", "previewText", "previewTokens", "previewLines", "previewMediaUrl",
         "previewFlashcardSideMarkup", "previewVideoEmbedUrl", "renderPreviewActivity", "checkPreviewActivity",
         "renderSupplementaryPreview", "renderActivityBlocks", "activityEditorIcon", "renderBuilderPreview",
-        "previewRichContent", "contentHint", "answerHint", "contentPlaceholder", "answerPlaceholder",
+        "previewRichContent", "contentHint", "renderActivityAnswerField", "preventLessonInputSubmit", "answerHint", "contentPlaceholder", "answerPlaceholder",
         "richTextToolbar", "activitySettingsPlaceholder", "activityMetadataEditor", "activitySettingsField", "updateActivitySettings"
     ]) {
         const start = source.indexOf(`function ${name}(`);
@@ -68,6 +70,7 @@ test("all 21 activity types have an expanded editor and student preview", () => 
         assert.match(markup, /class="builder-preview-body"/);
         assert.match(markup, /Practice answers here are not saved/);
         assert.equal(JSON.stringify(block), before, `${id}: preview changed draft`);
+        assert.doesNotMatch(markup,/data-field="answer"|data-preview-field="answer"|data-preview-question-field="answer"|data-tf-answer/);
     }
 });
 
@@ -83,7 +86,7 @@ test("table preview uses slash columns, bracket answers and legacy gaps without 
     const activity = {type:'table',prompt:'Fill',content:'Name / City\nAnna / [Bratislava]\nPeter / []\nEva / ___',answer:'Košice / Nitra'};
     const before = JSON.stringify(activity);
     const html = editor.renderActivityBlocks([activity]);
-    for (const answer of ['Bratislava','Košice','Nitra']) assert.ok(html.includes(`placeholder="${answer}"`));
+    for (const answer of ['Bratislava','Košice','Nitra']) assert.ok(html.includes(`data-correct-placeholder="${answer}"`));
     assert.equal((html.match(/data-table-answer-index=/g)||[]).length,3);
     assert.ok(html.includes('data-preview-settings='));
     assert.equal(JSON.stringify(activity),before);
@@ -120,18 +123,18 @@ test("true/false uses compact answer selects for new and legacy statements", () 
     const original = JSON.stringify(single);
     const html = editor.renderActivityBlocks([single]);
     assert.match(html, /class="tf-row"/);
-    assert.match(html, /value="false" selected/);
-    assert.match(html, /data-field="content" value="Slon je malý"/);
+    assert.doesNotMatch(html, /data-tf-answer/);
+    assert.match(html, /data-field="content" value="Slon je malý \[false\]"/);
     assert.doesNotMatch(html, /<textarea data-field=|<input data-field="answer"/);
     assert.equal(JSON.stringify(single),original);
     const group = {type:'true-false',questions:[{id:'q1',prompt:'Strom je vysoký',content:'',answer:'true'},{id:'q2',prompt:'Context',content:'Slimák je rýchly',answer:'false'}]};
     const rows = editor.renderActivityQuestionEditor(group);
-    assert.match(rows, /data-field="prompt" value="Strom je vysoký"/);
-    assert.match(rows, /data-field="content" value="Slimák je rýchly"/);
+    assert.match(rows, /data-field="content" value="Strom je vysoký \[true\]"/);
+    assert.match(rows, /data-field="content" value="Slimák je rýchly \[false\]"/);
     assert.match(rows, /<small>Context<\/small>/);
     const quick = editor.renderActivityQuestionEditor(group,true);
-    assert.match(quick,/data-preview-question-field="answer"/);
-    assert.match(editor.renderTrueFalseEditor(single,true),/data-preview-field="answer"/);
+    assert.doesNotMatch(quick,/data-preview-question-field="answer"/);
+    assert.doesNotMatch(editor.renderTrueFalseEditor(single,true),/data-preview-field="answer"/);
 });
 
 test("moving true/false statements preserves identity and correct answers", () => {
@@ -261,7 +264,7 @@ test('imported multi-answer choices and custom third true/false label remain usa
     const boolean={type:'true-false',prompt:'Evaluate',content:'A statement',answer:'not-stated',settings:{allowNotStated:true,choiceLabels:['Right','Wrong','Depends']}};
     const preview=editor.renderPreviewActivity(boolean,0);
     assert.match(preview,/is-correct-option[^]*value="2"[^]*Depends/);
-    assert.match(editor.renderTrueFalseEditor(boolean),/value="not-stated" selected>Depends/);
+    assert.match(editor.renderTrueFalseEditor(boolean),/A statement \[not-stated\]/);
     const result={},choices=[true,true,false].map(correct=>({correct,checked:correct,classList:{contains(){return this.owner.correct;}}}));
     choices.forEach(option=>{option.classList.owner=option;option.querySelector=()=>option;});
     const card={dataset:{previewAnswer:'apple / pear',previewType:'multiple-choice'},classList:{contains:()=>false},querySelector:selector=>selector==='[data-preview-result]'?result:null,querySelectorAll:()=>choices};
@@ -276,4 +279,28 @@ test('metadata remains editable and is escaped in student-style previews', () =>
     assert.match(html,/activity-description">&lt;img/);
     assert.doesNotMatch(html,/<img src=x/);
     assert.match(html,/class="activity-helper">Hint/);
+});
+
+test('simple editors and quick editors hide redundant answers and show usable examples',()=>{
+    const editor=createEditorContext();
+    for(const type of ['drag-words','order-items','sentence-order','flashcards']){
+        const activity={type,content:type==='flashcards'?'auto [машина]\ndom [дом]':'Ja som tu.',answer:''};
+        assert.doesNotMatch(editor.renderActivityBlocks([activity]),/data-field="answer"/);
+        assert.doesNotMatch(editor.renderPreviewActivity(activity,0,true,true),/data-preview-field="answer"/);
+        assert.ok(editor.contentHint(type));assert.ok(editor.contentPlaceholder(type));
+    }
+    const table={type:'table',content:'Anna / [Bratislava] / [Košice]',answer:''};
+    const html=editor.renderActivityBlocks([table]);assert.doesNotMatch(html,/data-legacy-answer-field/);
+    assert.match(html,/data-preview-reveal/);assert.match(html,/placeholder="\.\.\." data-correct-placeholder="Bratislava"/);
+    assert.doesNotMatch(html,/ placeholder="Bratislava"/);
+    const dropdown=editor.renderPreviewActivity({type:'one-of-many',content:'Ja [som/si] tu.',answer:''},0);
+    assert.match(dropdown,/<select data-inline-choice/);assert.doesNotMatch(dropdown,/type="radio"/);
+});
+
+test('Enter cannot accidentally submit a lesson from an answer input, while textareas retain newlines',()=>{
+    const editor=createEditorContext();let prevented=0;
+    editor.preventLessonInputSubmit({key:'Enter',target:{matches:()=>true},preventDefault(){prevented++;}});
+    editor.preventLessonInputSubmit({key:'Enter',target:{matches:()=>false},preventDefault(){prevented++;}});
+    editor.preventLessonInputSubmit({key:'a',target:{matches:()=>true},preventDefault(){prevented++;}});
+    assert.equal(prevented,1);
 });

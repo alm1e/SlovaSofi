@@ -30,7 +30,7 @@ test('server sends only blank content and grading booleans to students', () => {
     const {stripTypeScriptTypes} = require('node:module');
     let code = fs.readFileSync(`${__dirname}/../../supabase/functions/student-lessons/index.ts`, 'utf8');
     code = code.replace(/^import .*;\r?\n/gm, '');
-    const context = vm.createContext({ SlovaFillBlanks:blanks, Deno:{serve(){}}, URL });
+    const context = vm.createContext({SlovaExerciseFormat:require("./exercise-format.js"), SlovaFillBlanks:blanks, Deno:{serve(){}}, URL });
     vm.runInContext(stripTypeScriptTypes(code),context);
     const activity = {type:'fill-blank',prompt:'Complete',content:'širok[á] ___',answer:'stolička'};
     const safe = context.safeActivity(activity);

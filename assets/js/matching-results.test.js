@@ -2,7 +2,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 const {stripTypeScriptTypes}=require('node:module');
 for(const file of ['../../supabase/functions/student-lessons/index.ts','../../artifacts/student-lessons-matching.ts']) {
     test(`matching feedback exposes only grading booleans and survives progress reload: ${file}`,()=>{
-        const context=vm.createContext({Deno:{serve(){}},URL,SlovaTable:require('./table.js'),SlovaFillBlanks:require('./fill-blanks.js')});
+        const context=vm.createContext({SlovaExerciseFormat:require("./exercise-format.js"),Deno:{serve(){}},URL,SlovaTable:require('./table.js'),SlovaFillBlanks:require('./fill-blanks.js')});
         const source=fs.readFileSync(`${__dirname}/${file}`,'utf8').replace(/^import .*;\r?\n/gm,'');
         vm.runInContext(stripTypeScriptTypes(source),context);
         const activity={type:'match',content:'Taliansko = Talian\nSlovensko = Slovák\nPoľsko = Poliak',prompt:'Match',answer:''};

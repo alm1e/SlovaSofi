@@ -26,7 +26,7 @@ test('legacy pipes, tabs, trailing cells and answer configuration remain support
 for(const relative of ['../../supabase/functions/student-lessons/index.ts','../../artifacts/student-lessons-table.ts']) {
     test(`table API keeps embedded answers private and grades all formats: ${relative}`, () => {
         const source=fs.readFileSync(`${__dirname}/${relative}`,'utf8').replace(/^import .*;\r?\n/gm,'');
-        const ctx=vm.createContext({URL,Deno:{serve(){}},SlovaTable:table,SlovaFillBlanks:blanks});
+        const ctx=vm.createContext({SlovaExerciseFormat:require("./exercise-format.js"),URL,Deno:{serve(){}},SlovaTable:table,SlovaFillBlanks:blanks});
         vm.runInContext(stripTypeScriptTypes(source),ctx);
         const activity={type:'table',prompt:'Fill',content:'Name / City\nAnna / [Bratislava]\nPeter / []',answer:'Košice'};
         const safe=ctx.safeActivity(activity);

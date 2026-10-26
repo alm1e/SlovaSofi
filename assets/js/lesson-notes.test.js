@@ -5,7 +5,7 @@ const {stripTypeScriptTypes} = require('node:module');
 const test = require('node:test');
 const blanks = require('./fill-blanks.js');
 function ui() {
-    const context = vm.createContext({window:{},localStorage:{getItem:()=> 'ru'}});
+    const context = vm.createContext({SlovaExerciseFormat:require("./exercise-format.js"),window:{},localStorage:{getItem:()=> 'ru'}});
     for (const file of ['locales.js','lesson-notes.js','activity-ui.js']) vm.runInContext(fs.readFileSync(`${__dirname}/${file}`,'utf8'),context);
     return context.window;
 }
@@ -37,7 +37,7 @@ test('formatted blank exercises keep lists, bold text, inline endings and answer
 for (const relative of ['../../supabase/functions/student-lessons/index.ts','../../artifacts/student-lessons-notes.ts']) {
     test(`student payload excludes private notes and preserves following answer indexes: ${relative}`, () => {
         let source = fs.readFileSync(`${__dirname}/${relative}`,'utf8').replace(/^import .*;\r?\n/gm,'');
-        const context = vm.createContext({Deno:{serve(){}},URL,SlovaFillBlanks:blanks});
+        const context = vm.createContext({SlovaExerciseFormat:require("./exercise-format.js"),Deno:{serve(){}},URL,SlovaFillBlanks:blanks});
         vm.runInContext(stripTypeScriptTypes(source),context);
         const activities = [{type:'text',prompt:'SECRET',content:'PRIVATE',settings:{note:true,studentVisible:false}}, {type:'text',prompt:'Visible',content:'WORDS',settings:{note:true,noteColor:'#123456',noteCollapsed:true}}, {type:'fill-blank',content:'[moderné]',answer:''}];
         const sections = context.sectionsWithSafeActivities(activities);
