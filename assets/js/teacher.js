@@ -2515,7 +2515,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         const activityType = activityTypes.find((item) => item.id === type);
         const hasAnswer = !["text", "image", "video", "audio"].includes(type);
         const hasQuestions = Array.isArray(activity.questions) && activity.questions.length > 0;
-        return `<article class="preview-activity preview-activity-editable preview-activity-editing" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${["fill-blank", "table", "columns"].includes(type) ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}>
+        return `<article class="preview-activity preview-activity-editable preview-activity-editing" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${["fill-blank", "table", "columns", "find-error"].includes(type) ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}>
             <header class="preview-activity-header"><h3>${index + 1}. ${prompt}</h3><div class="preview-activity-actions">
                 <button class="mini-action" type="button" data-save-preview-block aria-label="${lessonSectionText("done")}" title="${lessonSectionText("done")}">✓</button>
                 <button class="mini-action preview-activity-delete" type="button" data-cancel-preview-edit aria-label="${t("action.cancel")}" title="${t("action.cancel")}">×</button>
@@ -2658,7 +2658,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         : "";
     const hintLabels={ru:"Показать ответы",ua:"Показати відповіді",en:"Show answers",sk:"Zobraziť odpovede",kk:"Жауаптарды көрсету"};
     const correctMarkup = body.includes('data-correct-placeholder') ? `<button type="button" class="button secondary small" data-preview-reveal aria-pressed="false">${escapeHtml(hintLabels[currentLanguage]||hintLabels.en)}</button>` : "";
-    return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${["fill-blank", "table", "columns"].includes(type) ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}${isQuestion ? `<span class="preview-q-badge">${questionIndex + 1}</span>` : `<h3>${previewItemNumber}. ${prompt}</h3>`}${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${isQuestion && activity.prompt?.trim() ? `<p class="preview-q-prompt">${prompt}</p>` : ""}${!isQuestion ? window.SlovaActivityUI.renderMetadata(activity) : ""}${liveAnswerMarkup}${resultMarkup}${body}${correctMarkup}${checkButton}</article>`;
+    return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${["fill-blank", "table", "columns", "find-error"].includes(type) ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}${isQuestion ? `<span class="preview-q-badge">${questionIndex + 1}</span>` : `<h3>${previewItemNumber}. ${prompt}</h3>`}${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${isQuestion && activity.prompt?.trim() ? `<p class="preview-q-prompt">${prompt}</p>` : ""}${!isQuestion ? window.SlovaActivityUI.renderMetadata(activity) : ""}${liveAnswerMarkup}${resultMarkup}${body}${correctMarkup}${checkButton}</article>`;
 }
 
 function renderSupplementaryPreview(activity) {
@@ -2679,7 +2679,8 @@ function renderSupplementaryPreview(activity) {
         return `${source ? `<audio class="preview-media" controls preload="none" src="${escapeHtml(source)}" data-preview-media></audio>` : empty(text.empty)}${transcript && settings.transcriptAfterSubmit !== true ? `<details><summary>${text.transcript}</summary><p>${escapeHtml(transcript)}</p></details>` : ""}`;
     }
     if (activity.type === "find-error") {
-        return `<div class="preview-error-words">${(content.match(/\S+|\s+/g) || []).map((word) => /^\s+$/.test(word) ? escapeHtml(word) : `<button type="button" data-preview-error-word aria-pressed="false">${escapeHtml(word)}</button>`).join("")}</div>${empty(text.choose)}<label class="preview-error-correction">${text.correction}<input class="preview-inline-input" autocomplete="off"></label>`;
+        const normalized=window.SlovaExerciseFormat.prepare(activity);
+        return window.SlovaFindErrorUI.render(normalized.content,null,currentLanguage,window.SlovaExerciseFormat.findErrors.spec(activity).expected.size);
     }
     if (["vocabulary", "phrase-list"].includes(activity.type)) return window.SlovaPhraseList.render(window.SlovaPhraseList.wordsFor(activity), currentLanguage);
     const image = previewMediaUrl(content.split(/\r?\n/)[0]);
@@ -2876,10 +2877,10 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
     window.SlovaSelectUI?.enhance(container);
     window.SlovaBlankCards?.bind(container);
     window.SlovaActivityUI?.enhancePairing(container, { empty: previewText("choose") });
-    container.querySelectorAll("[data-preview-error-word]").forEach((button) => button.addEventListener("click", () => {
-        const selected = button.getAttribute("aria-pressed") !== "true";
-        button.closest(".preview-error-words").querySelectorAll("button").forEach((word) => word.setAttribute("aria-pressed", String(word === button && selected)));
-    }));
+    window.SlovaFindErrorUI?.bind(container,{send:(event,root)=>{
+        const card=root.closest('[data-preview-activity]'),activity={type:'find-error',content:card.dataset.previewContent,settings:JSON.parse(card.dataset.previewSettings||'{}')};
+        return {errorState:window.SlovaExerciseFormat.findErrors.event(activity,window.SlovaFindErrorUI.getState(root),event)};
+    }});
     container.querySelectorAll("[data-preview-hotspot]").forEach((button) => button.addEventListener("click", () => {
         button.closest("[data-preview-activity]").querySelector("[data-preview-hotspot-detail]").textContent = button.dataset.previewHotspot;
     }));
@@ -3638,6 +3639,7 @@ function formatLiveResponse(activity, response) {
     if (activity.type === "find-error") {
         try {
             const submitted = JSON.parse(value);
+            if(submitted.version===2)return window.SlovaFindErrorUI.summary(activity.content,submitted,currentLanguage);
             const wordIndex = Number(submitted.index);
             const word = String(activity.content || "").match(/\S+/g)?.[wordIndex];
             return word ? `${word} → ${String(submitted.correction || "")}` : value;

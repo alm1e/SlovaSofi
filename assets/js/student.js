@@ -599,7 +599,7 @@
             if (richText) return `<section class="student-text-block"><h3>${escapeHtml(activity.prompt || "")}</h3>${window.SlovaActivityUI.renderMetadata(activity)}${richText}</section>`;
         }
         if (Array.isArray(activity.questions) && activity.questions.length) {
-            const canSubmit = activity.questions.some((question) => question.gradable || question.reviewRequired);
+            const canSubmit = activity.type!=="find-error" && activity.questions.some((question) => question.gradable || question.reviewRequired);
             const questions = activity.questions.map((question, questionIndex) => ({
                 question,
                 questionIndex,
@@ -727,13 +727,7 @@
             body = `${activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : ""}<button class="button secondary small" type="button" data-recording-toggle>${escapeHtml(text("recordPronunciation"))}</button><p class="student-muted" data-recording-status aria-live="polite">${savedPath ? escapeHtml(text("recordingSaved")) : ""}</p><audio class="student-activity-media" data-recording-preview controls preload="none" ${savedPath ? "" : "hidden"}></audio>`;
             controls = `<input type="hidden" data-answer-kind="recording" data-recording-path value="${escapeHtml(savedPath)}">`;
         } else if (activity.type === "find-error") {
-            const draft = restoreFindErrorDraft(savedResponse);
-            let wordIndex = 0;
-            const words = String(activity.content || "").match(/\S+|\s+/g) || [];
-            body = `<p class="student-error-text">${words.map((word) => /^\s+$/.test(word)
-                ? escapeHtml(word)
-                : `<button type="button" class="student-error-word ${draft.index === String(wordIndex) ? "is-selected" : ""}" data-error-word-index="${wordIndex++}">${escapeHtml(word)}</button>`).join("")}</p><label class="student-error-correction">${escapeHtml(text("correction"))}<input class="student-inline-answer" data-error-correction value="${escapeHtml(draft.correction)}" autocomplete="off"></label><p class="student-muted" data-error-selection>${escapeHtml(text("chooseErrorWord"))}</p>`;
-            controls = `<input type="hidden" data-answer-kind="find-error" data-error-selected value="${escapeHtml(draft.index)}">`;
+            body=window.SlovaFindErrorUI.render(activity.content,savedResponse,language,activity.errorCount||0)+`<input type="hidden" data-answer-kind="find-error-v2">`;
         } else if (activity.type === "interactive-image") {
             const image = mediaUrl(activity.content);
             const hotspots = Array.isArray(activity.hotspots) ? activity.hotspots : [];
@@ -758,7 +752,7 @@
                 : saved?.correct === false ? text("incorrect")
                     : saved?.correct === null ? text("submitted") : "";
         const isQuestion = Number.isInteger(questionIndex);
-        const canSubmit = Boolean(activity.gradable || activity.reviewRequired);
+        const canSubmit = activity.type!=="find-error" && Boolean(activity.gradable || activity.reviewRequired);
         const feedbackMarkup = canSubmit || activity.type === "flashcards"
             ? `<p class="student-answer-feedback ${saved?.correct === true ? "is-correct" : saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml([feedback, saved?.feedback].filter(Boolean).join(" "))}</p>`
             : "";
@@ -831,7 +825,7 @@
     }
 
     async function invokeLessonApi(payload) {
-        if (['submit','save-draft'].includes(payload.action) && !payload.activityId) {
+        if (['submit','save-draft','find-error-event'].includes(payload.action) && !payload.activityId) {
             payload = {...payload,...lessonWriteIdentity(openedLesson,payload.activityIndex,payload.lessonId)};
         }
         // Retry only reads: a failed submission may already have reached the server.
@@ -888,6 +882,7 @@
         if (kind === "matches") return [...element.querySelectorAll("[data-match-answer]")].map((select) => select.value);
         if (kind === "table") return [...element.querySelectorAll("[data-table-answer]")].map((input) => input.value.trim());
         if (kind === "recording") return element.querySelector("[data-recording-path]")?.value || "";
+        if (kind === "find-error-v2") return window.SlovaFindErrorUI.draft(element.querySelector("[data-find-errors]"));
         if (kind === "find-error") return JSON.stringify({
             index: element.querySelector("[data-error-selected]")?.value || "",
             correction: element.querySelector("[data-error-correction]")?.value.trim() || ""
@@ -952,6 +947,17 @@
         feedback.className = `student-answer-feedback${isError ? " is-incorrect" : ""}`;
     }
 
+    function saveFindErrorEvent(root,errorEvent) {
+        if(!openedLesson)return Promise.reject(new Error(text('lessonChanged')));
+        const element=root.closest('[data-activity-index]'),lessonId=openedLesson.id,index=Number(element.dataset.activityIndex),questionId=element.dataset.questionId||null;
+        const identity=lessonWriteIdentity(openedLesson,index,lessonId);
+        const write=draftSaveQueue.catch(()=>{}).then(async()=>{
+            const result=await invokeLessonApi({action:'find-error-event',lessonId,activityIndex:index,...identity,...(questionId?{questionId}:{}),errorEvent});
+            updateLessonProgress(lessonId,result.answers,result.completed);return result;
+        });
+        draftSaveQueue=write;return write;
+    }
+
     function queueDraftSave(lessonId, draftKey, activityIndex, questionId, response) {
         const snapshot = structuredClone(response);
         const identity = lessonWriteIdentity(openedLesson, activityIndex, lessonId);
@@ -967,6 +973,7 @@
                 ...identity
             });
             updateLessonProgress(lessonId, result.answers, result.completed);
+            if(result.errorState){const element=[...pageContent.querySelectorAll('.student-activity[data-activity-index]')].find(item=>item.dataset.activityIndex===String(activityIndex)&&(questionId?item.dataset.questionId===questionId:!item.dataset.questionId));const widget=element?.querySelector('[data-find-errors]');if(widget)window.SlovaFindErrorUI.setState(widget,result.errorState,snapshot);}
             const pending = pendingDrafts.get(draftKey);
             if (pending && JSON.stringify(pending.response) === JSON.stringify(snapshot)) {
                 pendingDrafts.delete(draftKey);
@@ -1281,6 +1288,7 @@
         pageContent.innerHTML = `${activeView === "calendar" ? "" : renderWelcome()}${openedLesson && openedLesson.id === selectedLessonId
             ? renderLessonDetail(openedLesson)
             : activeView === "classes" ? renderClasses() : activeView === "calendar" ? renderStudentCalendar() : renderLessons()}`;
+        window.SlovaFindErrorUI?.bind(pageContent,{send:(event,root)=>saveFindErrorEvent(root,event)});
         window.SlovaBlankCards?.bind(pageContent);
         window.SlovaActivityUI?.enhancePairing(pageContent, { empty: text("choose") });
         pageContent.querySelectorAll("[data-open-lesson]").forEach((button) => {
@@ -1397,14 +1405,6 @@
                 }
             }).catch((error) => console.error("Could not load the student's saved pronunciation recording.", error));
         });
-        pageContent.querySelectorAll("[data-error-word-index]").forEach((button) => button.addEventListener("click", () => {
-            const activity = button.closest("[data-activity-index]");
-            activity?.querySelectorAll("[data-error-word-index]").forEach((word) => word.classList.toggle("is-selected", word === button));
-            const selected = activity?.querySelector("[data-error-selected]");
-            if (selected) selected.value = button.dataset.errorWordIndex;
-            activity?.querySelector("[data-error-correction]")?.focus();
-            if (activity) scheduleDraftSave(activity);
-        }));
         pageContent.querySelectorAll("[data-hotspot-index]").forEach((button) => button.addEventListener("click", () => {
             const activity = button.closest("[data-activity-index]");
             const hotspot = openedLesson && activitiesFor(openedLesson)[Number(activity?.dataset.activityIndex)]?.hotspots?.[Number(button.dataset.hotspotIndex)];

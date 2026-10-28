@@ -32,6 +32,7 @@ function createEditorContext() {
     vm.runInContext(fs.readFileSync(path.join(__dirname, "lesson-import-ui.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(`${__dirname}/exercise-format.js`, "utf8"), context);
     vm.runInContext(fs.readFileSync(`${__dirname}/flashcard-deck.js`, "utf8"), context);
+    vm.runInContext(fs.readFileSync(`${__dirname}/find-error-ui.js`, "utf8"), context);
     const liveTypesStart = source.indexOf("const liveAnswerActivityTypes =");
     vm.runInContext(source.slice(liveTypesStart, source.indexOf("\n]);", liveTypesStart) + 4), context);
     for (const name of ["activityTypes", "activityQuestionLabels", "previewLabels", "previewGroupCheckLabels"]) {
@@ -187,7 +188,7 @@ test("vocabulary, hotspots, error selection, and recording have dedicated previe
     const image = editor.renderBuilderPreview({ type: "interactive-image", content: "https://example.test/image.png", settings: { hotspots: [{ x: 120, y: -5, word: "dom" }] } }, 0);
     assert.match(image, /left:100%;top:0%/);
     assert.match(image, /data-preview-hotspot="dom"/);
-    assert.match(editor.renderBuilderPreview({ type: "find-error", content: "Incorrect word" }, 0), /data-preview-error-word/);
+    assert.match(editor.renderBuilderPreview({ type: "find-error", content: "Incorrect word" }, 0), /data-find-word/);
     const recording = editor.renderBuilderPreview({ type: "pronunciation-recording", content: "Read this" }, 0);
     assert.match(recording, /disabled>Record pronunciation/);
     assert.match(recording, /visual preview/);

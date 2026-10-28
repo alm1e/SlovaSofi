@@ -20,6 +20,13 @@ const exerciseFormat = (globalThis as unknown as {SlovaExerciseFormat:{
     cardsFor(activity: unknown): {front:string;back:string}[];
     sequenceAnswer(type:string,content:string): string;
     dropdown(content:string): {content:string;choices:string[][];answers:string[]}|null;
+    findErrors:{
+        spec(activity:unknown):{expected:Map<number,string>};
+        state(activity:unknown,response:unknown,entry?:unknown):JsonRecord;
+        event(activity:unknown,response:unknown,event:unknown,entry?:unknown):JsonRecord;
+        draft(activity:unknown,response:unknown,drafts:unknown,entry?:unknown):JsonRecord;
+        parse(response:unknown):JsonRecord|null;
+    };
 }}).SlovaExerciseFormat;
 const corsHeaders = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -263,7 +270,13 @@ function canonicalProgress(activities: Activity[], value: unknown): Record<strin
             const candidate = answers[alias];
             if (candidate && (!best || Date.parse(candidate.submitted_at) > Date.parse(best.submitted_at))) best = candidate;
         }
-        if (best) answers[item.key] = best;
+        if (best) {
+            if(item.activity.type==='find-error'){
+                const state=exerciseFormat.findErrors.state(item.activity,best.response,best);
+                best={...best,response:JSON.stringify(state),correct:state.complete===true,draft:false};
+            }
+            answers[item.key] = best;
+        }
     }
     for (const item of items) for (const alias of item.fallbackKeys || []) if (!stableKeys.has(alias)) delete answers[alias];
     return answers;
@@ -560,7 +573,7 @@ function safeActivity(activity: Activity): Record<string, unknown> {
                 gradable: false
             };
         case "find-error":
-            return { type: activity.type, prompt, content: activity.content, gradable: true };
+            return { type: activity.type, prompt, content: activity.content, errorCount:exerciseFormat.findErrors.spec(activity).expected.size, gradable: exerciseFormat.findErrors.spec(activity).expected.size>0 };
         case "interactive-image": {
             const image = contentLines[0] || "";
             const hotspots = settingRecords(settings, "hotspots").flatMap((hotspot) => {
@@ -672,21 +685,8 @@ function isCorrect(activity: Activity, response: unknown): boolean {
             || (expectedFalse && ["false", "no", "нет", "ні", "неправда"].includes(actual))
             || (expectedNotStated && settings?.allowNotStated === true && ["not-stated", "not stated"].includes(actual));
     }
-    if (activity.type === "find-error") {
-        if (typeof response !== "string") return false;
-        let submitted: unknown;
-        try {
-            submitted = JSON.parse(response);
-        } catch {
-            return false;
-        }
-        const value = record(submitted);
-        const index = Number(value.index);
-        const correction = stringValue(value.correction).trim();
-        const errors = settingRecords(settings, "errors");
-        const expected = errors.find((item) => Number(item.index) === index);
-        return Boolean(expected && correction && normalized(correction) === normalized(stringValue(expected.correction)));
-    }
+    if (activity.type === "find-error") return exerciseFormat.findErrors.state(activity,response,{correct:true}).complete===true;
+
     if (activity.type === "drag-words") {
         const expected = answerParts(settings?.answerFromContent === true || !activity.answer.trim() ? exerciseFormat.sequenceAnswer(activity.type,activity.content) : activity.answer);
         const actual = Array.isArray(response) ? response.map(stringValue) : [];
@@ -772,7 +772,7 @@ function isGradable(activity: Activity): boolean {
         return blanks.groups.length > 0 && blanks.groups.every(group => group.length > 0);
     }
     if (["open-answer", "flashcards", "text", "image", "audio", "video", "pronunciation-recording", "interactive-image", "vocabulary", "phrase-list"].includes(activity.type)) return false;
-    if (activity.type === "find-error") return settingRecords(activity.settings, "errors").length > 0;
+    if (activity.type === "find-error") return exerciseFormat.findErrors.spec(activity).expected.size>0;
     if (activity.answer.trim()) return true;
     if (activity.type === "fill-blank" && settingStringGroups(activity.settings, "acceptedAnswers").length) return true;
     if ((activity.type === "multiple-choice" || activity.type === "one-of-many")
@@ -873,7 +873,7 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(400, { error: "The request must contain valid JSON." }, allowedOrigin);
     }
     const action = stringValue(payload.action);
-    if (!["list", "load", "submit", "save-draft"].includes(action)) return jsonResponse(400, { error: "Choose a valid lesson action." }, allowedOrigin);
+    if (!["list", "load", "submit", "save-draft", "find-error-event"].includes(action)) return jsonResponse(400, { error: "Choose a valid lesson action." }, allowedOrigin);
     const lessonId = stringValue(payload.lessonId);
     if (action !== "list" && !uuidPattern.test(lessonId)) return jsonResponse(400, { error: "Choose a valid assigned lesson." }, allowedOrigin);
 
@@ -994,7 +994,10 @@ Deno.serve(async (request: Request) => {
     if (!assignment) return jsonResponse(404, { error: "This lesson is not assigned to your classes." }, allowedOrigin);
     const allActivities = flattenActivities(assignment.lesson.activities);
     const progress = progressByLesson.get(`${assignment.memberId}:${lessonId}`);
-    if (progress) progress.answers = canonicalProgress(allActivities, progress.answers);
+    if (progress) {
+        progress.answers = canonicalProgress(allActivities, progress.answers);
+        if(activityProgressItems(allActivities).some(item=>item.activity.type==='find-error')&&!allGradableAnswersCorrect(allActivities,progress.answers))progress.completed_at=null;
+    }
     if (action === "load") {
         const safeLesson = {
             id: lessonId,
@@ -1032,6 +1035,27 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(400, { error: "This activity does not contain separate items." }, allowedOrigin);
     }
     const response = payload.response;
+    if(action==='find-error-event'&&answerActivity.type!=='find-error')return jsonResponse(400,{error:'This action is only available for error-finding activities.'},allowedOrigin);
+    if(answerActivity.type==='find-error'){
+        const answers=publicProgress(progress?.answers),previous=answers[answerKey];
+        let state:JsonRecord;
+        try{
+            if(action==='find-error-event')state=exerciseFormat.findErrors.event(answerActivity,previous?.response,payload.errorEvent,previous);
+            else if(action==='save-draft')state=exerciseFormat.findErrors.draft(answerActivity,previous?.response,response,previous);
+            else {
+                // Old clients submit one index and correction; migrate it into the same cumulative state.
+                const legacy=exerciseFormat.findErrors.parse(response);
+                if(!legacy||legacy.index===''||legacy.index===undefined)throw Error('Choose an incorrect word first.');
+                state=exerciseFormat.findErrors.event(answerActivity,previous?.response,{id:crypto.randomUUID(),kind:'select',index:legacy.index},previous);
+                if(record(state.selected)[String(Number(legacy.index))]===true&&stringValue(legacy.correction).trim())state=exerciseFormat.findErrors.event(answerActivity,state,{id:crypto.randomUUID(),kind:'correction',index:legacy.index,value:legacy.correction});
+            }
+        }catch(error){return jsonResponse(400,{error:error instanceof Error?error.message:'Invalid error-check event.'},allowedOrigin);}
+        answers[answerKey]={response:JSON.stringify(state),correct:state.complete===true,submitted_at:new Date().toISOString()};
+        const completed=allGradableAnswersCorrect(allActivities,answers);
+        const {error}=await admin.from('student_lesson_progress').upsert({student_id:assignment.memberId,class_id:assignment.classId,lesson_id:lessonId,answers,completed_at:completed?(progress?.completed_at||new Date().toISOString()):null,updated_at:new Date().toISOString()},{onConflict:'student_id,lesson_id'});
+        if(error){console.error('Could not save error-finding progress.',error);return jsonResponse(500,{error:'Could not save your progress. Please try again.'},allowedOrigin);}
+        return jsonResponse(200,{correct:state.complete===true,errorState:state,answers,completed,reviewRequired:false},allowedOrigin);
+    }
     if (action === "save-draft") {
         if (!answerableTypes.has(answerActivity.type)) return jsonResponse(400, { error: "This activity does not accept a saved answer." }, allowedOrigin);
         if (answerActivity.type === "pronunciation-recording"

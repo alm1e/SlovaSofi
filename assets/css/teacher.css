@@ -2178,3 +2178,22 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .slova-select[data-validation="incorrect"] .slova-select-trigger, .preview-table .blank-incorrect, .student-answer-table .blank-incorrect { background:#cd53531a; border-color:#c35b5b; color:var(--ink); box-shadow:inset 0 -2px #c35b5b; }
 .preview-table th, .student-answer-table th { padding:12px 14px; text-align:left; font-weight:700; background:var(--purple-light); color:var(--ink); border:1px solid var(--line); }
 @media (pointer:coarse) { .slova-select-trigger, .slova-select-option { font-size:16px; min-height:44px; } }
+.find-instruction, .find-progress, .find-empty, .find-message { color:var(--muted); font-size:.9rem; line-height:1.5; }
+.find-error-text { white-space:pre-wrap; line-height:2; font-size:1.08rem; }
+.find-word { display:inline; margin:0; padding:2px 4px; border:1px solid transparent; border-radius:6px; background:transparent; color:var(--ink); font:inherit; line-height:inherit; cursor:pointer; }
+.find-word:hover, .find-word:focus-visible { border-color:var(--purple); outline:none; }
+.find-word.is-found { background:#279c6d18; border-color:#329f70; }
+.find-word.is-fixed { font-weight:650; }
+.find-word.is-mistake { background:#d1515120; border-color:#c35b5b; }
+.find-word:disabled { opacity:.65; cursor:wait; }
+.find-correction-row { display:grid; grid-template-columns:minmax(80px,.7fr) minmax(100px,1fr) auto; align-items:center; gap:8px 14px; padding:12px 0; border-bottom:1px solid var(--line); }
+.find-correction-label { overflow-wrap:anywhere; color:var(--ink); }
+.find-correction-input { width:100%; min-width:0; min-height:42px; padding:8px 12px; border:1px solid var(--line); border-radius:9px; background:var(--white); color:var(--ink); font:inherit; }
+.find-correction-input:focus-visible { outline:2px solid var(--purple); outline-offset:1px; }
+.find-correction-input.blank-correct { border-color:#329f70; background:#279c6d14; }
+.find-correction-input.blank-incorrect { border-color:#c35b5b; background:#d1515118; }
+.find-correction-result { grid-column:2 / -1; min-height:1em; font-size:.85rem; }
+.find-correction-result.is-correct { color:var(--purple); }
+.find-correction-result.is-incorrect { color:#c35b5b; }
+.find-empty[hidden] { display:none; }
+@media(max-width:600px) { .find-correction-row { grid-template-columns:minmax(0,1fr) auto; } .find-correction-label, .find-correction-result { grid-column:1 / -1; } .find-correction-input { font-size:16px; } }

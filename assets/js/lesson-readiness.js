@@ -4,7 +4,7 @@
         if(root.SlovaExerciseFormat)activity=root.SlovaExerciseFormat.prepare(activity);
         const settings=activity.settings||{},content=String(activity.content||'').trim(),answer=String(activity.answer||'').trim();
         if(activity.questions?.length)return (activity.type==='listening-questions'&&!content)||activity.questions.some(question=>incomplete({...question,type:activity.type==='listening-questions'?'multiple-choice':activity.type,settings}));
-        if(activity.type==='find-error')return !content||!Array.isArray(settings.errors)||!settings.errors.some(error=>Number.isInteger(Number(error.index))&&Number(error.index)>=0&&String(error.correction||'').trim());
+        if(activity.type==='find-error')return root.SlovaExerciseFormat?.findErrors?!content||!root.SlovaExerciseFormat.findErrors.spec(activity).expected.size:!content||!Array.isArray(settings.errors)||!settings.errors.some(error=>Number.isInteger(Number(error.index))&&Number(error.index)>=0&&String(error.correction||'').trim());
         if(activity.type==='fill-blank'){const blanks=root.SlovaFillBlanks.parse(content,answer,settings);return !blanks.groups.length||blanks.groups.some(group=>!group.length);}
         if(activity.type==='table'){const table=root.SlovaTable.parse(content,answer,settings);return !table.blankCount||table.groups.some(group=>!group.length);}
         if(['drag-words','order-items','sentence-order'].includes(activity.type))return !content&&!answer&&!settings.items?.length&&!settings.acceptedOrders?.length;

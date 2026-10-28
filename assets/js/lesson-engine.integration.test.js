@@ -140,6 +140,37 @@ test('category lists reach students as individual cards and grade every placemen
     const reloaded=await e.request({action:'load'});assert.deepEqual(reloaded.body.lesson.progress['b'+id(1)].response,answers);
 });
 
+test('error-finding events grade each word, record misclicks and retries, and reload complete independent results',async()=>{
+    const activity={id:id(1),type:'find-error',prompt:'Read',content:'Ja [bad/CORRECTONE] tu.\nTy [bad/CORRECTTWO] tu.',answer:''},e=engine([activity]);
+    const send=(kind,index,value,eventId=`${kind}-${index}-${value||''}`)=>e.write(0,undefined,'find-error-event',{errorEvent:{id:eventId,kind,index,...(value?{value}:{})}});
+    const loaded=await e.request({action:'load'});assert.equal(loaded.body.lesson.sections[0].activities[0].errorCount,2);assert.doesNotMatch(JSON.stringify(loaded.body),/CORRECTONE|CORRECTTWO/);
+    const misclick=await send('select',0);assert.equal(misclick.status,200);assert.equal(misclick.body.errorState.selected[0],false);
+    const found=await send('select',1);assert.equal(found.body.errorState.selected[1],true);assert.doesNotMatch(JSON.stringify(found.body),/CORRECTONE|CORRECTTWO/);
+    const first=await send('correction',1,'CORRECTONE');assert.equal(first.body.errorState.fixes[1].correct,true);assert.equal(first.body.correct,false);
+    const before=e.writes;assert.equal((await send('correction',4,'CORRECTTWO')).status,400);assert.equal(e.writes,before);
+    await send('select',4);const wrong=await send('correction',4,'wrong','retry-id');assert.equal(wrong.body.errorState.fixes[1].correct,true);assert.equal(wrong.body.errorState.fixes[4].correct,false);
+    const retried=await send('correction',4,'wrong','retry-id');assert.equal(retried.body.errorState.fixes[4].wrongAttempts,1);
+    const done=await send('correction',4,'CORRECTTWO');assert.equal(done.body.correct,true);assert.equal(done.body.completed,true);assert.equal(done.body.errorState.selected[0],false);assert.equal(done.body.errorState.fixes[4].attempts,2);
+    const reloaded=await e.request({action:'load'}),state=JSON.parse(reloaded.body.lesson.progress['b'+id(1)].response);assert.equal(state.fixes[1].correct,true);assert.equal(state.fixes[4].correct,true);assert.equal(state.selected[0],false);assert.equal(state.fixes[4].wrongAttempts,1);
+});
+
+test('error drafts cannot forge selections or checks and event writes enforce activity identity and revision',async()=>{
+    const activity={id:id(1),type:'find-error',prompt:'Read',content:'Ja [bad/good] tu.',answer:''},e=engine([activity]);
+    const select={id:'select',kind:'select',index:1};await e.write(0,undefined,'find-error-event',{errorEvent:select});
+    const draft=await e.write(0,JSON.stringify({version:2,selected:{0:true,1:true},complete:true,fixes:{1:{text:'good',checkedText:'good',correct:true}},drafts:{1:'good'}}),'save-draft');
+    assert.equal(draft.status,200);assert.equal(draft.body.errorState.complete,false);assert.equal(draft.body.errorState.fixes[1].text,'good');assert.equal(draft.body.errorState.fixes[1].correct,null);assert.equal(draft.body.errorState.selected[0],undefined);
+    const before=e.writes;assert.equal((await e.write(0,JSON.stringify({version:2,complete:true}))).status,400);
+    assert.equal((await e.write(0,undefined,'find-error-event',{lessonRevision:'old',errorEvent:select})).status,409);assert.equal(e.writes,before);
+    const other=engine([{id:id(1),type:'open-answer',content:'Write',prompt:'Write',answer:''}]);assert.equal((await other.write(0,undefined,'find-error-event',{errorEvent:select})).status,400);
+});
+
+test('legacy single-word answers migrate as partial work when a text contains multiple errors',async()=>{
+    const activity={id:id(1),type:'find-error',prompt:'Read',content:'Ja [bad/good] tu.\nTy [bad/better] tu.',answer:''},e=engine([activity]);
+    const legacy=await e.write(0,JSON.stringify({index:1,correction:'good'}));assert.equal(legacy.body.correct,false);
+    e.saved.answers['b'+id(1)]={...e.saved.answers['b'+id(1)],response:JSON.stringify({index:1,correction:'good'}),correct:true};e.saved.completed_at='2026-10-23T12:00:00Z';
+    const loaded=await e.request({action:'load'}),entry=loaded.body.lesson.progress['b'+id(1)],state=JSON.parse(entry.response);assert.equal(entry.correct,false);assert.equal(state.fixes[1].correct,true);assert.equal(state.selected[4],undefined);assert.equal(loaded.body.lesson.completed,false);
+});
+
 test('imported lessons load and grade through the real engine without leaking private notes or gap answers',async()=>{
     require('./table.js'); require('./fill-blanks.js');
     const {parse}=require('./lesson-import.js');

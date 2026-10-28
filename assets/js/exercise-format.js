@@ -165,6 +165,56 @@
             activity.settings={...activity.settings,answerFromContent:true};
         }
     }
+    function errorSpec(activity){
+        const prepared=prepare(activity),tokens=String(prepared.content||'').match(/\S+/g)||[],expected=new Map();
+        for(const error of Array.isArray(prepared.settings?.errors)?prepared.settings.errors:[]){if(!error||typeof error!=='object')continue;const index=Number(error.index),correction=String(error.correction||'').trim();if(Number.isInteger(index)&&index>=0&&index<tokens.length&&correction)expected.set(index,correction);}
+        return{tokens,expected,caseSensitive:prepared.settings?.caseSensitive===true};
+    }
+    function errorParse(value){if(typeof value==='string'){try{return JSON.parse(value);}catch{return null;}}return value&&typeof value==='object'&&!Array.isArray(value)?value:null;}
+    function errorNormalize(value,sensitive){const text=String(value||'').normalize('NFC').trim().replace(/\s+/g,' ');return sensitive?text:text.toLocaleLowerCase();}
+    function errorState(activity,response,entry={}){
+        const spec=errorSpec(activity),raw=errorParse(response)||{},state={version:2,total:spec.expected.size,selected:{},fixes:{},events:[]};
+        const valid=index=>Number.isInteger(Number(index))&&Number(index)>=0&&Number(index)<spec.tokens.length;
+        if(raw.version===2){
+            for(const index of Object.keys(raw.selected||{}))if(valid(index))state.selected[Number(index)]=spec.expected.has(Number(index));
+            for(const [index,fix] of Object.entries(raw.fixes||{}))if(valid(index)&&state.selected[index]===true&&fix&&typeof fix==='object'){
+                const text=String(fix.text||'').slice(0,500),checkedText=typeof fix.checkedText==='string'?fix.checkedText.slice(0,500):undefined;
+                const checkedCorrect=checkedText!==undefined?errorNormalize(checkedText,spec.caseSensitive)===errorNormalize(spec.expected.get(Number(index)),spec.caseSensitive):null;
+                state.fixes[index]={text,attempts:Math.max(0,Math.min(1000000,Number(fix.attempts)||0)),wrongAttempts:Math.max(0,Math.min(1000000,Number(fix.wrongAttempts)||0)),...(checkedText!==undefined?{checkedText}:{}),checkedCorrect,correct:checkedText===text?checkedCorrect:null};
+            }
+            state.events=(Array.isArray(raw.events)?raw.events:[]).slice(-100).filter(event=>event&&typeof event.id==='string'&&valid(event.index)).map(event=>({id:event.id.slice(0,100),kind:event.kind==='correction'?'correction':'select',index:Number(event.index),correct:event.correct===true,...(event.kind==='correction'?{value:String(event.value||'').slice(0,500)}:{}),at:String(event.at||'').slice(0,40)}));
+        }else if(raw.index!==''&&raw.index!==null&&raw.index!==undefined&&valid(raw.index)){
+            const index=Number(raw.index);state.selected[index]=spec.expected.has(index);
+            if(state.selected[index]){const text=String(raw.correction||'').slice(0,500),checked=entry.draft!==true&&typeof entry.correct==='boolean';const correct=checked?errorNormalize(text,spec.caseSensitive)===errorNormalize(spec.expected.get(index),spec.caseSensitive):null;state.fixes[index]={text,...(checked?{checkedText:text}:{}),checkedCorrect:correct,correct,attempts:checked?1:0,wrongAttempts:correct===false?1:0};}
+        }
+        for(const index of Object.keys(state.selected))if(state.selected[index]===true&&!state.fixes[index])state.fixes[index]={text:'',correct:null,attempts:0,wrongAttempts:0};
+        state.complete=state.total>0&&[...spec.expected.keys()].every(index=>state.selected[index]===true&&state.fixes[index]?.correct===true);
+        return state;
+    }
+    function errorEvent(activity,response,event,entry={},now=new Date().toISOString()){
+        const spec=errorSpec(activity),state=errorState(activity,response,entry),index=Number(event?.index),id=String(event?.id||'');
+        if(!id||id.length>100||event?.index===''||event?.index===null||!Number.isInteger(index)||index<0||index>=spec.tokens.length||!['select','correction'].includes(event?.kind))throw Error('Invalid error-check event.');
+        if(state.events.some(old=>old.id===id))return state;
+        if(event.kind==='select'){
+            if(Object.prototype.hasOwnProperty.call(state.selected,index))return state;
+            const correct=spec.expected.has(index);state.selected[index]=correct;if(correct)state.fixes[index]={text:'',correct:null,attempts:0,wrongAttempts:0};
+            state.events.push({id,kind:'select',index,correct,at:now});
+        }else{
+            if(state.selected[index]!==true)throw Error('Select an incorrect word first.');
+            const value=String(event.value||'').trim();if(!value||value.length>500)throw Error('Enter a correction of up to 500 characters.');
+            const fix=state.fixes[index],correct=errorNormalize(value,spec.caseSensitive)===errorNormalize(spec.expected.get(index),spec.caseSensitive);
+            state.fixes[index]={text:value,checkedText:value,correct,attempts:fix.attempts+1,wrongAttempts:fix.wrongAttempts+(correct?0:1)};
+            state.events.push({id,kind:'correction',index,value,correct,at:now});
+        }
+        state.events=state.events.slice(-100);return errorState(activity,state);
+    }
+    function errorDraft(activity,response,drafts,entry={}){
+        const state=errorState(activity,response,entry),raw=errorParse(drafts)||{};
+        for(const [index,value] of Object.entries(raw.drafts||{}))if(state.selected[index]===true&&typeof value==='string'&&value.length<=500){state.fixes[index].text=value.trim();}
+        return errorState(activity,state);
+    }
+    function errorStats(state){return{corrected:Object.values(state.fixes||{}).filter(fix=>fix.correct===true).length,mistakes:Object.values(state.selected||{}).filter(value=>value===false).length+Object.values(state.fixes||{}).reduce((sum,fix)=>sum+(Number(fix.wrongAttempts)||0),0)};}
+    const findErrors={spec:errorSpec,parse:errorParse,state:errorState,event:errorEvent,draft:errorDraft,stats:errorStats};
     const copy={
         ru:['Например: Ja [bývam] v Bratislave. Вместо слова в скобках появится пропуск.','Напишите слова в правильном порядке: Ja bývam v Bratislave. Они перемешаются автоматически.','Напишите по одному элементу в строке в правильном порядке — они перемешаются автоматически.','Напишите предложения в правильном порядке, каждое с новой строки — они перемешаются автоматически.','Например: Anna / [Bratislava] / [slovenčina]. Ответы в скобках станут пропусками.','Например: auto [машина]. Каждая новая строка — новая карточка.','Кнопки с ответами','Пропуск со списком','Например: выберите столицу — Bratislava, Košice или Žilina.','Например: Ja [bývam/bývaš/býva] v Bratislave. Первый вариант правильный.'],
         ua:['Наприклад: Ja [bývam] v Bratislave. Замість слова в дужках з’явиться пропуск.','Напишіть слова в правильному порядку: Ja bývam v Bratislave. Вони перемішаються автоматично.','Напишіть по одному елементу в рядку в правильному порядку — вони перемішаються автоматично.','Напишіть речення в правильному порядку, кожне з нового рядка — вони перемішаються автоматично.','Наприклад: Anna / [Bratislava] / [slovenčina]. Відповіді в дужках стануть пропусками.','Наприклад: auto [машина]. Кожен новий рядок — нова картка.','Кнопки з відповідями','Пропуск зі списком','Наприклад: оберіть столицю — Bratislava, Košice або Žilina.','Наприклад: Ja [bývam/bývaš/býva] v Bratislave. Перший варіант правильний.'],
@@ -173,6 +223,6 @@
         kk:['Мысалы: Ja [bývam] v Bratislave. Жақшадағы сөз бос орынға айналады.','Сөздерді дұрыс ретпен жазыңыз: Ja bývam v Bratislave. Олар автоматты түрде араласады.','Элементтерді дұрыс ретпен, әрқайсын жаңа жолға жазыңыз. Олар автоматты түрде араласады.','Сөйлемдерді дұрыс ретпен, әрқайсын жаңа жолға жазыңыз. Олар автоматты түрде араласады.','Мысалы: Anna / [Bratislava] / [slovenčina]. Жақшадағы жауаптар бос орынға айналады.','Мысалы: auto [көлік]. Әр жаңа жол жаңа карточка жасайды.','Жауап батырмалары','Тізімі бар бос орын','Мысалы: астананы таңдаңыз — Bratislava, Košice немесе Žilina.','Мысалы: Ja [bývam/bývaš/býva] v Bratislave. Бірінші нұсқа дұрыс.']
     };
     function hint(type,language){const index={'fill-blank':0,'drag-words':1,'order-items':2,'sentence-order':3,table:4,flashcards:5,'multiple-choice':8,'one-of-many':9}[type];return index===undefined?'':(copy[language]||copy.en)[index];}
-    root.SlovaExerciseFormat={cards,cardsFor,cardsEditorContent,sequenceAnswer,sequenceTypes,answerFieldNeeded,contentEdited,dropdown,hint,copy,prepare,editorContent,applyContent,applyQuestionContent,shuffleChoices,parseColumns};
+    root.SlovaExerciseFormat={cards,cardsFor,cardsEditorContent,sequenceAnswer,sequenceTypes,answerFieldNeeded,contentEdited,dropdown,hint,copy,prepare,editorContent,applyContent,applyQuestionContent,shuffleChoices,parseColumns,findErrors};
     if(typeof module!=='undefined')module.exports=root.SlovaExerciseFormat;
 })(typeof window!=='undefined'?window:globalThis);
