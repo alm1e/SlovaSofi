@@ -46,7 +46,7 @@ function createEditorContext() {
         "addActivityQuestion", "renderActivityQuestionEditor", "activitySummary", "activityEditorMeta",
         "duplicateBlockButton", "previewText", "previewTokens", "previewLines", "previewMediaUrl",
         "previewFlashcardSideMarkup", "previewVideoEmbedUrl", "renderPreviewActivity", "checkPreviewActivity",
-        "renderSupplementaryPreview", "renderActivityBlocks", "activityEditorIcon", "renderBuilderPreview",
+        "renderSupplementaryPreview", "renderActivityBlocks", "activityEditorIcon", "renderBuilderPreview", "formatLiveCorrectAnswer",
         "previewRichContent", "contentHint", "renderActivityAnswerField", "preventLessonInputSubmit", "answerHint", "contentPlaceholder", "answerPlaceholder",
         "richTextToolbar", "activitySettingsPlaceholder", "activityMetadataEditor", "activitySettingsField", "updateActivitySettings"
     ]) {
@@ -328,4 +328,14 @@ test('category preview expands a list into individual draggable cards and keeps 
     assert.match(html,/data-pair-correct="Ovocie"/);assert.doesNotMatch(html,/data-pair-correct="mlieko\/papier\/škola"/);
     const old=editor.renderPreviewActivity({type:'columns',content:'jablko [Ovocie]\nmrkva [Zelenina]',answer:''},0);assert.equal((old.match(/data-column-index=/g)||[]).length,2);
     assert.match(editor.contentPlaceholder('columns'),/Ovocie: \[jablko\/hruška\/banán\]/);
+});
+
+test('whole-text error correction has independent inputs even when grouped, with practical multiline authoring examples',()=>{
+    const editor=createEditorContext();
+    const html=editor.renderPreviewActivity({type:'find-error',prompt:'Read',questions:[{id:'q1',content:'Ja [bad/good] tu.'},{id:'q2',content:'Ona [bad/better] tu.'}]},0);
+    assert.equal((html.match(/data-find-errors /g)||[]).length,2);
+    assert.doesNotMatch(html,/data-check-activity-group/);
+    assert.match(editor.contentHint('find-error'),/mistake \/ correction/);
+    assert.equal(editor.contentPlaceholder('find-error').split('\n').length,3);
+    assert.equal(editor.formatLiveCorrectAnswer({type:'find-error',content:'Ja [bývať/bývam] tu. Ona [ma/má] knihu.'}),'bývať → bývam\nma → má');
 });

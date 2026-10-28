@@ -2545,7 +2545,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
             <header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}<h3>${index + 1}. ${escapeHtml(activity.prompt || t(activityTypes.find((item) => item.id === type)?.nameKey || "activity.task"))}</h3>${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>
             ${window.SlovaActivityUI.renderMetadata(activity)}${type === "listening-questions" ? renderSupplementaryPreview(activity) : ""}
             <div class="preview-question-list">${questionsMarkup}</div>
-            ${liveAnswerActivityTypes.has(type) ? `<div class="preview-actions"><button class="button preview-check" type="button" data-check-activity-group>${previewGroupCheckLabels[currentLanguage]}</button></div>` : ""}
+            ${type !== "find-error" && liveAnswerActivityTypes.has(type) ? `<div class="preview-actions"><button class="button preview-check" type="button" data-check-activity-group>${previewGroupCheckLabels[currentLanguage]}</button></div>` : ""}
         </article>`;
     }
 
@@ -3661,6 +3661,10 @@ function formatLiveCorrectAnswer(activity) {
     const contentLines = previewLines(activity.content);
 
     if (activity.type === "drag-words") return expectedParts.join(" ");
+    if (activity.type === "find-error") {
+        const {tokens, expected} = window.SlovaExerciseFormat.findErrors.spec(activity);
+        return [...expected].map(([index, correction]) => `${tokens[index]} → ${correction}`).join("\n");
+    }
     if (activity.type === "fill-blank") return window.SlovaFillBlanks.parse(activity.content, activity.answer, activity.settings).groups.map(group => group.join(" / ")).join(" · ");
     if (activity.type === "table") return window.SlovaTable.parse(activity.content, activity.answer, activity.settings).groups.map(group => group.join(" / ")).join(" · ");
     if (activity.type === "multiple-choice" || activity.type === "one-of-many") {
@@ -3880,10 +3884,12 @@ function renderLessonWorkspace() {
             const liveAnswerMarkup = liveGroup && liveAnswerActivityTypes.has(activity.type) && progressIndex !== undefined
                 ? Array.isArray(activity.questions) && activity.questions.length
                     ? activity.questions.map((question, questionIndex) => renderLiveAnswerPanel(liveStudent, {
-                        type: activity.type,
+                        ...activity,
+                        questions: undefined,
                         prompt: String(question.prompt || ""),
                         content: String(question.content || ""),
-                        answer: String(question.answer || "")
+                        answer: String(question.answer || ""),
+                        settings: { ...activity.settings, ...question.settings }
                     }, progressIndex, activityQuestionProgressId(question, questionIndex, activity.questions), questionIndex, {
                         classId: monitorClassId,
                         lessonId: lesson.id
@@ -3914,6 +3920,7 @@ function renderLessonWorkspace() {
     const previewDraftNotice = !isEditing && editorReturnToPreview
         ? `<p class="lesson-editor-draft-notice" role="status">${lessonSectionText("liveUnsaved")}</p>`
         : "";
+    const workspaceTabs = `<nav class="lesson-workspace-tabs" role="tablist" aria-label="${lessonSectionText("workspaceMode")}"><button type="button" class="${!isEditing ? "active" : ""}" role="tab" aria-selected="${!isEditing}" data-workspace-mode="preview" ${!lesson || quickEditActive ? "disabled" : ""}>${lessonSectionText("lessonTab")}</button>${hasPermission("edit_lessons") ? `<button type="button" class="${isEditing ? "active" : ""}" role="tab" aria-selected="${isEditing}" data-workspace-mode="edit" ${quickEditActive ? "disabled" : ""}>${lessonSectionText("editorTab")}</button>` : ""}</nav>`;
     pageContent.innerHTML = `<section class="lesson-workspace"><form id="lessonForm" class="lesson-workspace-form">
         <header class="lesson-workspace-hero">
             <div class="lesson-workspace-heading"><button type="button" class="button back-to-lessons" data-workspace-back ${quickEditActive ? "disabled" : ""}>← ${lessonSectionText("back")}</button>
@@ -3921,14 +3928,14 @@ function renderLessonWorkspace() {
             </div>
             ${isEditing ? "" : `<div class="lesson-workspace-preview-actions"><span class="lesson-workspace-unit">${escapeHtml(unit)}</span></div>`}
         </header>
-        <nav class="lesson-workspace-tabs" role="tablist" aria-label="${lessonSectionText("workspaceMode")}"><button type="button" class="${!isEditing ? "active" : ""}" role="tab" aria-selected="${!isEditing}" data-workspace-mode="preview" ${!lesson || quickEditActive ? "disabled" : ""}>${lessonSectionText("lessonTab")}</button>${hasPermission("edit_lessons") ? `<button type="button" class="${isEditing ? "active" : ""}" role="tab" aria-selected="${isEditing}" data-workspace-mode="edit" ${quickEditActive ? "disabled" : ""}>${lessonSectionText("editorTab")}</button>` : ""}</nav>
+        ${liveMonitor ? "" : workspaceTabs}
         ${previewDraftNotice}
         <div class="lesson-workspace-layout ${liveMonitor ? "has-live-monitor" : ""}">
-            ${liveMonitor ? `<aside class="live-monitor-column ${liveMonitorOpen ? "is-expanded" : ""}">
+            ${liveMonitor ? `<aside class="lesson-monitor-rail">${workspaceTabs}<div class="live-monitor-column ${liveMonitorOpen ? "is-expanded" : ""}">
                 <button type="button" class="live-monitor-backdrop" data-close-live-monitor aria-label="${lessonSectionText("liveAnswers")}" tabindex="-1" ${liveMonitorOpen ? "" : "hidden"}></button>
                 <button type="button" class="live-monitor-toggle" data-toggle-live-monitor aria-expanded="${liveMonitorOpen}"><span aria-hidden="true">☷</span><span>${lessonSectionText("liveAnswers")}</span></button>
                 ${liveMonitor}
-            </aside>` : ""}
+            </div></aside>` : ""}
             <main class="lesson-workspace-main"><section class="lesson-workspace-section">
                 ${isEditing ? `${sourcePanel}${sectionBody}${dropZone}` : `<h2>${escapeHtml(section.title)}</h2>${sectionBody}`}
             </section>
@@ -4225,6 +4232,7 @@ function previewRichContent(block) {
 }
 
 function contentHint(type) {
+    if(type==='find-error')return ({ru:'Например: Ja [bývať/bývam] v Bratislave. В скобках: ошибка / исправление. Можно написать целый текст.',ua:'Наприклад: Ja [bývať/bývam] v Bratislave. У дужках: помилка / виправлення. Можна написати цілий текст.',en:'Example: Ja [bývať/bývam] v Bratislave. In brackets: mistake / correction. You can enter a full text.',sk:'Napríklad: Ja [bývať/bývam] v Bratislave. V zátvorkách: chyba / oprava. Môžete zadať celý text.',kk:'Мысалы: Ja [bývať/bývam] v Bratislave. Жақшада: қате / түзету. Толық мәтін енгізуге болады.'})[currentLanguage];
     if(type==='columns')return 'Ovocie: [jablko/hruška/banán]';
     if(window.SlovaExerciseFormat.sequenceTypes.includes(type))return contentPlaceholder(type);
     if(['vocabulary','phrase-list'].includes(type))return 'auto [машина]';
@@ -4310,6 +4318,7 @@ function richTextToolbar() {
 }
 
 function contentPlaceholder(type) {
+    if(type==='find-error')return 'Ja [bývať/bývam] v Bratislave.\nOna [ma/má] knihu.\nMy [chodí/chodíme] do školy.';
     if(type==='columns')return 'Ovocie: [jablko/hruška/banán]\nZelenina: [mrkva/uhorka/paradajka]';
     if(['vocabulary','phrase-list'].includes(type))return 'auto [машина]\ndom [дом]';
     const bracketExamples={"multiple-choice":"[Bratislava]\nKošice\nŽilina","true-false":"Slon je malý [false]",match:"auto [машина]\ndom [дом]",columns:"jablko [Ovocie]\nmrkva [Zelenina]","find-error":"Ja [bývať/bývam] v Bratislave.","open-answer":"Kde bývaš? [Bývam v Bratislave.]","drag-words":"[Ja bývam v Bratislave.]","order-items":"[ráno]\n[poludnie]\n[večer]","sentence-order":"[Ráno vstávam.]\n[Potom raňajkujem.]"};
@@ -4953,17 +4962,18 @@ async function saveLesson(event) {
     }
     if (!wasEditing) clearNewLessonDraft();
     stopLiveProgressSubscription();
-    lessonWorkspaceMode = "";
-    workspaceLessonId = "";
+    lessonWorkspaceMode = "preview";
+    workspaceLessonId = lesson.id;
     editingLessonId = null;
     editorReturnToPreview = false;
+    previewActivityEdit = null;
     draftSections = [];
     draftHomeworkSections = [];
-    activeLessonSectionId = "";
-    activeHomeworkSectionId = "";
-    lessonWorkspaceTab = "lesson";
     lessonFormDraft = { title: "", unit: "A1" };
+    const assignedClassIds = lessonClassIds(lesson);
+    if (!assignedClassIds.includes(monitorClassId)) monitorClassId = assignedClassIds[0] || "";
     render();
+    scrollToFirstWorkspaceActivity();
     showToast(wasEditing ? t("toast.lessonUpdated") : t("toast.lessonCreated"));
 }
 

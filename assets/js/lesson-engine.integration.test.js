@@ -171,6 +171,17 @@ test('legacy single-word answers migrate as partial work when a text contains mu
     const loaded=await e.request({action:'load'}),entry=loaded.body.lesson.progress['b'+id(1)],state=JSON.parse(entry.response);assert.equal(entry.correct,false);assert.equal(state.fixes[1].correct,true);assert.equal(state.selected[4],undefined);assert.equal(loaded.body.lesson.completed,false);
 });
 
+test('grouped error texts save their word checks separately and complete only after both texts are corrected',async()=>{
+    const activity={id:id(1),type:'find-error',prompt:'Read',content:'',questions:[{id:'q1',content:'Ja [bad/good] tu.'},{id:'q2',content:'Ona [bad/better] tu.'}]},e=engine([activity]);
+    const send=(questionId,kind,value)=>e.write(0,undefined,'find-error-event',{questionId,errorEvent:{id:`${questionId}-${kind}`,kind,index:1,...(value?{value}:{})}});
+    const loaded=await e.request({action:'load'});assert.equal(loaded.body.lesson.sections[0].activities[0].questions.length,2);
+    await send('q1','select');const first=await send('q1','correction','good');assert.equal(first.body.correct,true);assert.equal(first.body.completed,false);
+    await send('q2','select');const second=await send('q2','correction','better');assert.equal(second.body.completed,true);
+    const reloaded=await e.request({action:'load'}),progress=reloaded.body.lesson.progress;
+    assert.equal(JSON.parse(progress['b'+id(1)+'.qq1'].response).fixes[1].text,'good');
+    assert.equal(JSON.parse(progress['b'+id(1)+'.qq2'].response).fixes[1].text,'better');
+});
+
 test('imported lessons load and grade through the real engine without leaking private notes or gap answers',async()=>{
     require('./table.js'); require('./fill-blanks.js');
     const {parse}=require('./lesson-import.js');
