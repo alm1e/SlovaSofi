@@ -73,7 +73,7 @@ function workspaceContext() {
         lessonSectionText:key=>key,lessonText:key=>key,previewText:key=>key,t:key=>key,lessonClassNames:()=>'',emptyMessage:()=>'',
         renderActivityBlocks:()=>'',exitLessonWorkspace(){},saveLesson(){},scheduleLessonDraftAutosave(){},
         switchLessonWorkspaceMode(){},openActivityPicker(){},openLessonTextImport(){},enhanceSelects(){},bindLessonPreviewActions(){},
-        bindTrueFalseEditors(){},bindLessonNotes(){},bindBlankCardSettings(){},bindActivityBlockActions(){}
+        bindTrueFalseEditors(){},bindLessonNotes(){},bindBlankCardSettings(){},bindActivityBlockActions(){},bindActivityAuthoring(){}
     });
     vm.runInContext(readFunction('escapeHtml')+readFunction('renderLessonWorkspace'),ctx);return ctx;
 }

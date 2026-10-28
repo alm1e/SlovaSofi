@@ -140,6 +140,18 @@ test('category lists reach students as individual cards and grade every placemen
     const reloaded=await e.request({action:'load'});assert.deepEqual(reloaded.body.lesson.progress['b'+id(1)].response,answers);
 });
 
+test('creation-help examples grade through the actual endpoint, including named table columns and grouped listening options',async()=>{
+    const help=require('./activity-authoring.js'),types=['drag-words','fill-blank','multiple-choice','sentence-order','one-of-many','true-false','table','match','columns','listening-questions'];
+    const activities=types.map((type,index)=>{const activity={id:id(index+1),type,prompt:'Example',content:type==='listening-questions'?'https://test.invalid/audio.mp3':'',answer:''};assert.equal(help.applyExample(activity,'en'),true);return activity;});
+    const e=engine(activities),loaded=await e.request({action:'load'});assert.equal(loaded.status,200);assert.equal(loaded.body.lesson.sections[0].activities.length,types.length);
+    const responses=[['Ja','bývam','v','Bratislave.'],['bývam','má'],'Bratislava',['Ráno vstávam.','Potom raňajkujem.','Idem do školy.'],['bývam','má'],'false',['Bratislava','slovenčina','Košice','angličtina'],['car','house'],['Ovocie','Ovocie','Ovocie','Zelenina','Zelenina','Zelenina'],'Bratislava'];
+    for(let index=0;index<activities.length;index++){
+        const result=await e.write(index,responses[index],'submit',types[index]==='listening-questions'?{questionId:activities[index].questions[0].id}:{});
+        assert.equal(result.status,200,types[index]);assert.equal(result.body.correct,true,types[index]);
+    }
+    assert.deepEqual(loaded.body.lesson.sections[0].activities[6].headers,['Meno','Mesto','Jazyk']);
+});
+
 test('error-finding events grade each word, record misclicks and retries, and reload complete independent results',async()=>{
     const activity={id:id(1),type:'find-error',prompt:'Read',content:'Ja [bad/CORRECTONE] tu.\nTy [bad/CORRECTTWO] tu.',answer:''},e=engine([activity]);
     const send=(kind,index,value,eventId=`${kind}-${index}-${value||''}`)=>e.write(0,undefined,'find-error-event',{errorEvent:{id:eventId,kind,index,...(value?{value}:{})}});

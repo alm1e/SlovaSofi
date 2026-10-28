@@ -7,10 +7,6 @@
         kk:['Бос орындары бар суреттер','Сүйреуге арналған сөздер','Қосымша сөздер / арқылы','Дұрыс сөз','Сурет сілтемесі','Карточка қосу','немесе сурет жүктеңіз','Сөзді таңдап, өрісті басыңыз немесе сүйреңіз. Сөздерді жинаққа қайтаруға болады.','Сөзді енгізіп, сурет қосыңыз.']
     };
     const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-    function controls(activity,language) {
-        const labels=copy[language]||copy.ru,settings=activity.settings||{},view=window.SlovaFillBlanks.presentation(activity.content,activity.answer,settings);
-        return `<fieldset class="gap-settings"><legend>${labels[0]}</legend><label><input type="checkbox" data-gap-setting="gapLayout" ${view.gapLayout==='cards'?'checked':''}> ${labels[0]}</label><label><input type="checkbox" data-gap-setting="useWordBank" ${settings.useWordBank===true||settings.useWordBank!==false&&view.gapLayout==='cards'?'checked':''}> ${labels[1]}</label><label>${labels[2]}<input data-gap-setting="wordBank" value="${esc((Array.isArray(settings.wordBank)?settings.wordBank:[]).join(' / '))}"></label><div class="gap-card-create"><label>${labels[3]}<input data-gap-card-word></label><label>${labels[4]}<input type="url" data-gap-card-url placeholder="https://…"></label><label>${labels[6]}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-gap-card-file></label><button type="button" class="button secondary small" data-add-gap-card>${labels[5]}</button><small data-gap-error role="status"></small></div></fieldset>`;
-    }
     function render(html,words,layout,language) {
         const labels=copy[language]||copy.ru,list=[...(words||[])];
         for(let i=list.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[list[i],list[j]]=[list[j],list[i]];}
@@ -44,5 +40,5 @@
             refresh();
         });
     }
-    window.SlovaBlankCards={controls,render,bind,copy};
+    window.SlovaBlankCards={render,bind,copy};
 })();

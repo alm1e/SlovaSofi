@@ -2226,6 +2226,14 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
     .live-monitor-column.is-expanded .live-monitor-bar { max-height: min(55dvh, calc(100dvh - var(--lesson-panel-top) - 80px)); }
 }
 
+.activity-authoring-help { margin:14px 0 18px; padding:12px 15px; border:1px solid var(--line); border-radius:12px; background:var(--surface-soft,#f4f7f6); font-size:13px; line-height:1.6; }
+.activity-authoring-help summary { color:var(--purple); cursor:pointer; font-weight:700; }
+.activity-authoring-help ol { margin:14px 0; padding-left:22px; }
+.activity-authoring-help li+li { margin-top:7px; }
+.activity-authoring-help pre { white-space:pre-wrap; overflow-wrap:anywhere; padding:12px; border-radius:8px; background:var(--surface-raised,#fff); color:var(--ink); font:13px/1.6 Consolas,monospace; }
+.activity-authoring-help>strong { display:block; margin-top:14px; }
+.activity-authoring-help p { margin:8px 0; }
+.activity-authoring-common { border-top:1px solid var(--line); padding-top:12px; color:var(--muted); }
 .find-error-text { white-space:pre-wrap; line-height:2; font-size:1.08rem; }
 .find-word { display:inline; margin:0; padding:2px 4px; border:1px solid transparent; border-radius:6px; background:transparent; color:var(--ink); font:inherit; line-height:inherit; cursor:pointer; }
 .find-word:hover, .find-word:focus-visible { border-color:var(--purple); outline:none; }

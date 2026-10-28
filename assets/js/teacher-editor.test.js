@@ -8,7 +8,7 @@ const source = fs.readFileSync(path.join(__dirname, "teacher.js"), "utf8");
 
 function createEditorContext() {
     const context = vm.createContext({
-        URL, crypto: require("node:crypto").webcrypto,
+        URL, Event, crypto: require("node:crypto").webcrypto,
         window: { location: { href: "https://example.test/teacher.html" }, addEventListener() {} },
         location: { href: "https://example.test/teacher.html" },
         document: { addEventListener() {} },
@@ -33,6 +33,8 @@ function createEditorContext() {
     vm.runInContext(fs.readFileSync(`${__dirname}/exercise-format.js`, "utf8"), context);
     vm.runInContext(fs.readFileSync(`${__dirname}/flashcard-deck.js`, "utf8"), context);
     vm.runInContext(fs.readFileSync(`${__dirname}/find-error-ui.js`, "utf8"), context);
+    vm.runInContext(fs.readFileSync(`${__dirname}/picture-gap-editor.js`, "utf8"), context);
+    vm.runInContext(fs.readFileSync(`${__dirname}/activity-authoring.js`, "utf8"), context);
     const liveTypesStart = source.indexOf("const liveAnswerActivityTypes =");
     vm.runInContext(source.slice(liveTypesStart, source.indexOf("\n]);", liveTypesStart) + 4), context);
     for (const name of ["activityTypes", "activityQuestionLabels", "previewLabels", "previewGroupCheckLabels"]) {
@@ -47,8 +49,8 @@ function createEditorContext() {
         "duplicateBlockButton", "previewText", "previewTokens", "previewLines", "previewMediaUrl",
         "previewFlashcardSideMarkup", "previewVideoEmbedUrl", "renderPreviewActivity", "checkPreviewActivity",
         "renderSupplementaryPreview", "renderActivityBlocks", "activityEditorIcon", "renderBuilderPreview", "formatLiveCorrectAnswer",
-        "previewRichContent", "contentHint", "renderActivityAnswerField", "preventLessonInputSubmit", "answerHint", "contentPlaceholder", "answerPlaceholder",
-        "richTextToolbar", "activitySettingsPlaceholder", "activityMetadataEditor", "activitySettingsField", "updateActivitySettings"
+        "previewRichContent", "renderFillBlankEditor", "contentHint", "renderActivityAnswerField", "preventLessonInputSubmit", "answerHint", "contentPlaceholder", "answerPlaceholder",
+        "richTextToolbar", "activitySettingsPlaceholder", "activityMetadataEditor", "activitySettingsField", "updateActivitySettings", "activityAuthoringContext", "refreshActivityAuthoring", "bindActivityAuthoring"
     ]) {
         const start = source.indexOf(`function ${name}(`);
         assert.notEqual(start, -1, `Missing function ${name}`);
@@ -98,7 +100,7 @@ test("picture gap editor creates a word bank and keeps the teacher answer hints"
     const activity={type:'fill-blank',prompt:'Flags',content:'![Image](https://example.com/us.png) [Amerika]\n![Image](https://example.com/de.png) []',answer:'Nemecko',settings:{gapLayout:'cards',useWordBank:true,wordBank:['Kanada']}};
     const before=JSON.stringify(activity),html=editor.renderActivityBlocks([activity]);
     assert.match(html,/gap-card-grid/);assert.match(html,/data-gap-word="Amerika"/);assert.match(html,/data-gap-word="Nemecko"/);assert.match(html,/data-gap-word="Kanada"/);
-    assert.match(html,/placeholder="Amerika"/);assert.match(html,/data-gap-card-file/);
+    assert.match(html,/placeholder="Amerika"/);assert.match(html,/data-picture-file/);
     assert.equal(JSON.stringify(activity),before);
 });
 
@@ -227,7 +229,7 @@ test("technical settings preserve their values and explain when JSON is needed",
     const markup = editor.activitySettingsField(block);
     assert.match(markup, /Advanced settings/);
     assert.match(markup, /Technical settings \(JSON\)/);
-    assert.match(markup, /Vocabulary words/);
+    assert.match(markup, /Interactive image markers/);
     assert.match(markup, /&quot;dom&quot;/);
     assert.equal(block.settings, settings);
 });
@@ -338,4 +340,35 @@ test('whole-text error correction has independent inputs even when grouped, with
     assert.match(editor.contentHint('find-error'),/mistake \/ correction/);
     assert.equal(editor.contentPlaceholder('find-error').split('\n').length,3);
     assert.equal(editor.formatLiveCorrectAnswer({type:'find-error',content:'Ja [bývať/bývam] tu. Ona [ma/má] knihu.'}),'bývať → bývam\nma → má');
+});
+
+test('picture card changes synchronize the actual draft, source and preview in main, grouped and quick editors',()=>{
+    for(const mode of ['main','grouped','quick']){
+        const editor=createEditorContext(),activity={type:'fill-blank',content:'',settings:{hints:['Preserve']},...(mode==='grouped'?{questions:[{id:'q1',prompt:'Keep heading',content:'',answer:''}]}:{})};
+        let hooks,autosaves=0,previews=0,sourceEvents=[];
+        const source={value:'',dispatchEvent(event){sourceEvents.push(event.type);}},settings={value:''},preview={scrollTop:24};
+        const fields={querySelector:()=>settings},block={dataset:{blockIndex:'0'},querySelector:selector=>selector==='[data-builder-preview]'?preview:null};
+        const widget={querySelector:()=>source,closest(selector){return selector==='[data-block-index]'?(mode==='quick'?null:block):selector.startsWith('[data-question-index]')?(mode==='grouped'?{dataset:{questionIndex:'0'}}:null):fields;}};
+        editor.activeDraftSection=()=>({activities:[activity]});editor.previewActivityEdit={draft:activity};editor.uploadLessonImage=async()=>'';
+        editor.scheduleLessonDraftAutosave=()=>autosaves++;editor.renderBuilderPreview=()=>{previews++;return '<article>Preview</article>';};editor.bindLessonPreviewActions=()=>{};
+        editor.window.SlovaPictureGapEditor.bind=(root,callbacks)=>{hooks=callbacks;};editor.bindActivityAuthoring({querySelectorAll:()=>[]});
+        hooks.change(widget,{content:'![Image](https://test.invalid/flag.png) [Nemecko/Germany]',settings:{gapLayout:'cards',useWordBank:false}});
+        const target=mode==='grouped'?activity.questions[0]:activity;
+        assert.match(target.content,/\[Nemecko\/Germany\]/);assert.equal(target.answer,'');assert.equal(activity.settings.gapLayout,'cards');assert.equal(activity.settings.hints[0],'Preserve');assert.equal(JSON.parse(settings.value).useWordBank,false);
+        assert.equal(source.value,target.content);assert.ok(sourceEvents.includes('slova-source-sync'));
+        assert.equal(autosaves,mode==='quick'?0:1);assert.equal(previews,mode==='quick'?0:1);assert.equal(preview.scrollTop,24);
+        if(mode==='grouped'){assert.equal(activity.content,'');assert.equal(target.id,'q1');assert.equal(target.prompt,'Keep heading');}
+    }
+});
+
+test('creation and quick editors show help for every type and picture controls for grouped gap questions',()=>{
+    const editor=createEditorContext();
+    for(const {id} of editor.types){
+        assert.match(editor.renderActivityBlocks([{type:id,content:'',prompt:'Create'}]),/data-authoring-help=/);
+        assert.match(editor.renderPreviewActivity({type:id,content:'',prompt:'Edit'},0,true,true),/data-authoring-help=/);
+    }
+    for(const preview of [false,true]){
+        const html=editor.renderActivityQuestionEditor({type:'fill-blank',settings:{},questions:[{id:'q1',content:'![Flag](https://test.invalid/flag.png) [Nemecko]'}]},preview);
+        assert.match(html,/data-picture-gap-editor/);assert.match(html,/data-picture-answer/);assert.match(html,/value="Nemecko"/);
+    }
 });
