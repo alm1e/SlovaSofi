@@ -39,18 +39,32 @@
                 return `{{blank:${gapIndex}}}`;
             });
         }));
-        return { rows, groups, answers:groups.map(group => group[0] || ''), blankCount:groups.length };
+        const explicitHeaders=Array.isArray(settings?.tableHeaders);
+        const inferred=!explicitHeaders&&rows.length>1&&rows[0].every(cell=>cell&&!/\{\{blank:/.test(cell));
+        const headers=explicitHeaders?settings.tableHeaders.map(String):inferred?[...rows[0]]:[];
+        const headerRow=!!(headers.length&&rows[0]&&headers.length===rows[0].length&&headers.every((cell,index)=>cell===rows[0][index]));
+        return { rows, headers, headerRow, groups, answers:groups.map(group => group[0] || ''), blankCount:groups.length };
     }
-    function check(content, answer, settings, response) {
+    function checkResults(content, answer, settings, response) {
         const {groups} = parse(content,answer,settings);
         const values = Array.isArray(response) ? response : [response];
         const normalize = value => {
             const text = String(value ?? '').normalize('NFC').trim().replace(/\s+/g,' ');
             return settings?.caseSensitive ? text : text.toLocaleLowerCase();
         };
-        return groups.length > 0 && groups.length === values.length && groups.every((group,index) => group.some(value => normalize(value) === normalize(values[index])));
+        return groups.map((group,index)=>index<values.length&&group.some(value=>normalize(value)===normalize(values[index])));
     }
-    const api = {parse, check};
+    function check(content,answer,settings,response){const results=checkResults(content,answer,settings,response);return results.length>0&&Array.isArray(response)&&response.length===results.length&&results.every(Boolean);}
+    function setHeaders(activity,value){
+        const before=parse(activity.content,activity.answer,activity.settings);
+        activity.settings={...activity.settings};
+        if(before.headerRow){const lines=String(activity.content||'').split(/\r?\n/),first=lines.findIndex(line=>line.trim());lines.splice(first,1);activity.content=lines.join('\n');
+            if(Array.isArray(activity.settings.hiddenCells))activity.settings.hiddenCells=activity.settings.hiddenCells.map(index=>index-before.rows[0].length).filter(index=>index>=0);
+        }
+        const names=String(value).split('/').map(name=>name.trim()).slice(0,50);
+        activity.settings.tableHeaders=names.some(Boolean)?names:[];
+    }
+    const api = {parse, check, checkResults, setHeaders};
     globalThis.SlovaTable = api;
     if (typeof window !== 'undefined') window.SlovaTable = api;
     if (typeof module !== 'undefined') module.exports = api;

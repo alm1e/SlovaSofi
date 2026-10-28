@@ -121,6 +121,25 @@ test('all bracket solutions grade on the server and stay out of student statemen
     assert.equal((await e.write(6,'Bratislava','submit',{questionId:'q2'})).body.correct,true);
 });
 
+test('table headers and independent cell feedback survive submit and reload without exposing expected answers',async()=>{
+    const activity={id:id(1),type:'table',prompt:'Fill',content:'Anna / [Bratislava]\nPeter / [Košice]',answer:'',settings:{tableHeaders:['Name','City']}};
+    const e=engine([activity]),loaded=await e.request({action:'load'}),table=loaded.body.lesson.sections[0].activities[0];
+    assert.deepEqual(table.headers,['Name','City']);assert.equal(table.headerRow,false);assert.doesNotMatch(JSON.stringify(table),/Bratislava|Košice/);
+    const partial=await e.write(0,['Bratislava','wrong']);assert.equal(partial.status,200);assert.equal(partial.body.correct,false);assert.deepEqual(partial.body.blankResults,[true,false]);
+    const reloaded=await e.request({action:'load'});assert.deepEqual(reloaded.body.lesson.progress['b'+id(1)].blankResults,[true,false]);
+    const complete=await e.write(0,['Bratislava','Košice']);assert.equal(complete.body.correct,true);assert.deepEqual(complete.body.blankResults,[true,true]);assert.equal(complete.body.completed,true);
+});
+
+test('category lists reach students as individual cards and grade every placement after reloading',async()=>{
+    const activity={id:id(1),type:'columns',prompt:'Sort',content:'Ovocie: [jablko/hruška/banán]\nZelenina: [mrkva/uhorka]',answer:''};
+    const e=engine([activity]),loaded=await e.request({action:'load'}),safe=loaded.body.lesson.sections[0].activities[0];
+    assert.equal(safe.items.length,5);assert.deepEqual(safe.items.map(item=>item.text),['jablko','hruška','banán','mrkva','uhorka']);assert.deepEqual(safe.categories,['Ovocie','Zelenina']);
+    assert.equal(safe.items.some(item=>'category' in item),false);assert.equal(safe.gradable,true);
+    const wrong=await e.write(0,['Ovocie','Zelenina','Ovocie','Zelenina','Zelenina']);assert.equal(wrong.body.correct,false);
+    const answers=['Ovocie','Ovocie','Ovocie','Zelenina','Zelenina'];assert.equal((await e.write(0,answers)).body.correct,true);
+    const reloaded=await e.request({action:'load'});assert.deepEqual(reloaded.body.lesson.progress['b'+id(1)].response,answers);
+});
+
 test('imported lessons load and grade through the real engine without leaking private notes or gap answers',async()=>{
     require('./table.js'); require('./fill-blanks.js');
     const {parse}=require('./lesson-import.js');

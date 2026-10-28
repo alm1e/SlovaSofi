@@ -692,15 +692,17 @@
             controls = `<input type="hidden" data-answer-kind="matches">`;
         } else if (activity.type === "table") {
             const savedParts = Array.isArray(savedResponse) ? savedResponse : [];
-            body = `<div class="student-table-wrap"><table class="student-answer-table"><tbody>${(activity.rows || []).map((row) => `<tr>${row.map((cell) => `<td>${String(cell).split(/(\{\{blank:\d+\}\})/g).map((part) => {
+            body = `<div class="student-table-wrap"><table class="student-answer-table">${activity.headers?.length?`<thead><tr>${activity.headers.map(header=>`<th scope="col">${escapeHtml(header)}</th>`).join("")}</tr></thead>`:""}<tbody>${(activity.rows || []).slice(activity.headerRow?1:0).map((row) => `<tr>${row.map((cell) => `<td>${String(cell).split(/(\{\{blank:\d+\}\})/g).map((part) => {
                 const blank = part.match(/^\{\{blank:(\d+)\}\}$/);
                 if (!blank) return escapeHtml(part);
                 const blankIndex = Number(blank[1]);
                 const value = escapeHtml(savedParts[blankIndex] || "");
+                const result=!saved?.draft?saved?.blankResults?.[blankIndex]:undefined;
+                const validation=result===true?'blank-correct':result===false?'blank-incorrect':'';
                 const options = activity.cellOptions?.[String(blankIndex)];
                 return Array.isArray(options) && options.length
-                    ? `<select class="student-inline-select" data-table-answer aria-label="${escapeHtml(text("yourAnswer"))}"><option value="">${escapeHtml(text("choose"))}</option>${options.map((option) => `<option value="${escapeHtml(option)}" ${savedParts[blankIndex] === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>`
-                    : `<input class="student-inline-answer" data-table-answer value="${value}" aria-label="${escapeHtml(text("yourAnswer"))}" autocomplete="off">`;
+                    ? `<select class="student-inline-select ${validation}" aria-invalid="${result===false}" data-table-answer aria-label="${escapeHtml(text("yourAnswer"))}"><option value="">${escapeHtml(text("choose"))}</option>${options.map((option) => `<option value="${escapeHtml(option)}" ${savedParts[blankIndex] === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}</select>`
+                    : `<input class="student-inline-answer ${validation}" aria-invalid="${result===false}" data-table-answer value="${value}" aria-label="${escapeHtml(text("yourAnswer"))}" autocomplete="off">`;
             }).join("")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
             controls = `<input type="hidden" data-answer-kind="table">`;
         } else if (activity.type === "open-answer") {
@@ -1186,7 +1188,7 @@
                 else delete row.dataset.pairResult;
             });
             element.querySelector('[data-pair-board]')?.dispatchEvent(new Event('pair-refresh'));
-            element.querySelectorAll('[data-blank-answer]').forEach((input, index) => {
+            element.querySelectorAll('[data-blank-answer], [data-table-answer]').forEach((input, index) => {
                 const checked = result.blankResults?.[index];
                 input.classList.toggle('blank-correct', checked === true);
                 input.classList.toggle('blank-incorrect', checked === false);

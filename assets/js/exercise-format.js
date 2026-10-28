@@ -1,6 +1,9 @@
 (function(root) {
     'use strict';
     const sequenceTypes = ['drag-words', 'order-items', 'sentence-order'];
+    function shuffleChoices(items,random=Math.random){
+        const result=[...items];for(let i=result.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result;
+    }
     function sequenceAnswer(type, content) {
         const text = String(content || '').replace(/\[([^\[\]]+)\]/g,'$1').trim();
         if (type === 'drag-words') return text.split(/\s+/).filter(Boolean).map(word=>word.replace(/_/g,' ')).join(' / ');
@@ -28,6 +31,26 @@
         return cardsFor(activity).map(card=>card.back?`${card.front} [${card.back}]`:card.front).join('\n');
     }
     function answerFieldNeeded() { return false; }
+    function parseColumns(content){
+        const cards=[],invalidLines=[];let hasBrackets=false;
+        String(content||'').split(/\r?\n/).forEach((source,index)=>{
+            const line=source.trim();if(!line)return;
+            const group=line.match(/^(.+?):\s*\[((?:\\.|[^\[\]])*)\]\s*$/);
+            if(group){
+                hasBrackets=true;const category=group[1].trim(),words=[];let word='';
+                for(let i=0;i<group[2].length;i++){const char=group[2][i];if(char==='\\'&&/[\\/]/.test(group[2][i+1]||'')){word+=group[2][++i];}else if(char==='/'){if(word.trim())words.push(word.trim());word='';}else word+=char;}
+                if(word.trim())words.push(word.trim());
+                if(!category||!words.length){invalidLines.push(index+1);return;}
+                words.forEach(text=>cards.push({text,category}));return;
+            }
+            const single=line.match(/^(.+?)\s*\[([^\[\]]+)\]\s*$/);
+            if(single){hasBrackets=true;const text=single[1].trim(),category=single[2].trim();if(text&&category)cards.push({text,category});else invalidLines.push(index+1);return;}
+            const separator=line.indexOf(':');
+            if(separator>0&&!/[\[\]]/.test(line)){const category=line.slice(0,separator).trim(),text=line.slice(separator+1).trim();if(category&&text){cards.push({text,category});return;}}
+            if(/[\[\]]/.test(line))hasBrackets=true;invalidLines.push(index+1);
+        });
+        return{cards,categories:[...new Set(cards.map(card=>card.category))],invalidLines,hasBrackets};
+    }
     function prepare(activity){
         const result={...activity,settings:{...activity.settings}},type=activity.type;
         let content=String(activity.content||'');
@@ -49,9 +72,18 @@
             let found=false;
             result.content=content.replace(/(^|\n)([^\n]+?)\s+\[([^\[\]\n]+)\](?=\s*(?:\/\s*https?:\/\/|<|\n|$))/g,(_,prefix,word,translation)=>{found=true;return `${prefix}${word.trim()} / ${translation.trim()}`;});
             if(found)delete result.settings.words;
-        } else if(['match','columns'].includes(type)){
-            let found=false;result.content=content.split(/\r?\n/).map(line=>{const match=line.match(/^(.+?)\s*\[([^\[\]]+)\]\s*$/);if(!match)return line;found=true;return type==='match'?`${match[1].trim()} = ${match[2].trim()}`:type==='columns'?`${match[2].trim()}: ${match[1].trim()}`:`${match[1].trim()} / ${match[2].trim()}`;}).join('\n');
-            if(found){if(type==='match')delete result.settings.pairs;if(type==='columns'){delete result.settings.cards;result.settings.categories=[...new Set(result.content.split('\n').map(line=>line.split(':')[0].trim()))];}}
+        } else if(type==='columns'){
+            const parsed=parseColumns(content);
+            if(parsed.hasBrackets){
+                const previous=Array.isArray(result.settings.cards)?result.settings.cards:[];
+                result.content=parsed.cards.map(card=>`${card.category}: ${card.text}`).join('\n');
+                result.settings.cards=parsed.cards.map(card=>({...previous.find(old=>old.text===card.text&&old.category===card.category),...card}));
+                result.settings.categories=parsed.categories;
+                result.settings.columnsInvalid=!!parsed.invalidLines.length||parsed.cards.length>100;
+            }
+        } else if(type==='match'){
+            let found=false;result.content=content.split(/\r?\n/).map(line=>{const match=line.match(/^(.+?)\s*\[([^\[\]]+)\]\s*$/);if(!match)return line;found=true;return `${match[1].trim()} = ${match[2].trim()}`;}).join('\n');
+            if(found)delete result.settings.pairs;
         } else if(type==='find-error'){
             const errors=[];let output='',last=0;
             for(const match of content.matchAll(/\[([^\[\]\/\n]+)\/([^\[\]\n]+)\]/g)){output+=content.slice(last,match.index);errors.push({index:(output.match(/\S+/g)||[]).length,correction:match[2].trim()});output+=match[1].trim();last=match.index+match[0].length;}
@@ -85,7 +117,11 @@
         if(['match','columns','vocabulary','phrase-list'].includes(type)){
             if(/\[[^\[\]]+\]/.test(raw))return raw;
             if(type==='match')return (settings.pairs?.length?settings.pairs.map(pair=>`${pair.left} = ${pair.right}`):raw.split('\n')).map(line=>{const index=line.indexOf('=');return index<0?line:`${line.slice(0,index).trim()} [${line.slice(index+1).trim()}]`;}).join('\n');
-            if(type==='columns')return (settings.cards?.length?settings.cards.map(card=>`${card.category}: ${card.text}`):raw.split('\n')).map(line=>{const index=line.indexOf(':');return index<0?line:`${line.slice(index+1).trim()} [${line.slice(0,index).trim()}]`;}).join('\n');
+            if(type==='columns'){
+                const cards=settings.cards?.length?settings.cards:parseColumns(raw).cards,groups=new Map();
+                cards.forEach(card=>{if(!groups.has(card.category))groups.set(card.category,[]);groups.get(card.category).push(card.text);});
+                return [...groups].map(([category,words])=>`${category}: [${words.map(word=>String(word).replace(/\\/g,'\\\\').replace(/\//g,'\\/')).join('/')}]`).join('\n')||raw;
+            }
             if(root.SlovaPhraseList){const words=root.SlovaPhraseList.wordsFor(activity);return words.map(word=>`${word.word} [${word.translation}]${word.audio?` / ${word.audio}`:''}${word.example?` <${word.example}>`:''}`).join('\n');}
             return raw.split('\n').map(line=>{const index=line.includes('|')?line.indexOf('|'):line.lastIndexOf(' / ');const width=line.includes('|')?1:3;return index<0?line:`${line.slice(0,index).trim()} [${line.slice(index+width).trim()}]`;}).join('\n');
         }
@@ -102,7 +138,7 @@
         }
         if(sequenceTypes.includes(type)){activity.answer=sequenceAnswer(type,value);activity.settings={...activity.settings,answerFromContent:true};}
         if(type==='match'&&activity.settings){delete activity.settings.pairs;}
-        if(type==='columns'&&activity.settings){delete activity.settings.cards;}
+        if(type==='columns'&&activity.settings){delete activity.settings.cards;delete activity.settings.categories;delete activity.settings.columnsInvalid;}
         if(['vocabulary','phrase-list'].includes(type)&&activity.settings){delete activity.settings.words;}
     }
     function applyQuestionContent(activity,question,value){
@@ -111,7 +147,7 @@
         activity.settings={...activity.settings};
         if(['multiple-choice','one-of-many'].includes(type)&&activity.settings.options)activity.settings.options=activity.settings.options.map(option=>({...option,correct:false}));
         if(type==='match')delete activity.settings.pairs;
-        if(type==='columns')delete activity.settings.cards;
+        if(type==='columns'){delete activity.settings.cards;delete activity.settings.categories;delete activity.settings.columnsInvalid;}
         applyContent(question,value,type);
     }
     function dropdown(content){
@@ -137,6 +173,6 @@
         kk:['Мысалы: Ja [bývam] v Bratislave. Жақшадағы сөз бос орынға айналады.','Сөздерді дұрыс ретпен жазыңыз: Ja bývam v Bratislave. Олар автоматты түрде араласады.','Элементтерді дұрыс ретпен, әрқайсын жаңа жолға жазыңыз. Олар автоматты түрде араласады.','Сөйлемдерді дұрыс ретпен, әрқайсын жаңа жолға жазыңыз. Олар автоматты түрде араласады.','Мысалы: Anna / [Bratislava] / [slovenčina]. Жақшадағы жауаптар бос орынға айналады.','Мысалы: auto [көлік]. Әр жаңа жол жаңа карточка жасайды.','Жауап батырмалары','Тізімі бар бос орын','Мысалы: астананы таңдаңыз — Bratislava, Košice немесе Žilina.','Мысалы: Ja [bývam/bývaš/býva] v Bratislave. Бірінші нұсқа дұрыс.']
     };
     function hint(type,language){const index={'fill-blank':0,'drag-words':1,'order-items':2,'sentence-order':3,table:4,flashcards:5,'multiple-choice':8,'one-of-many':9}[type];return index===undefined?'':(copy[language]||copy.en)[index];}
-    root.SlovaExerciseFormat={cards,cardsFor,cardsEditorContent,sequenceAnswer,sequenceTypes,answerFieldNeeded,contentEdited,dropdown,hint,copy,prepare,editorContent,applyContent,applyQuestionContent};
+    root.SlovaExerciseFormat={cards,cardsFor,cardsEditorContent,sequenceAnswer,sequenceTypes,answerFieldNeeded,contentEdited,dropdown,hint,copy,prepare,editorContent,applyContent,applyQuestionContent,shuffleChoices,parseColumns};
     if(typeof module!=='undefined')module.exports=root.SlovaExerciseFormat;
 })(typeof window!=='undefined'?window:globalThis);

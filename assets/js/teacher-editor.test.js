@@ -41,7 +41,7 @@ function createEditorContext() {
     }
     vm.runInContext("const MAX_ACTIVITY_QUESTIONS = 100; this.types = activityTypes;", context);
     for (const name of [
-        "renderTrueFalseEditor", "moveTrueFalseQuestion", "escapeHtml", "activityQuestionText", "createActivityQuestionId", "ensureActivityQuestionIds",
+        "creationActivityTypes", "renderTrueFalseEditor", "moveTrueFalseQuestion", "escapeHtml", "activityQuestionText", "createActivityQuestionId", "ensureActivityQuestionIds",
         "addActivityQuestion", "renderActivityQuestionEditor", "activitySummary", "activityEditorMeta",
         "duplicateBlockButton", "previewText", "previewTokens", "previewLines", "previewMediaUrl",
         "previewFlashcardSideMarkup", "previewVideoEmbedUrl", "renderPreviewActivity", "checkPreviewActivity",
@@ -303,4 +303,28 @@ test('Enter cannot accidentally submit a lesson from an answer input, while text
     editor.preventLessonInputSubmit({key:'Enter',target:{matches:()=>false},preventDefault(){prevented++;}});
     editor.preventLessonInputSubmit({key:'a',target:{matches:()=>true},preventDefault(){prevented++;}});
     assert.equal(prevented,1);
+});
+
+test('creation offers one ordering activity while legacy ordering remains renderable',()=>{
+    const editor=createEditorContext(),offered=editor.creationActivityTypes();
+    assert.equal(offered.filter(type=>['order-items','sentence-order'].includes(type.id)).length,1);
+    assert.equal(offered.find(type=>type.id==='sentence-order').nameKey,'activity.order');
+    for(const type of ['order-items','sentence-order'])assert.match(editor.renderPreviewActivity({type,content:'one\ntwo',answer:''},0),/preview-order-list/);
+});
+
+test('table preview has editable headings and grades each cell rather than only the full table',()=>{
+    const editor=createEditorContext(),activity={type:'table',content:'Anna / [Bratislava]\nPeter / [Košice]',answer:'',settings:{tableHeaders:['Name','City']}};
+    const html=editor.renderActivityBlocks([activity]);assert.match(html,/data-table-headers/);assert.match(html,/<th scope="col">Name<\/th>/);assert.match(html,/<th scope="col">City<\/th>/);
+    const result={},inputs=['Bratislava','wrong'].map(value=>{const classes=new Set();return{value,attributes:{},classList:{toggle(name,on){if(on)classes.add(name);else classes.delete(name);},contains:name=>classes.has(name)},setAttribute(name,value){this.attributes[name]=value;}};});
+    const card={dataset:{previewType:'table',previewContent:activity.content,previewSettings:JSON.stringify(activity.settings),previewAnswer:''},classList:{contains:()=>false},querySelector:selector=>selector==='[data-preview-result]'?result:null,querySelectorAll:()=>inputs};
+    editor.checkPreviewActivity(card);assert.ok(inputs[0].classList.contains('blank-correct'));assert.ok(inputs[1].classList.contains('blank-incorrect'));assert.equal(inputs[1].attributes['aria-invalid'],'true');assert.match(result.className,/incorrect/);
+});
+
+test('category preview expands a list into individual draggable cards and keeps old bracket entries usable',()=>{
+    const editor=createEditorContext();
+    const html=editor.renderPreviewActivity({type:'columns',prompt:'Sort',content:'Ovocie: [mlieko/papier/škola]',answer:''},0);
+    assert.equal((html.match(/data-column-index=/g)||[]).length,3);assert.match(html,/<span>mlieko<\/span>/);assert.match(html,/<span>papier<\/span>/);assert.match(html,/<span>škola<\/span>/);
+    assert.match(html,/data-pair-correct="Ovocie"/);assert.doesNotMatch(html,/data-pair-correct="mlieko\/papier\/škola"/);
+    const old=editor.renderPreviewActivity({type:'columns',content:'jablko [Ovocie]\nmrkva [Zelenina]',answer:''},0);assert.equal((old.match(/data-column-index=/g)||[]).length,2);
+    assert.match(editor.contentPlaceholder('columns'),/Ovocie: \[jablko\/hruška\/banán\]/);
 });

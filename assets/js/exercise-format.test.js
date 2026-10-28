@@ -23,6 +23,13 @@ test('source text defines sequence answers, including multiword tokens and numbe
         assert.equal(ready.incomplete({type,content:'First.\nSecond.'}),false);
     }
 });
+
+test('dropdown choices shuffle without mutating the answer source or fixing its displayed position',()=>{
+    const source=['correct','wrong1','wrong2'],positions=new Set();let state=12345;
+    const random=()=>{state=(state*1664525+1013904223)>>>0;return state/4294967296;};
+    for(let i=0;i<60;i++){const shuffled=format.shuffleChoices(source,random);positions.add(shuffled.indexOf('correct'));assert.deepEqual([...shuffled].sort(),[...source].sort());}
+    assert.deepEqual([...positions].sort(),[0,1,2]);assert.deepEqual(source,['correct','wrong1','wrong2']);
+});
 test('inline dropdown retains sentence context, local options and first-option answer per gap',()=>{
     assert.deepEqual(format.dropdown('Ja [bývam/bývaš] v [Bratislave/Košiciach].'),{content:'Ja ___ v ___.',choices:[['bývam','bývaš'],['Bratislave','Košiciach']],answers:['bývam','Bratislave']});
     assert.equal(format.dropdown('A [word] and []'),null);
@@ -51,7 +58,7 @@ test('legacy answers become editable brackets and round-trip through the same gr
         [{type:'true-false',content:'A claim',answer:'true'},'A claim [true]'],
         [{type:'flashcards',content:'auto\ndom',answer:'car / house'},'auto [car]\ndom [house]'],
         [{type:'match',content:'auto = car'},'auto [car]'],
-        [{type:'columns',content:'Fruit: apple'},'apple [Fruit]']
+        [{type:'columns',content:'Fruit: apple'},'Fruit: [apple]']
     ];
     for(const [activity,expected] of examples)assert.equal(format.editorContent(activity),expected);
     const activity={type:'multiple-choice',content:'apple\npear',answer:'apple',settings:{options:[{text:'apple',correct:true}]}};
@@ -68,6 +75,33 @@ test('editing a grouped answer cannot resurrect a removed legacy solution or era
     assert.equal(format.prepare({...second,type:'multiple-choice',settings:group.settings}).answer,'apple');
     format.applyQuestionContent(group,first,'apple\n[pear]');
     assert.equal(format.prepare({...first,type:'multiple-choice',settings:group.settings}).answer,'pear');
+});
+
+test('one category line expands into separate draggable words and preserves the original text',()=>{
+    const activity={type:'columns',content:'Ovocie: [mlieko/papier/škola]'},before=JSON.stringify(activity);
+    const prepared=format.prepare(activity);
+    assert.deepEqual(prepared.settings.cards,[{text:'mlieko',category:'Ovocie'},{text:'papier',category:'Ovocie'},{text:'škola',category:'Ovocie'}]);
+    assert.deepEqual(prepared.settings.categories,['Ovocie']);assert.equal(prepared.content,'Ovocie: mlieko\nOvocie: papier\nOvocie: škola');
+    assert.equal(ready.incomplete(activity),false);assert.equal(JSON.stringify(activity),before);
+    assert.deepEqual(format.prepare(prepared),prepared);
+});
+
+test('category lists mix with legacy entries, merge category names and retain repeated words',()=>{
+    const activity={type:'columns',content:'Ovocie: [jablko / hruška / jablko]\nmrkva [Zelenina]\nZelenina: uhorka'};
+    const parsed=format.prepare(activity);assert.equal(parsed.settings.cards.length,5);assert.deepEqual(parsed.settings.categories,['Ovocie','Zelenina']);
+    assert.equal(format.editorContent(parsed),'Ovocie: [jablko/hruška/jablko]\nZelenina: [mrkva/uhorka]');
+    assert.deepEqual(format.prepare({type:'columns',content:format.editorContent(parsed)}).settings.cards,parsed.settings.cards);
+    const literal={type:'columns',content:'Expressions: and/or'};
+    assert.equal(format.editorContent(literal),'Expressions: [and\\/or]');
+    assert.equal(format.prepare({...literal,content:format.editorContent(literal)}).settings.cards[0].text,'and/or');
+});
+
+test('unfinished category lists and oversized banks are incomplete without reviving stale categories',()=>{
+    for(const content of ['Ovocie: []','Ovocie: [','Ovocie: [jablko]\nZelenina: ['])assert.equal(ready.incomplete({type:'columns',content}),true);
+    const activity={type:'columns',content:'Ovocie: []',settings:{columnsInvalid:true,categories:['Old']}};
+    format.applyContent(activity,'Ovocie: [jablko/hruška]');assert.equal(ready.incomplete(activity),false);assert.deepEqual(format.prepare(activity).settings.categories,['Ovocie']);
+    format.applyContent(activity,'New: word');assert.equal(ready.incomplete(activity),false);assert.equal('categories' in activity.settings,false);
+    assert.equal(ready.incomplete({type:'columns',content:`Category: [${Array.from({length:101},(_,i)=>'word'+i).join('/')}]`}),true);
 });
 
 function deckHarness(){

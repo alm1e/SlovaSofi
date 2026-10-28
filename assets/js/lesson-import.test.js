@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const fs = require('node:fs');
 const vm = require('node:vm');
-require('./fill-blanks.js'); require('./table.js');
+require('./fill-blanks.js'); require('./table.js'); require('./exercise-format.js');
 const importer = require('./lesson-import.js');
 const context = vm.createContext({window:{}});
 vm.runInContext(fs.readFileSync(`${__dirname}/lesson-import-ui.js`, 'utf8'), context);
@@ -75,6 +75,15 @@ test('input size and activity limits prevent server-side truncation', () => {
     assert.equal(importer.parse('x'.repeat(200001)).errors[0].code,'size');
     assert.equal(importer.parse('#Text: Large\n'+'x'.repeat(20001)).errors[0].code,'size');
     assert.equal(importer.parse(Array.from({length:101},()=> '#Text: X\nY').join('\n')).errors[0].code,'limit');
+});
+
+test('column import accepts category lists, one category and old formats without dropping words',()=>{
+    const result=importer.parse('#ColumnSort: Sort\nOvocie: [jablko/hruška/banán]\nZelenina: [mrkva/uhorka]');assert.deepEqual(result.errors,[]);
+    assert.equal(globalThis.SlovaExerciseFormat.prepare(result.activities[0]).settings.cards.length,5);
+    const single=importer.parse('#ColumnSort: Sort\nOvocie: [jablko/hruška]');assert.deepEqual(single.errors,[]);
+    assert.equal(importer.parse('#ColumnSort: Sort\nOvocie: []').errors[0].code,'columns');
+    assert.equal(importer.parse(`#ColumnSort: Sort\nCategory: [${Array.from({length:101},(_,i)=>'word'+i).join('/')}]`).errors[0].code,'limit');
+    assert.deepEqual(importer.parse('#ColumnSort: Sort\nOvocie\njablko\nhruška\n\nZelenina\nmrkva').errors,[]);
 });
 
 test('import UI requires a current successful preview and appends only on explicit action', () => {

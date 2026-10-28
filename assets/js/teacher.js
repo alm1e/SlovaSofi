@@ -720,7 +720,7 @@ const activityTypes = [
     { id: "fill-blank", nameKey: "activity.blank", descKey: "activity.blankDesc", icon: "▱", category: "tests" },
     { id: "multiple-choice", nameKey: "activity.choice", descKey: "activity.choiceDesc", icon: "☑", category: "tests" },
     { id: "order-items", nameKey: "activity.order", descKey: "activity.orderDesc", icon: "≡", category: "tests" },
-    { id: "sentence-order", nameKey: "activity.sentences", descKey: "activity.sentencesDesc", icon: "☷", category: "tests" },
+    { id: "sentence-order", nameKey: "activity.order", descKey: "activity.orderDesc", icon: "☷", category: "tests" },
     { id: "one-of-many", nameKey: "activity.dropdown", descKey: "activity.dropdownDesc", icon: "⌄", category: "tests" },
     { id: "true-false", nameKey: "activity.trueFalse", descKey: "activity.trueFalseDesc", icon: "✓", category: "tests" },
     { id: "table", nameKey: "activity.table", descKey: "activity.tableDesc", icon: "▦", category: "tests" },
@@ -1565,118 +1565,8 @@ function render() {
 }
 
 function enhanceSelects(root) {
-    root.querySelectorAll("select:not(.teacher-select-native):not([data-pair-row] select)").forEach((select) => {
-        const wrapper = document.createElement("div");
-        wrapper.className = "teacher-select";
-        const id = `teacher-select-${++selectDropdownSequence}`;
-        const trigger = document.createElement("button");
-        trigger.type = "button";
-        trigger.className = "select-trigger";
-        trigger.setAttribute("aria-haspopup", "listbox");
-        trigger.setAttribute("aria-expanded", "false");
-        trigger.setAttribute("aria-controls", `${id}-options`);
-        const associatedLabel = select.labels?.[0]?.textContent.trim();
-        const accessibleName = select.getAttribute("aria-label") || associatedLabel;
-        if (accessibleName) trigger.setAttribute("aria-label", accessibleName);
-        const label = document.createElement("span");
-        label.className = "select-trigger-label";
-        const chevron = document.createElement("span");
-        chevron.className = "select-chevron";
-        chevron.setAttribute("aria-hidden", "true");
-        chevron.textContent = "⌄";
-        trigger.append(label, chevron);
-
-        const listbox = document.createElement("div");
-        listbox.className = "select-options";
-        listbox.id = `${id}-options`;
-        listbox.setAttribute("role", "listbox");
-        if (accessibleName) listbox.setAttribute("aria-label", accessibleName);
-
-        const syncSelection = () => {
-            const selectedOption = select.options[select.selectedIndex];
-            label.textContent = selectedOption?.textContent || "";
-            listbox.querySelectorAll('[role="option"]').forEach((option, index) => {
-                const isSelected = index === select.selectedIndex;
-                option.setAttribute("aria-selected", String(isSelected));
-                option.classList.toggle("selected", isSelected);
-            });
-        };
-
-        const openListbox = () => {
-            if (activeSelectDropdown === wrapper) {
-                closeSelectDropdown();
-                return;
-            }
-            closeSelectDropdown();
-            activeSelectDropdown = wrapper;
-            wrapper.classList.add("open");
-            trigger.setAttribute("aria-expanded", "true");
-            const spaceBelow = window.innerHeight - wrapper.getBoundingClientRect().bottom;
-            const spaceAbove = wrapper.getBoundingClientRect().top;
-            listbox.classList.toggle("opens-up", spaceBelow < Math.min(listbox.scrollHeight, 240) && spaceAbove > spaceBelow);
-            listbox.querySelector('[aria-selected="true"]:not(:disabled), [role="option"]:not(:disabled)')?.focus();
-        };
-
-        trigger.addEventListener("click", openListbox);
-        trigger.addEventListener("keydown", (event) => {
-            if (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                if (activeSelectDropdown !== wrapper) openListbox();
-                else listbox.querySelector('[aria-selected="true"]:not(:disabled), [role="option"]:not(:disabled)')?.focus();
-            }
-        });
-        listbox.addEventListener("keydown", (event) => {
-            const enabledOptions = Array.from(listbox.querySelectorAll('[role="option"]:not(:disabled)'));
-            const currentIndex = enabledOptions.indexOf(document.activeElement);
-            let nextIndex = currentIndex;
-            if (event.key === "ArrowDown") nextIndex = Math.min(currentIndex + 1, enabledOptions.length - 1);
-            else if (event.key === "ArrowUp") nextIndex = Math.max(currentIndex - 1, 0);
-            else if (event.key === "Home") nextIndex = 0;
-            else if (event.key === "End") nextIndex = enabledOptions.length - 1;
-            else if (event.key === "Escape") {
-                event.preventDefault();
-                closeSelectDropdown();
-                trigger.focus();
-                return;
-            } else if (event.key === "Tab") {
-                closeSelectDropdown();
-                return;
-            } else return;
-            event.preventDefault();
-            enabledOptions[nextIndex]?.focus();
-        });
-
-        const refreshOptions = () => {
-            trigger.disabled = select.disabled;
-            listbox.replaceChildren();
-            Array.from(select.options).forEach((option, index) => {
-                const item = document.createElement("button");
-                item.type = "button";
-                item.className = "select-option";
-                item.tabIndex = -1;
-                item.setAttribute("role", "option");
-                item.setAttribute("aria-selected", String(index === select.selectedIndex));
-                item.textContent = option.textContent;
-                item.disabled = option.disabled;
-                item.addEventListener("click", () => {
-                    select.selectedIndex = index;
-                    syncSelection();
-                    closeSelectDropdown();
-                    select.dispatchEvent(new Event("change", { bubbles: true }));
-                    if (!select.matches('[data-rich-style], [data-rich-size]')) trigger.focus();
-                });
-                listbox.append(item);
-            });
-            syncSelection();
-        };
-        enhancedSelectRefreshers.set(select, refreshOptions);
-        select.classList.add("teacher-select-native");
-        select.tabIndex = -1;
-        select.setAttribute("aria-hidden", "true");
-        select.parentNode.insertBefore(wrapper, select);
-        wrapper.append(trigger, listbox, select);
-        refreshOptions();
-    });
+    window.SlovaSelectUI?.enhance(root);
+    root.querySelectorAll('select').forEach(select=>enhancedSelectRefreshers.set(select,()=>window.SlovaSelectUI?.enhance(select)));
 }
 
 function closeSelectDropdown() {
@@ -2625,7 +2515,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         const activityType = activityTypes.find((item) => item.id === type);
         const hasAnswer = !["text", "image", "video", "audio"].includes(type);
         const hasQuestions = Array.isArray(activity.questions) && activity.questions.length > 0;
-        return `<article class="preview-activity preview-activity-editable preview-activity-editing" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${["fill-blank", "table"].includes(type) ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}>
+        return `<article class="preview-activity preview-activity-editable preview-activity-editing" data-preview-activity="${index}" data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${["fill-blank", "table", "columns"].includes(type) ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}>
             <header class="preview-activity-header"><h3>${index + 1}. ${prompt}</h3><div class="preview-activity-actions">
                 <button class="mini-action" type="button" data-save-preview-block aria-label="${lessonSectionText("done")}" title="${lessonSectionText("done")}">✓</button>
                 <button class="mini-action preview-activity-delete" type="button" data-cancel-preview-edit aria-label="${t("action.cancel")}" title="${t("action.cancel")}">×</button>
@@ -2661,7 +2551,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
 
     if (type === "one-of-many" && window.SlovaExerciseFormat.dropdown(content)) {
         const inline=window.SlovaExerciseFormat.dropdown(content);
-        body=`<p class="preview-instruction">${inline.content.split('___').map((part,i)=>escapeHtml(part)+(inline.choices[i]?`<select data-inline-choice aria-label="${previewText('choose')}"><option value="">---</option>${[...inline.choices[i]].reverse().map(option=>`<option value="${escapeHtml(option)}" ${option===inline.answers[i]?'data-correct-option':''}>${escapeHtml(option)}</option>`).join('')}</select>`:'')).join('')}</p>`;
+        body=`<p class="preview-instruction">${inline.content.split('___').map((part,i)=>escapeHtml(part)+(inline.choices[i]?`<select data-inline-choice aria-label="${previewText('choose')}"><option value="">---</option>${window.SlovaExerciseFormat.shuffleChoices(inline.choices[i]).map(option=>`<option value="${escapeHtml(option)}" ${option===inline.answers[i]?'data-correct-option':''}>${escapeHtml(option)}</option>`).join('')}</select>`:'')).join('')}</p>`;
     } else if (type === "drag-words") {
         const expected = answer ? previewTokens(answer) : content.trim().split(/\s+/).filter(Boolean);
         const correctOrder = answer ? expected.join(" ") : content.trim();
@@ -2682,7 +2572,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         const correctOption = Number.isInteger(answerIndex) && answer !== "" && options[answerIndex - 1] !== undefined
             ? options[answerIndex - 1]
             : answer;
-        body = `<p class="preview-instruction">${escapeHtml(before)}<select class="preview-inline-select" data-inline-choice aria-label="${previewText("choose")}"><option value="">---</option>${options.map((option, optionIndex) => `<option value="${optionIndex + 1}" ${option.toLocaleLowerCase() === correctOption.toLocaleLowerCase() ? "data-correct-option" : ""}>${escapeHtml(option)}</option>`).join("")}</select>${escapeHtml(after.join("___"))}</p>`;
+        body = `<p class="preview-instruction">${escapeHtml(before)}<select class="preview-inline-select" data-inline-choice aria-label="${previewText("choose")}"><option value="">---</option>${window.SlovaExerciseFormat.shuffleChoices(options).map((option, optionIndex) => `<option value="${optionIndex + 1}" ${option.toLocaleLowerCase() === correctOption.toLocaleLowerCase() ? "data-correct-option" : ""}>${escapeHtml(option)}</option>`).join("")}</select>${escapeHtml(after.join("___"))}</p>`;
         if (!answer) checkable = false;
     } else if (type === "multiple-choice" || type === "one-of-many" || type === "true-false") {
         const options = type === "true-false" ? (activity.settings?.choiceLabels || [previewText("true"), previewText("false"), ...(activity.settings?.allowNotStated ? ["Not stated"] : [])]) : lines;
@@ -2709,8 +2599,9 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         const previewKey = isQuestion ? `${index}-q${questionIndex}` : String(index);
         body = `<ol class="preview-order-list" data-order-list>${items.map(({ text, itemIndex }) => `<li class="preview-order-item" draggable="true" data-order-index="${previewKey}-${itemIndex}"><span class="preview-order-item-text">${escapeHtml(text)}</span><span class="preview-order-actions"><button type="button" data-move="up" aria-label="${previewText("up")}">↑</button><button type="button" data-move="down" aria-label="${previewText("down")}">↓</button></span></li>`).join("")}</ol>`;
     } else if (type === "columns") {
-        const pairs = lines.map((line) => line.split(":").map((part) => part.trim())).filter((pair) => pair.length >= 2 && pair[0] && pair[1]);
-        const categories = [...new Set(pairs.map(([category]) => category))];
+        const cards=activity.settings?.cards?.length?activity.settings.cards:window.SlovaExerciseFormat.parseColumns(content).cards;
+        const pairs=cards.map(card=>[card.category,card.text]);
+        const categories = activity.settings?.categories?.length?activity.settings.categories:[...new Set(pairs.map(([category]) => category))];
         body = `${pairs.length ? `<div class="preview-match-list" data-pair-board data-pair-reuse>${pairs.map(([category, item], itemIndex) => `<div class="preview-match-row" data-pair-row data-pair-correct="${escapeHtml(category)}"><span>${escapeHtml(item)}</span><select data-column-index="${itemIndex}" aria-label="${previewText("choose")}"><option value="">${previewText("choose")}</option>${categories.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("")}</select></div>`).join("")}</div>` : displayContent ? `<p class="preview-material">${escapeHtml(displayContent)}</p>` : ""}`;
         if (!pairs.length) checkable = false;
     } else if (type === "match") {
@@ -2734,7 +2625,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         checkable = false;
     } else if (type === "table") {
         const table = window.SlovaTable.parse(content, answer, activity.settings);
-        body = `<div class="preview-table-wrap"><table class="preview-table"><tbody>${table.rows.map(row => `<tr>${row.map(cell => `<td>${cell.split(/(\{\{blank:\d+\}\})/g).map(part => {
+        body = `<div class="preview-table-wrap"><table class="preview-table">${table.headers?.length?`<thead><tr>${table.headers.map(header=>`<th scope="col">${escapeHtml(header)}</th>`).join("")}</tr></thead>`:""}<tbody>${table.rows.slice(table.headerRow?1:0).map(row => `<tr>${row.map(cell => `<td>${cell.split(/(\{\{blank:\d+\}\})/g).map(part => {
             const match = part.match(/^\{\{blank:(\d+)\}\}$/);
             return match ? `<input class="preview-inline-input" data-table-answer-index="${match[1]}" placeholder="..." data-correct-placeholder="${escapeHtml(table.answers[Number(match[1])])}" aria-label="${previewText("typeAnswer")}" autocomplete="off">` : escapeHtml(part);
         }).join("")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
@@ -2767,7 +2658,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         : "";
     const hintLabels={ru:"Показать ответы",ua:"Показати відповіді",en:"Show answers",sk:"Zobraziť odpovede",kk:"Жауаптарды көрсету"};
     const correctMarkup = body.includes('data-correct-placeholder') ? `<button type="button" class="button secondary small" data-preview-reveal aria-pressed="false">${escapeHtml(hintLabels[currentLanguage]||hintLabels.en)}</button>` : "";
-    return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${["fill-blank", "table"].includes(type) ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}${isQuestion ? `<span class="preview-q-badge">${questionIndex + 1}</span>` : `<h3>${previewItemNumber}. ${prompt}</h3>`}${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${isQuestion && activity.prompt?.trim() ? `<p class="preview-q-prompt">${prompt}</p>` : ""}${!isQuestion ? window.SlovaActivityUI.renderMetadata(activity) : ""}${liveAnswerMarkup}${resultMarkup}${body}${correctMarkup}${checkButton}</article>`;
+    return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${["fill-blank", "table", "columns"].includes(type) ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}${isQuestion ? `<span class="preview-q-badge">${questionIndex + 1}</span>` : `<h3>${previewItemNumber}. ${prompt}</h3>`}${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${isQuestion && activity.prompt?.trim() ? `<p class="preview-q-prompt">${prompt}</p>` : ""}${!isQuestion ? window.SlovaActivityUI.renderMetadata(activity) : ""}${liveAnswerMarkup}${resultMarkup}${body}${correctMarkup}${checkButton}</article>`;
 }
 
 function renderSupplementaryPreview(activity) {
@@ -2820,7 +2711,9 @@ function checkPreviewActivity(card) {
         correct = checks.length > 0 && checks.length === inputs.length && checks.every(Boolean);
     } else if (type === "table") {
         const actual = Array.from(card.querySelectorAll("[data-table-answer-index]"), input => input.value);
-        correct = window.SlovaTable.check(card.dataset.previewContent, answer, JSON.parse(card.dataset.previewSettings || '{}'), actual);
+        const checks=window.SlovaTable.checkResults(card.dataset.previewContent,answer,JSON.parse(card.dataset.previewSettings||'{}'),actual);
+        card.querySelectorAll('[data-table-answer-index]').forEach((input,index)=>{input.classList.toggle('blank-correct',checks[index]===true);input.classList.toggle('blank-incorrect',checks[index]===false);input.setAttribute('aria-invalid',String(checks[index]===false));});
+        correct=checks.length>0&&checks.length===actual.length&&checks.every(Boolean);
     } else if (type === "multiple-choice" || type === "one-of-many" || type === "true-false") {
         const inlineChoice = card.querySelector("[data-inline-choice]");
         if (inlineChoice) correct = Array.from(card.querySelectorAll("[data-inline-choice]")).every(select=>Boolean(select.value && select.selectedOptions[0]?.hasAttribute("data-correct-option")));
@@ -2841,7 +2734,8 @@ function checkPreviewActivity(card) {
         card.querySelector('[data-pair-board]')?.dispatchEvent(new Event('pair-refresh'));
         correct = selects.length > 0 && selects.every((select, index) => select.value === String(index));
     } else if (type === "columns") {
-        const expectedCategories = previewLines(card.dataset.previewContent).map((line) => line.split(":")[0]?.trim());
+        const settings=JSON.parse(card.dataset.previewSettings||"{}"),cards=settings.cards?.length?settings.cards:window.SlovaExerciseFormat.parseColumns(card.dataset.previewContent).cards;
+        const expectedCategories=cards.map(card=>card.category);
         const selects = Array.from(card.querySelectorAll("[data-column-index]"));
         correct = selects.length > 0 && selects.every((select, index) => select.value === expectedCategories[index]);
     } else if (type === "open-answer") {
@@ -2979,6 +2873,7 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
         button.closest('[data-preview-activity]')?.querySelectorAll('[data-correct-placeholder]').forEach(input=>{input.placeholder=show?input.dataset.correctPlaceholder:'...';});
     }));
     window.SlovaFlashcardDeck?.bind(container);
+    window.SlovaSelectUI?.enhance(container);
     window.SlovaBlankCards?.bind(container);
     window.SlovaActivityUI?.enhancePairing(container, { empty: previewText("choose") });
     container.querySelectorAll("[data-preview-error-word]").forEach((button) => button.addEventListener("click", () => {
@@ -3716,6 +3611,7 @@ function lessonProgressIndexes(lesson) {
 }
 
 function formatLiveResponse(activity, response) {
+    activity=window.SlovaExerciseFormat.prepare(activity);
     if (response && typeof response === "object" && !Array.isArray(response)) {
         const text = String(response.text || "").trim();
         const attachments = Array.isArray(response.attachments)
@@ -3757,6 +3653,7 @@ function formatLiveResponse(activity, response) {
 }
 
 function formatLiveCorrectAnswer(activity) {
+    activity=window.SlovaExerciseFormat.prepare(activity);
     const answer = String(activity.answer ?? "").trim();
     const expectedParts = previewTokens(answer);
     const contentLines = previewLines(activity.content);
@@ -4326,6 +4223,7 @@ function previewRichContent(block) {
 }
 
 function contentHint(type) {
+    if(type==='columns')return 'Ovocie: [jablko/hruška/banán]';
     if(window.SlovaExerciseFormat.sequenceTypes.includes(type))return contentPlaceholder(type);
     if(['vocabulary','phrase-list'].includes(type))return 'auto [машина]';
     const bracketExamples={"multiple-choice":"[Bratislava]\nKošice\nŽilina","true-false":"Slon je malý [false]",match:"auto [машина]",columns:"jablko [Ovocie]","find-error":"Ja [bývať/bývam] v Bratislave.","open-answer":"Otázka? [Ukážková odpoveď]"};
@@ -4410,6 +4308,7 @@ function richTextToolbar() {
 }
 
 function contentPlaceholder(type) {
+    if(type==='columns')return 'Ovocie: [jablko/hruška/banán]\nZelenina: [mrkva/uhorka/paradajka]';
     if(['vocabulary','phrase-list'].includes(type))return 'auto [машина]\ndom [дом]';
     const bracketExamples={"multiple-choice":"[Bratislava]\nKošice\nŽilina","true-false":"Slon je malý [false]",match:"auto [машина]\ndom [дом]",columns:"jablko [Ovocie]\nmrkva [Zelenina]","find-error":"Ja [bývať/bývam] v Bratislave.","open-answer":"Kde bývaš? [Bývam v Bratislave.]","drag-words":"[Ja bývam v Bratislave.]","order-items":"[ráno]\n[poludnie]\n[večer]","sentence-order":"[Ráno vstávam.]\n[Potom raňajkujem.]"};
     if(bracketExamples[type])return bracketExamples[type];
@@ -4467,7 +4366,9 @@ function activitySettingsPlaceholder(type) {
 
 function activityMetadataEditor(activity, preview = false) {
     const text = window.SlovaLessonImportUI.labels(currentLanguage);
-    return `<details class="activity-metadata-settings"><summary>${escapeHtml(text[17])} / ${escapeHtml(text[18])}</summary>${['description', 'helperText'].map((field, index) => `<div class="form-field"><label>${escapeHtml(text[17 + index])}<textarea data-activity-meta="${field}" maxlength="2000" data-meta-preview="${preview}">${escapeHtml(activity.settings?.[field] || '')}</textarea></label></div>`).join('')}</details>`;
+    const headerLabels={ru:'Названия столбцов через /',ua:'Назви стовпців через /',en:'Column names separated by /',sk:'Názvy stĺpcov oddelené /',kk:'Баған атаулары / арқылы'};
+    const headers=activity.type==='table'?`<div class="form-field"><label>${escapeHtml(headerLabels[currentLanguage]||headerLabels.en)}<input data-table-headers maxlength="2000" value="${escapeHtml(window.SlovaTable.parse(activity.content,activity.answer,activity.settings).headers.join(' / '))}" placeholder="Meno / Mesto / Jazyk"></label></div>`:'';
+    return `${headers}<details class="activity-metadata-settings"><summary>${escapeHtml(text[17])} / ${escapeHtml(text[18])}</summary>${['description', 'helperText'].map((field, index) => `<div class="form-field"><label>${escapeHtml(text[17 + index])}<textarea data-activity-meta="${field}" maxlength="2000" data-meta-preview="${preview}">${escapeHtml(activity.settings?.[field] || '')}</textarea></label></div>`).join('')}</details>`;
 }
 
 function activitySettingsField(activity, preview = false) {
@@ -4835,6 +4736,13 @@ function bindActivityBlockActions() {
 }
 
 function bindBlankCardSettings(root) {
+    root.querySelectorAll('[data-table-headers]').forEach(input=>input.addEventListener('input',()=>{
+        const block=input.closest('[data-block-index]'),activity=block?activeDraftSection()?.activities[Number(block.dataset.blockIndex)]:previewActivityEdit?.draft;
+        if(!activity)return;window.SlovaTable.setHeaders(activity,input.value);
+        const editor=input.closest('.builder-block-editor, .preview-inline-editor'),content=editor?.querySelector('[data-field="content"], [data-preview-field="content"]'),settings=editor?.querySelector('[data-field="settings"], [data-preview-field="settings"]');
+        if(content)content.value=window.SlovaExerciseFormat.editorContent(activity);if(settings)settings.value=JSON.stringify(activity.settings,null,2);
+        if(block){scheduleLessonDraftAutosave();const preview=block.querySelector('[data-builder-preview]');if(preview){preview.innerHTML=renderBuilderPreview(activity,Number(block.dataset.blockIndex));bindLessonPreviewActions(preview);}}
+    }));
     root.querySelectorAll('[data-activity-meta]').forEach(input => input.addEventListener('input', () => {
         const block = input.closest('[data-block-index]');
         const activity = block ? activeDraftSection()?.activities[Number(block.dataset.blockIndex)] : previewActivityEdit?.draft;
@@ -4927,9 +4835,11 @@ function openLessonTextImport() {
     });
 }
 
+function creationActivityTypes() { return activityTypes.filter(item=>item.id!=='order-items'); }
+
 function openActivityPicker() {
     const categories = [{ id: "all", label: t("picker.all") }, { id: "tests", label: t("picker.tests") }, { id: "media", label: t("picker.media") }, { id: "other", label: t("picker.other") }];
-    const choices = [...activityTypes, {id:"lesson-note",nameKey:"note.title",descKey:"note.description",category:"other"}].filter((item) => (selectedActivityCategory === "all" || item.category === selectedActivityCategory) && `${t(item.nameKey)} ${t(item.descKey)}`.toLowerCase().includes(activitySearch.toLowerCase()));
+    const choices = [...creationActivityTypes(), {id:"lesson-note",nameKey:"note.title",descKey:"note.description",category:"other"}].filter((item) => (selectedActivityCategory === "all" || item.category === selectedActivityCategory) && `${t(item.nameKey)} ${t(item.descKey)}`.toLowerCase().includes(activitySearch.toLowerCase()));
     openModal(`${modalHeader(t("picker.title"))}
         <div class="block-tabs">${categories.map((category) => `<button class="block-tab ${selectedActivityCategory === category.id ? "active" : ""}" type="button" data-category="${category.id}">${category.label}</button>`).join("")}</div>
         <div class="form-field"><input type="search" id="activitySearch" value="${escapeHtml(activitySearch)}" placeholder="${t("picker.search")}" aria-label="${t("picker.search")}"></div>

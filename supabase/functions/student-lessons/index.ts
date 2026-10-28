@@ -11,8 +11,9 @@ const fillBlanks = (globalThis as unknown as { SlovaFillBlanks: {
 } }).SlovaFillBlanks;
 
 const lessonTable = (globalThis as unknown as { SlovaTable: {
-        parse(content: string, answer?: string, settings?: unknown): {rows: string[][]; groups: string[][]; blankCount: number};
+        parse(content: string, answer?: string, settings?: unknown): {rows: string[][]; headers:string[];headerRow:boolean; groups: string[][]; blankCount: number};
         check(content: string, answer: string, settings: unknown, response: unknown): boolean;
+        checkResults(content: string, answer: string, settings: unknown, response: unknown): boolean[];
     } }).SlovaTable;
 const exerciseFormat = (globalThis as unknown as {SlovaExerciseFormat:{
     prepare(activity: unknown): unknown;
@@ -519,12 +520,12 @@ function safeActivity(activity: Activity): Record<string, unknown> {
                 .filter((card) => stringValue(card.text).trim() && stringValue(card.category).trim())
                 .map((card) => ({ item: stringValue(card.text).slice(0, 500), category: stringValue(card.category).slice(0, 500), media: stringValue(card.media).slice(0, 2000) })) : [];
             const cards = configuredCards.length ? configuredCards : pairs.map((pair) => ({ ...pair, media: "" }));
-            return { type: activity.type, prompt, items: cards.map(({ item, media }) => ({ text: item, media })), categories: configuredCategories.length ? configuredCategories : [...new Set(pairs.map(({ category }) => category))], gradable: cards.length > 0 };
+            return { type: activity.type, prompt, items: cards.map(({ item, media }) => ({ text: item, media })), categories: configuredCategories.length ? configuredCategories : [...new Set(pairs.map(({ category }) => category))], gradable: cards.length > 0 && cards.length<=100 && settings?.columnsInvalid!==true };
         }
         case "table": {
             const settings = (activity as Activity & {settings?: Record<string, unknown>}).settings || {};
             const table = lessonTable.parse(activity.content, activity.answer, settings);
-            return { type: activity.type, prompt, rows: table.rows, blankCount: table.blankCount,
+            return { type: activity.type, prompt, rows: table.rows, headers:table.headers,headerRow:table.headerRow, blankCount: table.blankCount,
                 cellOptions: record(settings.cellOptions), hints: record(settings.hints),
                 gradable: table.blankCount > 0 && table.groups.every(group => group.length > 0) };
         }
@@ -730,6 +731,7 @@ function isCorrect(activity: Activity, response: unknown): boolean {
             && pairs.every((pair, index) => normalized(stringValue(pair[1])) === normalized(actual[index]));
     }
     if (activity.type === "columns") {
+        if(settings?.columnsInvalid===true)return false;
         const pairs = contentLines.map((line) => line.split(":").map((part) => part.trim()))
             .filter((pair) => pair.length >= 2 && pair[0] && pair[1]);
         const configuredCards = Array.isArray(settings?.cards) ? settings.cards.map((card) => record(card))
@@ -1118,7 +1120,8 @@ Deno.serve(async (request: Request) => {
     const correct = isCorrect(answerActivity, response);
     const matchResults = matchingResults(answerActivity, response);
     const blankResults = answerActivity.type === "fill-blank"
-        ? fillBlanks.check(answerActivity.content, answerActivity.answer, (answerActivity as Activity & {settings?: unknown}).settings, response) : undefined;
+        ? fillBlanks.check(answerActivity.content, answerActivity.answer, (answerActivity as Activity & {settings?: unknown}).settings, response)
+        : answerActivity.type==='table'?lessonTable.checkResults(answerActivity.content,answerActivity.answer,answerActivity.settings,response):undefined;
     const feedback = answerFeedback(answerActivity, response);
     const answers = publicProgress(progress?.answers);
     answers[answerKey] = { response, correct, ...(matchResults ? {matchResults} : {}), ...(blankResults ? {blankResults} : {}), submitted_at: new Date().toISOString(), ...(feedback ? { feedback } : {}) };

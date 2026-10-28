@@ -13,7 +13,11 @@
         if(['multiple-choice','one-of-many'].includes(activity.type))return !content&&!settings.options?.length||!answer&&!settings.options?.some(option=>option.correct);
         if(activity.type==='vocabulary')return !content&&!settings.words?.length&&!activity.cards?.length;
         if(activity.type==='flashcards'){const cards=root.SlovaExerciseFormat?.cardsFor(activity);return cards?!cards.length||cards.some(card=>!card.front||!card.back):!content&&!activity.cards?.length;}
-        if(activity.type==='columns')return !content&&!settings.cards?.length;
+        if(activity.type==='columns'){
+            if(settings.columnsInvalid)return true;
+            if(settings.cards?.length)return settings.cards.length>100||settings.cards.some(card=>!String(card?.text||'').trim()||!String(card?.category||'').trim());
+            const parsed=root.SlovaExerciseFormat?.parseColumns(content);return parsed?!parsed.cards.length||parsed.cards.length>100||!!parsed.invalidLines.length:!content;
+        }
         if(activity.type==='match')return !content&&!settings.pairs?.length;
         return !content&&activity.type!=='pronunciation-recording'&&activity.type!=='open-answer';
     }

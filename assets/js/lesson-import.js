@@ -16,7 +16,8 @@
         'Слова в пропуски': 'word-bank', 'Слова у пропуски': 'word-bank',
         'Заметка учителя': 'teacher-note', 'Нотатка викладача': 'teacher-note',
         'Скрытый текст': 'hidden-text', 'Прихований текст': 'hidden-text',
-        'Заметка': 'note', 'Нотатка': 'note'
+        'Заметка': 'note', 'Нотатка': 'note',
+        'Порядок предложений':'sentence-order','Порядок речень':'sentence-order','Sentence order':'sentence-order','Poradie viet':'sentence-order','Сөйлемдердің реті':'sentence-order'
     };
     const issue = (code, line, detail = '') => ({ code, line, detail });
     function pair(value) {
@@ -189,9 +190,17 @@
                     if (lines().length < 2) throw Error('words');
                     activity.answer = lines().map((_, index) => index + 1).join(' / ');
                 } else if (type === 'columns') {
-                    const groups = content.split(/\n\s*\n/).map(group => group.split('\n').map(line => line.trim()).filter(Boolean));
-                    if (groups.length < 2 || groups.some(group => group.length < 2 || group.some(line => line.includes(':')))) throw Error('columns');
-                    activity.content = groups.flatMap(([category, ...words]) => words.map(word => `${category}: ${word}`)).join('\n');
+                    if(content.includes('[')||content.includes(':')){
+                        const parsed=root.SlovaExerciseFormat.parseColumns(content);
+                        if(parsed.invalidLines.length||!parsed.cards.length)throw Error('columns');
+                        if(parsed.cards.length>100)throw Error('limit');
+                        activity.content=content;
+                    }else{
+                        const groups = content.split(/\n\s*\n/).map(group => group.split('\n').map(line => line.trim()).filter(Boolean));
+                        if (groups.length < 2 || groups.some(group => group.length < 2)) throw Error('columns');
+                        activity.content = groups.flatMap(([category, ...words]) => words.map(word => `${category}: ${word}`)).join('\n');
+                        if(activity.content.split('\n').length>100)throw Error('limit');
+                    }
                 } else if (type === 'flashcards') {
                     activity.content = records(content).map(record => {
                         if(!record.extra){const bracket=record.text.match(/^(.+?)\s+\[(.+)\]$/);if(bracket){record.text=bracket[1];record.extra=bracket[2];}}

@@ -23,6 +23,15 @@ test('legacy pipes, tabs, trailing cells and answer configuration remain support
     assert.equal(table.check('a|b','x',{hiddenCells:[1]},['x']),true);
     assert.deepEqual(table.parse('a\\/b / [x / y]').rows[0],['a/b','{{blank:0}}']);
 });
+
+test('table headers are semantic metadata and cell checks return independent results',()=>{
+    const activity={type:'table',content:'Meno / Mesto\nAnna / [Bratislava]\nPeter / [Košice]'};
+    const original=table.parse(activity.content);assert.deepEqual(original.headers,['Meno','Mesto']);assert.equal(original.headerRow,true);assert.equal(original.rows.length,3);
+    assert.deepEqual(table.checkResults(activity.content,'',{},['Bratislava','wrong']),[true,false]);assert.equal(table.check(activity.content,'',{},['Bratislava','wrong']),false);
+    table.setHeaders(activity,'Name / City');assert.equal(activity.content,'Anna / [Bratislava]\nPeter / [Košice]');
+    const renamed=table.parse(activity.content,'',activity.settings);assert.deepEqual(renamed.headers,['Name','City']);assert.equal(renamed.headerRow,false);assert.equal(renamed.blankCount,2);
+    table.setHeaders(activity,'');assert.deepEqual(table.parse(activity.content,'',activity.settings).headers,[]);
+});
 for(const relative of ['../../supabase/functions/student-lessons/index.ts','../../artifacts/student-lessons-table.ts']) {
     test(`table API keeps embedded answers private and grades all formats: ${relative}`, () => {
         const source=fs.readFileSync(`${__dirname}/${relative}`,'utf8').replace(/^import .*;\r?\n/gm,'');
