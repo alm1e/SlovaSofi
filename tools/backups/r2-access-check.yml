@@ -1,0 +1,27 @@
+name: R2 access check
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: slovasofi-production-backup
+  cancel-in-progress: false
+jobs:
+  check:
+    if: github.event.repository.private
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Test diagnostic without credentials
+        run: node --test tools/backups/r2-access.test.cjs
+      - name: Check R2 access without changing any objects
+        env:
+          RESTIC_REPOSITORY: ${{ secrets.RESTIC_REPOSITORY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          BACKUP_R2_ACCOUNT_ID: dd1c9cccc478514ab9ff2d921d99e885
+          BACKUP_R2_BUCKET_NAME: slovasofi-backups
+        run: node tools/backups/r2-access.cjs
