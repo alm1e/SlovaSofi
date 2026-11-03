@@ -177,6 +177,7 @@
     let activeView = "classes";
     let selectedClassId = "";
     let selectedLessonId = "";
+    let pageHistory = null;
     let openedLesson = null;
     let studentWorkspaceTab = "lesson";
     let activeStudentSectionId = "";
@@ -1300,6 +1301,7 @@
         pageContent.innerHTML = `<div class="panel student-empty"><p>${escapeHtml(text("loading"))}</p></div>`;
         try {
             const result = await invokeLessonApi({ action: "load", lessonId });
+            if (selectedLessonId !== lessonId) return;
             openedLesson = result.lesson;
             openedLesson.className = result.className;
             studentWorkspaceTab = "lesson";
@@ -1312,6 +1314,7 @@
             render();
             scrollToFirstStudentActivity();
         } catch (error) {
+            if (selectedLessonId !== lessonId) return;
             selectedLessonId = "";
             openedLesson = null;
             console.error("Could not load the assigned lesson.", error);
@@ -1347,6 +1350,7 @@
         pageContent.innerHTML = `${activeView === "calendar" ? "" : renderWelcome()}${openedLesson && openedLesson.id === selectedLessonId
             ? renderLessonDetail(openedLesson)
             : activeView === "classes" ? renderClasses() : activeView === "calendar" ? renderStudentCalendar() : renderLessons()}`;
+        pageHistory?.sync();
         window.SlovaFindErrorUI?.bind(pageContent,{send:(event,root)=>saveFindErrorEvent(root,event)});
         window.SlovaBlankCards?.bind(pageContent);
         window.SlovaActivityUI?.enhancePairing(pageContent, { empty: text("choose") });
@@ -1743,6 +1747,7 @@
                 if (!lessons.some((lesson) => lesson.id === selectedLessonId)) selectedLessonId = "";
                 if (!lessons.some((lesson) => lesson.id === openedLesson?.id)) openedLesson = null;
                 render();
+                initializeStudentHistory();
             } catch (error) {
                 if (!signingOut) showError(text("loadError"), error);
             } finally {
@@ -1750,6 +1755,43 @@
             }
         })();
         return dashboardRequest;
+    }
+
+    function initializeStudentHistory() {
+        if (pageHistory) return;
+        pageHistory = window.SlovaPageHistory.create({
+            key: "slovaStudent",
+            read: () => ({ route: { view: activeView, classId: selectedClassId, lessonId: selectedLessonId,
+                tab: studentWorkspaceTab, section: activeStudentSectionId } }),
+            async restore(state) {
+                await flushDraftSaves();
+                const route = state.route;
+                if (route.lessonId && openedLesson?.id !== route.lessonId) {
+                    const previous = { lesson: openedLesson, id: selectedLessonId, view: activeView };
+                    await openStudentLesson(route.lessonId);
+                    if (openedLesson?.id !== route.lessonId) {
+                        openedLesson = previous.lesson;
+                        selectedLessonId = previous.id;
+                        activeView = previous.view;
+                        render();
+                        throw new Error(text("lessonChanged"));
+                    }
+                }
+                activeView = route.view;
+                selectedClassId = route.classId;
+                selectedLessonId = route.lessonId;
+                if (!route.lessonId) openedLesson = null;
+                studentWorkspaceTab = route.tab;
+                activeStudentSectionId = route.section;
+                studentSectionsOpen = false;
+                render();
+            },
+            onError(error) {
+                console.error("Could not restore student navigation.", error);
+                showToast(`${text("draftSaveError")} ${error.message}`, true);
+            }
+        });
+        pageHistory.sync();
     }
 
     function showUserMenu(button) {

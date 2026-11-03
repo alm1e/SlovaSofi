@@ -491,6 +491,9 @@ imageUploadMessages.en.galleryHint = "One image per line. With several, students
 imageUploadMessages.ua.linkOnly = "Сайт не дозволяє зберегти копію, використано посилання. Завантажте файл з комп’ютера, щоб зображення не зникло.";
 imageUploadMessages.ru.linkOnly = "Сайт не разрешает сохранить копию, использована ссылка. Загрузите файл с компьютера, чтобы изображение не пропало.";
 imageUploadMessages.en.linkOnly = "The site does not allow saving a copy, so the link is used. Upload the file from your computer to keep the image.";
+imageUploadMessages.ua.blank = "Зображення порожнє або не вдалося прочитати його кольори. Збережіть оригінал як PNG/JPG і завантажте ще раз.";
+imageUploadMessages.ru.blank = "Изображение пустое или не удалось прочитать его цвета. Сохраните оригинал как PNG/JPG и загрузите ещё раз.";
+imageUploadMessages.en.blank = "The image is blank or its colours could not be read. Save the original as PNG/JPG and upload it again.";
 
 function readRawPixels(bitmap) {
     const gl = document.createElement("canvas").getContext("webgl", { premultipliedAlpha: false, preserveDrawingBuffer: true });
@@ -526,7 +529,7 @@ async function recoverTransparentImage(file) {
     return hasColor ? canvas : null;
 }
 
-async function resizeImageForUpload(file, strict = false) {
+async function resizeImageForUpload(file, strict = false, preserveOriginal = false) {
     if (file.type === "image/gif") return file;
     const bitmap = await createImageBitmap(file);
     if (!bitmap.width || !bitmap.height) throw new Error("Empty image");
@@ -554,8 +557,13 @@ async function resizeImageForUpload(file, strict = false) {
         for (let i = 4; i < final.length; i += 4) {
             if (Math.abs(final[i] - final[0]) > 12 || Math.abs(final[i + 1] - final[1]) > 12 || Math.abs(final[i + 2] - final[2]) > 12) { varied = true; break; }
         }
-        if (!varied) throw new Error("Blank image");
+        if (!varied) {
+            const error = new Error("Blank image");
+            error.code = "BLANK_IMAGE";
+            throw error;
+        }
     }
+    if (preserveOriginal && visible) return file;
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.88));
     if (!blob || blob.size < 100) throw new Error("Could not read the image");
     return blob;
@@ -566,18 +574,20 @@ async function uploadLessonImage(source, preserveOriginal = false) {
     const candidates = (Array.isArray(source) ? source : [source]).filter((file) => file?.type?.startsWith("image/"));
     if (!candidates.length) throw new Error(messages.type);
     if (!currentUser || !window.supabaseClient) throw new Error(messages.login);
-    const strict = Array.isArray(source);
     let prepared = null;
     let lastError = null;
     for (const candidate of candidates) {
         try {
-            prepared = preserveOriginal ? candidate : await resizeImageForUpload(candidate, strict);
+            prepared = await resizeImageForUpload(candidate, true, preserveOriginal);
             break;
         } catch (error) {
             lastError = error;
         }
     }
-    if (!prepared) throw lastError || new Error(messages.type);
+    if (!prepared) {
+        if (lastError?.code === "BLANK_IMAGE") throw new Error(messages.blank);
+        throw lastError || new Error(messages.type);
+    }
     const extension = ({ "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" })[prepared.type] || "webp";
     const path = `${currentUser.id}/${crypto.randomUUID()}.${extension}`;
     const { error } = await window.supabaseClient.storage.from("lesson-images").upload(path, prepared, { contentType: prepared.type, cacheControl: "31536000", upsert: false });
@@ -1008,6 +1018,7 @@ let selectDropdownSequence = 0;
 const enhancedSelectRefreshers = new WeakMap();
 let toastTimer;
 let refreshModal = null;
+let workspaceHistory = null;
 
 const pageContent = document.getElementById("pageContent");
 const modalBackdrop = document.getElementById("modalBackdrop");
@@ -1297,6 +1308,7 @@ async function loadCurrentUser() {
             ], currentUser);
             translateStaticUI();
             render();
+            initializeWorkspaceHistory();
             const storageNote = document.querySelector(".storage-note");
             if (storageNote) storageNote.textContent = t("welcome.database");
 
@@ -1556,12 +1568,66 @@ function render() {
     document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === activeView));
     if (lessonWorkspaceMode) {
         renderLessonWorkspace();
+        workspaceHistory?.sync();
         return;
     }
     const renderers = { overview: renderOverview, classes: renderClasses, lessons: renderLessons, calendar: renderCalendar, students: renderStudents, staff: renderStaff };
     pageContent.innerHTML = renderers[activeView]();
     bindPageActions();
     enhanceSelects(pageContent);
+    workspaceHistory?.sync();
+}
+
+function initializeWorkspaceHistory() {
+    if (workspaceHistory) return;
+    const editorDrafts = new Map();
+    workspaceHistory = window.SlovaPageHistory.create({
+        key: "slovaTeacher",
+        read() {
+            if (lessonWorkspaceMode === "edit") {
+                editorDrafts.set(workspaceLessonId, structuredClone({
+                    form: lessonFormDraft, sections: draftSections, homework: draftHomeworkSections
+                }));
+            }
+            return {
+                route: { view: activeView, unit: selectedLessonUnit, classId: activeClassFilter,
+                    lessonId: workspaceLessonId, mode: lessonWorkspaceMode, tab: lessonWorkspaceTab,
+                    section: activeLessonSectionId, homeworkSection: activeHomeworkSectionId },
+                search: searchQuery
+            };
+        },
+        async restore(state) {
+            const route = state.route;
+            if (!await waitForWorkspaceSave()) throw new Error(t("toast.databaseSaveError"));
+            closeModal();
+            setView(route.view);
+            selectedLessonUnit = route.unit;
+            activeClassFilter = route.classId;
+            searchQuery = state.search;
+            if (route.mode) {
+                const lesson = data.lessons.find((item) => item.id === route.lessonId);
+                if (lesson && route.mode === "preview") openLessonPreview(lesson.id);
+                else if (route.mode === "edit" && (!route.lessonId || lesson)) {
+                    openLessonEditor(lesson);
+                    const draft = editorDrafts.get(route.lessonId);
+                    if (draft) {
+                        lessonFormDraft = structuredClone(draft.form);
+                        draftSections = structuredClone(draft.sections);
+                        draftHomeworkSections = structuredClone(draft.homework);
+                    }
+                }
+                lessonWorkspaceTab = route.tab;
+                activeLessonSectionId = route.section;
+                activeHomeworkSectionId = route.homeworkSection;
+            }
+            render();
+        },
+        onError(error) {
+            console.error("Could not restore workspace navigation.", error);
+            showToast(error.message);
+        }
+    });
+    workspaceHistory.sync();
 }
 
 function enhanceSelects(root) {
@@ -2295,7 +2361,10 @@ function renderLessons() {
     const sectionHeading = selectedLessonUnit
         ? `<div class="lesson-breadcrumb"><button class="text-link" type="button" data-action="back-to-units">${t("lessons.title")}</button><span aria-hidden="true">›</span><strong>${escapeHtml(selectedLessonUnit)}</strong></div>`
         : "";
-    return `${sectionHeading}<div class="section-heading"><div><h1>${escapeHtml(selectedLessonUnit || t("lessons.title"))}</h1><p>${escapeHtml(selectedLessonUnit ? lessonText("levelDescription", { level: selectedLessonUnit }) : lessonText("description"))}</p></div>${canEditLessons ? `<div class="lesson-heading-actions"><button class="button secondary" type="button" data-action="new-category">${categoryText("add")}</button><button class="button" data-action="new-lesson">${t("lessons.add")}</button></div>` : ""}</div>
+    const deleteCategoryButton = canEditLessons && selectedLessonUnit && !LESSON_UNITS.includes(selectedLessonUnit.toUpperCase())
+        && (data.categories || []).includes(selectedLessonUnit)
+        ? `<button class="button secondary" type="button" data-action="delete-category" data-id="${escapeHtml(selectedLessonUnit)}">${categoryText("remove")}</button>` : "";
+    return `${sectionHeading}<div class="section-heading"><div><h1>${escapeHtml(selectedLessonUnit || t("lessons.title"))}</h1><p>${escapeHtml(selectedLessonUnit ? lessonText("levelDescription", { level: selectedLessonUnit }) : lessonText("description"))}</p></div>${canEditLessons ? `<div class="lesson-heading-actions">${deleteCategoryButton}<button class="button secondary" type="button" data-action="new-category">${categoryText("add")}</button><button class="button" data-action="new-lesson">${t("lessons.add")}</button></div>` : ""}</div>
         <div class="toolbar"><select data-class-filter aria-label="${t("lessons.allClasses")}">${classSelect}</select><input type="search" data-search placeholder="${t("lessons.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("lessons.search")}"></div>
         ${selectedLessonUnit ? `<section class="course-hero course-hero-${LESSON_UNITS.includes(selectedLessonUnit) ? selectedLessonUnit.toLowerCase() : "custom"}"><div class="course-hero-art" aria-hidden="true"><span>${escapeHtml(selectedLessonUnit)}</span></div><div class="course-hero-copy"><span class="course-hero-kicker">${lessonText("courseLabel")}</span><h2>${escapeHtml(selectedLessonUnit)}</h2><p>${escapeHtml(lessonText("levelDescription", { level: selectedLessonUnit }))}</p><span class="course-hero-count">${countLabel(selectedLevelLessons.length, "lesson")}</span></div></section>
             <div class="course-lessons-heading"><h2>${lessonText("levelLessons")}</h2><span>${selectedLevelLessons.length}</span></div>
@@ -2326,7 +2395,40 @@ function categoryText(key) {
         sk: { add: "+ Kategória", title: "Nová kategória", name: "Názov kategórie", duplicate: "Táto kategória už existuje.", saved: "Kategória bola vytvorená", hint: "Napríklad: Konverzácia alebo Príprava na skúšku." },
         kk: { add: "+ Санат", title: "Жаңа санат", name: "Санат атауы", duplicate: "Бұл санат бар.", saved: "Санат құрылды", hint: "Мысалы: Сөйлесу тәжірибесі немесе Емтиханға дайындық." }
     };
-    return (labels[currentLanguage] || labels.en)[key];
+    const deletionLabels = {
+        ru: { remove: "Удалить категорию", confirm: "Удалить категорию «{name}»? Это действие нельзя отменить.", notEmpty: "Нельзя удалить категорию, пока в ней есть уроки. Сначала перенесите или удалите их.", deleted: "Категория удалена" },
+        ua: { remove: "Видалити категорію", confirm: "Видалити категорію «{name}»? Цю дію неможливо скасувати.", notEmpty: "Не можна видалити категорію, поки в ній є уроки. Спочатку перенесіть або видаліть їх.", deleted: "Категорію видалено" },
+        en: { remove: "Delete category", confirm: "Delete category “{name}”? This cannot be undone.", notEmpty: "This category contains lessons. Move or delete them before deleting the category.", deleted: "Category deleted" },
+        sk: { remove: "Odstrániť kategóriu", confirm: "Odstrániť kategóriu „{name}“? Túto akciu nemožno vrátiť späť.", notEmpty: "Kategória obsahuje lekcie. Najskôr ich presuňte alebo odstráňte.", deleted: "Kategória bola odstránená" },
+        kk: { remove: "Санатты жою", confirm: "«{name}» санатын жою керек пе? Бұл әрекетті қайтару мүмкін емес.", notEmpty: "Санатта сабақтар бар. Алдымен оларды жылжытыңыз немесе жойыңыз.", deleted: "Санат жойылды" }
+    };
+    return (labels[currentLanguage] || labels.en)[key] || (deletionLabels[currentLanguage] || deletionLabels.en)[key];
+}
+
+async function deleteLessonCategory(name) {
+    if (!hasPermission("edit_lessons") || LESSON_UNITS.includes(String(name).toUpperCase())
+        || !(data.categories || []).includes(name)) return;
+    if (data.lessons.some((lesson) => (lesson.unit || inferLessonUnit(lesson)).toLocaleLowerCase() === name.toLocaleLowerCase())) {
+        showToast(categoryText("notEmpty"));
+        return;
+    }
+    const button = [...pageContent.querySelectorAll('[data-action="delete-category"]')].find((item) => item.dataset.id === name);
+    if (button?.disabled) return;
+    if (!window.confirm(categoryText("confirm").replace("{name}", name))) return;
+    if (button) button.disabled = true;
+    try {
+        await window.teacherWorkspaceApi.deleteLessonCategory(window.supabaseClient, name);
+        data.categories = data.categories.filter((category) => category.toLocaleLowerCase() !== name.toLocaleLowerCase());
+        if (selectedLessonUnit === name) selectedLessonUnit = "";
+        if (lessonFormDraft.unit === name) lessonFormDraft.unit = "A1";
+        render();
+        showToast(categoryText("deleted"));
+    } catch (error) {
+        console.error("Could not delete lesson category.", error);
+        showToast(error.code === "CATEGORY_NOT_EMPTY" ? categoryText("notEmpty") : error.message);
+    } finally {
+        if (button?.isConnected) button.disabled = false;
+    }
 }
 
 function openCategoryEditor() {
@@ -3193,6 +3295,7 @@ function bindPageActions() {
 }
 
 function handleAction(action, id) {
+    if (action === "delete-category") deleteLessonCategory(id);
     if (action === "new-category") openCategoryEditor();
     if (action === "back-to-units") {
         selectedLessonUnit = "";

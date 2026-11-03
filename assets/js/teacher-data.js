@@ -112,6 +112,16 @@
         return normalized;
     }
 
+    async function deleteLessonCategory(client, name) {
+        const { error } = await client.rpc("delete_lesson_category", { category_name: name });
+        if (error?.message === "category_not_empty") {
+            const failure = new Error(error.message);
+            failure.code = "CATEGORY_NOT_EMPTY";
+            throw failure;
+        }
+        fail(error, "Не удалось удалить категорию");
+    }
+
     async function saveSettings(client, userId, legacyImported) {
         const { error } = await client.from("teacher_workspace_settings").upsert(
             { user_id: userId, legacy_imported: legacyImported },
@@ -363,6 +373,7 @@
         loadWorkspace,
         loadStaff,
         createLessonCategory,
+        deleteLessonCategory,
         saveWorkspace,
         inviteStudent,
         listExistingStudents,
