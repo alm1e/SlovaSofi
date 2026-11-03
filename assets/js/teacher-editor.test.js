@@ -270,7 +270,7 @@ test('imported multi-answer choices and custom third true/false label remain usa
     assert.match(editor.renderTrueFalseEditor(boolean),/A statement \[not-stated\]/);
     const result={},choices=[true,true,false].map(correct=>({correct,checked:correct,classList:{contains(){return this.owner.correct;}}}));
     choices.forEach(option=>{option.classList.owner=option;option.querySelector=()=>option;});
-    const card={dataset:{previewAnswer:'apple / pear',previewType:'multiple-choice'},classList:{contains:()=>false},querySelector:selector=>selector==='[data-preview-result]'?result:null,querySelectorAll:()=>choices};
+    const card={dataset:{previewAnswer:'apple / pear',previewType:'multiple-choice'},classList:{contains:()=>false},querySelector:selector=>selector==='[data-preview-result]'?result:null,querySelectorAll:selector=>selector==='.preview-option'?choices:[]};
     editor.checkPreviewActivity(card);assert.match(result.className,/correct/);assert.doesNotMatch(result.className,/incorrect/);
     choices[1].checked=false;editor.checkPreviewActivity(card);assert.match(result.className,/incorrect/);
 });

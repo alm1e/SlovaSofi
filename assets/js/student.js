@@ -599,7 +599,6 @@
             if (richText) return `<section class="student-text-block"><h3>${escapeHtml(activity.prompt || "")}</h3>${window.SlovaActivityUI.renderMetadata(activity)}${richText}</section>`;
         }
         if (Array.isArray(activity.questions) && activity.questions.length) {
-            const canSubmit = activity.type!=="find-error" && activity.questions.some((question) => question.gradable || question.reviewRequired);
             const questions = activity.questions.map((question, questionIndex) => ({
                 question,
                 questionIndex,
@@ -614,8 +613,8 @@
                 : "";
             const transcriptAvailable = activity.transcript
                 && (!activity.transcriptAfterSubmit || questions.every(({ saved }) => saved?.draft !== true && hasAnswerResponse(saved?.response)));
-            const transcript = transcriptAvailable
-                ? `<details class="student-listening-transcript"><summary>${escapeHtml(text("transcript"))}</summary><p>${escapeHtml(activity.transcript).replace(/\n/g, "<br>")}</p></details>`
+            const transcript = activity.transcript
+                ? `<details class="student-listening-transcript" ${transcriptAvailable ? "" : "hidden"}><summary>${escapeHtml(text("transcript"))}</summary><p>${escapeHtml(activity.transcript).replace(/\n/g, "<br>")}</p></details>`
                 : "";
             return `<section class="student-activity-group">
                 <header class="student-activity-group-heading"><span class="student-activity-number">${index + 1}</span><h3>${escapeHtml(activity.prompt || text("activity"))}</h3></header>
@@ -627,7 +626,6 @@
                     saved
                 )).join("")}</div>
                 ${transcript}
-                ${canSubmit ? `<div class="student-activity-group-actions"><button class="button small" type="button" data-submit-activity-group>${escapeHtml(text("checkAnswers"))}</button></div>` : ""}
             </section>`;
         }
         return renderActivityItem(activity, index, null, progressForActivity(openedLesson, activity));
@@ -653,7 +651,11 @@
             const parts = String(activity.content || "").split("___");
             const blankCount = Math.max(parts.length - 1, Number(activity.blankCount) || 0);
             const hints = Array.isArray(activity.settings?.hints) ? activity.settings.hints : activity.hints || [];
-            body = `<div class="student-activity-content student-fill-text lesson-fill-text">${window.SlovaActivityUI.renderBlankText(parts, Array.from({length:blankCount}, (_, partIndex) => `<input class="student-inline-answer ${!saved?.draft && saved?.blankResults?.[partIndex] === true ? "blank-correct" : !saved?.draft && saved?.blankResults?.[partIndex] === false ? "blank-incorrect" : ""}" data-blank-answer value="${escapeHtml(savedParts.shift() || "")}" aria-invalid="${!saved?.draft && saved?.blankResults?.[partIndex] === false}" aria-label="${escapeHtml(text("yourAnswer"))} ${partIndex + 1}" autocomplete="off">`))}</div>` + `${hints.map((hint, hintIndex) => `<div><button type="button" class="student-hint" data-show-hint="${hintIndex}">${escapeHtml(text("hint"))} ${hintIndex + 1}</button><span data-hint-content hidden>${escapeHtml(hint)}</span></div>`).join("")}`;
+            body = `<div class="student-activity-content student-fill-text lesson-fill-text">${window.SlovaActivityUI.renderBlankText(parts, Array.from({length:blankCount}, (_, partIndex) => {
+                const value = savedParts[partIndex] || "";
+                const result = !saved?.draft && value.trim() ? saved?.blankResults?.[partIndex] : undefined;
+                return `<input class="student-inline-answer ${result === true ? "blank-correct" : result === false ? "blank-incorrect" : ""}" data-blank-answer value="${escapeHtml(value)}" aria-invalid="${result === false}" aria-label="${escapeHtml(text("yourAnswer"))} ${partIndex + 1}" autocomplete="off">`;
+            }))}</div>` + `${hints.map((hint, hintIndex) => `<div><button type="button" class="student-hint" data-show-hint="${hintIndex}">${escapeHtml(text("hint"))} ${hintIndex + 1}</button><span data-hint-content hidden>${escapeHtml(hint)}</span></div>`).join("")}`;
             body = window.SlovaBlankCards.render(body,activity.wordBank || [],activity.gapLayout || activity.settings?.gapLayout,language);
             controls = `<input type="hidden" data-answer-kind="blanks">`;
         } else if (activity.type === "multiple-choice" || activity.type === "one-of-many") {
@@ -697,7 +699,7 @@
                 if (!blank) return escapeHtml(part);
                 const blankIndex = Number(blank[1]);
                 const value = escapeHtml(savedParts[blankIndex] || "");
-                const result=!saved?.draft?saved?.blankResults?.[blankIndex]:undefined;
+                const result=!saved?.draft && String(savedParts[blankIndex] || "").trim()?saved?.blankResults?.[blankIndex]:undefined;
                 const validation=result===true?'blank-correct':result===false?'blank-incorrect':'';
                 const options = activity.cellOptions?.[String(blankIndex)];
                 return Array.isArray(options) && options.length
@@ -747,18 +749,22 @@
         } else {
             body = activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         }
-        const feedback = saved?.draft ? text("progressSaved")
+        const incompleteResponse = Array.isArray(savedResponse) && ["fill-blank", "table", "match", "columns", "one-of-many"].includes(activity.type)
+            && savedResponse.some((value) => !value.trim());
+        const feedback = saved?.draft ? text("progressSaved") : incompleteResponse ? ""
             : saved?.correct === true ? text("correct")
                 : saved?.correct === false ? text("incorrect")
                     : saved?.correct === null ? text("submitted") : "";
         const isQuestion = Number.isInteger(questionIndex);
         const canSubmit = activity.type!=="find-error" && Boolean(activity.gradable || activity.reviewRequired);
         const feedbackMarkup = canSubmit || activity.type === "flashcards"
-            ? `<p class="student-answer-feedback ${saved?.correct === true ? "is-correct" : saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml([feedback, saved?.feedback].filter(Boolean).join(" "))}</p>`
+            ? `<p class="student-answer-feedback ${!incompleteResponse && saved?.correct === true ? "is-correct" : !incompleteResponse && saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml([feedback, saved?.feedback].filter(Boolean).join(" "))}</p>`
             : "";
+        const recordingSubmit = activity.type === "pronunciation-recording"
+            ? `<button class="button small" type="button" data-submit-answer>${escapeHtml(text("save"))}</button>` : "";
         const submitMarkup = !canSubmit ? feedbackMarkup
-            : isQuestion ? controls
-                : `<div class="student-activity-actions">${controls}<button class="button small" type="button" data-submit-answer>${escapeHtml(text("checkAnswer"))}</button></div>${feedbackMarkup}`;
+            : isQuestion ? `${controls}${recordingSubmit}`
+                : `<div class="student-activity-actions">${controls}${recordingSubmit}</div>${feedbackMarkup}`;
         const questionId = isQuestion ? String(activity.questionId || `legacy-${questionIndex}`) : "";
         const questionAttributes = isQuestion
             ? `data-question-id="${escapeHtml(questionId)}" data-question-index="${questionIndex}" data-submittable="${canSubmit}"`
@@ -961,11 +967,14 @@
     function queueDraftSave(lessonId, draftKey, activityIndex, questionId, response) {
         const snapshot = structuredClone(response);
         const identity = lessonWriteIdentity(openedLesson, activityIndex, lessonId);
+        const activity = activitiesFor(openedLesson)[activityIndex];
+        const answerActivity = questionId ? activity?.questions?.find((question) => question.questionId === questionId) : activity;
+        const autoSubmit = shouldAutoCheckAnswer(answerActivity, snapshot);
         const save = draftSaveQueue.catch((error) => {
             console.warn("Continuing the progress-save queue after an earlier draft failed.", error);
         }).then(async () => {
             const result = await invokeLessonApi({
-                action: "save-draft",
+                action: autoSubmit ? "submit" : "save-draft",
                 lessonId,
                 activityIndex,
                 ...(questionId ? { questionId } : {}),
@@ -973,12 +982,31 @@
                 ...identity
             });
             updateLessonProgress(lessonId, result.answers, result.completed);
-            if(result.errorState){const element=[...pageContent.querySelectorAll('.student-activity[data-activity-index]')].find(item=>item.dataset.activityIndex===String(activityIndex)&&(questionId?item.dataset.questionId===questionId:!item.dataset.questionId));const widget=element?.querySelector('[data-find-errors]');if(widget)window.SlovaFindErrorUI.setState(widget,result.errorState,snapshot);}
             const pending = pendingDrafts.get(draftKey);
-            if (pending && JSON.stringify(pending.response) === JSON.stringify(snapshot)) {
+            const isLatest = !pending || JSON.stringify(pending.response) === JSON.stringify(snapshot);
+            if (pending && isLatest) {
                 pendingDrafts.delete(draftKey);
             }
-            setDraftFeedback(lessonId, activityIndex, questionId, text("progressSaved"));
+            if (isLatest && openedLesson?.id === lessonId) {
+                const element = [...pageContent.querySelectorAll(".student-activity[data-activity-index]")].find((item) =>
+                    item.dataset.activityIndex === String(activityIndex) && (questionId ? item.dataset.questionId === questionId : !item.dataset.questionId));
+                if (element && JSON.stringify(responseForActivity(element)) === JSON.stringify(snapshot)) {
+                    if (result.errorState) {
+                        const widget = element.querySelector("[data-find-errors]");
+                        if (widget) window.SlovaFindErrorUI.setState(widget, result.errorState, snapshot);
+                    }
+                    if (autoSubmit) applyAnswerResult(element, result);
+                    else if (answerActivity?.gradable) applyAnswerResult(element, { draft: true });
+                    else setDraftFeedback(lessonId, activityIndex, questionId, text("progressSaved"));
+                    if (activity.type === "listening-questions" && activity.transcriptAfterSubmit) {
+                        const transcript = element.closest(".student-activity-group")?.querySelector(".student-listening-transcript");
+                        if (transcript) transcript.hidden = !activity.questions.every((question, index) => {
+                            const saved = progressForQuestion(openedLesson, activity, activityIndex, question.questionId, index);
+                            return saved?.draft !== true && hasAnswerResponse(saved?.response);
+                        });
+                    }
+                }
+            }
         }).catch((error) => {
             console.error("Could not save the student answer draft.", error);
             setDraftFeedback(lessonId, activityIndex, questionId, error.message || text("loadError"), true);
@@ -988,7 +1016,33 @@
         return save;
     }
 
-    function scheduleDraftSave(element) {
+    function shouldAutoCheckAnswer(activity, response) {
+        return Boolean(activity && activity.type !== "pronunciation-recording" && activity.type !== "find-error"
+            && (activity.gradable || activity.reviewRequired) && hasAnswerResponse(response));
+    }
+
+    function applyAnswerResult(element, result) {
+        element.querySelectorAll("[data-match-answer]").forEach((select, index) => {
+            const row = select.closest("[data-pair-row]");
+            if (select.value && typeof result.matchResults?.[index] === "boolean") row.dataset.pairResult = String(result.matchResults[index]);
+            else delete row.dataset.pairResult;
+        });
+        element.querySelector("[data-pair-board]")?.dispatchEvent(new Event("pair-refresh"));
+        element.querySelectorAll("[data-blank-answer], [data-table-answer]").forEach((input, index) => {
+            const checked = input.value.trim() ? result.blankResults?.[index] : undefined;
+            input.classList.toggle("blank-correct", checked === true);
+            input.classList.toggle("blank-incorrect", checked === false);
+            input.setAttribute("aria-invalid", String(checked === false));
+        });
+        const feedback = element.querySelector("[data-answer-feedback]");
+        if (!feedback) return;
+        const incomplete = [...element.querySelectorAll("[data-blank-answer], [data-table-answer], [data-match-answer], [data-choice-select]")].some((input) => !input.value.trim());
+        feedback.textContent = [result.draft ? text("progressSaved") : incomplete ? "" : result.reviewRequired ? text("submitted")
+            : result.correct ? text("correct") : text("incorrect"), result.feedback].filter(Boolean).join(" ");
+        feedback.className = `student-answer-feedback${result.draft || incomplete || result.reviewRequired ? "" : result.correct ? " is-correct" : " is-incorrect"}`;
+    }
+
+    function scheduleDraftSave(element, immediate = false) {
         if (!openedLesson || !user || !element?.querySelector("[data-answer-kind]")) return;
         const lessonId = openedLesson.id;
         const activityIndex = Number(element.dataset.activityIndex);
@@ -997,6 +1051,11 @@
         const draftKey = activityDraftKey(activityIndex, questionId);
         const response = responseForActivity(element);
         pendingDrafts.set(draftKey, { activityIndex, questionId, response: structuredClone(response) });
+        const feedback = element.querySelector("[data-answer-feedback]");
+        if (feedback) {
+            feedback.textContent = "";
+            feedback.className = "student-answer-feedback";
+        }
         clearTimeout(draftSaveTimers.get(draftKey));
         draftSaveTimers.set(draftKey, setTimeout(() => {
             draftSaveTimers.delete(draftKey);
@@ -1006,7 +1065,7 @@
                     console.warn("The answer draft remains pending until the next save attempt.", error);
                 });
             }
-        }, 500));
+        }, immediate ? 0 : 500));
     }
 
     async function flushDraftSaves() {
@@ -1426,7 +1485,7 @@
                     row.querySelector('[data-move-item="-1"]').disabled = index === 0;
                     row.querySelector('[data-move-item="1"]').disabled = index === rows.length - 1;
                 });
-                scheduleDraftSave(item.closest("[data-activity-index]"));
+                scheduleDraftSave(item.closest("[data-activity-index]"), true);
             });
         });
         pageContent.querySelectorAll("[data-media-seek]").forEach((button) => {
@@ -1508,7 +1567,7 @@
                 const blank = activity?.querySelector("[data-blank-answer]:not(:focus)");
                 if (blank) {
                     blank.value = button.dataset.wordBankAnswer;
-                    scheduleDraftSave(activity);
+                    scheduleDraftSave(activity, true);
                 }
             });
         });
@@ -1522,7 +1581,7 @@
                 row.innerHTML = `<input class="student-inline-answer" data-open-attachment placeholder="${escapeHtml(openAnswerText("attachmentUrl"))}" autocomplete="off"><button type="button" class="button secondary small" data-remove-open-attachment>${escapeHtml(openAnswerText("removeAttachment"))}</button>`;
                 wrap.append(row);
                 row.querySelector("[data-open-attachment]")?.focus();
-                scheduleDraftSave(activity);
+                scheduleDraftSave(activity, true);
             });
         });
         window.SlovaFlashcardDeck?.bind(pageContent);
@@ -1585,7 +1644,7 @@
         if (!button) return;
         const activity = button.closest("[data-activity-index]");
         moveWordButton(button, button.dataset.wordToken ? "answer" : "bank");
-        scheduleDraftSave(activity);
+        scheduleDraftSave(activity, true);
     });
     // Delegation also covers attachment rows added after the lesson was rendered.
     pageContent.addEventListener("click", (event) => {
@@ -1593,19 +1652,19 @@
         if (!button) return;
         const activity = button.closest("[data-activity-index]");
         button.closest(".student-open-attachment")?.remove();
-        if (activity) scheduleDraftSave(activity);
+        if (activity) scheduleDraftSave(activity, true);
     });
     pageContent.addEventListener("input", (event) => {
-        if (event.target.matches('[data-blank-answer]')) {
+        if (event.target.matches('[data-blank-answer], [data-table-answer]')) {
             event.target.classList.remove('blank-correct', 'blank-incorrect');
             event.target.removeAttribute('aria-invalid');
         }
         const activity = event.target.closest("[data-activity-index]");
-        if (activity) scheduleDraftSave(activity);
+        if (activity && !event.isComposing) scheduleDraftSave(activity);
     });
     pageContent.addEventListener("change", (event) => {
         const activity = event.target.closest("[data-activity-index]");
-        if (activity) scheduleDraftSave(activity);
+        if (activity) scheduleDraftSave(activity, true);
     });
     pageContent.addEventListener("dragstart", (event) => {
         draggedWordButton = event.target.closest("[data-word-token], [data-remove-word]");
@@ -1626,7 +1685,7 @@
                 const bounds = orderTarget.getBoundingClientRect();
                 orderTarget.parentElement.insertBefore(draggedOrderItem,
                     event.clientY < bounds.top + bounds.height / 2 ? orderTarget : orderTarget.nextElementSibling);
-                scheduleDraftSave(draggedOrderItem.closest("[data-activity-index]"));
+                scheduleDraftSave(draggedOrderItem.closest("[data-activity-index]"), true);
             }
             draggedOrderItem = null;
             return;
@@ -1640,7 +1699,7 @@
         const activity = draggedWordButton.closest("[data-activity-index]");
         if (movingToAnswer === fromBank) {
             moveWordButton(draggedWordButton, movingToAnswer ? "answer" : "bank");
-            scheduleDraftSave(activity);
+            scheduleDraftSave(activity, true);
         }
         draggedWordButton = null;
     });

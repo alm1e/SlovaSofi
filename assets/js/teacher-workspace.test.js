@@ -28,7 +28,7 @@ function savingContext() {
         render(){ctx.rendered={mode:ctx.lessonWorkspaceMode,id:ctx.workspaceLessonId,tab:ctx.lessonWorkspaceTab};},
         scrollToFirstWorkspaceActivity(){ctx.scrolled=true;},t:key=>key,lessonText:key=>key,showToast(message){ctx.toast=message;}
     });
-    vm.runInContext(readFunction('saveLesson'),ctx);
+    vm.runInContext(readFunction('lessonCategories')+readFunction('saveLesson'),ctx);
     ctx.save=()=>ctx.saveLesson({preventDefault(){},currentTarget:{querySelector:()=>button}});
     ctx.button=button;return ctx;
 }
@@ -54,6 +54,23 @@ test('a failed save stays in the editor with its draft and enabled save control'
     assert.equal(ctx.lessonWorkspaceMode,'edit');assert.equal(ctx.editingLessonId,'lesson');assert.equal(ctx.draftSections.length,2);
     assert.equal(ctx.button.disabled,false);assert.equal(ctx.rendered,undefined);assert.equal(ctx.scrolled,undefined);
 });
+test('a custom category is retained by both explicit saves and background lesson autosaves',async()=>{
+    const ctx=savingContext();
+    ctx.data.categories=['Conversation'];
+    ctx.FormData=class {get(key){return {title:'Custom lesson',unit:'Conversation'}[key];}};
+    await ctx.save();
+    assert.equal(ctx.data.lessons[1].unit,'Conversation');
+    const autosave=savingContext();
+    autosave.data.categories=['Exam preparation'];
+    autosave.pageContent={querySelector:selector=>({value:selector==='#lessonUnit'?'Exam preparation':'Autosaved lesson'})};
+    autosave.setTimeout=callback=>{autosave.runAutosave=callback;return 1;};
+    autosave.setLessonAutosaveStatus=status=>{autosave.autosaveStatus=status;};
+    vm.runInContext(readFunction('scheduleLessonDraftAutosave'),autosave);
+    autosave.scheduleLessonDraftAutosave();
+    await autosave.runAutosave();
+    assert.equal(autosave.data.lessons[1].unit,'Exam preparation');
+    assert.equal(autosave.autosaveStatus,'saved');
+});
 
 function workspaceContext() {
     const section={id:'section',title:'Reading',activities:[]},homework={id:'homework',title:'Practice',activities:[]};
@@ -75,7 +92,7 @@ function workspaceContext() {
         switchLessonWorkspaceMode(){},openActivityPicker(){},openLessonTextImport(){},enhanceSelects(){},bindLessonPreviewActions(){},
         bindTrueFalseEditors(){},bindLessonNotes(){},bindBlankCardSettings(){},bindActivityBlockActions(){},bindActivityAuthoring(){}
     });
-    vm.runInContext(readFunction('escapeHtml')+readFunction('renderLessonWorkspace'),ctx);return ctx;
+    vm.runInContext(readFunction('escapeHtml')+readFunction('lessonCategories')+readFunction('categoryText')+readFunction('renderLessonWorkspace'),ctx);return ctx;
 }
 test('lesson mode controls appear once above the answer card, and stay available in the editor',()=>{
     const ctx=workspaceContext();ctx.renderLessonWorkspace();const html=ctx.pageContent.innerHTML;

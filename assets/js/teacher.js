@@ -975,7 +975,7 @@ const savedViewState = (() => {
     }
 })();
 let activeView = savedViewState.view || "overview";
-let selectedLessonUnit = ["A1", "B1"].includes(savedViewState.unit) ? savedViewState.unit : "";
+let selectedLessonUnit = typeof savedViewState.unit === "string" ? savedViewState.unit : "";
 let activeClassFilter = "";
 let searchQuery = "";
 let selectedActivityCategory = "all";
@@ -1089,7 +1089,7 @@ function loadNewLessonDraft() {
             : [];
         return {
             title: typeof draft.title === "string" ? draft.title : "",
-            unit: LESSON_UNITS.includes(draft.unit) ? draft.unit : "A1",
+            unit: typeof draft.unit === "string" && draft.unit.trim() && draft.unit.length <= 80 ? draft.unit : "A1",
             sections: draft.sections,
             homeworkSections
         };
@@ -1141,7 +1141,7 @@ function scheduleLessonDraftAutosave() {
         const lesson = {
             ...existingLesson,
             title: snapshot.title.trim() || existingLesson.title,
-            unit: LESSON_UNITS.includes(snapshot.unit) ? snapshot.unit : existingLesson.unit,
+            unit: lessonCategories().includes(snapshot.unit) ? snapshot.unit : existingLesson.unit,
             sections: snapshot.sections,
             homeworkSections: snapshot.homeworkSections,
             activities: snapshot.sections.flatMap((section) => section.activities)
@@ -2293,19 +2293,73 @@ function renderLessons() {
     const classSelect = `<option value="">${t("lessons.allClasses")}</option>${data.classes.map((item) => `<option value="${escapeHtml(item.id)}" ${activeClassFilter === item.id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}`;
     const selectedLevelLessons = filtered.filter((item) => (item.unit || inferLessonUnit(item)) === selectedLessonUnit);
     const sectionHeading = selectedLessonUnit
-        ? `<div class="lesson-breadcrumb"><button class="text-link" type="button" data-action="back-to-units">${t("lessons.title")}</button><span aria-hidden="true">›</span><strong>${selectedLessonUnit}</strong></div>`
+        ? `<div class="lesson-breadcrumb"><button class="text-link" type="button" data-action="back-to-units">${t("lessons.title")}</button><span aria-hidden="true">›</span><strong>${escapeHtml(selectedLessonUnit)}</strong></div>`
         : "";
-    return `${sectionHeading}<div class="section-heading"><div><h1>${selectedLessonUnit || t("lessons.title")}</h1><p>${selectedLessonUnit ? lessonText("levelDescription", { level: selectedLessonUnit }) : lessonText("description")}</p></div>${canEditLessons ? `<button class="button" data-action="new-lesson">${t("lessons.add")}</button>` : ""}</div>
+    return `${sectionHeading}<div class="section-heading"><div><h1>${escapeHtml(selectedLessonUnit || t("lessons.title"))}</h1><p>${escapeHtml(selectedLessonUnit ? lessonText("levelDescription", { level: selectedLessonUnit }) : lessonText("description"))}</p></div>${canEditLessons ? `<div class="lesson-heading-actions"><button class="button secondary" type="button" data-action="new-category">${categoryText("add")}</button><button class="button" data-action="new-lesson">${t("lessons.add")}</button></div>` : ""}</div>
         <div class="toolbar"><select data-class-filter aria-label="${t("lessons.allClasses")}">${classSelect}</select><input type="search" data-search placeholder="${t("lessons.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("lessons.search")}"></div>
-        ${selectedLessonUnit ? `<section class="course-hero course-hero-${selectedLessonUnit.toLowerCase()}"><div class="course-hero-art" aria-hidden="true"><span>${selectedLessonUnit}</span></div><div class="course-hero-copy"><span class="course-hero-kicker">${lessonText("courseLabel")}</span><h2>${selectedLessonUnit}</h2><p>${lessonText("levelDescription", { level: selectedLessonUnit })}</p><span class="course-hero-count">${countLabel(selectedLevelLessons.length, "lesson")}</span></div></section>
+        ${selectedLessonUnit ? `<section class="course-hero course-hero-${LESSON_UNITS.includes(selectedLessonUnit) ? selectedLessonUnit.toLowerCase() : "custom"}"><div class="course-hero-art" aria-hidden="true"><span>${escapeHtml(selectedLessonUnit)}</span></div><div class="course-hero-copy"><span class="course-hero-kicker">${lessonText("courseLabel")}</span><h2>${escapeHtml(selectedLessonUnit)}</h2><p>${escapeHtml(lessonText("levelDescription", { level: selectedLessonUnit }))}</p><span class="course-hero-count">${countLabel(selectedLevelLessons.length, "lesson")}</span></div></section>
             <div class="course-lessons-heading"><h2>${lessonText("levelLessons")}</h2><span>${selectedLevelLessons.length}</span></div>
             <div class="course-lesson-list">${selectedLevelLessons.length ? selectedLevelLessons.map((item) => `<article class="course-lesson-row">${lessonIcon(item)}<div class="lesson-main"><button class="lesson-preview-link" data-action="preview-lesson" data-id="${escapeHtml(item.id)}">${escapeHtml(item.title)}</button><small>${escapeHtml(lessonClassNames(item)) || lessonText("unassigned")} · ${countLabel(lessonActivities(item).length, "activity")}</small></div><div class="course-lesson-actions"><button class="mini-action course-action-preview" data-action="preview-lesson" data-id="${escapeHtml(item.id)}" aria-label="${previewText("open")}" title="${previewText("open")}">${lessonActionIcon("preview")}</button>${canEditLessons ? `<button class="mini-action course-action-edit" data-action="edit-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editLesson")}" title="${t("modal.editLesson")}">${lessonActionIcon("edit")}</button>` : ""}${canAssignLessons ? `<button class="mini-action course-action-assign" data-action="assign-lesson" data-id="${escapeHtml(item.id)}" aria-label="${assignmentText("add")}" title="${assignmentText("add")}">${lessonActionIcon("assign")}</button>` : ""}${canEditLessons ? `<button class="mini-action course-action-delete" data-action="delete-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}" title="${t("action.delete")}">${lessonActionIcon("delete")}</button>` : ""}</div></article>`).join("") : emptyMessage(data.lessons.length ? lessonText("noSearch") : t("lessons.notFound"), data.lessons.length ? "" : t("lessons.notFoundHint"))}</div>`
-            : `<div class="unit-sections">${LESSON_UNITS.map((unit) => {
+            : `<div class="unit-sections">${lessonCategories().map((unit) => {
                 const unitLessons = filtered.filter((item) => (item.unit || inferLessonUnit(item)) === unit);
-                return `<button type="button" class="unit-card unit-card-link unit-card-${unit.toLowerCase()}" data-unit-open="${unit}"><span class="unit-card-mark">${unit}</span><span class="unit-card-copy"><strong>${unit}</strong><small>${unitLessons.length ? countLabel(unitLessons.length, "lesson") : lessonText("unitEmpty")}</small></span><span class="unit-card-chevron" aria-hidden="true">→</span></button>`;
+                return `<button type="button" class="unit-card unit-card-link unit-card-${LESSON_UNITS.includes(unit) ? unit.toLowerCase() : "custom"}" data-unit-open="${escapeHtml(unit)}"><span class="unit-card-mark">${escapeHtml(unit.slice(0, 2))}</span><span class="unit-card-copy"><strong>${escapeHtml(unit)}</strong><small>${unitLessons.length ? countLabel(unitLessons.length, "lesson") : lessonText("unitEmpty")}</small></span><span class="unit-card-chevron" aria-hidden="true">→</span></button>`;
             }).join("")}</div>${filtered.length ? "" : emptyMessage(data.lessons.length ? lessonText("noSearch") : t("lessons.notFound"), data.lessons.length ? "" : t("lessons.notFoundHint"))}`}`;
 }
 
+function lessonCategories() {
+    const names = [...LESSON_UNITS, ...(data.categories || []), ...data.lessons.map((lesson) => lesson.unit), lessonFormDraft.unit];
+    const seen = new Set();
+    return names.filter((name) => {
+        if (typeof name !== "string" || !name.trim()) return false;
+        const key = name.toLocaleLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
+function categoryText(key) {
+    const labels = {
+        ru: { add: "+ Категория", title: "Новая категория", name: "Название категории", duplicate: "Такая категория уже существует.", saved: "Категория создана", hint: "Например: Разговорная практика или Подготовка к экзамену." },
+        ua: { add: "+ Категорія", title: "Нова категорія", name: "Назва категорії", duplicate: "Така категорія вже існує.", saved: "Категорію створено", hint: "Наприклад: Розмовна практика або Підготовка до іспиту." },
+        en: { add: "+ Category", title: "New category", name: "Category name", duplicate: "This category already exists.", saved: "Category created", hint: "For example: Conversation practice or Exam preparation." },
+        sk: { add: "+ Kategória", title: "Nová kategória", name: "Názov kategórie", duplicate: "Táto kategória už existuje.", saved: "Kategória bola vytvorená", hint: "Napríklad: Konverzácia alebo Príprava na skúšku." },
+        kk: { add: "+ Санат", title: "Жаңа санат", name: "Санат атауы", duplicate: "Бұл санат бар.", saved: "Санат құрылды", hint: "Мысалы: Сөйлесу тәжірибесі немесе Емтиханға дайындық." }
+    };
+    return (labels[currentLanguage] || labels.en)[key];
+}
+
+function openCategoryEditor() {
+    if (!hasPermission("edit_lessons")) return;
+    openModal(`${modalHeader(categoryText("title"))}<form id="categoryForm"><div class="form-field"><label for="categoryName">${categoryText("name")}</label><input id="categoryName" required maxlength="80" autocomplete="off"><small class="hint">${categoryText("hint")}</small></div><p data-category-error role="alert"></p><div class="modal-actions"><button class="button secondary" type="button" data-close>${t("action.cancel")}</button><button class="button" type="submit">${t("action.save")}</button></div></form>`);
+    modalCard.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", closeModal));
+    const form = modalCard.querySelector("#categoryForm");
+    const input = form.querySelector("input");
+    input.focus();
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const name = input.value.trim().replace(/\s+/g, " ");
+        const errorLabel = form.querySelector("[data-category-error]");
+        if (!name || lessonCategories().some((category) => category.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+            errorLabel.textContent = categoryText("duplicate");
+            return;
+        }
+        const button = form.querySelector('[type="submit"]');
+        button.disabled = true;
+        try {
+            const saved = await window.teacherWorkspaceApi.createLessonCategory(window.supabaseClient, name);
+            data.categories = [...(data.categories || []), saved];
+            selectedLessonUnit = saved;
+            closeModal();
+            render();
+            showToast(categoryText("saved"));
+        } catch (error) {
+            console.error("Could not create lesson category.", error);
+            errorLabel.textContent = error.message;
+            button.disabled = false;
+        }
+    });
+}
 function renderStudents() {
     const canManageClasses = hasPermission("manage_classes_students");
     const students = data.classes.flatMap((item) => item.studentRecords?.length
@@ -2426,7 +2480,7 @@ function lessonIcon(lesson) {
 }
 
 function lessonRow(lesson) {
-    return `<div class="lesson-row">${lessonIcon(lesson)}<div class="lesson-main"><button class="lesson-preview-link" data-action="preview-lesson" data-id="${escapeHtml(lesson.id)}">${escapeHtml(lesson.title)}</button><small>${lesson.unit || inferLessonUnit(lesson)} · ${escapeHtml(lessonClassNames(lesson))}</small></div><span class="lesson-count">${countLabel(lessonActivities(lesson).length, "activity")}</span></div>`;
+    return `<div class="lesson-row">${lessonIcon(lesson)}<div class="lesson-main"><button class="lesson-preview-link" data-action="preview-lesson" data-id="${escapeHtml(lesson.id)}">${escapeHtml(lesson.title)}</button><small>${escapeHtml(lesson.unit || inferLessonUnit(lesson))} · ${escapeHtml(lessonClassNames(lesson))}</small></div><span class="lesson-count">${countLabel(lessonActivities(lesson).length, "activity")}</span></div>`;
 }
 
 const previewLabels = SlovaI18n.locales({
@@ -2546,7 +2600,6 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
             <header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}<h3>${index + 1}. ${escapeHtml(activity.prompt || t(activityTypes.find((item) => item.id === type)?.nameKey || "activity.task"))}</h3>${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>
             ${window.SlovaActivityUI.renderMetadata(activity)}${type === "listening-questions" ? renderSupplementaryPreview(activity) : ""}
             <div class="preview-question-list">${questionsMarkup}</div>
-            ${type !== "find-error" && liveAnswerActivityTypes.has(type) ? `<div class="preview-actions"><button class="button preview-check" type="button" data-check-activity-group>${previewGroupCheckLabels[currentLanguage]}</button></div>` : ""}
         </article>`;
     }
 
@@ -2654,12 +2707,9 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
     const resultMarkup = checkable || (isQuestion && liveAnswerActivityTypes.has(type))
         ? `<p class="preview-result${isQuestion ? " preview-question-result" : ""}" data-preview-result aria-live="polite"></p>`
         : "";
-    const checkButton = checkable && !isQuestion
-        ? `<div class="preview-actions"><button class="button preview-check" type="button" data-check-activity>${previewText("check")}</button></div>`
-        : "";
     const hintLabels={ru:"Показать ответы",ua:"Показати відповіді",en:"Show answers",sk:"Zobraziť odpovede",kk:"Жауаптарды көрсету"};
     const correctMarkup = body.includes('data-correct-placeholder') ? `<button type="button" class="button secondary small" data-preview-reveal aria-pressed="false">${escapeHtml(hintLabels[currentLanguage]||hintLabels.en)}</button>` : "";
-    return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${["fill-blank", "table", "columns", "find-error"].includes(type) ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}${isQuestion ? `<span class="preview-q-badge">${questionIndex + 1}</span>` : `<h3>${previewItemNumber}. ${prompt}</h3>`}${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${isQuestion && activity.prompt?.trim() ? `<p class="preview-q-prompt">${prompt}</p>` : ""}${!isQuestion ? window.SlovaActivityUI.renderMetadata(activity) : ""}${liveAnswerMarkup}${resultMarkup}${body}${correctMarkup}${checkButton}</article>`;
+    return `<article class="${previewItemClass}" data-preview-activity="${index}" ${questionAttribute} data-preview-type="${escapeHtml(type)}" data-preview-answer="${escapeHtml(answer)}" data-preview-content="${escapeHtml(content)}" ${["fill-blank", "table", "columns", "find-error"].includes(type) ? `data-preview-settings="${escapeHtml(JSON.stringify(activity.settings || {}))}"` : ""}><header class="preview-activity-header">${canEdit ? `<button type="button" class="preview-activity-drag" aria-label="${lessonSectionText("moveBlock")}" title="${lessonSectionText("moveBlock")}">⠿</button>` : ""}${isQuestion ? `<span class="preview-q-badge">${questionIndex + 1}</span>` : `<h3>${previewItemNumber}. ${prompt}</h3>`}${canEdit ? `<div class="preview-activity-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : ""}</header>${isQuestion && activity.prompt?.trim() ? `<p class="preview-q-prompt">${prompt}</p>` : ""}${!isQuestion ? window.SlovaActivityUI.renderMetadata(activity) : ""}${liveAnswerMarkup}${resultMarkup}${body}${correctMarkup}</article>`;
 }
 
 function renderSupplementaryPreview(activity) {
@@ -2709,12 +2759,12 @@ function checkPreviewActivity(card) {
     } else if (type === "fill-blank") {
         const inputs = Array.from(card.querySelectorAll("[data-answer-index]"));
         const checks = window.SlovaFillBlanks.check(card.dataset.previewContent, answer, JSON.parse(card.dataset.previewSettings || '{}'), inputs.map(input => input.value));
-        inputs.forEach((input, index) => { input.classList.toggle('blank-correct', checks[index] === true); input.classList.toggle('blank-incorrect', checks[index] === false); input.setAttribute('aria-invalid', String(checks[index] === false)); });
+        inputs.forEach((input, index) => { const filled = Boolean(input.value.trim()); input.classList.toggle('blank-correct', filled && checks[index] === true); input.classList.toggle('blank-incorrect', filled && checks[index] === false); input.setAttribute('aria-invalid', String(filled && checks[index] === false)); });
         correct = checks.length > 0 && checks.length === inputs.length && checks.every(Boolean);
     } else if (type === "table") {
         const actual = Array.from(card.querySelectorAll("[data-table-answer-index]"), input => input.value);
         const checks=window.SlovaTable.checkResults(card.dataset.previewContent,answer,JSON.parse(card.dataset.previewSettings||'{}'),actual);
-        card.querySelectorAll('[data-table-answer-index]').forEach((input,index)=>{input.classList.toggle('blank-correct',checks[index]===true);input.classList.toggle('blank-incorrect',checks[index]===false);input.setAttribute('aria-invalid',String(checks[index]===false));});
+        card.querySelectorAll('[data-table-answer-index]').forEach((input,index)=>{const filled=Boolean(input.value.trim());input.classList.toggle('blank-correct',filled&&checks[index]===true);input.classList.toggle('blank-incorrect',filled&&checks[index]===false);input.setAttribute('aria-invalid',String(filled&&checks[index]===false));});
         correct=checks.length>0&&checks.length===actual.length&&checks.every(Boolean);
     } else if (type === "multiple-choice" || type === "one-of-many" || type === "true-false") {
         const inlineChoice = card.querySelector("[data-inline-choice]");
@@ -2732,7 +2782,7 @@ function checkPreviewActivity(card) {
         correct = actual.length === normalizedExpected.length && actual.every((value, index) => value === normalizedExpected[index]);
     } else if (type === "match") {
         const selects = Array.from(card.querySelectorAll("[data-match-index]"));
-        selects.forEach((select,index) => {select.closest('[data-pair-row]').dataset.pairResult=String(select.value===String(index));});
+        selects.forEach((select,index) => {const row=select.closest('[data-pair-row]');if(select.value)row.dataset.pairResult=String(select.value===String(index));else delete row.dataset.pairResult;});
         card.querySelector('[data-pair-board]')?.dispatchEvent(new Event('pair-refresh'));
         correct = selects.length > 0 && selects.every((select, index) => select.value === String(index));
     } else if (type === "columns") {
@@ -2743,10 +2793,35 @@ function checkPreviewActivity(card) {
     } else if (type === "open-answer") {
         correct = card.querySelector("[data-open-answer]").value.trim().toLocaleLowerCase() === answer.toLocaleLowerCase();
     }
-    result.textContent = correct ? previewText("correct") : previewText("incorrect");
-    result.className = resultClass(correct ? "correct" : "incorrect");
+    const emptyFields = [...card.querySelectorAll("[data-answer-index], [data-table-answer-index], [data-match-index], [data-column-index], [data-inline-choice], [data-open-answer]")].some((field) => !field.value.trim());
+    result.textContent = emptyFields ? "" : correct ? previewText("correct") : previewText("incorrect");
+    result.className = resultClass(emptyFields ? "" : correct ? "correct" : "incorrect");
 }
 
+function bindPreviewAutoCheck(container) {
+    container.querySelectorAll("[data-preview-type]").forEach((card) => {
+        if (card.dataset.autoCheckBound) return;
+        card.dataset.autoCheckBound = "true";
+        let timer;
+        const check = () => {
+            clearTimeout(timer);
+            if (card.isConnected) checkPreviewActivity(card);
+        };
+        const selector = "[data-answer-index], [data-table-answer-index], [data-match-index], [data-column-index], [data-inline-choice], [data-open-answer], .preview-option input";
+        card.addEventListener("input", (event) => {
+            if (!event.target.matches(selector) || event.isComposing) return;
+            clearTimeout(timer);
+            timer = setTimeout(check, 500);
+        });
+        card.addEventListener("change", (event) => {
+            if (event.target.matches(selector)) check();
+        });
+        card.addEventListener("click", (event) => {
+            if (event.target.closest("[data-word-index], [data-move]")) queueMicrotask(check);
+        });
+        card.addEventListener("drop", () => queueMicrotask(check));
+    });
+}
 function openLessonPreview(id) {
     const lesson = data.lessons.find((item) => item.id === id);
     if (!lesson) return;
@@ -2979,13 +3054,7 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
             savePreviewActivities(lesson, section.id, activities, t("toast.activityOrderSaved"), isHomework);
         });
     }
-    container.querySelectorAll("[data-check-activity]").forEach((button) => button.addEventListener("click", () => {
-        checkPreviewActivity(button.closest("[data-preview-activity]"));
-    }));
-    container.querySelectorAll("[data-check-activity-group]").forEach((button) => button.addEventListener("click", () => {
-        button.closest(".preview-activity-group")?.querySelectorAll(".preview-question-activity")
-            .forEach((card) => checkPreviewActivity(card));
-    }));
+    bindPreviewAutoCheck(container);
 
     container.querySelectorAll("[data-word-index]").forEach((word) => {
         word.addEventListener("click", () => movePreviewWord(word, word.closest("[data-word-bank]") ? "drop" : "bank"));
@@ -3124,6 +3193,7 @@ function bindPageActions() {
 }
 
 function handleAction(action, id) {
+    if (action === "new-category") openCategoryEditor();
     if (action === "back-to-units") {
         selectedLessonUnit = "";
         render();
@@ -3925,7 +3995,7 @@ function renderLessonWorkspace() {
     pageContent.innerHTML = `<section class="lesson-workspace"><form id="lessonForm" class="lesson-workspace-form">
         <header class="lesson-workspace-hero">
             <div class="lesson-workspace-heading"><button type="button" class="button back-to-lessons" data-workspace-back ${quickEditActive ? "disabled" : ""}>← ${lessonSectionText("back")}</button>
-                ${isEditing ? `<div class="lesson-workspace-fields"><div class="form-field"><label for="lessonTitle">${t("field.lessonTitle")}</label><input id="lessonTitle" name="title" required maxlength="100" value="${escapeHtml(title)}" placeholder="${t("field.exampleLesson")}"></div><div class="form-field"><label for="lessonUnit">${lessonText("unit")}</label><select id="lessonUnit" name="unit" required><option value="">${lessonText("chooseUnit")}</option>${LESSON_UNITS.map((level) => `<option value="${level}" ${unit === level ? "selected" : ""}>${level}</option>`).join("")}</select></div></div>` : `<div><span class="course-hero-kicker">${escapeHtml(lessonClassNames(lesson)) || lessonText("unassigned")} · ${escapeHtml(unit)}</span><h1>${escapeHtml(title)}</h1></div>`}
+                ${isEditing ? `<div class="lesson-workspace-fields"><div class="form-field"><label for="lessonTitle">${t("field.lessonTitle")}</label><input id="lessonTitle" name="title" required maxlength="100" value="${escapeHtml(title)}" placeholder="${t("field.exampleLesson")}"></div><div class="form-field"><label for="lessonUnit">${categoryText("name")}</label><select id="lessonUnit" name="unit" required><option value="">${lessonText("chooseUnit")}</option>${lessonCategories().map((level) => `<option value="${escapeHtml(level)}" ${unit === level ? "selected" : ""}>${escapeHtml(level)}</option>`).join("")}</select></div></div>` : `<div><span class="course-hero-kicker">${escapeHtml(lessonClassNames(lesson)) || lessonText("unassigned")} · ${escapeHtml(unit)}</span><h1>${escapeHtml(title)}</h1></div>`}
             </div>
             ${isEditing ? "" : `<div class="lesson-workspace-preview-actions"><span class="lesson-workspace-unit">${escapeHtml(unit)}</span></div>`}
         </header>
@@ -4927,7 +4997,7 @@ async function saveLesson(event) {
     const form = new FormData(formElement);
     const title = String(form.get("title")).trim();
     const unit = String(form.get("unit"));
-    if (!title || !LESSON_UNITS.includes(unit)) {
+    if (!title || !lessonCategories().includes(unit)) {
         showToast(lessonText("chooseUnit"));
         return;
     }

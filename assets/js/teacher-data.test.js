@@ -137,7 +137,8 @@ test("workspace navigation data loads without a redundant network user lookup", 
         teacher_lessons: [],
         class_students: [],
         class_lesson_assignments: [],
-        profiles: []
+        profiles: [],
+        lesson_categories: [{ name: "Conversation" }]
     };
     let userLookupCount = 0;
     const queriedTables = [];
@@ -171,7 +172,7 @@ test("workspace navigation data loads without a redundant network user lookup", 
     });
     assert.ok(queriedTables.length > 0);
     assert.equal(workspace.role, "teacher");
-    assert.deepEqual(JSON.parse(JSON.stringify(workspace.data)), { classes: [], lessons: [] });
+    assert.deepEqual(JSON.parse(JSON.stringify(workspace.data)), { classes: [], lessons: [], categories: ["Conversation"] });
     assert.equal(workspace.staff.length, 0);
 });
 

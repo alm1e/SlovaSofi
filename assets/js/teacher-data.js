@@ -21,7 +21,7 @@
             role: context.role,
             permissions
         });
-        const [settingsResult, classesResult, lessonsResult, rosterResult, assignmentsResult] = await Promise.all([
+        const [settingsResult, classesResult, lessonsResult, rosterResult, assignmentsResult, categoriesResult] = await Promise.all([
             client.from("teacher_workspace_settings").select("legacy_imported").eq("user_id", userId).maybeSingle(),
             (isAdmin
                 ? client.from("teacher_classes").select("id,name,course,teacher_id").order("created_at")
@@ -32,13 +32,15 @@
                 : client.from("class_students").select("id,class_id,teacher_id,display_name,email,linked_user_id").eq("teacher_id", userId)),
             (isAdmin
                 ? client.from("class_lesson_assignments").select("class_id,lesson_id,teacher_id")
-                : client.from("class_lesson_assignments").select("class_id,lesson_id,teacher_id").eq("teacher_id", userId))
+                : client.from("class_lesson_assignments").select("class_id,lesson_id,teacher_id").eq("teacher_id", userId)),
+            client.from("lesson_categories").select("name").order("created_at")
         ]);
         fail(settingsResult.error, "Не удалось загрузить настройки кабинета");
         fail(classesResult.error, "Не удалось загрузить классы");
         fail(lessonsResult.error, "Не удалось загрузить уроки");
         fail(rosterResult.error, "Не удалось загрузить список учеников");
         fail(assignmentsResult.error, "Не удалось загрузить назначения уроков");
+        fail(categoriesResult.error, "Не удалось загрузить категории уроков. Проверьте применение миграции 20261103_lesson_categories");
 
         const teacherIds = [...new Set(classesResult.data.map((group) => group.teacher_id))];
         const { data: profiles, error: profilesError } = teacherIds.length
@@ -88,7 +90,7 @@
                 console.error("Could not initialize teacher workspace settings.", error));
         }
         return {
-            data: { classes, lessons },
+            data: { classes, lessons, categories: categoriesResult.data.map((category) => category.name) },
             migratedLegacy: false,
             workspaceOwnerId: userId,
             role: context.role,
@@ -100,6 +102,14 @@
     async function loadStaff(client) {
         const result = await manageTeacher(client, { action: "list" });
         return result.staff;
+    }
+
+    async function createLessonCategory(client, name) {
+        const normalized = name.trim().replace(/\s+/g, " ");
+        if (!normalized || normalized.length > 80) throw new Error("Название категории должно содержать от 1 до 80 символов.");
+        const { error } = await client.from("lesson_categories").insert({ name: normalized });
+        fail(error, "Не удалось создать категорию");
+        return normalized;
     }
 
     async function saveSettings(client, userId, legacyImported) {
@@ -352,6 +362,7 @@
     window.teacherWorkspaceApi = {
         loadWorkspace,
         loadStaff,
+        createLessonCategory,
         saveWorkspace,
         inviteStudent,
         listExistingStudents,
