@@ -44,7 +44,7 @@
         if (['left','center','right'].includes(node.style.textAlign)) text = text.trim().split('\n').map(line => `[align=${node.style.textAlign}]${line}[/align]`).join('\n');
         return /^(p|div|h[123]|blockquote|li|ul|ol|tr)$/.test(tag) ? text + '\n' : text;
     }
-    function attach(root, source, render) {
+    function attach(root, source, render, images = {}) {
         const toolbar = root.querySelector('.rich-text-toolbar');
         if (!source || !toolbar) return null;
         const editor = document.createElement('div');
@@ -137,10 +137,36 @@
         root.querySelector('[data-rich-add-item]')?.addEventListener('click', event => {
             event.stopImmediatePropagation(); command('insertUnorderedList');
         }, true);
+        let uploading = false;
+        const insertImages = async files => {
+            if (uploading || !images.upload) return;
+            saveRange();
+            uploading = true;
+            editor.contentEditable = 'false';
+            try {
+                for (const file of files) {
+                    const url = await images.upload(file);
+                    if (!editor.isConnected) return;
+                    const image = document.createElement('img');
+                    image.src = url;
+                    image.alt = file.name || 'Image';
+                    editor.contentEditable = 'true';
+                    command('insertHTML', image.outerHTML);
+                    editor.contentEditable = 'false';
+                }
+            } catch (error) { images.error?.(error); }
+            finally { uploading = false; editor.contentEditable = 'true'; }
+        };
         editor.addEventListener('paste', event => {
-            event.preventDefault(); command('insertText', event.clipboardData.getData('text/plain'));
+            const files = window.SlovaImageInput?.files(event.clipboardData) || [];
+            if (files.length && images.upload) {
+                event.preventDefault();
+                insertImages(files);
+                return;
+            }
+            event.preventDefault(); command('insertText', event.clipboardData?.getData('text/plain') || '');
         });
-        return { refresh };
+        return { refresh, insertImages };
     }
     window.SlovaRichEditor = { attach, serialize };
 })();

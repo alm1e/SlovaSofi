@@ -494,6 +494,22 @@ imageUploadMessages.en.linkOnly = "The site does not allow saving a copy, so the
 imageUploadMessages.ua.blank = "Зображення порожнє або не вдалося прочитати його кольори. Збережіть оригінал як PNG/JPG і завантажте ще раз.";
 imageUploadMessages.ru.blank = "Изображение пустое или не удалось прочитать его цвета. Сохраните оригинал как PNG/JPG и загрузите ещё раз.";
 imageUploadMessages.en.blank = "The image is blank or its colours could not be read. Save the original as PNG/JPG and upload it again.";
+Object.assign(imageUploadMessages.ru, { pasteHint: 'Скопируйте изображение, нажмите здесь и вставьте Ctrl+V (на Mac — ⌘V).', size: 'Изображение должно быть не больше 5 МБ.', decode: 'Не удалось прочитать изображение. Сохраните его как PNG или JPG и попробуйте снова.' });
+Object.assign(imageUploadMessages.ua, { pasteHint: 'Скопіюйте зображення, натисніть тут і вставте Ctrl+V (на Mac — ⌘V).', size: 'Зображення має бути не більше 5 МБ.', decode: 'Не вдалося прочитати зображення. Збережіть його як PNG або JPG і спробуйте знову.' });
+Object.assign(imageUploadMessages.en, { pasteHint: 'Copy an image, click here and paste with Ctrl+V (⌘V on Mac).', size: 'The image must be no larger than 5 MB.', decode: 'Could not read the image. Save it as PNG or JPG and try again.' });
+
+async function decodeLessonImage(file) {
+    if (typeof createImageBitmap === 'function') {
+        try { return await createImageBitmap(file); } catch { /* Try the browser's image decoder too. */ }
+    }
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        const url = URL.createObjectURL(file);
+        image.onload = () => { URL.revokeObjectURL(url); resolve(image); };
+        image.onerror = () => { URL.revokeObjectURL(url); reject(new Error((imageUploadMessages[currentLanguage] || imageUploadMessages.en).decode)); };
+        image.src = url;
+    });
+}
 
 function readRawPixels(bitmap) {
     const gl = document.createElement("canvas").getContext("webgl", { premultipliedAlpha: false, preserveDrawingBuffer: true });
@@ -530,8 +546,11 @@ async function recoverTransparentImage(file) {
 }
 
 async function resizeImageForUpload(file, strict = false, preserveOriginal = false) {
-    if (file.type === "image/gif") return file;
-    const bitmap = await createImageBitmap(file);
+    const mime = window.SlovaImageInput.type(file);
+    if (mime && mime !== file.type) file = file.slice(0, file.size, mime);
+    if (mime === "image/gif") return file;
+    const bitmap = await decodeLessonImage(file);
+    try {
     if (!bitmap.width || !bitmap.height) throw new Error("Empty image");
     const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement("canvas");
@@ -547,10 +566,10 @@ async function resizeImageForUpload(file, strict = false, preserveOriginal = fal
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.globalCompositeOperation = "source-over";
     if (!visible) {
-        const recovered = await recoverTransparentImage(file);
+        let recovered = null;
+        try { recovered = await recoverTransparentImage(file); } catch { /* WebGL is optional. */ }
         if (recovered) context.drawImage(recovered, 0, 0, canvas.width, canvas.height);
     }
-    bitmap.close?.();
     if (strict) {
         const final = context.getImageData(0, 0, canvas.width, canvas.height).data;
         let varied = false;
@@ -567,11 +586,14 @@ async function resizeImageForUpload(file, strict = false, preserveOriginal = fal
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.88));
     if (!blob || blob.size < 100) throw new Error("Could not read the image");
     return blob;
+    } finally {
+        bitmap.close?.();
+    }
 }
 
 async function uploadLessonImage(source, preserveOriginal = false) {
     const messages = imageUploadMessages[currentLanguage] || imageUploadMessages.ru;
-    const candidates = (Array.isArray(source) ? source : [source]).filter((file) => file?.type?.startsWith("image/"));
+    const candidates = (Array.isArray(source) ? source : [source]).filter((file) => window.SlovaImageInput.type(file));
     if (!candidates.length) throw new Error(messages.type);
     if (!currentUser || !window.supabaseClient) throw new Error(messages.login);
     let prepared = null;
@@ -588,6 +610,7 @@ async function uploadLessonImage(source, preserveOriginal = false) {
         if (lastError?.code === "BLANK_IMAGE") throw new Error(messages.blank);
         throw lastError || new Error(messages.type);
     }
+    if (prepared.size > 5 * 1024 * 1024) throw new Error(messages.size);
     const extension = ({ "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" })[prepared.type] || "webp";
     const path = `${currentUser.id}/${crypto.randomUUID()}.${extension}`;
     const { error } = await window.supabaseClient.storage.from("lesson-images").upload(path, prepared, { contentType: prepared.type, cacheControl: "31536000", upsert: false });
@@ -4640,7 +4663,7 @@ function bindActivityBlockActions() {
             refreshRichPreview();
         }));
         const contentField = currentBlock().questions?.length ? null : blockElement.querySelector('.builder-block-editor textarea[data-field="content"]');
-        if (["text", "fill-blank"].includes(currentBlock().type)) visualEditor = window.SlovaRichEditor?.attach(blockElement, contentField, window.SlovaActivityUI.renderRichText);
+        if (["text", "fill-blank"].includes(currentBlock().type)) visualEditor = window.SlovaRichEditor?.attach(blockElement, contentField, window.SlovaActivityUI.renderRichText, { upload: uploadLessonImage, error: error => showToast(error.message || String(error)) });
         contentField?.addEventListener('slova-source-sync', () => visualEditor?.refresh());
         if (previewBox && blockElement.classList.contains("is-expanded")) bindLessonPreviewActions(previewBox);
         const applyRichFormat = (prefix, suffix = "", linePrefix = false) => {
@@ -4779,15 +4802,16 @@ function bindActivityBlockActions() {
         const richImageInput = blockElement.querySelector("[data-rich-image-file]");
         blockElement.querySelector("[data-pick-rich-image]")?.addEventListener("click", () => richImageInput?.click());
         richImageInput?.addEventListener("change", async () => {
-            const files = [...(richImageInput.files || [])].filter((file) => file.type?.startsWith("image/"));
+            const files = window.SlovaImageInput.files(richImageInput);
             richImageInput.value = "";
             if (!files.length || !contentField) return;
+            if (visualEditor) { await visualEditor.insertImages(files); return; }
             let position = contentField.selectionStart;
             try {
                 richImageInput.disabled = true;
                 for (const file of files) {
                     const url = await uploadLessonImage(file);
-                    const image = `![${file.name.replace(/[\[\]()]/g, "").slice(0, 100) || "Image"}](${url})`;
+                    const image = `![${(file.name || '').replace(/[\[\]()]/g, "").slice(0, 100) || "Image"}](${url})`;
                     contentField.setRangeText(`${position > 0 && contentField.value[position - 1] !== "\n" ? "\n" : ""}${image}\n`, position, position, "end");
                     position = contentField.selectionStart;
                 }
@@ -4823,7 +4847,7 @@ function bindActivityBlockActions() {
             }
         });
         if (contentField && currentBlock()?.type === "image") {
-            const imagesFrom = (files) => [...(files || [])].filter((item) => item.type?.startsWith("image/"));
+            const imagesFrom = (files) => window.SlovaImageInput.files({ files });
             const skipped = new Set();
             const attachFiles = async (files) => {
                 for (const file of files) await attachImageToBlock(file, contentField, currentBlock());
@@ -4847,7 +4871,14 @@ function bindActivityBlockActions() {
                     refreshRichPreview();
                 }
             };
-            contentField.addEventListener("paste", () => setTimeout(importAddresses));
+            contentField.placeholder = (imageUploadMessages[currentLanguage] || imageUploadMessages.en).pasteHint;
+            contentField.addEventListener("paste", (event) => {
+                const files = window.SlovaImageInput.files(event.clipboardData);
+                if (files.length) {
+                    event.preventDefault();
+                    attachFiles(files);
+                } else setTimeout(importAddresses);
+            });
             contentField.addEventListener("change", importAddresses);
             const filePicker = blockElement.querySelector("[data-image-file]");
             blockElement.querySelector("[data-pick-image]")?.addEventListener("click", () => filePicker?.click());

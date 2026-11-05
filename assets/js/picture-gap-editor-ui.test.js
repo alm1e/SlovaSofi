@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 require('./fill-blanks.js');require('./table.js');const format=require('./exercise-format.js');
 function setup(activity={type:'fill-blank',content:'',settings:{}}){
-    const doc={activeElement:null},decode=value=>String(value).replace(/&(?:amp|lt|gt|quot|#39);/g,text=>({'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&#39;':"'"}[text]));
+    const doc={activeElement:null,createElement:tag=>new Element(tag)},decode=value=>String(value).replace(/&(?:amp|lt|gt|quot|#39);/g,text=>({'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&#39;':"'"}[text]));
     class Element{
         constructor(tag='div',attrs={}){this.tagName=tag.toUpperCase();this.attributes={};this.dataset={};this.children=[];this.handlers={};this.value='';this.checked=false;this.disabled=false;this.hidden=false;this.isConnected=true;Object.entries(attrs).forEach(([key,value])=>this.setAttribute(key,value));}
         setAttribute(key,value){this.attributes[key]=String(value);if(key.startsWith('data-'))this.dataset[key.slice(5).replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]=String(value);if(key==='value')this.value=decode(value);if(key==='checked')this.checked=true;if(key==='hidden')this.hidden=true;}
@@ -19,7 +19,7 @@ function setup(activity={type:'fill-blank',content:'',settings:{}}){
         set innerHTML(html){this.children=[];const stack=[this];for(const match of html.matchAll(/<\/?([a-z][\w-]*)([^>]*)>/gi)){const tag=match[1].toLowerCase();if(match[0].startsWith('</')){if(stack.length>1)stack.pop();continue;}const child=new Element(tag);for(const attr of match[2].matchAll(/([\w-]+)(?:="([^"]*)")?/g))child.setAttribute(attr[1],decode(attr[2]??''));stack.at(-1).append(child);if(!['input','img','br','hr'].includes(tag))stack.push(child);}}
     }
     const objectUrls=[],revoked=[];class TestURL extends URL{static createObjectURL(file){objectUrls.push(file);return 'blob:local-preview';}static revokeObjectURL(value){revoked.push(value);}}
-    const context=vm.createContext({window:{SlovaExerciseFormat:format,SlovaFillBlanks:globalThis.SlovaFillBlanks},URL:TestURL});vm.runInContext(fs.readFileSync(`${__dirname}/picture-gap-editor.js`,'utf8'),context);const ui=context.window.SlovaPictureGapEditor;
+    const context=vm.createContext({document:doc,window:{SlovaImageInput:require('./image-input.js'),SlovaExerciseFormat:format,SlovaFillBlanks:globalThis.SlovaFillBlanks},URL:TestURL});vm.runInContext(fs.readFileSync(`${__dirname}/picture-gap-editor.js`,'utf8'),context);const ui=context.window.SlovaPictureGapEditor;
     const container=new Element();container.innerHTML=ui.render(activity,'en','<textarea data-field="content"></textarea>');
     const editor=container.querySelector('[data-picture-gap-editor]'),source=editor.querySelector('textarea');source.value=format.editorContent({...activity,type:'fill-blank'});
     let failUpload=false,uploadHook=null,uploads=0;const changes=[];
@@ -38,6 +38,17 @@ test('picture mode adds a visible URL card, types an answer without losing the f
     assert.equal(s.activity.settings.hints[0],'Keep');
     input.value='[invalid]';await s.fire('input',input,s.find('[data-picture-list]'));assert.ok(input.validityMessage);assert.equal(s.ui.scan(s.source.value).cards[0].answer,'Nemecko/Deutschland');
     await s.fire('click',s.find('[data-picture-source-toggle]'));assert.equal(s.find('[data-picture-source]').hidden,false);
+});
+
+test('pasting a copied image previews it and adds a stored card while ordinary text keeps native paste',async()=>{
+    const s=setup();await s.fire('click',s.find('[data-picture-layout="cards"]'));
+    const file={name:'clipboard.png',type:'image/png'};let prevented=false;
+    await s.fire('paste',s.find('[data-picture-drop]'),s.editor,{clipboardData:{items:[{kind:'file',getAsFile:()=>file}]},preventDefault(){prevented=true;}});
+    assert.equal(prevented,true);assert.equal(s.objectUrls[0],file);assert.equal(s.uploads,0);
+    s.find('[data-picture-new-answer]').value='Nemecko';await s.fire('click',s.find('[data-picture-add]'));
+    assert.equal(s.uploads,1);assert.match(s.source.value,/uploaded.png/);assert.match(s.source.value,/Nemecko/);
+    prevented=false;await s.fire('paste',s.find('[data-picture-new-answer]'),s.editor,{clipboardData:{items:[]},preventDefault(){prevented=true;}});
+    assert.equal(prevented,false);
 });
 test('file selection previews locally, upload failures retain the draft, and a retry succeeds with normal DOM event lifetimes',async()=>{
     const s=setup();await s.fire('click',s.find('[data-picture-layout="cards"]'));

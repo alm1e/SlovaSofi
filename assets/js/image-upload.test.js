@@ -3,10 +3,45 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const test = require("node:test");
 const source = fs.readFileSync(`${__dirname}/teacher.js`, "utf8");
+const imageInput = require('./image-input.js');
 function fn(name) {
     const start = source.indexOf(`async function ${name}(`);
     return source.slice(start, source.indexOf("\n}", start) + 2);
 }
+
+test('file selection tolerates missing MIME types and clipboard items are read synchronously without duplicate files', () => {
+    const file = { name: 'Photo.JPG', type: '' };
+    assert.equal(imageInput.type(file), 'image/jpeg');
+    assert.equal(imageInput.type({ name: 'Photo.JPG', type: 'text/html' }), '');
+    const items = [{ kind: 'file', getAsFile: () => file }];
+    assert.deepEqual(imageInput.files({ files: [file], items }), [file]);
+    assert.deepEqual(imageInput.files({ items }), [file]);
+    assert.deepEqual(imageInput.files({ items: [{ kind: 'file', getAsFile: () => null }] }), []);
+    assert.deepEqual(imageInput.files(null), []);
+});
+
+for (const unsupported of [false, true]) test(`image decoding falls back to Image when createImageBitmap ${unsupported ? 'is absent' : 'rejects'}`, async () => {
+    const revoked = [];
+    const ctx = vm.createContext({
+        ...(unsupported ? {} : { createImageBitmap: async () => { throw Error('Unsupported decoder'); } }),
+        Image: class { set src(value) { this.width = 10; this.height = 20; this.onload(); } },
+        URL: { createObjectURL: () => 'blob:photo', revokeObjectURL: url => revoked.push(url) }
+    });
+    vm.runInContext(fn('decodeLessonImage'), ctx);
+    assert.equal((await ctx.decodeLessonImage({})).height, 20);
+    assert.deepEqual(revoked, ['blob:photo']);
+});
+
+test('decode failure releases the temporary URL and reports a readable error', async () => {
+    const revoked = [];
+    const ctx = vm.createContext({ currentLanguage: 'en', imageUploadMessages: { en: { decode: 'Save as PNG or JPG' } },
+        Image: class { set src(value) { this.onerror(); } },
+        URL: { createObjectURL: () => 'blob:broken', revokeObjectURL: url => revoked.push(url) }
+    });
+    vm.runInContext(fn('decodeLessonImage'), ctx);
+    await assert.rejects(ctx.decodeLessonImage({}), /Save as PNG or JPG/);
+    assert.deepEqual(revoked, ['blob:broken']);
+});
 test("single file and imported original uploads both validate pixels before storing anything", async () => {
     const uploads = [], checked = [];
     const ctx = vm.createContext({
@@ -20,7 +55,7 @@ test("single file and imported original uploads both validate pixels before stor
             }
             return preserveOriginal ? file : { type: "image/jpeg" };
         },
-        window: { supabaseClient: { storage: { from: () => ({
+        window: { SlovaImageInput: imageInput, supabaseClient: { storage: { from: () => ({
             upload: async (path, file) => { uploads.push([path, file]); return { error: null }; },
             getPublicUrl: () => ({ data: { publicUrl: "https://example.test/image.jpg" } })
         }) } } }
@@ -41,13 +76,14 @@ test("a white JPEG is rejected while a decoded picture with varied colours is en
     let pixels = new Uint8ClampedArray([255, 255, 255, 255, 255, 255, 255, 255]);
     let encoded = false, closed = 0;
     const ctx = vm.createContext({
+        window: { SlovaImageInput: imageInput },
         createImageBitmap: async () => ({ width: 2, height: 1, close: () => { closed++; } }),
         document: { createElement: () => ({
             getContext: () => ({ drawImage() {}, getImageData: () => ({ data: pixels }), fillRect() {} }),
             toBlob: (callback) => { encoded = true; callback({ size: 200, type: "image/jpeg" }); }
         }) }
     });
-    vm.runInContext(fn("resizeImageForUpload"), ctx);
+    vm.runInContext(fn("decodeLessonImage") + '\n' + fn("resizeImageForUpload"), ctx);
     await assert.rejects(ctx.resizeImageForUpload({ type: "image/jpeg" }, true), error => error.code === "BLANK_IMAGE");
     assert.equal(encoded, false);
     assert.equal(closed, 1);
@@ -58,6 +94,7 @@ test("a white JPEG is rejected while a decoded picture with varied colours is en
 test("transparent clipboard images upload the recovered opaque pixels instead of the broken original", async () => {
     let recovered = false, encoded = false;
     const ctx = vm.createContext({
+        window: { SlovaImageInput: imageInput },
         createImageBitmap: async () => ({ width: 2, height: 1, close() {} }),
         recoverTransparentImage: async () => { recovered = true; return {}; },
         document: { createElement: () => ({
@@ -69,7 +106,7 @@ test("transparent clipboard images upload the recovered opaque pixels instead of
             toBlob: callback => { encoded = true; callback({ size: 200, type: "image/jpeg" }); }
         }) }
     });
-    vm.runInContext(fn("resizeImageForUpload"), ctx);
+    vm.runInContext(fn("decodeLessonImage") + '\n' + fn("resizeImageForUpload"), ctx);
     const original = { type: "image/png" };
     const result = await ctx.resizeImageForUpload(original, true, true);
     assert.notEqual(result, original);
