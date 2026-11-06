@@ -59,3 +59,16 @@ test('legacy vocabulary words and audio remain editable without JSON', () => {
     assert.equal(list.wordsFor({content:'',settings:{...activity.settings,vocabularyFormat:'slash'}}).length, 0);
     assert.equal(list.wordsFor({cards:[{front:'dom',back:'house'}]})[0].word, 'dom');
 });
+
+test('bracket vocabulary preserves both sides of slash variants and replaces stale configured words', () => {
+    const list=setup();
+    const content='výhoda / nevýhoda [перевага / недолік]\npichanie[поколювання]\ntlak [тиск] / https://example.com/sk/tlak.mp3 <Cítim tlak.>';
+    const words=list.wordsFor({content,settings:{vocabularyFormat:'slash',words:[{word:'stale',translation:'old'}]}});
+    assert.equal(words.length,3);
+    assert.equal(words[0].word,'výhoda / nevýhoda');
+    assert.equal(words[0].translation,'перевага / недолік');
+    assert.equal(words[1].word,'pichanie');
+    assert.equal(words[1].translation,'поколювання');
+    assert.equal(words[2].audio,'https://example.com/sk/tlak.mp3');
+    assert.equal(words[2].example,'Cítim tlak.');
+});

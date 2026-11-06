@@ -20,7 +20,9 @@
             const example = examples ? examples[1].trim() : '';
             if (examples) line = line.slice(0, examples.index);
             let word, translation, audio = '';
-            if (line.includes('|')) [word, translation, audio = ''] = line.split('|').map(part => part.trim());
+            const bracket = line.match(/^(.+?)\s*\[([^\[\]]+)\]\s*(?:\/\s*(https?:\/\/\S+))?\s*$/);
+            if (bracket) [,word,translation,audio = ''] = bracket;
+            else if (line.includes('|')) [word, translation, audio = ''] = line.split('|').map(part => part.trim());
             else {
                 const audioMatch = line.match(/\s+\/\s+(https?:\/\/\S+)\s*$/i);
                 if (audioMatch) { audio = audioMatch[1]; line = line.slice(0, audioMatch.index); }
@@ -30,7 +32,7 @@
                 if (delimiter < 0) return [];
                 word = line.slice(0, delimiter).trim(); translation = line.slice(delimiter + width).trim();
             }
-            return word && translation ? [{ word, translation, audio: safeAudio(audio), ...(example ? { example } : {}) }] : [];
+            return word?.trim() && translation?.trim() ? [{ word:word.trim(), translation:translation.trim(), audio: safeAudio(audio), ...(example ? { example } : {}) }] : [];
         }).slice(0, 100);
     }
     const key = word => JSON.stringify([word.word.trim().toLocaleLowerCase('sk'), word.translation.trim().toLocaleLowerCase()]);

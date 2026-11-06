@@ -11,5 +11,7 @@ test('readiness detects incomplete content without blocking valid embedded or gr
     assert.equal(ready.incomplete({type:'flashcards',content:'',cards:[{front:'a',back:'b'}]}),false);
     assert.equal(ready.incomplete({type:'listening-questions',content:'https://example.com/a.mp3',questions:[{content:'a\nb',answer:'a'}]}),false);
     assert.equal(ready.incomplete({type:'columns',content:''}),true);
+    assert.equal(ready.incomplete({type:'text',prompt:'Prečítaj príbeh',content:''}),false);
+    assert.equal(ready.incomplete({type:'text',prompt:' ',content:' '}),true);
     for(const language of ['ua','ru','en','sk','kk'])assert.ok(ready.message(language)&&ready.blocked(language));
 });

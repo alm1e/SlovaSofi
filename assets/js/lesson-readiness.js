@@ -19,6 +19,7 @@
             const parsed=root.SlovaExerciseFormat?.parseColumns(content);return parsed?!parsed.cards.length||parsed.cards.length>100||!!parsed.invalidLines.length:!content;
         }
         if(activity.type==='match')return !content&&!settings.pairs?.length;
+        if(activity.type==='text')return !content&&!String(activity.prompt||'').trim();
         return !content&&activity.type!=='pronunciation-recording'&&activity.type!=='open-answer';
     }
     function message(language){return(labels[language]||labels.en)[0];}

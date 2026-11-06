@@ -15,6 +15,19 @@ function engine(activities){
     const write=(index,response,action='submit',extra={})=>request({action,activityIndex:index,activityId:activities[index].id,lessonRevision:revision,response,...extra});
     return{ctx,lesson,revision,userId,classId,lessonId,request,write,get saved(){return saved;},get writes(){return writes;}};
 }
+test('literal numeric choices take precedence over legacy indices and remain stable in the editor',async()=>{
+    const e=engine([{id:id(1),type:'multiple-choice',prompt:'Choose 1',content:'1\n2\n3',answer:'1'},{id:id(2),type:'multiple-choice',prompt:'Legacy index',content:'dom\nauto\nškola',answer:'1'}]);
+    assert.equal((await e.write(0,'1')).body.correct,true);
+    assert.equal((await e.write(0,'2')).body.correct,false);
+    assert.equal((await e.write(1,'auto')).body.correct,true);
+    assert.equal(require('./exercise-format.js').editorContent(e.lesson.activities[0]),'[1]\n2\n3');
+});
+test('alternative order solutions remain private while the server accepts them',async()=>{
+    const a={id:id(1),type:'drag-words',prompt:'Build',content:'Ja som doma',answer:'Ja / som / doma',settings:{acceptedOrders:[['Doma','som','ja']]}};
+    const e=engine([a]),loaded=await e.request({action:'load'});
+    assert.equal('acceptedOrders' in loaded.body.lesson.sections[0].activities[0],false);
+    assert.equal((await e.write(0,['Doma','som','ja'])).body.correct,true);
+});
 test('endpoint saves open answers with attachments and flashcard ratings, then restores them',async()=>{
     const a=[{id:id(1),type:'open-answer',prompt:'Write',content:'',answer:''},{id:id(2),type:'flashcards',prompt:'Cards',content:'dom: house',answer:''}];
     const e=engine(a),response={text:'Volám sa Anna',attachments:['https://example.com/file.pdf']};

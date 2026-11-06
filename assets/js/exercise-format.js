@@ -70,7 +70,7 @@
             }
         } else if(['vocabulary','phrase-list'].includes(type)){
             let found=false;
-            result.content=content.replace(/(^|\n)([^\n]+?)\s+\[([^\[\]\n]+)\](?=\s*(?:\/\s*https?:\/\/|<|\n|$))/g,(_,prefix,word,translation)=>{found=true;return `${prefix}${word.trim()} / ${translation.trim()}`;});
+            result.content=content.replace(/(^|\n)([^\n]+?)\s*\[([^\[\]\n]+)\](?=\s*(?:\/\s*https?:\/\/|<|\n|$))/g,(_,prefix,word,translation)=>{found=true;return `${prefix}${word.trim()}${translation.includes('/')?' | ':' / '}${translation.trim()}`;});
             if(found)delete result.settings.words;
         } else if(type==='columns'){
             const parsed=parseColumns(content);
@@ -112,7 +112,7 @@
             const lines=raw.split(/\r?\n/).filter(line=>line.trim());
             if(type==='one-of-many'&&lines[0]?.includes('___')){const options=lines.slice(1),correct=options.find(option=>option===answer)||options[Number(answer)-1];return correct?lines[0].replace(/___/g,`[${[correct,...options.filter(option=>option!==correct)].join('/')}]`):raw;}
             const configured=settings.options||[],options=configured.length?configured.map(option=>option.text):lines;
-            return options.map((line,index)=>configured.some(option=>option.text===line&&option.correct)||line===answer||answer!==''&&String(index)===answer?`[${line}]`:line).join('\n');
+            return options.map((line,index)=>configured.some(option=>option.text===line&&option.correct)||line===answer||!options.includes(answer)&&answer!==''&&String(index)===answer?`[${line}]`:line).join('\n');
         }
         if(['match','columns','vocabulary','phrase-list'].includes(type)){
             if(/\[[^\[\]]+\]/.test(raw))return raw;

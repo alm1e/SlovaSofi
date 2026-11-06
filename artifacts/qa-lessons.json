@@ -1,0 +1,371 @@
+[
+  {
+    "id": "83ffc59d-99ba-435c-bcb8-f81bff982f1b",
+    "title": "Проверка · 01 · Ответы, выбор и порядок",
+    "unit": "Проверка",
+    "activities": {
+      "format": "sections-v1",
+      "sections": [
+        {
+          "id": "66801317-3a02-4487-a0e3-de2aeb788772",
+          "title": "Проверочные задания",
+          "activities": [
+            {
+              "id": "9395b7f6-57ec-4a76-a2ab-a8695934f6ed",
+              "type": "drag-words",
+              "prompt": "Напишите предложение в правильном порядке.",
+              "content": "[Ja bývam v Bratislave.]",
+              "answer": "Ja / bývam / v / Bratislave.",
+              "settings": {
+                "answerFromContent": true
+              }
+            },
+            {
+              "id": "0e68d36e-b381-4729-b051-05f74ab98dae",
+              "type": "fill-blank",
+              "prompt": "Например: Ja [bývam] v Bratislave. Ответ в скобках станет пропуском.",
+              "content": "Ja [bývam/žijem] v Bratislave.\nOna [má] knihu.",
+              "answer": "",
+              "settings": {}
+            },
+            {
+              "id": "758b6765-8702-4848-9757-6136156c54fe",
+              "type": "multiple-choice",
+              "prompt": "Каждый вариант с новой строки; правильный вариант целиком в [ ].",
+              "content": "[Bratislava]\nKošice\nŽilina",
+              "answer": "",
+              "settings": {}
+            },
+            {
+              "id": "8714eca1-015c-41d9-b4f3-cd69ca4adaa3",
+              "type": "order-items",
+              "prompt": "Напишите элементы в правильном порядке, каждый с новой строки.",
+              "content": "[ráno]\n[poludnie]\n[večer]",
+              "answer": "1 / 2 / 3",
+              "settings": {
+                "answerFromContent": true
+              }
+            },
+            {
+              "id": "9fc8c178-df34-449f-9ff8-f5de36f9bd2e",
+              "type": "sentence-order",
+              "prompt": "Напишите предложения в правильном порядке, каждое с новой строки.",
+              "content": "[Ráno vstávam.]\n[Potom raňajkujem.]\n[Idem do školy.]",
+              "answer": "1 / 2 / 3",
+              "settings": {
+                "answerFromContent": true
+              }
+            },
+            {
+              "id": "5fa9b0ff-0598-4906-a63f-518c78281ddd",
+              "type": "one-of-many",
+              "prompt": "Например: Ja [bývam/bývaš/býva] v Bratislave. Первый вариант — правильный.",
+              "content": "Ja [bývam/bývaš/býva] v Bratislave.\nOna [má/majú/mám] knihu.",
+              "answer": "",
+              "settings": {}
+            },
+            {
+              "id": "9eeb7aa9-1e5f-4534-9f98-24d3233162d0",
+              "type": "true-false",
+              "prompt": "Например: Slon je malý [false]. Для правды напишите [true].",
+              "content": "Slon je malý [false]",
+              "answer": "",
+              "settings": {}
+            },
+            {
+              "id": "86a244cf-40f4-4609-86f5-a048b7ad1302",
+              "type": "table",
+              "prompt": "Например: Anna / [Bratislava] / [slovenčina]. Столбцы разделяйте /.",
+              "content": "Anna / [Bratislava] / [slovenčina]\nPeter / [Košice] / [angličtina]",
+              "answer": "",
+              "settings": {
+                "tableHeaders": [
+                  "Meno",
+                  "Mesto",
+                  "Jazyk"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "homeworkSections": [
+        {
+          "id": "724ad59b-42c6-40b1-9241-ec7ab9a55db6",
+          "title": "Домашняя работа · сохранение",
+          "activities": [
+            {
+              "id": "75e40102-0e9c-4513-89ef-03748b648406",
+              "type": "fill-blank",
+              "prompt": "Например: Ja [bývam] v Bratislave. Ответ в скобках станет пропуском.",
+              "content": "Dnes [čítam] knihu.",
+              "answer": "",
+              "settings": {}
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "d6f3769c-46a2-44d9-856f-152816fcf38a",
+    "title": "Проверка · 02 · Пары, категории и словарь",
+    "unit": "Проверка",
+    "activities": {
+      "format": "sections-v1",
+      "sections": [
+        {
+          "id": "6d509aff-3a0c-4d81-ad7b-ccb814fac7dc",
+          "title": "Проверочные задания",
+          "activities": [
+            {
+              "id": "2fb0c79a-6662-4895-a9f1-1a8ba0ddcebc",
+              "type": "match",
+              "prompt": "Например: auto [машина], каждая пара с новой строки.",
+              "content": "auto [машина]\ndom [дом]",
+              "answer": "",
+              "settings": {}
+            },
+            {
+              "id": "7e2d013e-dd5d-474d-8108-70e06afe53fb",
+              "type": "columns",
+              "prompt": "Например: Ovocie: [jablko/hruška/banán].",
+              "content": "Ovocie: [jablko/hruška/banán]\nZelenina: [mrkva/uhorka/paradajka]",
+              "answer": "",
+              "settings": {}
+            },
+            {
+              "id": "22b36bf6-3275-441c-9c14-4d85ff69427b",
+              "type": "flashcards",
+              "prompt": "Например: auto [машина], одна карточка с новой строки.",
+              "content": "auto [машина]\ndom [дом]",
+              "answer": "",
+              "settings": {}
+            },
+            {
+              "id": "adfd624c-6093-4a8d-9b7e-8d25941ba35b",
+              "type": "vocabulary",
+              "prompt": "Например: auto [машина]. Пример употребления можно добавить в < >.",
+              "content": "auto [машина] <Toto je moje auto.>\ndom [дом] <Bývam v dome.>",
+              "answer": "",
+              "settings": {}
+            }
+          ]
+        }
+      ],
+      "homeworkSections": [
+        {
+          "id": "c518f621-07b4-49cd-9fe8-067bb9dca8ab",
+          "title": "Домашняя работа · сохранение",
+          "activities": [
+            {
+              "id": "6d7a505c-a0d3-4eec-b7ae-173d91b5e5dc",
+              "type": "fill-blank",
+              "prompt": "Например: Ja [bývam] v Bratislave. Ответ в скобках станет пропуском.",
+              "content": "Dnes [čítam] knihu.",
+              "answer": "",
+              "settings": {}
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "2b83b74b-1759-4d06-a8d2-35226595d8b8",
+    "title": "Проверка · 03 · Медиа и развёрнутые ответы",
+    "unit": "Проверка",
+    "activities": {
+      "format": "sections-v1",
+      "sections": [
+        {
+          "id": "da72f9b4-b4e3-41fd-ae88-3854c56f2c59",
+          "title": "Проверочные задания",
+          "activities": [
+            {
+              "id": "2cdd9a25-f1b2-4a44-ba91-4b828744d6f1",
+              "type": "text",
+              "prompt": "Напишите объяснение, пример или правило.",
+              "content": "**Dnešná téma: rodina**\nPredstav svoju rodinu a povedz, kde bývate.",
+              "answer": "",
+              "settings": {}
+            },
+            {
+              "id": "b8c1bdca-62ba-4e95-8f61-0080653418e8",
+              "type": "image",
+              "prompt": "Нажмите «Выбрать файл» или вставьте настоящую ссылку на изображение.",
+              "content": "https://alm1e.github.io/SlovaSofi/assets/images/logo.jpg",
+              "answer": "",
+              "settings": {}
+            },
+            {
+              "id": "b8b75585-e9b3-4b4c-8733-826b8950e891",
+              "type": "audio",
+              "prompt": "Загрузите аудиофайл или вставьте настоящую ссылку на аудио.",
+              "content": "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3",
+              "answer": "",
+              "settings": {}
+            },
+            {
+              "id": "12512eba-8b51-4909-9a08-bd995a80153c",
+              "type": "video",
+              "prompt": "Загрузите видео или вставьте ссылку на видео или YouTube.",
+              "content": "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+              "answer": "",
+              "settings": {}
+            },
+            {
+              "id": "26940106-d460-4dbd-b71f-4085929a0bf9",
+              "type": "open-answer",
+              "prompt": "Напишите вопрос или задачу, на которую ученик ответит своими словами.",
+              "content": "Opíš svoj deň. Napíš aspoň päť viet.",
+              "answer": "",
+              "settings": {}
+            },
+            {
+              "id": "044f8017-0928-4e21-8147-1b52711af6c5",
+              "type": "pronunciation-recording",
+              "prompt": "Напишите фразу или инструкцию для записи голоса.",
+              "content": "Prečítaj nahlas: Dobrý deň. Ako sa máš?",
+              "answer": "",
+              "settings": {}
+            },
+            {
+              "id": "e25d8fa5-2558-40bc-b276-a092055b68f1",
+              "type": "listening-questions",
+              "prompt": "Прослушайте звук. Что вы услышали?",
+              "content": "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3",
+              "answer": "",
+              "settings": {},
+              "questions": [
+                {
+                  "id": "df0e456c-32f3-4e81-b55d-8d1571b6ca69",
+                  "prompt": "Выберите источник звука.",
+                  "content": "[Животное]\nМузыка\nТишина",
+                  "answer": ""
+                }
+              ]
+            },
+            {
+              "id": "cde65f56-f857-4492-bc48-497434fef983",
+              "type": "interactive-image",
+              "prompt": "Нажмите метку на логотипе.",
+              "content": "https://alm1e.github.io/SlovaSofi/assets/images/logo.jpg",
+              "answer": "",
+              "settings": {
+                "hotspots": [
+                  {
+                    "x": 50,
+                    "y": 50,
+                    "word": "SlovaSofi",
+                    "translation": "Школа словацкого языка"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "homeworkSections": [
+        {
+          "id": "c122929e-d9e5-4f4c-a74b-4510298e6a34",
+          "title": "Домашняя работа · сохранение",
+          "activities": [
+            {
+              "id": "f02540dc-0149-462c-9795-26178fdf7f98",
+              "type": "fill-blank",
+              "prompt": "Например: Ja [bývam] v Bratislave. Ответ в скобках станет пропуском.",
+              "content": "Dnes [čítam] knihu.",
+              "answer": "",
+              "settings": {}
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "99c69604-f7ac-47b3-937f-960976a7c9da",
+    "title": "Проверка · 04 · Ошибки, группы и сохранение",
+    "unit": "Проверка",
+    "activities": {
+      "format": "sections-v1",
+      "sections": [
+        {
+          "id": "be3ccc54-a26a-402d-b425-c827d8801a0f",
+          "title": "Проверочные задания",
+          "activities": [
+            {
+              "id": "24618d46-4459-4aad-91e5-3ee6b576cf9a",
+              "type": "find-error",
+              "prompt": "Например: Ja [bývať/bývam] v Bratislave. В скобках: ошибка / исправление.",
+              "content": "Ja [bývať/bývam] v Bratislave.\nOna [ma/má] knihu.\nMy [chodí/chodíme] do školy.",
+              "answer": "",
+              "settings": {}
+            },
+            {
+              "id": "e9df412c-0526-4182-8ca9-2f9bda82aa55",
+              "type": "fill-blank",
+              "prompt": "Два независимых пункта. После ответа перезагрузите урок.",
+              "content": "",
+              "answer": "",
+              "settings": {},
+              "questions": [
+                {
+                  "id": "0bfdf2fa-e27c-4c6e-8405-177c16d0c680",
+                  "prompt": "Первый пункт",
+                  "content": "Ja [som] doma.",
+                  "answer": ""
+                },
+                {
+                  "id": "369ca0da-86b6-4cfc-9f7a-e20fac204c5f",
+                  "prompt": "Второй пункт",
+                  "content": "Ty [si] v škole.",
+                  "answer": ""
+                }
+              ]
+            },
+            {
+              "id": "4ba124dd-dba5-4c90-8759-52c5f86c08fc",
+              "type": "text",
+              "prompt": "Напишите объяснение, пример или правило.",
+              "content": "Заметка для преподавателя: проверьте неверный ответ, верный ответ, перезагрузку, переключение разделов и домашнюю работу. Ответы должны сохраниться.",
+              "answer": "",
+              "settings": {
+                "note": true,
+                "studentVisible": false,
+                "noteColor": "#e4ae16"
+              }
+            },
+            {
+              "id": "c532f5ed-50e6-4071-8e92-943be144537b",
+              "type": "vocabulary",
+              "prompt": "Например: auto [машина]. Пример употребления можно добавить в < >.",
+              "content": "výhoda / nevýhoda [перевага / недолік]\npichanie[поколювання]",
+              "answer": "",
+              "settings": {
+                "vocabularyFormat": "slash"
+              }
+            }
+          ]
+        }
+      ],
+      "homeworkSections": [
+        {
+          "id": "04610d12-b5fc-46f9-aad7-f7efdd3e690d",
+          "title": "Домашняя работа · сохранение",
+          "activities": [
+            {
+              "id": "dd23d573-7ae0-41c9-8a3e-6e0450f1b12b",
+              "type": "fill-blank",
+              "prompt": "Например: Ja [bývam] v Bratislave. Ответ в скобках станет пропуском.",
+              "content": "Dnes [čítam] knihu.",
+              "answer": "",
+              "settings": {}
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

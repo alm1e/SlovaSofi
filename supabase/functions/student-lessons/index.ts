@@ -90,6 +90,12 @@ function normalizedSettings(value: unknown): JsonRecord | undefined {
                     safeItems.push(entry);
                     continue;
                 }
+                if (Array.isArray(entry)) {
+                    safeItems.push(entry.slice(0, 100).filter((part) => typeof part === "string"
+                        || typeof part === "number" && Number.isFinite(part) || typeof part === "boolean")
+                        .map((part) => typeof part === "string" ? part.slice(0, 2000) : part));
+                    continue;
+                }
                 const nested = record(entry);
                 if (!Object.keys(nested).length) continue;
                 const safeNested: JsonRecord = {};
@@ -440,7 +446,7 @@ function safeActivity(activity: Activity): Record<string, unknown> {
             const expected = answerParts(settings?.answerFromContent === true || !activity.answer.trim() ? exerciseFormat.sequenceAnswer(activity.type,activity.content) : activity.answer);
             const words = expected.length ? [...expected, ...settingStrings(settings, "distractors")] : lines(activity.content).flatMap((line) => line.split(/\s+/)).filter(Boolean);
             const lockedWords = settingStrings(settings, "lockedWords");
-            return { type: activity.type, prompt, tokens: shuffledExercise(words), lockedWords, acceptedOrders: settingStringGroups(settings, "acceptedOrders"), gradable: expected.length > 0 };
+            return { type: activity.type, prompt, tokens: shuffledExercise(words), lockedWords, gradable: expected.length > 0 };
         }
         case "fill-blank": {
             const settings = (activity as Activity & {settings?: Record<string, unknown>}).settings || {};
@@ -466,7 +472,7 @@ function safeActivity(activity: Activity): Record<string, unknown> {
             const options = configuredOptions.length ? configuredOptions : contentLines.map((text, index) => ({
                 text,
                 media: "",
-                correct: text === activity.answer || String(index) === activity.answer,
+                correct: text === activity.answer || !contentLines.includes(activity.answer) && String(index) === activity.answer,
                 explanation: ""
             }));
             const answerOptions = settings?.randomizeOptions === false ? options : shuffle(options);
@@ -497,7 +503,7 @@ function safeActivity(activity: Activity): Record<string, unknown> {
             const groupedItems = activity.type === "sentence-order"
                 ? groupItems(items, settings?.groups).map((item) => typeof item === "string" ? { text: item, media: "" } : item)
                 : items;
-            return { type: activity.type, prompt, items: shuffledExercise(groupedItems.map((item, sourceIndex) => ({ ...item, sourceIndex }))), acceptedOrders: settings?.acceptedOrders || [], groups: settings?.groups || [], gradable: activity.answer.trim().length > 0 || groupedItems.length > 0 };
+            return { type: activity.type, prompt, items: shuffledExercise(groupedItems.map((item, sourceIndex) => ({ ...item, sourceIndex }))), groups: settings?.groups || [], gradable: activity.answer.trim().length > 0 || groupedItems.length > 0 };
         }
         case "match": {
             const configuredPairs = Array.isArray(settings?.pairs) ? settings.pairs.map((raw) => record(raw))
@@ -669,7 +675,7 @@ function isCorrect(activity: Activity, response: unknown): boolean {
         }
         const options = contentLines;
         const answerIndex = Number(activity.answer);
-        const expected = activity.answer.trim() !== "" && Number.isInteger(answerIndex)
+        const expected = !options.includes(activity.answer) && activity.answer.trim() !== "" && Number.isInteger(answerIndex)
             && answerIndex >= 0 && answerIndex < options.length
             ? options[answerIndex]
             : activity.answer;
