@@ -2085,7 +2085,7 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 /* Desktop icon rail expands over the content, so exercises never jump. */
 @media (min-width: 701px) {
     .platform .sidebar, .platform.lesson-focus .sidebar { width: 76px; padding: 24px 12px 18px; transform: none; visibility: visible; overflow-x: hidden; transition: width .2s ease, box-shadow .2s ease; }
-    .platform .sidebar:hover, .platform .sidebar:focus-within, .platform .sidebar.open { width: 248px; box-shadow: 12px 0 32px #0002; }
+    .platform .sidebar:hover, .platform .sidebar:has(:focus-visible), .platform .sidebar.open { width: 248px; box-shadow: 12px 0 32px #0002; }
     .platform .main-area, .platform.lesson-focus .main-area { margin-left: 76px; }
     .platform .menu-toggle, .platform.lesson-focus .menu-toggle { display: none; }
     .platform .sidebar-backdrop, .platform.lesson-focus .sidebar-backdrop { display: none; }
@@ -2097,11 +2097,11 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
     .sidebar .nav-item.active::before { content: ''; position: absolute; left: -12px; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--accent); }
     .sidebar .brand > span:last-child, .sidebar .nav-item > span:last-child,
     .sidebar .user-summary, .sidebar .profile-chevron, .sidebar .home-link { opacity: 0; transition: opacity .15s ease; }
-    .sidebar:is(:hover, :focus-within, .open) .brand > span:last-child,
-    .sidebar:is(:hover, :focus-within, .open) .nav-item > span:last-child,
-    .sidebar:is(:hover, :focus-within, .open) .user-summary,
-    .sidebar:is(:hover, :focus-within, .open) .profile-chevron,
-    .sidebar:is(:hover, :focus-within, .open) .home-link { opacity: 1; }
+    .sidebar:is(:hover, :has(:focus-visible), .open) .brand > span:last-child,
+    .sidebar:is(:hover, :has(:focus-visible), .open) .nav-item > span:last-child,
+    .sidebar:is(:hover, :has(:focus-visible), .open) .user-summary,
+    .sidebar:is(:hover, :has(:focus-visible), .open) .profile-chevron,
+    .sidebar:is(:hover, :has(:focus-visible), .open) .home-link { opacity: 1; }
     .sidebar .teacher-mini { min-width: 216px; padding: 8px 6px; }
     .sidebar .teacher-mini .avatar { flex-shrink: 0; }
 }
