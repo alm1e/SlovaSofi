@@ -176,6 +176,7 @@
     const playedCalendarReminders = new Set();
     let activeView = "classes";
     let selectedClassId = "";
+    let selectedLessonUnit = "";
     let selectedLessonId = "";
     let pageHistory = null;
     let openedLesson = null;
@@ -396,11 +397,25 @@
             ...lesson,
             classNames: classes.filter((group) => group.lessons.some((item) => item.id === lesson.id)).map((group) => group.name)
         }));
+        const unitFor = (lesson) => String(lesson.unit || "").trim();
+        const standardUnits = ["A1", "A2", "B1", "B2"];
+        const units = [...new Set(allLessons.map(unitFor))].sort((a, b) => {
+            const rank = (unit) => standardUnits.includes(unit) ? standardUnits.indexOf(unit) : standardUnits.length;
+            return rank(a) - rank(b) || a.localeCompare(b, undefined, { numeric: true });
+        });
+        const selectedUnit = selectedLessonUnit === "__uncategorized__" ? "" : selectedLessonUnit;
+        const visibleLessons = selectedLessonUnit ? allLessons.filter((lesson) => unitFor(lesson) === selectedUnit) : [];
+        const unitCards = `<div class="unit-sections">${units.map((unit) => {
+            const count = allLessons.filter((lesson) => unitFor(lesson) === unit).length;
+            const label = unit || text("materials");
+            const tone = standardUnits.includes(unit) ? unit.toLowerCase() : "custom";
+            return `<button type="button" class="unit-card unit-card-link unit-card-${tone}" data-student-unit="${escapeHtml(unit || "__uncategorized__")}"><span class="unit-card-mark">${escapeHtml(label.slice(0, 2))}</span><span class="unit-card-copy"><strong>${escapeHtml(label)}</strong><small>${escapeHtml(countLabel(count, "lesson"))}</small></span><span class="unit-card-chevron" aria-hidden="true">→</span></button>`;
+        }).join("")}</div>`;
         const content = allLessons.length
-            ? `<div class="panel student-lessons-panel"><div class="student-lessons-list">${allLessons.map((lesson) => `<article class="lesson-row student-lesson-row" role="button" tabindex="0" data-open-lesson-card="${escapeHtml(lesson.id)}"><span class="lesson-symbol">▤</span><div class="lesson-main"><strong>${escapeHtml(lesson.title)}</strong><small>${escapeHtml(lesson.classNames.join(", "))}${lesson.unit ? ` · ${escapeHtml(lesson.unit)}` : ""}</small>${progressBadge(lesson)}</div><span class="lesson-count">${escapeHtml(countLabel(activityCount(lesson), "activity"))}<span class="student-lesson-open-arrow" aria-hidden="true"> →</span></span></article>`).join("")}</div></div>`
+            ? !selectedLessonUnit ? unitCards : `<div class="panel student-lessons-panel"><div class="student-lessons-list">${visibleLessons.map((lesson) => `<article class="lesson-row student-lesson-row" role="button" tabindex="0" data-open-lesson-card="${escapeHtml(lesson.id)}"><span class="lesson-symbol">▤</span><div class="lesson-main"><strong>${escapeHtml(lesson.title)}</strong><small>${escapeHtml(lesson.classNames.join(", "))}${lesson.unit ? ` · ${escapeHtml(lesson.unit)}` : ""}</small>${progressBadge(lesson)}</div><span class="lesson-count">${escapeHtml(countLabel(activityCount(lesson), "activity"))}<span class="student-lesson-open-arrow" aria-hidden="true"> →</span></span></article>`).join("")}</div></div>`
             : `<div class="panel student-empty"><span class="student-empty-icon">▤</span><h2>${escapeHtml(text("noAssignedLessons"))}</h2></div>`;
         const selectedClass = classes.find((group) => group.id === selectedClassId);
-        return `<div class="section-heading"><div><h1>${escapeHtml(selectedClass ? selectedClass.name : text("lessons"))}</h1><p>${escapeHtml(selectedClass ? text("classLessons") : text("lessonsHint"))}</p></div>${selectedClass ? `<button type="button" class="button secondary small" data-clear-class-filter>← ${escapeHtml(text("allLessons"))}</button>` : ""}</div>${content}`;
+        return `<div class="section-heading"><div><h1>${escapeHtml(selectedLessonUnit ? selectedUnit || text("materials") : selectedClass ? selectedClass.name : text("lessons"))}</h1><p>${escapeHtml(selectedClass ? text("classLessons") : text("lessonsHint"))}</p></div>${selectedLessonUnit ? `<button type="button" class="button secondary small" data-clear-unit-filter>← ${escapeHtml(text("allLessons"))}</button>` : selectedClass ? `<button type="button" class="button secondary small" data-clear-class-filter>← ${escapeHtml(text("allLessons"))}</button>` : ""}</div>${content}`;
     }
 
     function scheduledOccurrences(from = new Date(), to = new Date(Date.now() + 30 * 86_400_000)) {
@@ -745,7 +760,7 @@
                 ? `<iframe class="student-activity-video" src="${escapeHtml(embed)}" title="${escapeHtml(activity.prompt || text("activity"))}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`
                 : source ? `<${activity.type} class="student-activity-media" controls preload="metadata" data-enhanced-media data-media-position-key="${escapeHtml(`${user?.id || ""}:${openedLesson?.id || ""}:${index}`)}"><source src="${escapeHtml(source)}"></${activity.type}>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
             const transcript = typeof activity.settings?.transcript === "string" ? activity.settings.transcript.trim() : "";
-            const mediaTools = source ? `<div class="student-activity-actions"><button class="button secondary small" type="button" data-media-seek="-5">${escapeHtml(text("seekBack"))}</button><button class="button secondary small" type="button" data-media-seek="5">${escapeHtml(text("seekForward"))}</button><label>${escapeHtml(text("speed"))} <select data-media-speed><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select></label><button class="button secondary small" type="button" data-media-loop="a">${escapeHtml(text("loopA"))}</button><button class="button secondary small" type="button" data-media-loop="b">${escapeHtml(text("loopB"))}</button><button class="button secondary small" type="button" data-media-loop="clear">${escapeHtml(text("clearLoop"))}</button></div>` : "";
+            const mediaTools = source && !embed ? `<div class="student-activity-actions"><button class="button secondary small" type="button" data-media-seek="-5">${escapeHtml(text("seekBack"))}</button><button class="button secondary small" type="button" data-media-seek="5">${escapeHtml(text("seekForward"))}</button><label>${escapeHtml(text("speed"))} <select data-media-speed><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select></label><button class="button secondary small" type="button" data-media-loop="a">${escapeHtml(text("loopA"))}</button><button class="button secondary small" type="button" data-media-loop="b">${escapeHtml(text("loopB"))}</button><button class="button secondary small" type="button" data-media-loop="clear">${escapeHtml(text("clearLoop"))}</button></div>` : "";
             body = `${mediaPlayer}${mediaTools}${transcript ? `<details class="student-media-transcript" ${activity.settings?.hideTranscript === false ? "open" : ""}><summary>${escapeHtml(text("transcript"))}</summary><p>${escapeHtml(transcript).replace(/\n/g, "<br>")}</p></details>` : ""}`;
         } else {
             body = activity.content ? `<div class="student-activity-content">${escapeHtml(activity.content).replace(/\n/g, "<br>")}</div>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
@@ -1367,11 +1382,21 @@
         });
         pageContent.querySelectorAll("[data-open-class-lessons]").forEach((button) => button.addEventListener("click", () => {
             selectedClassId = button.dataset.openClassLessons;
+            selectedLessonUnit = "";
             activeView = "lessons";
             render();
         }));
+        pageContent.querySelectorAll("[data-student-unit]").forEach((button) => button.addEventListener("click", () => {
+            selectedLessonUnit = button.dataset.studentUnit;
+            render();
+        }));
+        pageContent.querySelector("[data-clear-unit-filter]")?.addEventListener("click", () => {
+            selectedLessonUnit = "";
+            render();
+        });
         pageContent.querySelector("[data-clear-class-filter]")?.addEventListener("click", () => {
             selectedClassId = "";
+        selectedLessonUnit = "";
             render();
         });
         pageContent.querySelector("[data-back-to-lessons]")?.addEventListener("click", async (event) => {
@@ -1761,7 +1786,7 @@
         if (pageHistory) return;
         pageHistory = window.SlovaPageHistory.create({
             key: "slovaStudent",
-            read: () => ({ route: { view: activeView, classId: selectedClassId, lessonId: selectedLessonId,
+            read: () => ({ route: { view: activeView, classId: selectedClassId, unit: selectedLessonUnit, lessonId: selectedLessonId,
                 tab: studentWorkspaceTab, section: activeStudentSectionId } }),
             async restore(state) {
                 await flushDraftSaves();
@@ -1779,6 +1804,7 @@
                 }
                 activeView = route.view;
                 selectedClassId = route.classId;
+                selectedLessonUnit = route.unit || "";
                 selectedLessonId = route.lessonId;
                 if (!route.lessonId) openedLesson = null;
                 studentWorkspaceTab = route.tab;
@@ -1814,6 +1840,7 @@
             closePopover();
             activeView = "calendar";
             selectedClassId = "";
+        selectedLessonUnit = "";
             selectedLessonId = "";
             openedLesson = null;
             studentSectionsOpen = false;
@@ -1940,6 +1967,7 @@
         });
         activeView = button.dataset.view;
         selectedClassId = "";
+        selectedLessonUnit = "";
         selectedLessonId = "";
         openedLesson = null;
         studentSectionsOpen = false;
