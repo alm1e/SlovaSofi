@@ -40,6 +40,13 @@
         const assert=(condition,message)=>{if(!condition)throw Error(message);};
         const run=async(name,fn)=>{try{await fn();results.push('PASS '+name);}catch(e){results.push('FAIL '+name+' — '+e.message);}};
         for(const activity of qaActivities)await run('Ученик: '+activity.type,()=>{qaReset(activity.type);assert(pageContent.textContent.includes(qaLesson.title),'Не отрисован урок');});
+        await run('Рисунок ученика отправляется через автосохранение и восстанавливается',async()=>{
+            const card=qaReset('image'),url='https://example.invalid/image.png';const img=card.querySelector('img');img.src='wide.svg';await img.decode();
+            card.querySelector('[data-photo-tool="text"]').click();card.querySelector('[data-photo-caption]').value='Мой ответ';const canvas=card.querySelector('canvas'),r=canvas.getBoundingClientRect();const before=qaRequests.length;
+            canvas.dispatchEvent(new PointerEvent('pointerdown',{button:0,pointerId:1,clientX:r.left+10,clientY:r.top+20}));await flushDraftSaves();
+            const write=qaRequests.slice(before).find(req=>req.action==='save-draft');assert(write&&JSON.parse(write.response)[url][0].text==='Мой ответ','Рисунок не отправлен на сохранение');
+            openedLesson.progress[activityProgressKey(openedLesson.sections[0].activities[0],0)]={response:write.response,correct:null,draft:true};render();assert(pageContent.querySelector('[data-photo-editor]').dataset.photoValue.includes('Мой ответ'),'Сохранённый ответ потерян при отрисовке');
+        });
         await run('Свободный ответ отправляется',async()=>{const card=qaReset('open-answer');card.querySelector('[data-open-answer]').value='Volám sa Sofia.';const count=qaRequests.length;await submitActivity(card);assert(qaRequests.slice(count).some(r=>r.action==='submit'&&r.response.text==='Volám sa Sofia.'),'Ответ не отправился');});
         await run('Пустой свободный ответ не отправляется',async()=>{const card=qaReset('open-answer');const count=qaRequests.length;await submitActivity(card);assert(!qaRequests.slice(count).some(r=>r.action==='submit'),'Отправлен пустой ответ');});
         await run('Удаление нового вложения',()=>{const card=qaReset('open-answer');card.querySelector('[data-add-open-attachment]').click();assert(card.querySelector('[data-open-attachment]'),'Вложение не добавлено');card.querySelector('[data-remove-open-attachment]').click();assert(!card.querySelector('[data-open-attachment]'),'Вложение не удалилось');});

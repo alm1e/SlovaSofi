@@ -1,0 +1,28 @@
+(function(root){
+    'use strict';
+    const MAX_BYTES=60000;
+    function validate(value){
+        if(typeof value==='string'){if(value.length>MAX_BYTES)throw Error('Drawing is too large');try{value=JSON.parse(value);}catch{throw Error('Invalid drawing');}}
+        if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Invalid drawing');
+        const result=Object.create(null);let count=0,points=0;
+        const coordinate=n=>typeof n==='number'&&Number.isFinite(n)&&n>=0&&n<=1000;
+        const entries=Object.entries(value);if(entries.length>20)throw Error('Too many images');
+        for(const [url,ops] of entries){
+            if(!/^https?:\/\//i.test(url)||url.length>2000||!Array.isArray(ops))throw Error('Invalid image');
+            result[url]=ops.map(op=>{
+                if(++count>100||!op||!/^#[0-9a-f]{6}$/i.test(op.color)||![2,4,8].includes(op.width))throw Error('Invalid drawing tool');
+                if(op.type==='text'){
+                    if(!coordinate(op.x)||!coordinate(op.y)||typeof op.text!=='string'||!op.text.trim()||op.text.length>200)throw Error('Invalid text');
+                    return {type:'text',color:op.color,width:op.width,x:op.x,y:op.y,text:op.text};
+                }
+                if(op.type!=='pen'||!Array.isArray(op.points)||!op.points.length||op.points.length>500)throw Error('Invalid stroke');
+                points+=op.points.length;if(points>3000)throw Error('Too many drawing points');
+                return {type:'pen',color:op.color,width:op.width,points:op.points.map(p=>{if(!Array.isArray(p)||p.length!==2||!p.every(coordinate))throw Error('Invalid point');return [p[0],p[1]];})};
+            });
+        }
+        if(JSON.stringify(result).length>MAX_BYTES)throw Error('Drawing is too large');return result;
+    }
+    function read(value){try{return validate(value||{});}catch{return {};}}
+    root.SlovaPhotoAnnotations={validate,read,MAX_BYTES};
+    if(typeof module!=='undefined')module.exports=root.SlovaPhotoAnnotations;
+})(typeof window!=='undefined'?window:globalThis);

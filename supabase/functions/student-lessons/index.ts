@@ -1,4 +1,5 @@
 import "../../../assets/js/table.js";
+import "../../../assets/js/photo-annotations.js";
 import "../../../assets/js/fill-blanks.js";
 import "../../../assets/js/exercise-format.js";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -34,6 +35,7 @@ const corsHeaders = {
     "Content-Type": "application/json"
 };
 
+const photoAnnotations = (globalThis as unknown as {SlovaPhotoAnnotations:{validate(value:unknown):Record<string,unknown>;read(value:unknown):Record<string,unknown>}}).SlovaPhotoAnnotations;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const interactiveTypes = new Set([
     "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
@@ -77,6 +79,7 @@ function normalizedSettings(value: unknown): JsonRecord | undefined {
     const safe: JsonRecord = {};
     for (const [key, item] of entries) {
         if (!/^[A-Za-z][A-Za-z0-9_-]{0,50}$/.test(key)) continue;
+        if (key === 'imageAnnotations') {safe[key] = photoAnnotations.read(item);continue;}
         if (typeof item === "string") safe[key] = item.slice(0, 2000);
         else if (typeof item === "boolean" || (typeof item === "number" && Number.isFinite(item))) safe[key] = item;
         else if (Array.isArray(item)) {
@@ -563,7 +566,7 @@ function safeActivity(activity: Activity): Record<string, unknown> {
                 const markdown = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
                 return { url: markdown ? markdown[2] : line, alt: markdown ? markdown[1] : "" };
             });
-            return { type: activity.type, prompt, content: images.map((image) => image.url).join("\n"), alt: images[0]?.alt || prompt };
+            return { type: activity.type, prompt, content: images.map((image) => image.url).join("\n"), alt: images[0]?.alt || prompt, imageAnnotations: photoAnnotations.read(settings?.imageAnnotations) };
         }
         case "pronunciation-recording":
             return { type: activity.type, prompt, content: activity.content, reviewRequired: true };
@@ -1064,16 +1067,24 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(200,{correct:state.complete===true,errorState:state,answers,completed,reviewRequired:false},allowedOrigin);
     }
     if (action === "save-draft") {
-        if (!answerableTypes.has(answerActivity.type)) return jsonResponse(400, { error: "This activity does not accept a saved answer." }, allowedOrigin);
+        if (answerActivity.type !== 'image' && !answerableTypes.has(answerActivity.type)) return jsonResponse(400, { error: "This activity does not accept a saved answer." }, allowedOrigin);
         if (answerActivity.type === "pronunciation-recording"
             && !validRecordingPath(response, user.id, assignment.classId, lessonId)) {
             return jsonResponse(400, { error: "Record your pronunciation before saving." }, allowedOrigin);
+        }
+        if(answerActivity.type==='image'){
+            try{
+                if(typeof response!=='string')throw Error('Invalid drawing');
+                const annotations=photoAnnotations.validate(response);
+                const urls=lines(answerActivity.content).map(line=>{const url=line.match(/^!\[[^\]]*\]\(([^)]+)\)$/)?.[1]||line;try{return new URL(url).href;}catch{return '';}});
+                if(Object.keys(annotations).some(url=>!urls.includes(url)))throw Error('Unknown image');
+            }catch{return jsonResponse(400,{error:'Invalid drawing or drawing limit exceeded.'},allowedOrigin);}
         }
         const openResponse = answerActivity.type === "open-answer" ? normalizeOpenAnswerResponse(response) : null;
         const invalidOpenResponse = answerActivity.type === "open-answer"
             && (!openResponse || openResponse.text.length > 10000 || openResponse.attachments.some((item) => item.length > 2000));
         if (invalidOpenResponse
-            || (answerActivity.type !== "open-answer" && (!(typeof response === "string" || Array.isArray(response))
+            || (answerActivity.type !== "open-answer" && answerActivity.type !== "image" && (!(typeof response === "string" || Array.isArray(response))
                 || (typeof response === "string" && response.length > 10000)
                 || (Array.isArray(response) && (response.length > 100 || response.some((item) => typeof item !== "string" || item.length > 500)))))) {
             return jsonResponse(400, { error: "The saved answer has an invalid format." }, allowedOrigin);

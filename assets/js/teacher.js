@@ -2892,7 +2892,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         checkable = false;
     } else if (type === "image") {
         const images = window.slovaGallery.parse(content, true);
-        body = images.length ? window.slovaGallery.html(images, activity.prompt || "", "preview-image") : `<p class="preview-material">${escapeHtml(displayContent || previewText("imageError"))}</p>`;
+        body = images.length ? (activity.settings?.imageAnnotations && window.SlovaPhotoEditor ? window.SlovaPhotoEditor.markup(images,activity.settings.imageAnnotations,{},false,currentLanguage) : window.slovaGallery.html(images, activity.prompt || "", "preview-image")) : `<p class="preview-material">${escapeHtml(displayContent || previewText("imageError"))}</p>`;
         checkable = false;
     } else if (type === "audio" || type === "video") {
         const embed = type === "video" ? previewVideoEmbedUrl(content) : "";
@@ -3167,6 +3167,7 @@ async function savePreviewActivities(lesson, sectionId, activities, successMessa
 }
 
 function bindLessonPreviewActions(container = pageContent, lesson = null, section = null, isHomework = false) {
+    window.SlovaPhotoEditor?.bind(container, {language:currentLanguage});
     container.querySelectorAll('[data-preview-reveal]').forEach(button=>button.addEventListener('click',()=>{
         const show=button.getAttribute('aria-pressed')!=='true';button.setAttribute('aria-pressed',String(show));
         button.closest('[data-preview-activity]')?.querySelectorAll('[data-correct-placeholder]').forEach(input=>{input.placeholder=show?input.dataset.correctPlaceholder:'...';});
@@ -4070,7 +4071,9 @@ function renderLiveAnswerPanel(student, activity, progressIndex, questionId = nu
         && /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.(webm|ogg|mp4|wav)$/i.test(answer.response)
         ? answer.response
         : "";
-    const response = recordingPath ? liveStudentText("recording") : formatLiveResponse(activity, answer?.response);
+    const photoAnswer = activity.type === 'image' && answer?.response && window.SlovaPhotoEditor
+        ? window.SlovaPhotoEditor.markup(window.slovaGallery.parse(activity.content),activity.settings?.imageAnnotations||{},window.SlovaPhotoAnnotations.read(answer.response),false,currentLanguage) : '';
+    const response = activity.type === 'image' ? '' : recordingPath ? liveStudentText("recording") : formatLiveResponse(activity, answer?.response);
     const answerStatus = answer
         ? `<span class="live-answer-status ${answer.draft ? "is-draft" : "is-submitted"}">${answer.draft ? lessonSectionText("liveDraft") : lessonSectionText("liveSubmitted")}</span>`
         : "";
@@ -4089,7 +4092,7 @@ function renderLiveAnswerPanel(student, activity, progressIndex, questionId = nu
         </details>`
         : "";
     const teacherFeedback = answer?.teacher_feedback ? `<small class="live-answer-teacher-feedback">${escapeHtml(answer.teacher_feedback)}</small>` : "";
-    return `<div class="live-answer-inline ${answerTone}" aria-label="${escapeHtml(name)}"><span class="live-answer-avatar" aria-hidden="true">${escapeHtml(name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2))}</span><strong>${escapeHtml(name)}</strong>${answerStatus}<span class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</span>${recordingPath ? `<button class="button secondary small" type="button" data-play-recording="${escapeHtml(recordingPath)}">${escapeHtml(liveStudentText("playRecording"))}</button>` : ""}<span data-recording-player></span>${teacherFeedback}${reviewForm}</div>`;
+    return `<div class="live-answer-inline ${answerTone}" aria-label="${escapeHtml(name)}"><span class="live-answer-avatar" aria-hidden="true">${escapeHtml(name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2))}</span><strong>${escapeHtml(name)}</strong>${answerStatus}<span class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</span>${recordingPath ? `<button class="button secondary small" type="button" data-play-recording="${escapeHtml(recordingPath)}">${escapeHtml(liveStudentText("playRecording"))}</button>` : ""}<span data-recording-player></span>${teacherFeedback}${reviewForm}${photoAnswer}</div>`;
 }
 
 function renderLiveMonitor(lesson, progressIndexes) {
@@ -4195,7 +4198,7 @@ function renderLessonWorkspace() {
         ? `<div class="form-field section-name-field"><label for="sectionTitle">${lessonSectionText("rename")}</label><input id="sectionTitle" data-section-title="${escapeHtml(section.id)}" maxlength="80" value="${escapeHtml(section.title)}"></div><div class="builder-heading"><h3>${isHomework ? lessonSectionText("homeworkActivities") : t("lesson.activities")}</h3><span data-lesson-autosave-status role="status" aria-live="polite"></span><button type="button" class="button secondary small" data-action="choose-activity">${t("activity.addBlock")}</button></div><button type="button" class="button secondary small lesson-import-launch" data-import-lesson>${escapeHtml(window.SlovaLessonImportUI.labels(currentLanguage)[0])}</button><div id="activityBlocks">${renderActivityBlocks(section.activities)}</div>`
         : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map((activity, index) => {
             const progressIndex = progressIndexes.get(`${section.id}:${index}`);
-            const liveAnswerMarkup = liveGroup && liveAnswerActivityTypes.has(activity.type) && progressIndex !== undefined
+            const liveAnswerMarkup = liveGroup && (liveAnswerActivityTypes.has(activity.type) || activity.type === 'image') && progressIndex !== undefined
                 ? Array.isArray(activity.questions) && activity.questions.length
                     ? activity.questions.map((question, questionIndex) => renderLiveAnswerPanel(liveStudent, {
                         ...activity,
@@ -4965,12 +4968,28 @@ function bindActivityBlockActions() {
             }
         });
         if (contentField && currentBlock()?.type === "image") {
+            const photoPanel = document.createElement('details');
+            const photoTitle = document.createElement('summary');
+            photoTitle.textContent = currentLanguage === 'ru' ? '✎ Рисовать и писать на фото' : currentLanguage === 'ua' ? '✎ Малювати та писати на фото' : '✎ Draw and write on photos';
+            const photoBody = document.createElement('div');photoPanel.append(photoTitle,photoBody);contentField.after(photoPanel);
+            const refreshPhotoEditor = () => {
+                const images = window.slovaGallery.parse(contentField.value);
+                photoBody.innerHTML = window.SlovaPhotoEditor.markup(images,{},currentBlock().settings?.imageAnnotations||{},true,currentLanguage);
+                window.SlovaPhotoEditor.bind(photoBody,{language:currentLanguage,change:annotations=>{
+                    currentBlock().settings={...currentBlock().settings,imageAnnotations:annotations};
+                    scheduleLessonDraftAutosave();refreshRichPreview();
+                }});
+            };
+            photoPanel.addEventListener('toggle',()=>{if(photoPanel.open)refreshPhotoEditor();});
+            contentField.addEventListener('input',()=>{if(photoPanel.open)refreshPhotoEditor();});
+            contentField.addEventListener('slova-source-sync',()=>{if(photoPanel.open)refreshPhotoEditor();});
             const imagesFrom = (files) => window.SlovaImageInput.files({ files });
             const skipped = new Set();
             const attachFiles = async (files) => {
                 for (const file of files) await attachImageToBlock(file, contentField, currentBlock());
                 scheduleLessonDraftAutosave();
                 refreshRichPreview();
+                if(photoPanel.open)refreshPhotoEditor();
             };
             const importAddresses = async () => {
                 if (contentField.dataset.importing) return;

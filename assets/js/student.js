@@ -774,7 +774,7 @@
             body = image ? `<div class="student-hotspot-image"><img src="${escapeHtml(image)}" alt="${escapeHtml(activity.prompt || text("imageAlt"))}" loading="lazy">${hotspots.map((hotspot, hotspotIndex) => `<button type="button" class="student-hotspot" data-hotspot-index="${hotspotIndex}" style="left:${Number(hotspot.x)}%;top:${Number(hotspot.y)}%" aria-label="${escapeHtml(hotspot.word)}">${hotspotIndex + 1}</button>`).join("")}</div><p class="student-hotspot-detail" data-hotspot-detail>${escapeHtml(text("selectHotspot"))}</p>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         } else if (activity.type === "image") {
             const images = window.slovaGallery.parse(activity.content);
-            body = images.length ? window.slovaGallery.html(images, activity.alt || activity.prompt || text("imageAlt"), "student-activity-image") : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
+            body = images.length ? window.SlovaPhotoEditor.markup(images,activity.imageAnnotations||{},window.SlovaPhotoAnnotations.read(savedResponse),true,language) + `<input type="hidden" data-answer-kind="photo">` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         } else if (activity.type === "audio" || activity.type === "video") {
             const embed = activity.type === "video" ? videoEmbedUrl(activity.content) : "";
             const source = mediaUrl(activity.content);
@@ -918,6 +918,7 @@
 
     function responseForActivity(element) {
         const kind = element.querySelector("[data-answer-kind]")?.dataset.answerKind;
+        if (kind === "photo") return JSON.stringify(window.SlovaPhotoEditor.value(element));
         if (kind === "words") {
             return [...element.querySelectorAll("[data-word-answer] [data-remove-word], [data-word-answer] [data-locked-word]")].map((button) => button.dataset.removeWord ?? button.dataset.lockedWord);
         }
@@ -1500,6 +1501,11 @@
         updateSaveStatus();
         pageHistory?.sync();
         window.SlovaFindErrorUI?.bind(pageContent,{send:(event,root)=>saveFindErrorEvent(root,event)});
+        pageContent.querySelectorAll('[data-activity-type="image"]').forEach(element=>{
+            window.SlovaPhotoEditor?.bind(element,{language});
+            // A completed stroke is one durable answer change, not a stream of pointer events.
+            element.addEventListener('photo-change',()=>scheduleDraftSave(element));
+        });
         window.SlovaBlankCards?.bind(pageContent);
         window.SlovaActivityUI?.enhancePairing(pageContent, { empty: text("choose") });
         pageContent.querySelectorAll("[data-open-lesson]").forEach((button) => {

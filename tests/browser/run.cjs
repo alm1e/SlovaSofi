@@ -33,6 +33,8 @@ const pages=${JSON.stringify(publicPages).replace(/</g,'\\u003c')},results=[],re
  const toggle=d.querySelector('[data-theme-toggle]');if(toggle){const before=d.documentElement.dataset.theme;toggle.click();if(d.documentElement.dataset.theme===before)throw Error('Theme did not change');checkOverflow();}
  results.push('PASS '+name+' '+width);}catch(e){results.push('FAIL '+name+' '+width+' '+e.message);}finally{frame.remove();}
 }report.innerText=results.join('\\n')+'\\nTOTAL '+results.length+'; FAIL '+results.filter(r=>r.startsWith('FAIL')).length;})();</script>`);
+write('photo-ui.js',read('tests/browser/photo-ui.js'));
+write('photo.html',`<!doctype html><html><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="${pathToFileURL(root).href}/assets/css/photo-editor.css"><body style="margin:16px;font-family:sans-serif"><div id="photo-fixture"></div><script src="${pathToFileURL(root).href}/assets/js/photo-annotations.js"></script><script src="${pathToFileURL(root).href}/assets/js/photo-editor.js"></script><script src="photo-ui.js"></script></body></html>`);
 const browser=process.env.QA_BROWSER||'C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe';
 const port=19346,proc=spawn(browser,['--headless=new','--no-first-run','--no-default-browser-check','--disable-gpu','--allow-file-access-from-files',`--remote-debugging-port=${port}`,`--user-data-dir=${path.join(out,'profile')}`],{stdio:'ignore',windowsHide:true});
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
@@ -47,7 +49,7 @@ const keepAlive=setInterval(()=>{},1000);
  ws.onmessage=e=>{const r=JSON.parse(e.data),p=pending.get(r.id);if(p){pending.delete(r.id);r.error?p.reject(Error(r.error.message)):p.resolve(r.result);}};
  await send('Page.enable');
  const reports=[];
- for(const [name,width] of [['teacher',1280],['student',1280],['student',390],['public',1280]]){
+ for(const [name,width] of [['teacher',1280],['student',1280],['student',390],['public',1280],['photo',1280],['photo',390]]){
   await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false});
   await send('Page.navigate',{url:url(name+'.html')});
   if(name==='student'){for(let i=0;i<100;i++){if(await evaluate("!![...document.querySelectorAll('button')].find(b=>b.textContent.includes('QA'))"))break;await delay(100);}await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.includes('QA')).click()");}

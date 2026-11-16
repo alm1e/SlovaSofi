@@ -8,7 +8,7 @@ function engine(activities){
     let saved=null,writes=0,handler;
     const tables=()=>({profiles:{role:'student'},class_students:[{id:memberId,class_id:classId,teacher_classes:{id:classId,name:'Class',teacher_id:id(105)}}],class_lesson_assignments:[{class_id:classId,lesson_id:lessonId,teacher_lessons:lesson}],student_lesson_progress:saved?[saved]:[],calendar_events:[]});
     const client={auth:{getUser:async()=>({data:{user:{id:userId}},error:null})},from(table){const chain={};for(const op of ['select','eq','in','gte','order'])chain[op]=()=>chain;chain.maybeSingle=async()=>({data:tables()[table],error:null});chain.then=(resolve,reject)=>Promise.resolve({data:tables()[table],error:null}).then(resolve,reject);chain.upsert=async row=>{saved=structuredClone(row);writes++;return{error:null};};return chain;}};
-    const ctx=vm.createContext({SlovaExerciseFormat:require("./exercise-format.js"),URL,Request,Response,crypto:require('node:crypto').webcrypto,createClient:()=>client,console,SlovaTable:require('./table.js'),SlovaFillBlanks:require('./fill-blanks.js'),Deno:{env:{get:key=>({APP_URL:'https://school.example',SUPABASE_URL:'https://db.example',SUPABASE_ANON_KEY:'test',SUPABASE_SERVICE_ROLE_KEY:'test'})[key]},serve:fn=>{handler=fn;}}});
+    const ctx=vm.createContext({SlovaPhotoAnnotations:require('./photo-annotations.js'),SlovaExerciseFormat:require("./exercise-format.js"),URL,Request,Response,crypto:require('node:crypto').webcrypto,createClient:()=>client,console,SlovaTable:require('./table.js'),SlovaFillBlanks:require('./fill-blanks.js'),Deno:{env:{get:key=>({APP_URL:'https://school.example',SUPABASE_URL:'https://db.example',SUPABASE_ANON_KEY:'test',SUPABASE_SERVICE_ROLE_KEY:'test'})[key]},serve:fn=>{handler=fn;}}});
     const path=process.env.LESSON_ENGINE_TEST_SOURCE||`${__dirname}/../../supabase/functions/student-lessons/index.ts`;
     vm.runInContext(stripTypeScriptTypes(fs.readFileSync(path,'utf8').replace(/^import .*;\r?\n/gm,'')),ctx);
     async function request(payload){const response=await handler(new Request('https://db.example/functions/v1/student-lessons',{method:'POST',headers:{Origin:'https://school.example',Authorization:'Bearer test'},body:JSON.stringify({lessonId,...payload})}));return{status:response.status,body:await response.json()};}
@@ -234,4 +234,19 @@ test('a late legacy write during rollout is merged by timestamp without affectin
     const e=engine([]),activities=[{id:id(1),legacyProgressIndex:0,type:'true-false',content:'',answer:'true',prompt:''},{id:id(2),type:'find-error',content:'',answer:'',prompt:''}];
     const result=e.ctx.canonicalProgress(activities,{['b'+id(1)]:{response:'old',correct:false,submitted_at:'2026-10-23T10:00:00Z'},a0:{response:'new',correct:true,submitted_at:'2026-10-23T10:01:00Z'}});
     assert.equal(result['b'+id(1)].response,'new');assert.equal(result.a0,undefined);assert.equal(result['b'+id(2)],undefined);
+});
+
+test('photo drafts retain teacher annotations and isolated student strokes without changing scored progress',async()=>{
+ const url='https://school.example/photo.png',pen={type:'pen',color:'#e53935',width:4,points:[[20,30],[60,70]]};
+ const annotations={[url]:[pen]},e=engine([{id:id(1),type:'image',content:url,answer:'',settings:{imageAnnotations:annotations}},{id:id(2),type:'multiple-choice',content:'yes\nno',answer:'yes'}]);
+ let loaded=(await e.request({action:'load'})).body.lesson;
+ assert.deepEqual(loaded.sections[0].activities[0].imageAnnotations,annotations);
+ const before=loaded.progressActivityCount;
+ const response=JSON.stringify(annotations);assert.equal((await e.write(0,response,'save-draft')).status,200);
+ loaded=(await e.request({action:'load'})).body.lesson;assert.equal(loaded.progress['b'+id(1)].response,response);assert.equal(before,1);assert.equal(loaded.progressActivityCount,before);assert.equal(loaded.answeredCount,0);assert.equal(loaded.completed,false);
+ const writes=e.writes;
+ for(const invalid of [JSON.stringify({'https://other.example/photo.png':[pen]}),JSON.stringify({[url]:[{...pen,points:[[-1,0]]}]}),'x'.repeat(60001)])assert.equal((await e.write(0,invalid,'save-draft')).status,400);
+ assert.equal(e.writes,writes);
+ assert.equal((await e.write(0,'{}','save-draft')).status,200);
+ loaded=(await e.request({action:'load'})).body.lesson;assert.equal(loaded.progress['b'+id(1)].response,'{}');assert.deepEqual(loaded.sections[0].activities[0].imageAnnotations,annotations);
 });
