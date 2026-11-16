@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('node:fs/promises'),path=require('node:path'),crypto=require('node:crypto');
 const {createReadStream,createWriteStream}=require('node:fs'),{Readable,Transform}=require('node:stream'),{pipeline}=require('node:stream/promises'),{spawn}=require('node:child_process');
-const {readInventory}=require('./copy-reader.cjs');
+const {readInventory,REQUIRED_TABLES,LEGACY_REQUIRED_TABLES}=require('./copy-reader.cjs');
 const PROJECT='vvrxhiextryjnzpxvals';
 
 function sourceConfig(env=process.env){
@@ -65,7 +65,7 @@ async function downloadObject(cfg,object,stage,{fetcher=fetch,sleep=ms=>new Prom
 }
 async function verifyStage(stage){
     const root=path.resolve(stage),manifest=JSON.parse(await fs.readFile(path.join(root,'manifest.json'),'utf8'));
-    if(manifest.format!==1||!Array.isArray(manifest.files)||!Array.isArray(manifest.objects))throw Error('Invalid backup manifest');
+    if(![1,2].includes(manifest.format)||(manifest.format===2&&manifest.schemaContract!=='school-20261120')||!Array.isArray(manifest.files)||!Array.isArray(manifest.objects))throw Error('Invalid backup manifest');
     const paths=new Set();
     for(const entry of [...manifest.files,...manifest.objects]){
         if(typeof entry.file!=='string'||!['database/roles.sql','database/schema.sql','database/data.sql','source.tar.gz'].includes(entry.file)&&!/^storage\/[a-f0-9]{64}\.bin$/.test(entry.file))throw Error('Unsafe manifest path');
@@ -74,7 +74,7 @@ async function verifyStage(stage){
         const actual=await digest(filename);if(actual.size!==entry.size||actual.sha256!==entry.sha256)throw Error('Backup file checksum mismatch');
     }
     for(const name of ['database/roles.sql','database/schema.sql','database/data.sql','source.tar.gz'])if(!paths.has(name))throw Error(`Missing backup file ${name}`);
-    const inventory=await readInventory(path.join(root,'database/data.sql'));
+    const inventory=await readInventory(path.join(root,'database/data.sql'),{requiredTables:manifest.format===1?LEGACY_REQUIRED_TABLES:REQUIRED_TABLES});
     if(JSON.stringify(inventory.counts)!==JSON.stringify(manifest.tableRows)||inventory.objects.length!==manifest.objects.length)throw Error('Backup inventory mismatch');
     const byPath=new Map(manifest.objects.map(object=>[JSON.stringify([object.bucket,object.name]),object]));
     for(const object of inventory.objects)if(byPath.get(JSON.stringify([object.bucket,object.name]))?.size!==object.size)throw Error('Backup Storage inventory mismatch');
@@ -100,7 +100,7 @@ async function backup(cfg,{run=command,fetcher=fetch,stage,source=path.resolve(_
     const revision=(await run('git',['rev-parse','HEAD'],{cwd:source,env:cfg.env})).trim();
     const files=[];for(const file of ['database/roles.sql','database/schema.sql','database/data.sql','source.tar.gz'])files.push({file,...await digest(path.join(stage,file))});
     if(statistics.total_size+files.reduce((sum,file)=>sum+file.size,0)+objects.reduce((sum,file)=>sum+file.size,0)>cfg.cloudLimit)throw Error('New backup could exceed the configured repository size limit');
-    const manifest={format:1,project:cfg.project,startedAt:now.toISOString(),sourceRevision:revision,tableRows:inventory.counts,buckets:inventory.buckets,files,objects,
+    const manifest={format:2,schemaContract:'school-20261120',project:cfg.project,startedAt:now.toISOString(),sourceRevision:revision,tableRows:inventory.counts,buckets:inventory.buckets,files,objects,
         excluded:['Storage vector bucket data','Dashboard Auth/SMTP settings, secrets and encryption root key','Custom database role passwords','Uncommitted source files','Edge Function code not present in the source commit']};
     await fs.writeFile(path.join(stage,'manifest.json'),JSON.stringify(manifest,null,2)+'\n',{mode:0o600});
     const verified=await verifyStage(stage);

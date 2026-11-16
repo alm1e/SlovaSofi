@@ -1,13 +1,13 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
-const {config,redactor,command,objectUrl,downloadObject,verifyStage,backup,PROJECT}=require('./backup.cjs'),{readInventory,decodeCopy}=require('./copy-reader.cjs');
+const {config,redactor,command,objectUrl,downloadObject,verifyStage,backup,PROJECT}=require('./backup.cjs'),{readInventory,decodeCopy,REQUIRED_TABLES,LEGACY_REQUIRED_TABLES}=require('./copy-reader.cjs');
 const {prepare}=require('./prepare.cjs');
 const roleKey=`mock.${Buffer.from(JSON.stringify({role:'service_role',ref:PROJECT})).toString('base64url')}.not-a-real-token`;
 const env={SUPABASE_DB_URL:`postgresql://postgres.${PROJECT}:not%20a%20real%20password@aws-0-eu-west-1.pooler.supabase.com:5432/postgres`,SUPABASE_SERVICE_ROLE_KEY:roleKey,RESTIC_REPOSITORY:`s3:https://${'a'.repeat(32)}.r2.cloudflarestorage.com/slovasofi-backups/slovasofi`,RESTIC_PASSWORD:'not-a-real-password-'.repeat(3),AWS_ACCESS_KEY_ID:'b'.repeat(32),AWS_SECRET_ACCESS_KEY:'c'.repeat(64)};
 function sql(objects=[{bucket:'lesson-images',name:'folder/flag.png',size:3}],quoted=false){
     const copy=(name,columns,rows)=>`COPY ${quoted?name.split('.').map(part=>`"${part}"`).join('.'):name} (${columns.map(part=>quoted?`"${part}"`:part).join(', ')}) FROM stdin;\n${rows.map(row=>row.join('\t')+'\n').join('')}\\.\n`;
     const escape=value=>value===null?'\\N':String(value).replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/\r/g,'\\r').replace(/\t/g,'\\t');
-    return copy('auth.users',['id'],[['user-fixture']])+copy('storage.buckets',['id','public'],[...new Set(objects.map(object=>object.bucket))].map(bucket=>[bucket,bucket==='student-recordings'?'f':'t']))+copy('storage.objects',['id','bucket_id','name','metadata','version'],objects.map((object,index)=>[index,object.bucket,escape(object.name),JSON.stringify({size:object.size,mimetype:'image/png'}),'version-fixture']))+copy('public.teacher_lessons',['id','title'],[['lesson-fixture','A lesson']])+copy('public.student_lesson_progress',['id'],[])+['auth.identities','public.profiles','public.teacher_classes','public.class_students','public.class_lesson_assignments','public.teacher_workspace_settings','public.teacher_lesson_editors','public.teacher_student_directory','public.calendar_events'].map(name=>copy(name,['id'],[])).join('');
+    return copy('auth.users',['id'],[['user-fixture']])+copy('storage.buckets',['id','public'],[...new Set(objects.map(object=>object.bucket))].map(bucket=>[bucket,bucket==='student-recordings'?'f':'t']))+copy('storage.objects',['id','bucket_id','name','metadata','version'],objects.map((object,index)=>[index,object.bucket,escape(object.name),JSON.stringify({size:object.size,mimetype:'image/png'}),'version-fixture']))+copy('public.teacher_lessons',['id','title'],[['lesson-fixture','A lesson']])+copy('public.student_lesson_progress',['id'],[])+['auth.identities','public.profiles','public.teacher_classes','public.class_students','public.class_lesson_assignments','public.teacher_workspace_settings','public.teacher_lesson_editors','public.teacher_student_directory','public.calendar_events','public.lesson_categories','public.lesson_versions','public.school_audit_log','public.homework_tasks','public.homework_submissions'].map(name=>copy(name,['id'],[])).join('');
 }
 async function temporary(t){
     const directory=await fs.mkdtemp(path.join(os.tmpdir(),'slovasofi-backup-test-'));
@@ -72,12 +72,12 @@ test('transient Storage errors retry without creating partial successful files',
     await downloadObject(config(env),{bucket:'lesson-images',name:'file',size:3,metadata:{}},directory,{fetcher:async()=>++attempts<3?new Response('',{status:503}):new Response('abc'),sleep:async()=>{}});assert.equal(attempts,3);
 });
 test('a complete run includes empty roles, accounts, data and files, and verifies the cloud before retention',async t=>{
-    const f=await fixture(t,{env:{BACKUP_RETENTION_ENABLED:'true'}}),receipt=await f.invoke();assert.equal(receipt.objects,1);assert.equal(receipt.tables,14);
+    const f=await fixture(t,{env:{BACKUP_RETENTION_ENABLED:'true'}}),receipt=await f.invoke();assert.equal(receipt.objects,1);assert.equal(receipt.tables,REQUIRED_TABLES.length);
     const manifest=JSON.parse(await fs.readFile(path.join(f.stage,'manifest.json'),'utf8'));assert.equal(manifest.tableRows['auth.users'],1);assert.equal(manifest.files.find(file=>file.file==='database/roles.sql').size,0);
     const commands=f.calls.filter(call=>call.file==='restic').map(call=>call.args[0]);assert.deepEqual(commands,['cat','stats','backup','check','restore','forget','check']);assert.equal(receipt.restoreVerified,true);
     const backupCommand=f.calls.find(call=>call.file==='restic'&&call.args[0]==='backup');assert.equal(backupCommand.settings.cwd,f.stage);assert.equal(backupCommand.args[1],'.');
     const forget=f.calls.find(call=>call.args[0]==='forget');assert.ok(forget.args.includes('30')&&forget.args.includes('12'));assert.ok(forget.args.includes(`project:${PROJECT}`));
-    assert.deepEqual(await verifyStage(f.stage),{tables:14,objects:1,files:5});
+    assert.deepEqual(await verifyStage(f.stage),{tables:REQUIRED_TABLES.length,objects:1,files:5});
 });
 test('default backup retains every previous snapshot until retention is explicitly enabled',async t=>{
     const f=await fixture(t);await f.invoke();assert.equal(f.calls.some(call=>call.args[0]==='forget'||call.args[0]==='prune'),false);assert.equal(f.calls.some(call=>call.args[0]==='init'),false);
@@ -118,7 +118,35 @@ test('real restic encrypts a local test repository and restores every file with 
     const run=(file,args,options)=>file==='restic'?command(process.env.BACKUP_RESTIC_BINARY,args,{...options,env:resticEnv}):f.run(file,args,options);
     const receipt=await backup(f.cfg,{stage:f.stage,run,fetcher:f.fetcher,source:path.dirname(f.stage),log(){}});
     const restore=path.join(path.dirname(f.stage),'restored');await command(process.env.BACKUP_RESTIC_BINARY,['restore',receipt.snapshot,'--target',restore],{env:resticEnv});
-    assert.deepEqual(await verifyStage(restore),{tables:14,objects:1,files:5});
+    assert.deepEqual(await verifyStage(restore),{tables:REQUIRED_TABLES.length,objects:1,files:5});
     const manifest=JSON.parse(await fs.readFile(path.join(restore,'manifest.json'),'utf8'));assert.equal(await fs.readFile(path.join(restore,manifest.objects[0].file),'utf8'),'abc');
     await assert.rejects(command(process.env.BACKUP_RESTIC_BINARY,['snapshots'],{env:{...resticEnv,RESTIC_PASSWORD:'wrong-fixture-password'}}));
+});
+
+test('current backups reject missing homework, journal and version tables before cloud upload',async t=>{
+    for(const name of ['public.homework_tasks','public.homework_submissions','public.school_audit_log','public.lesson_versions','public.lesson_categories']){
+        const incomplete=sql().replace(`COPY ${name} (id) FROM stdin;\n\\.\n`,'');
+        const f=await fixture(t,{data:incomplete});
+        await assert.rejects(f.invoke(),new RegExp(name.replace('.',"\\.")));
+        assert.equal(f.calls.some(call=>call.args[0]==='backup'),false);
+        assert.equal(f.calls.some(call=>call.args[0]==='forget'),false);
+    }
+});
+test('legacy format-1 archives still verify after the school schema gains new tables',async t=>{
+    const f=await fixture(t);await f.invoke();
+    const file=path.join(f.stage,'manifest.json'),manifest=JSON.parse(await fs.readFile(file,'utf8'));
+    let data=await fs.readFile(path.join(f.stage,'database/data.sql'),'utf8');
+    for(const table of REQUIRED_TABLES.filter(name=>!LEGACY_REQUIRED_TABLES.includes(name))){
+        data=data.replace(`COPY ${table} (id) FROM stdin;\n\\.\n`,'');delete manifest.tableRows[table];
+    }
+    await fs.writeFile(path.join(f.stage,'database/data.sql'),data);
+    Object.assign(manifest.files.find(entry=>entry.file==='database/data.sql'),await require('./backup.cjs').digest(path.join(f.stage,'database/data.sql')));
+    manifest.format=1;delete manifest.schemaContract;
+    await fs.writeFile(file,JSON.stringify(manifest));
+    assert.equal((await verifyStage(f.stage)).tables,LEGACY_REQUIRED_TABLES.length);
+});
+test('format-2 archives require the declared current schema contract',async t=>{
+    const f=await fixture(t);await f.invoke();const file=path.join(f.stage,'manifest.json'),manifest=JSON.parse(await fs.readFile(file,'utf8'));
+    assert.equal(manifest.format,2);assert.equal(manifest.schemaContract,'school-20261120');
+    manifest.schemaContract='unknown';await fs.writeFile(file,JSON.stringify(manifest));await assert.rejects(verifyStage(f.stage),/manifest/);
 });

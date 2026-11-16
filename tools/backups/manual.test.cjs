@@ -38,7 +38,7 @@ test('manual archive is encrypted, independently restorable and contains no plai
     t.after(async()=>{assert.equal(path.dirname(directory),path.resolve(os.tmpdir()));assert.ok(path.basename(directory).startsWith('slovasofi-manual-test-'));await fs.rm(directory,{recursive:true,force:true});});
     const tables=['auth.users','auth.identities','public.profiles','public.teacher_lessons','public.teacher_classes','public.class_students',
         'public.class_lesson_assignments','public.student_lesson_progress','public.teacher_workspace_settings','public.teacher_lesson_editors',
-        'public.teacher_student_directory','public.calendar_events'];
+        'public.teacher_student_directory','public.calendar_events','public.lesson_categories','public.lesson_versions','public.school_audit_log','public.homework_tasks','public.homework_submissions'];
     const data=tables.map(name=>`COPY ${name} (id) FROM stdin;\n\\.\n`).join('')+
         'COPY storage.buckets (id, public) FROM stdin;\nlesson-images\tt\n\\.\n'+
         'COPY storage.objects (id, bucket_id, name, metadata, version) FROM stdin;\n1\tlesson-images\tphoto.png\t{"size":3}\tfixture\n\\.\n';

@@ -1,12 +1,13 @@
 'use strict';
 const fs=require('node:fs'),readline=require('node:readline');
-const REQUIRED_TABLES=['auth.users','auth.identities','storage.buckets','storage.objects',...['profiles','teacher_classes','class_students','teacher_lessons','class_lesson_assignments','student_lesson_progress','teacher_workspace_settings','teacher_lesson_editors','teacher_student_directory','calendar_events'].map(name=>`public.${name}`)];
+const LEGACY_REQUIRED_TABLES=['auth.users','auth.identities','storage.buckets','storage.objects',...['profiles','teacher_classes','class_students','teacher_lessons','class_lesson_assignments','student_lesson_progress','teacher_workspace_settings','teacher_lesson_editors','teacher_student_directory','calendar_events'].map(name=>`public.${name}`)];
+const REQUIRED_TABLES=[...LEGACY_REQUIRED_TABLES,...['lesson_categories','lesson_versions','school_audit_log','homework_tasks','homework_submissions'].map(name=>`public.${name}`)];
 
 function decodeCopy(value){
     if(value==='\\N')return null;
     return value.replace(/\\(?:([0-7]{1,3})|x([0-9a-f]{1,2})|(.))/gi,(_,octal,hex,char)=>octal?String.fromCharCode(parseInt(octal,8)):hex?String.fromCharCode(parseInt(hex,16)):({b:'\b',f:'\f',n:'\n',r:'\r',t:'\t',v:'\v'}[char]??char));
 }
-async function readInventory(filename){
+async function readInventory(filename,{requiredTables=REQUIRED_TABLES}={}){
     const counts={},objects=[],buckets=[];let table=null,columns=[];
     const lines=readline.createInterface({input:fs.createReadStream(filename),crlfDelay:Infinity});
     for await(const line of lines){
@@ -29,8 +30,8 @@ async function readInventory(filename){
         if(match){table=match[1].replace(/"/g,'');columns=match[2].split(',').map(value=>value.trim().replace(/^"|"$/g,''));if(table in counts)throw Error('Duplicate COPY section');counts[table]=0;}
     }
     if(table)throw Error('Truncated COPY section');
-    for(const name of REQUIRED_TABLES)if(!(name in counts))throw Error(`Backup is missing ${name}; school, Auth and Storage data must be included`);
+    for(const name of requiredTables)if(!(name in counts))throw Error(`Backup is missing ${name}; school, Auth and Storage data must be included`);
     const seen=new Set();for(const object of objects){const key=JSON.stringify([object.bucket,object.name]);if(seen.has(key))throw Error('Duplicate Storage object');seen.add(key);if(!buckets.some(bucket=>bucket.id===object.bucket))throw Error('Unknown Storage bucket');}
     return {counts,objects,buckets};
 }
-module.exports={decodeCopy,readInventory};
+module.exports={decodeCopy,readInventory,REQUIRED_TABLES,LEGACY_REQUIRED_TABLES};
