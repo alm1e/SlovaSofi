@@ -131,6 +131,16 @@
         fail(error, "Не удалось сохранить настройки кабинета");
     }
 
+    async function assignLessonsToClass(client, classId, teacherId, lessonIds) {
+        const ids = [...new Set(lessonIds)];
+        if (!ids.length) return;
+        const { error } = await client.from("class_lesson_assignments").upsert(
+            ids.map(lessonId => ({ class_id: classId, teacher_id: teacherId, lesson_id: lessonId })),
+            { onConflict: "class_id,lesson_id", ignoreDuplicates: true }
+        );
+        fail(error, "Не удалось добавить уроки в класс");
+    }
+
     async function saveWorkspace(client, userId, data, access, deletedLessonIds = []) {
         // A director may save library content, never synchronize class data.
         const permissions = access?.role === "director"
@@ -380,6 +390,7 @@
         createLessonCategory,
         deleteLessonCategory,
         saveWorkspace,
+        assignLessonsToClass,
         inviteStudent,
         listExistingStudents,
         addExistingStudent,

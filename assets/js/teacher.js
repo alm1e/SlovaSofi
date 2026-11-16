@@ -2377,6 +2377,7 @@ function lessonActionIcon(action) {
 function renderLessons() {
     const canEditLessons = hasPermission("edit_lessons");
     const canAssignLessons = hasPermission("view_assign_lessons");
+    const selectedClass = data.classes.find(item => item.id === activeClassFilter);
     const filtered = data.lessons.filter((item) => (!activeClassFilter || lessonClassIds(item).includes(activeClassFilter))
         && `${item.title} ${item.unit} ${lessonClassNames(item)}`.toLowerCase().includes(searchQuery.toLowerCase()));
     const classSelect = `<option value="">${t("lessons.allClasses")}</option>${data.classes.map((item) => `<option value="${escapeHtml(item.id)}" ${activeClassFilter === item.id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}`;
@@ -2387,7 +2388,7 @@ function renderLessons() {
     const deleteCategoryButton = canEditLessons && selectedLessonUnit && !LESSON_UNITS.includes(selectedLessonUnit.toUpperCase())
         && (data.categories || []).includes(selectedLessonUnit)
         ? `<button class="button secondary" type="button" data-action="delete-category" data-id="${escapeHtml(selectedLessonUnit)}">${categoryText("remove")}</button>` : "";
-    return `${sectionHeading}<div class="section-heading"><div><h1>${escapeHtml(selectedLessonUnit || t("lessons.title"))}</h1><p>${escapeHtml(selectedLessonUnit ? lessonText("levelDescription", { level: selectedLessonUnit }) : lessonText("description"))}</p></div>${canEditLessons ? `<div class="lesson-heading-actions">${deleteCategoryButton}<button class="button secondary" type="button" data-action="new-category">${categoryText("add")}</button><button class="button" data-action="new-lesson">${t("lessons.add")}</button></div>` : ""}</div>
+    return `${sectionHeading}<div class="section-heading"><div><h1>${escapeHtml(selectedClass ? `${selectedClass.name}${selectedLessonUnit ? ` · ${selectedLessonUnit}` : ""}` : selectedLessonUnit || t("lessons.title"))}</h1><p>${escapeHtml(selectedLessonUnit ? lessonText("levelDescription", { level: selectedLessonUnit }) : lessonText("description"))}</p></div><div class="lesson-heading-actions">${selectedClass && canAssignLessons ? `<button class="button" type="button" data-action="add-class-lessons" data-id="${escapeHtml(selectedClass.id)}">${classLessonText("add")}</button>` : ""}${canEditLessons ? `${deleteCategoryButton}<button class="button secondary" type="button" data-action="new-category">${categoryText("add")}</button><button class="button" data-action="new-lesson">${t("lessons.add")}</button>` : ""}</div></div>
         <div class="toolbar"><select data-class-filter aria-label="${t("lessons.allClasses")}">${classSelect}</select><input type="search" data-search placeholder="${t("lessons.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("lessons.search")}"></div>
         ${selectedLessonUnit ? `<section class="course-hero course-hero-${LESSON_UNITS.includes(selectedLessonUnit) ? selectedLessonUnit.toLowerCase() : "custom"}"><div class="course-hero-art" aria-hidden="true"><span>${escapeHtml(selectedLessonUnit)}</span></div><div class="course-hero-copy"><span class="course-hero-kicker">${lessonText("courseLabel")}</span><h2>${escapeHtml(selectedLessonUnit)}</h2><p>${escapeHtml(lessonText("levelDescription", { level: selectedLessonUnit }))}</p><span class="course-hero-count">${countLabel(selectedLevelLessons.length, "lesson")}</span></div></section>
             <div class="course-lessons-heading"><h2>${lessonText("levelLessons")}</h2><span>${selectedLevelLessons.length}</span></div>
@@ -3350,6 +3351,7 @@ function handleAction(action, id) {
     if (action === "edit-lesson") openLessonEditor(data.lessons.find((item) => item.id === id));
     if (action === "preview-lesson") openLessonPreview(id);
     if (action === "assign-lesson") openLessonAssignment(id);
+    if (action === "add-class-lessons") openClassLessonPicker(id);
     if (action === "delete-lesson") deleteLesson(id);
     if (action === "add-teacher" && hasPermission("manage_teachers")) openTeacherForm();
     if (action === "edit-teacher" && hasPermission("manage_teachers")) {
@@ -5188,11 +5190,90 @@ async function saveLesson(event) {
     showToast(wasEditing ? t("toast.lessonUpdated") : t("toast.lessonCreated"));
 }
 
+function classLessonText(key) {
+    const labels = SlovaI18n.locales({
+        ua: { add: "Додати урок із бібліотеки", title: "Уроки для класу", search: "Знайти урок…", all: "Усі рівні", assigned: "Уже додано", incomplete: "Урок ще не готовий", save: "Додати вибрані уроки", error: "Не вдалося додати уроки.", empty: "Уроків не знайдено" },
+        ru: { add: "Добавить урок из библиотеки", title: "Уроки для класса", search: "Найти урок…", all: "Все уровни", assigned: "Уже добавлен", incomplete: "Урок ещё не готов", save: "Добавить выбранные уроки", error: "Не удалось добавить уроки.", empty: "Уроки не найдены" },
+        en: { add: "Add a lesson from the library", title: "Lessons for class", search: "Find a lesson…", all: "All levels", assigned: "Already added", incomplete: "Lesson is not ready", save: "Add selected lessons", error: "Could not add lessons.", empty: "No lessons found" }
+    });
+    return (labels[currentLanguage] || labels.en)[key];
+}
+
+function lessonAssignmentIncomplete(lesson) {
+    return [...normalizeLessonSections(lesson), ...normalizeHomeworkSections(lesson)]
+        .flatMap(section => section.activities.map((activity, index) => ({ activity, label: `${section.title} · ${index + 1}` })))
+        .filter(item => window.SlovaLessonReadiness?.incomplete(item.activity));
+}
+
+function classLessonPickerItems(classId, query = "", unit = "") {
+    const search = query.trim().toLocaleLowerCase();
+    return data.lessons.filter(lesson => (!unit || lesson.unit === unit)
+        && `${lesson.title} ${lesson.unit}`.toLocaleLowerCase().includes(search))
+        .map(lesson => ({ lesson, assigned: lessonClassIds(lesson).includes(classId), incomplete: lessonAssignmentIncomplete(lesson).length > 0 }));
+}
+
+function openClassLessonPicker(classId) {
+    if (!hasPermission("view_assign_lessons")) return;
+    const group = data.classes.find(item => item.id === classId);
+    if (!group) return;
+    const selected = new Set();
+    openModal(`${modalHeader(classLessonText("title"))}<form id="classLessonPickerForm">
+        <p class="assignment-hint">${escapeHtml(group.name)}</p>
+        <div class="toolbar"><input type="search" data-picker-search placeholder="${escapeHtml(classLessonText("search"))}" aria-label="${escapeHtml(classLessonText("search"))}"><select data-picker-unit aria-label="${escapeHtml(classLessonText("all"))}"><option value="">${escapeHtml(classLessonText("all"))}</option>${lessonCategories().map(unit => `<option value="${escapeHtml(unit)}" ${unit === selectedLessonUnit ? "selected" : ""}>${escapeHtml(unit)}</option>`).join("")}</select></div>
+        <div class="class-assignment-list class-lesson-picker-list" data-picker-list></div>
+        <p data-picker-count role="status" aria-live="polite"></p>
+        <div class="modal-actions"><button type="button" class="button secondary" data-close>${t("action.cancel")}</button><button type="submit" class="button" disabled>${classLessonText("save")}</button></div>
+    </form>`);
+    const form = modalCard.querySelector("#classLessonPickerForm"), list = form.querySelector("[data-picker-list]");
+    const search = form.querySelector("[data-picker-search]"), level = form.querySelector("[data-picker-unit]");
+    const submit = form.querySelector('[type="submit"]'), count = form.querySelector("[data-picker-count]");
+    let busy = false;
+    const refresh = () => {
+        const items = classLessonPickerItems(classId, search.value, level.value);
+        list.innerHTML = items.length ? items.map(({ lesson, assigned, incomplete }) => `<label class="class-choice"><input type="checkbox" value="${escapeHtml(lesson.id)}" ${assigned || selected.has(lesson.id) ? "checked" : ""} ${assigned || incomplete ? "disabled" : ""}><span><strong>${escapeHtml(lesson.title)}</strong><small>${escapeHtml(lesson.unit)}${assigned ? ` · ${classLessonText("assigned")}` : incomplete ? ` · ${classLessonText("incomplete")}` : ""}</small></span></label>`).join("") : `<p class="hint">${classLessonText("empty")}</p>`;
+        count.textContent = countLabel(selected.size, "lesson");
+        submit.disabled = busy || !selected.size;
+    };
+    search.addEventListener("input", refresh);
+    level.addEventListener("change", refresh);
+    list.addEventListener("change", event => {
+        if (!event.target.matches('input[type="checkbox"]') || event.target.disabled) return;
+        event.target.checked ? selected.add(event.target.value) : selected.delete(event.target.value);
+        count.textContent = countLabel(selected.size, "lesson"); submit.disabled = busy || !selected.size;
+    });
+    form.querySelector("[data-close]").addEventListener("click", closeModal);
+    form.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (busy || !hasPermission("view_assign_lessons")) return;
+        const currentGroup = data.classes.find(item => item.id === classId);
+        if (!currentGroup) return;
+        const items = classLessonPickerItems(classId).filter(item => selected.has(item.lesson.id) && !item.assigned);
+        if (!items.length) return;
+        if (items.some(item => item.incomplete)) { showToast(window.SlovaLessonReadiness.blocked(currentLanguage)); return; }
+        busy = true; submit.disabled = true;
+        try {
+            await window.teacherWorkspaceApi.assignLessonsToClass(window.supabaseClient, classId,
+                currentGroup.teacherId || currentUser.id, items.map(item => item.lesson.id));
+            const ids = new Set(items.map(item => item.lesson.id));
+            data.lessons = data.lessons.map(lesson => ids.has(lesson.id)
+                ? { ...lesson, classIds: [...new Set([...lessonClassIds(lesson), classId])] } : lesson);
+            if (form.isConnected) {
+                closeModal(); selectedLessonUnit = ""; searchQuery = ""; render();
+            }
+            showToast(assignmentText("saved"));
+        } catch (error) {
+            showToast(`${classLessonText("error")} ${error.message}`);
+            busy = false; if (form.isConnected) refresh();
+        }
+    });
+    refresh();
+}
+
 function openLessonAssignment(id) {
     if (!hasPermission("view_assign_lessons")) return;
     const lesson = data.lessons.find((item) => item.id === id);
     if (!lesson) return;
-    const incomplete = [...normalizeLessonSections(lesson), ...normalizeHomeworkSections(lesson)].flatMap(section => section.activities.map((activity,index)=>({activity,label:`${section.title} · ${index+1}`}))).filter(item=>window.SlovaLessonReadiness?.incomplete(item.activity));
+    const incomplete = lessonAssignmentIncomplete(lesson);
     openModal(`${modalHeader(assignmentText("dialog"))}
         <form id="lessonAssignmentForm">
             <p class="assignment-hint">${assignmentText("hint")}</p>

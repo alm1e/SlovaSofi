@@ -70,6 +70,29 @@
  await run('Выход к списку уроков',()=>{reset();pageContent.querySelector('[data-workspace-back]').click();assert(!lessonWorkspaceMode,'Не вышел');assert(pageContent.querySelector('.course-lesson-row, [data-unit-open]'),'Нет списка');});
 
  await run('Галерея: одинаковый размер и полное фото',async()=>{const container=document.createElement('div');container.style='width:600px;max-width:100%';container.innerHTML=slovaGallery.html([{url:new URL('wide.svg',location.href).href,alt:'Широкое'},{url:new URL('tall.svg',location.href).href,alt:'Высокое'}]);document.body.append(container);try{const images=[...container.querySelectorAll('img')];await Promise.all(images.map(img=>img.decode()));const a=images[0].getBoundingClientRect(),b=images[1].getBoundingClientRect();assert(a.width===b.width&&a.height===b.height,'Разный размер карточек');assert(getComputedStyle(images[0]).objectFit==='contain','Изображение обрезается');container.querySelector('[data-gallery-step="1"]').click();assert(container.querySelector('[data-gallery]').dataset.galleryIndex==='1','Стрелка не работает');images[1].click();const box=document.querySelector('.slova-lightbox');assert(box&&!box.hidden,'Нет открытия');const image=box.querySelector('img');await image.decode();assert(image.src===images[1].src,'Потерян исходный файл');assert(getComputedStyle(image).objectFit==='contain','Фото обрезано при открытии');box.querySelector('[data-lightbox-step="-1"]').click();assert(box.querySelector('img').src===images[0].src,'Нет переключения');document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert(box.hidden,'Escape не закрыл');}finally{container.remove();}});
+ await run('Добавление уроков из класса: поиск, уровни, сохранение и права директора',async()=>{
+  const before={data,currentUser,workspaceAccess,api:window.teacherWorkspaceApi,client:window.supabaseClient};
+  try {
+   currentUser={id:'qa-owner'};workspaceAccess={role:'teacher',permissions:{view_assign_lessons:true,view_classes_students:true,manage_classes_students:true,edit_lessons:false}};
+   const ready=(id,title,unit,classIds=[])=>({id,title,unit,classIds,teacherId:'qa-owner',sections:[{id:'section-'+id,title:'Text',activities:[{type:'text',content:'Ready lesson'}]}],homeworkSections:[]});
+   data={classes:[{id:'picker-class',name:'Пустой класс',teacherId:'qa-owner',students:[]}],categories:[],lessons:[ready('existing','Уже назначен','A1'),ready('new','Новый урок','B1',['other-class']),{...ready('draft','Незавершённый','A1'),sections:[{title:'Blank',activities:[{type:'fill-blank',content:''}]}]}]};
+   lessonWorkspaceMode='';handleAction('class-lessons','picker-class');
+   assert(pageContent.querySelector('[data-action="add-class-lessons"]'),'Нет кнопки в пустом классе');
+   data.lessons[0].classIds=['picker-class'];
+   let fail=true;const writes=[];window.supabaseClient={};window.teacherWorkspaceApi={assignLessonsToClass:async(...args)=>{writes.push(args);if(fail)throw Error('Test offline');}};
+   pageContent.querySelector('[data-action="add-class-lessons"]').click();
+   const form=modalCard.querySelector('#classLessonPickerForm'),search=form.querySelector('[data-picker-search]'),level=form.querySelector('[data-picker-unit]');
+   assert(form.querySelector('input[value="existing"]').disabled,'Уже назначенный урок доступен повторно');assert(form.querySelector('input[value="draft"]').disabled,'Незавершённый урок доступен');
+   const choice=form.querySelector('input[value="new"]');choice.checked=true;choice.dispatchEvent(new Event('change',{bubbles:true}));
+   level.value='A1';level.dispatchEvent(new Event('change',{bubbles:true}));assert(!form.querySelector('input[value="new"]'),'Фильтр уровня не сработал');
+   level.value='';level.dispatchEvent(new Event('change',{bubbles:true}));search.value='Новый';search.dispatchEvent(new Event('input',{bubbles:true}));
+   assert(form.querySelectorAll('[data-picker-list] input').length===1,'Поиск не ограничил список');assert(form.querySelector('input[value="new"]').checked,'Потерян выбор после фильтрации');
+   form.requestSubmit();await new Promise(resolve=>setTimeout(resolve,30));assert(!modalBackdrop.hidden,'При ошибке окно закрылось');assert(!data.lessons[1].classIds.includes('picker-class'),'Ошибка показана как успешное назначение');
+   fail=false;form.requestSubmit();await new Promise(resolve=>setTimeout(resolve,30));assert(modalBackdrop.hidden,'Окно не закрылось после сохранения');
+   assert(data.lessons[1].classIds.includes('picker-class')&&data.lessons[1].classIds.includes('other-class'),'Потеряно прежнее назначение');assert(writes.at(-1)[3].join(',')==='new','Добавлены лишние уроки');
+   workspaceAccess={role:'director',permissions:{view_lessons:true,view_classes_students:true,edit_lessons:true}};render();assert(!pageContent.querySelector('[data-action="add-class-lessons"]'),'Директор видит назначение уроков');
+  } finally {closeModal();data=before.data;currentUser=before.currentUser;workspaceAccess=before.workspaceAccess;window.teacherWorkspaceApi=before.api;window.supabaseClient=before.client;activeClassFilter='';}
+ });
  await run('Нет ошибок JavaScript при работе кнопок',()=>{assert(!window.qaErrors.length,window.qaErrors.join('; '));});
  clearTimeout(lessonDraftAutosaveTimer);
  lessonWorkspaceMode='';data=structuredClone(original);activeView='lessons';selectedLessonUnit='A1';searchQuery='';render();

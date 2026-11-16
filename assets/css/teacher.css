@@ -2256,3 +2256,9 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .find-correction-result.is-incorrect { color:#c35b5b; }
 .find-empty[hidden] { display:none; }
 @media(max-width:600px) { .find-correction-row { grid-template-columns:minmax(0,1fr) auto; } .find-correction-label, .find-correction-result { grid-column:1 / -1; } .find-correction-input { font-size:16px; } }
+
+/* Class library picker retains selections while searching across levels. */
+.class-lesson-picker-list { max-height: 48vh; overflow-y: auto; }
+.class-lesson-picker-list .class-choice > span { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.class-lesson-picker-list .class-choice small { color: var(--muted); }
+.class-lesson-picker-list .class-choice:has(input:disabled) { cursor: default; opacity: .7; }
