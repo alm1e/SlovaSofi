@@ -11,6 +11,7 @@ type Payload = {
     email?: unknown;
     memberId?: unknown;
     permissions?: unknown;
+    role?: unknown;
 };
 
 function jsonResponse(status: number, body: unknown, origin: string) {
@@ -58,6 +59,8 @@ Deno.serve(async (request: Request) => {
     }
     const action = typeof payload.action === "string" ? payload.action : "";
     const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
+    let requestedRole = payload.role === undefined ? "teacher" : payload.role;
+    if (!["teacher", "director"].includes(String(requestedRole))) return jsonResponse(400, { error: "Invalid staff role." }, configuredOrigin);
     const memberId = typeof payload.memberId === "string" ? payload.memberId.trim() : "";
     if (!["list", "invite", "update", "remove"].includes(action)) {
         return jsonResponse(400, { error: "Choose a valid teacher action." }, configuredOrigin);
@@ -103,7 +106,7 @@ Deno.serve(async (request: Request) => {
 
     if (action === "list") {
         const { data: profiles, error: profilesError } = await adminClient.from("profiles")
-            .select("id,role").in("role", ["teacher", "admin"]);
+            .select("id,role").in("role", ["teacher", "director", "admin"]);
         if (profilesError) {
             console.error("Could not load teacher profiles.", profilesError);
             return jsonResponse(500, { error: "Could not load teacher accounts." }, configuredOrigin);
@@ -141,7 +144,7 @@ Deno.serve(async (request: Request) => {
                 email: candidate.email || "",
                 name,
                 role: profiles.find((profile) => profile.id === candidate.id)?.role,
-                permissions: { edit_lessons: profiles.some((profile) => profile.id === candidate.id && profile.role === "admin") || editorIds.has(candidate.id) },
+                permissions: { edit_lessons: profiles.some((profile) => profile.id === candidate.id && profile.role === "admin") || (profiles.some((profile) => profile.id === candidate.id && profile.role === "teacher") && editorIds.has(candidate.id)) },
                 created_at: candidate.created_at
             };
         });
@@ -182,7 +185,7 @@ Deno.serve(async (request: Request) => {
                 console.error("Could not verify the existing account role.", existingProfileError);
                 return jsonResponse(500, { error: "Could not verify the existing account role." }, configuredOrigin);
             }
-            if (!existingProfile || existingProfile.role !== "teacher") {
+            if (!existingProfile || !["teacher", "director"].includes(existingProfile.role)) {
                 return jsonResponse(409, { error: "This email is already linked to a non-teacher account." }, configuredOrigin);
             }
         }
@@ -208,9 +211,10 @@ Deno.serve(async (request: Request) => {
             console.error("Could not verify the teacher account.", profileError);
             return jsonResponse(500, { error: "Could not verify the teacher account." }, configuredOrigin);
         }
-        if (!profile || profile.role !== "teacher") {
+        if (!profile || !["teacher", "director"].includes(profile.role)) {
             return jsonResponse(404, { error: "Teacher account not found." }, configuredOrigin);
         }
+        if (payload.role === undefined) requestedRole = profile.role;
         teacher = { id: profile.id };
     }
 
@@ -219,7 +223,12 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(500, { error: "Could not resolve the teacher account." }, configuredOrigin);
     }
 
-    if (action === "remove" || (payload.permissions as { edit_lessons: boolean }).edit_lessons === false) {
+    if (action !== "remove") {
+        const { error } = await adminClient.from("profiles").update({ role: requestedRole }).eq("id", teacher.id);
+        if (error) return jsonResponse(500, { error: "Could not update staff role. Apply the school scope migration first." }, configuredOrigin);
+    }
+
+    if (action === "remove" || requestedRole === "director" || (payload.permissions as { edit_lessons: boolean }).edit_lessons === false) {
         const { error } = await adminClient.from("teacher_lesson_editors").delete().eq("user_id", teacher.id);
         if (error) {
             console.error("Could not revoke lesson-editing permission.", error);

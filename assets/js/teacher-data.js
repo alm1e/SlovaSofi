@@ -9,8 +9,8 @@
         if (!context?.owner_id || !context?.permissions) {
             throw new Error("Не удалось определить школьный кабинет и права доступа.");
         }
-        const isAdmin = context.role === "admin";
-        if (!["teacher", "admin"].includes(context.role)) {
+        const readAllVisible = ["admin", "director"].includes(context.role);
+        if (!["teacher", "director", "admin"].includes(context.role)) {
             const error = new Error("Этот кабинет доступен только преподавателям.");
             error.code = "WORKSPACE_FORBIDDEN";
             throw error;
@@ -23,14 +23,14 @@
         });
         const [settingsResult, classesResult, lessonsResult, rosterResult, assignmentsResult, categoriesResult] = await Promise.all([
             client.from("teacher_workspace_settings").select("legacy_imported").eq("user_id", userId).maybeSingle(),
-            (isAdmin
-                ? client.from("teacher_classes").select("id,name,course,teacher_id").order("created_at")
-                : client.from("teacher_classes").select("id,name,course,teacher_id").eq("teacher_id", userId).order("created_at")),
+            (readAllVisible
+                ? client.from("teacher_classes").select("id,name,course,teacher_id,class_scope").order("created_at")
+                : client.from("teacher_classes").select("id,name,course,teacher_id,class_scope").eq("teacher_id", userId).order("created_at")),
             client.from("teacher_lessons").select("id,title,unit,activities,teacher_id").order("created_at"),
-            (isAdmin
+            (readAllVisible
                 ? client.from("class_students").select("id,class_id,teacher_id,display_name,email,linked_user_id")
                 : client.from("class_students").select("id,class_id,teacher_id,display_name,email,linked_user_id").eq("teacher_id", userId)),
-            (isAdmin
+            (readAllVisible
                 ? client.from("class_lesson_assignments").select("class_id,lesson_id,teacher_id")
                 : client.from("class_lesson_assignments").select("class_id,lesson_id,teacher_id").eq("teacher_id", userId)),
             client.from("lesson_categories").select("name").order("created_at")
@@ -52,6 +52,7 @@
             id: group.id,
             name: group.name,
             course: group.course,
+            classScope: group.class_scope,
             teacherId: group.teacher_id,
             teacherName: [profileById.get(group.teacher_id)?.first_name, profileById.get(group.teacher_id)?.last_name]
                 .filter(Boolean).join(" ") || (group.teacher_id === userId ? userEmail : "Преподаватель"),
@@ -131,12 +132,14 @@
     }
 
     async function saveWorkspace(client, userId, data, access, deletedLessonIds = []) {
+        if (access?.role === "director") throw new Error("Director access is read-only.");
         const permissions = access?.permissions || {};
         if (permissions.manage_classes_students) {
-            const classes = data.classes.map(({ id, name, course, teacherId }) => ({
+            const classes = data.classes.map(({ id, name, course, teacherId, classScope }) => ({
                 id,
                 teacher_id: access?.role === "admin" ? teacherId || userId : userId,
                 name,
+                class_scope: classScope || "school",
                 course
             }));
             await upsertRows(client, "teacher_classes", classes, "Не удалось сохранить классы");

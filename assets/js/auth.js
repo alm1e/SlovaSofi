@@ -4,7 +4,7 @@ async function dashboardPathFor(user) {
     const { data: profile, error } = await window.supabaseClient.from("profiles")
         .select("role").eq("id", user.id).single();
     if (error) throw error;
-    return ["teacher", "admin"].includes(profile?.role) ? "teacher.html" : "student.html";
+    return ["teacher", "director", "admin"].includes(profile?.role) ? "teacher.html" : "student.html";
 }
 
 async function restoreSavedSession() {

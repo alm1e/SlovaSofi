@@ -455,7 +455,7 @@ const staffLabels = SlovaI18n.locales({
 const permissionLabels = [
     ["edit_lessons", "editLessons"]
 ];
-const roleLabels = { admin: SlovaI18n.locales({ ua: "Адміністратор", ru: "Администратор", en: "Administrator" }) };
+const roleLabels = { director: SlovaI18n.locales({ ua: "Директор", ru: "Директор", en: "Director" }), admin: SlovaI18n.locales({ ua: "Адміністратор", ru: "Администратор", en: "Administrator" }) };
 const ownerPermissions = Object.fromEntries(permissionLabels.map(([key]) => [key, true]));
 let currentLanguage = ["ua", "ru", "en", "sk", "kk"].includes(localStorage.getItem("siteLanguage")) ? localStorage.getItem("siteLanguage") : "ua";
 let currentTheme = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
@@ -1561,7 +1561,7 @@ function setView(view) {
     if (view === "staff" && !hasPermission("manage_teachers")) return;
     if (view === "classes" && !hasPermission("view_classes_students") && !hasPermission("manage_classes_students")) return;
     if (view === "students" && !hasPermission("view_classes_students") && !hasPermission("manage_classes_students")) return;
-    if (view === "lessons" && !hasPermission("view_assign_lessons") && !hasPermission("edit_lessons")) return;
+    if (view === "lessons" && !hasPermission("view_lessons") && !hasPermission("view_assign_lessons") && !hasPermission("edit_lessons")) return;
     stopLiveProgressSubscription();
     lessonWorkspaceMode = "";
     workspaceLessonId = "";
@@ -1920,11 +1920,11 @@ function translateStaticUI() {
     staffNav.hidden = !hasPermission("manage_teachers");
     staffNav.querySelector("[data-staff-nav]").textContent = staffText("nav");
     document.querySelectorAll('[data-i18n="teacher.role"]').forEach((element) => {
-        element.textContent = workspaceAccess.role === "admin" ? roleLabels.admin[currentLanguage] : t("teacher.role");
+        element.textContent = roleLabels[workspaceAccess.role]?.[currentLanguage] || t("teacher.role");
     });
     document.querySelector('[data-view="classes"]').hidden = !hasPermission("view_classes_students") && !hasPermission("manage_classes_students");
     document.querySelector('[data-view="students"]').hidden = !hasPermission("view_classes_students") && !hasPermission("manage_classes_students");
-    document.querySelector('[data-view="lessons"]').hidden = !hasPermission("view_assign_lessons") && !hasPermission("edit_lessons");
+    document.querySelector('[data-view="lessons"]').hidden = !hasPermission("view_lessons") && !hasPermission("view_assign_lessons") && !hasPermission("edit_lessons");
     document.getElementById("menuToggle").setAttribute("aria-label", t("menu.open"));
     document.title = `SlovaSofi · ${t("pageTitle")}`;
 }
@@ -1934,7 +1934,7 @@ function renderOverview() {
     const recentLessons = [...data.lessons].slice(-3).reverse();
     const featuredClasses = data.classes.slice(0, 3);
     const initials = userInitials(currentUser);
-    const roleLabel = workspaceAccess.role === "admin" ? roleLabels.admin[currentLanguage] : t("teacher.role");
+    const roleLabel = roleLabels[workspaceAccess.role]?.[currentLanguage] || t("teacher.role");
     return `<section class="profile-hero"><div class="profile-identity"><span class="profile-avatar">${escapeHtml(initials)}</span><div><span class="eyebrow">✦ ${t("welcome.badge")}</span><h1 id="welcomeHeading">${escapeHtml(profileGreeting(currentUser))}</h1><p>${escapeHtml(currentUser?.email || t("profile.notSignedIn"))}</p></div></div><div class="profile-role">${roleLabel}</div></section>
         <div class="profile-welcome"><div><h2>${t("profile.dashboardTitle")}</h2><p>${t("profile.dashboardHint")}</p><span class="storage-note">${t("welcome.storage")}</span></div>${hasPermission("edit_lessons") ? `<button class="button" data-action="new-lesson">${t("action.createLesson")}</button>` : ""}</div>
         <div class="stats-grid profile-stats">
@@ -2000,7 +2000,7 @@ function subscribeToCalendarChanges(client, user) {
         event: "*",
         schema: "public",
         table: "calendar_events",
-        ...(workspaceAccess.role === "admin" ? {} : { filter: `teacher_id=eq.${user.id}` })
+        ...(["admin", "director"].includes(workspaceAccess.role) ? {} : { filter: `teacher_id=eq.${user.id}` })
     };
     calendarChannel = client.channel(`calendar-events:${user.id}`)
         .on("postgres_changes", changeOptions, ({ eventType, new: next, old: previous }) => {
@@ -2354,12 +2354,12 @@ function renderClasses() {
         <div class="toolbar">${canManageClasses ? `<button class="button secondary" data-action="new-class">${t("classes.create")}</button>` : ""}<input type="search" data-search placeholder="${t("classes.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("classes.search")}"></div>
         <div class="card-grid class-grid">${filtered.length ? filtered.map((item, index) => `<article class="class-card class-card-enhanced class-tone-${index % 4}" data-open-class-id="${escapeHtml(item.id)}">
             ${canManageClasses ? `<div class="card-actions"><button class="mini-action" data-action="edit-class" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editClass")}">✎</button><button class="mini-action" data-action="delete-class" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}">×</button></div>` : ""}
-            <div class="class-card-top"><span class="class-card-avatar">${escapeHtml(item.name.slice(0, 2).toUpperCase())}</span><span class="class-course-pill">${escapeHtml(formatCourse(item.course))}</span></div><h3><button type="button" class="class-card-title" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${escapeHtml(item.name)}</button></h3>
+            <div class="class-card-top"><span class="class-card-avatar">${escapeHtml(item.name.slice(0, 2).toUpperCase())}</span><span class="class-course-pill">${escapeHtml(formatCourse(item.course))} · ${escapeHtml(classScopeText(item.classScope || "private"))}</span></div><h3><button type="button" class="class-card-title" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${escapeHtml(item.name)}</button></h3>
             <div class="class-teacher-line"><span class="class-person-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="7" r="4"></circle><path d="M4.5 21v-2a7.5 7.5 0 0 1 15 0v2z"></path></svg></span><span><small>${t("classes.teacherLabel")}</small><strong>${escapeHtml(item.teacherName || teacherName)}</strong>${presenceBadge(item.teacherId)}</span></div>
             <div class="class-roster"><div class="class-roster-heading"><strong>${t("classes.studentsLabel")}</strong><span>${item.students.length}</span></div>
                 ${item.students.length ? `<ul class="class-roster-list">${(item.studentRecords?.length ? item.studentRecords.map((student) => ({ name: student.display_name, userId: student.linked_user_id })) : item.students.map((name) => ({ name, userId: null }))).map((student) => `<li><span class="class-student-avatar">${escapeHtml(student.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toLocaleUpperCase())}</span><span class="class-roster-student-name">${escapeHtml(student.name)}</span>${presenceBadge(student.userId)}</li>`).join("")}</ul>` : `<p class="class-roster-empty">${t("classes.noStudents")}</p>`}
             </div>
-            <div class="class-card-meta">${hasPermission("view_assign_lessons") || hasPermission("edit_lessons") ? `<button class="text-link" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${t("classes.lessons")}</button>` : ""}</div>
+            <div class="class-card-meta">${hasPermission("view_lessons") || hasPermission("view_assign_lessons") || hasPermission("edit_lessons") ? `<button class="text-link" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${t("classes.lessons")}</button>` : ""}</div>
             ${canManageClasses ? `<button class="button secondary small class-invite-button" data-action="invite-student" data-id="${escapeHtml(item.id)}">${t("classes.inviteStudent")}</button>` : ""}</article>`).join("") : emptyMessage(t("classes.notFound"), t("classes.notFoundHint"))}</div>`;
 }
 
@@ -2500,8 +2500,8 @@ function renderStaff() {
     const members = workspaceAccess.staff || [];
     return `<div class="section-heading"><div><h1>${staffText("title")}</h1><p>${staffText("description")}</p></div><button class="button" data-action="add-teacher">${staffText("add")}</button></div>
         <div class="staff-grid">
-            ${members.length ? members.map((member) => `<article class="staff-card"><span class="avatar">${escapeHtml(initialsFor(member.name || member.email))}</span><div class="staff-card-main"><strong>${escapeHtml(member.name || member.email)}</strong>${member.name ? `<small class="staff-card-email">${escapeHtml(member.email)}</small>` : ""}<small>${member.role === "admin" ? roleLabels.admin[currentLanguage] : staffText("memberRole")}</small>${presenceBadge(member.id)}<span class="staff-permissions">${permissionLabels.filter(([key]) => member.permissions?.[key]).map(([, label]) => staffText(label)).join(" · ") || staffText("noEditor")}</span></div>
-                ${member.role === "admin" ? "" : `<div class="staff-card-actions"><button type="button" class="button secondary small" data-action="edit-teacher" data-id="${escapeHtml(member.id)}">${staffText("edit")}</button><button type="button" class="mini-action" data-action="remove-teacher" data-id="${escapeHtml(member.id)}" aria-label="${staffText("remove")}" title="${staffText("remove")}">×</button></div>`}</article>`).join("") : emptyMessage(staffText("empty"), staffText("emptyHint"))}
+            ${members.length ? members.map((member) => `<article class="staff-card"><span class="avatar">${escapeHtml(initialsFor(member.name || member.email))}</span><div class="staff-card-main"><strong>${escapeHtml(member.name || member.email)}</strong>${member.name ? `<small class="staff-card-email">${escapeHtml(member.email)}</small>` : ""}<small>${roleLabels[member.role]?.[currentLanguage] || staffText("memberRole")}</small>${presenceBadge(member.id)}<span class="staff-permissions">${permissionLabels.filter(([key]) => member.permissions?.[key]).map(([, label]) => staffText(label)).join(" · ") || staffText("noEditor")}</span></div>
+                ${member.role === "admin" ? "" : `<div class="staff-card-actions"><button type="button" class="button secondary small" data-action="edit-teacher" data-id="${escapeHtml(member.id)}">${staffText("edit")}</button>${member.role === "director" ? "" : `<button type="button" class="mini-action" data-action="remove-teacher" data-id="${escapeHtml(member.id)}" aria-label="${staffText("remove")}" title="${staffText("remove")}">×</button>`}</div>`}</article>`).join("") : emptyMessage(staffText("empty"), staffText("emptyHint"))}
         </div>`;
 }
 
@@ -2512,12 +2512,22 @@ function openTeacherForm(member = null) {
     openModal(`${modalHeader(staffText(isEditing ? "editTitle" : "inviteTitle"))}
         <form id="teacherInviteForm">
             <div class="form-field"><label for="teacherInviteEmail">${staffText("email")}</label><input id="teacherInviteEmail" name="email" type="email" required maxlength="254" autocomplete="email" value="${escapeHtml(member?.email || "")}" ${isEditing ? "readonly" : ""}></div>
-            <div class="form-field"><span class="staff-field-label">${staffText("role")}</span><div class="staff-role-value">${staffText("teacher")}</div></div>
+            <div class="form-field"><span class="staff-field-label">${staffText("role")}</span><select name="staffRole"><option value="teacher" ${member?.role !== "director" ? "selected" : ""}>${staffText("teacher")}</option><option value="director" ${member?.role === "director" ? "selected" : ""}>${roleLabels.director[currentLanguage] || roleLabels.director.en}</option></select></div>
             <fieldset class="staff-permission-field"><legend>${staffText("permissions")}</legend>${permissionInputs}</fieldset>
             <div class="modal-actions"><button type="button" class="button secondary" data-close>${staffText("cancel")}</button><button class="button" type="submit">${staffText(isEditing ? "save" : "invite")}</button></div>
         </form>`);
     refreshModal = () => openTeacherForm(member);
     modalCard.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", closeModal));
+    const staffForm = modalCard.querySelector("#teacherInviteForm");
+    const syncRolePermissions = () => {
+        const readOnly = staffForm.elements.staffRole.value === "director";
+        staffForm.querySelectorAll("[data-permission-key]").forEach((input) => {
+            input.disabled = readOnly;
+            if (readOnly) input.checked = false;
+        });
+    };
+    staffForm.elements.staffRole.addEventListener("change", syncRolePermissions);
+    syncRolePermissions();
     modalCard.querySelector("#teacherInviteForm").addEventListener("submit", async (event) => {
         event.preventDefault();
         const form = event.currentTarget;
@@ -2531,7 +2541,8 @@ function openTeacherForm(member = null) {
             await window.teacherWorkspaceApi.manageTeacher(window.supabaseClient, {
                 action: isEditing ? "update" : "invite",
                 ...(isEditing ? { memberId: member.id } : { email: String(new FormData(form).get("email")).trim().toLowerCase() }),
-                permissions
+                permissions,
+                role: form.elements.staffRole.value
             });
             const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, currentUser.id);
             data = workspace.data;
@@ -3366,6 +3377,15 @@ function modalHeader(title) {
     return `<div class="modal-header"><h2 id="modalTitle">${escapeHtml(title)}</h2><button type="button" class="modal-close" data-close aria-label="${t("modal.close")}">×</button></div>`;
 }
 
+function classScopeText(key) {
+    const labels = SlovaI18n.locales({
+        ua: { label: "Тип класу", school: "Клас школи", private: "Особистий клас", hint: "Директор бачить лише класи школи. Змінити тип наявного класу може адміністратор." },
+        ru: { label: "Тип класса", school: "Класс школы", private: "Личный класс", hint: "Директор видит только классы школы. Изменить тип существующего класса может администратор." },
+        en: { label: "Class type", school: "School class", private: "Personal class", hint: "Directors only see school classes. Only the administrator can change an existing class type." }
+    });
+    return (labels[currentLanguage] || labels.en)[key];
+}
+
 function openClassEditor(item) {
     if (!hasPermission("manage_classes_students")) return;
     const studentRecords = item?.studentRecords?.length
@@ -3378,6 +3398,7 @@ function openClassEditor(item) {
     openModal(`${modalHeader(item ? t("modal.editClass") : t("modal.newClass"))}
         <form id="classForm">
             <div class="form-field"><label for="className">${t("field.className")}</label><input id="className" name="name" required maxlength="80" value="${escapeHtml(item?.name || "")}" placeholder="${t("field.exampleClass")}"></div>
+            <div class="form-field"><label for="classScope">${classScopeText("label")}</label><select id="classScope" name="classScope" ${item && workspaceAccess.role !== "admin" ? "disabled" : ""}><option value="school" ${item?.classScope !== "private" ? "selected" : ""}>${classScopeText("school")}</option><option value="private" ${item?.classScope === "private" ? "selected" : ""}>${classScopeText("private")}</option></select><span class="hint">${classScopeText("hint")}</span></div>
             <div class="form-field"><label for="classCourse">${t("field.course")}</label><input id="classCourse" name="course" maxlength="80" value="${escapeHtml(item?.course || "")}" placeholder="${t("field.exampleCourse")}"></div>
             ${item
                 ? `<div class="form-field"><label>${t("field.students")}</label><div class="class-student-edit-list">${studentRecords.map(studentRowMarkup).join("")}</div><button class="text-link" id="addClassStudent" type="button">${t("action.addStudent")}</button><span class="hint">${t("field.studentsHint")}</span></div>`
@@ -3413,6 +3434,7 @@ function openClassEditor(item) {
             id: item?.id || crypto.randomUUID(),
             teacherId: item?.teacherId || currentUser?.id,
             teacherName: item?.teacherName,
+            classScope: String(form.get("classScope") || item?.classScope || "school"),
             name,
             course: String(form.get("course")).trim() || t("class.unnamedCourse"),
             students: updatedStudents.map((student) => typeof student === "string" ? student : student.display_name),
