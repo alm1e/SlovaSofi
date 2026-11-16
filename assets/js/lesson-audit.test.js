@@ -48,6 +48,10 @@ test('independent word checks share the draft queue and capture the displayed le
     const lesson={id:'lesson',revision:'v2',sections:[{activities:[{id:'block',index:2}]}]};
     const ctx=vm.createContext({
         openedLesson:lesson,draftSaveQueue:Promise.reject(new Error('Previous draft failed')),
+        structuredClone, pendingDrafts:new Map(), savingAnswers:0,
+        responseForActivity:()=>({selected:[1],corrections:{1:'good'}}),
+        activityDraftKey:(index,questionId)=>`${index}:${questionId}`,
+        backupAnswer:()=>null, draftStore:{acknowledge(){}}, updateSaveStatus(){},
         activitiesFor:lesson=>lesson.sections.flatMap(section=>section.activities),text:key=>key,
         invokeLessonApi:payload=>{calls.push(payload);return new Promise(resolve=>resolvers.push(resolve));},
         updateLessonProgress:(...args)=>updates.push(args)

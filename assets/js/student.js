@@ -79,6 +79,12 @@
             seekBack: "−5 sec", seekForward: "+5 sec", loopA: "Set A", loopB: "Set B", clearLoop: "Clear loop", speed: "Speed", transcript: "Transcript"
         }
     });
+    const saveCopy = SlovaI18n.locales({
+        ua: { savingAnswer: "Зберігаємо відповідь…", answerSaved: "Відповіді збережено", answerPending: "Відповіді ще не збережено на сервері.", retrySave: "Повторити збереження", localUnavailable: "Браузер не дозволив створити резервну копію. Не закривайте вкладку до збереження.", recoverAnswers: "На цьому пристрої залишилися незбережені відповіді. Відновлення замінить відповідні відповіді в уроці.", restoreAnswers: "Відновити відповіді", exportAnswers: "Завантажити копію відповідей", discardAnswers: "Видалити копію", changedDraft: "Викладач змінив урок. Збережені відповіді можна завантажити, але не підставити в нову версію." },
+        ru: { savingAnswer: "Сохраняем ответ…", answerSaved: "Ответы сохранены", answerPending: "Ответы ещё не сохранены на сервере.", retrySave: "Повторить сохранение", localUnavailable: "Браузер не разрешил создать резервную копию. Не закрывайте вкладку до сохранения.", recoverAnswers: "На этом устройстве остались несохранённые ответы. Восстановление заменит соответствующие ответы в уроке.", restoreAnswers: "Восстановить ответы", exportAnswers: "Скачать копию ответов", discardAnswers: "Удалить копию", changedDraft: "Учитель изменил урок. Сохранённые ответы можно скачать, но нельзя подставить в новую версию." },
+        en: { savingAnswer: "Saving answer…", answerSaved: "Answers saved", answerPending: "Answers have not been saved to the server yet.", retrySave: "Retry saving", localUnavailable: "The browser could not keep a backup. Keep this tab open until saving succeeds.", recoverAnswers: "This device has unsaved answers. Restoring replaces the corresponding answers in this lesson.", restoreAnswers: "Restore answers", exportAnswers: "Download answer backup", discardAnswers: "Delete backup", changedDraft: "Your teacher changed this lesson. Download your answers to keep a copy; they cannot be restored to the new version." }
+    });
+    Object.keys(saveCopy).forEach(lang => Object.assign(copy[lang], saveCopy[lang]));
     const recoveryCopy = SlovaI18n.locales({
         ua: { retry: "Спробувати знову", unavailable: "Сервіс уроків тимчасово недоступний. Спробуйте ще раз пізніше.", connection: "Не вдалося з’єднатися із сервісом уроків. Перевірте інтернет і спробуйте знову.", profile: "Профіль учня", dashboardLoading: "Завантаження кабінету…" },
         ru: { retry: "Попробовать снова", unavailable: "Сервис уроков временно недоступен. Попробуйте ещё раз позже.", connection: "Не удалось связаться с сервисом уроков. Проверьте интернет и попробуйте снова.", profile: "Профиль ученика", dashboardLoading: "Загрузка кабинета…" },
@@ -189,6 +195,14 @@
     let draftSaveTimers = new Map();
     let pendingDrafts = new Map();
     let draftSaveQueue = Promise.resolve();
+    let saveState = "saved";
+    let savingAnswers = 0;
+    let backupFailed = false;
+    let recoverableAnswers = [];
+    let draftStore;
+    try { draftStore = window.SlovaStudentDrafts.create(localStorage); }
+    catch { draftStore = window.SlovaStudentDrafts.create({ setItem() { throw Error("Storage unavailable"); }, length: 0 }); }
+
     let toastTimer;
     let dashboardStatus = "loading";
     let dashboardErrorKey = "connection";
@@ -517,10 +531,14 @@
     function progressForActivity(lesson, activity) {
         const index = activity.index;
         const legacyKey = legacyActivityProgressKey(activity, index);
+        const pending = lesson.id === openedLesson?.id ? pendingDrafts.get(activityDraftKey(index, null)) : null;
+        if (pending) return { response: pending.response, draft: true };
         return lesson.progress?.[activityProgressKey(activity, index)] || (legacyKey ? lesson.progress?.[legacyKey] : null) || null;
     }
 
     function progressForQuestion(lesson, activity, index, questionId, questionIndex) {
+        const pending = lesson.id === openedLesson?.id ? pendingDrafts.get(activityDraftKey(index, questionId)) : null;
+        if (pending) return { response: pending.response, draft: true };
         const key = activityProgressKey(activity, index);
         const legacyKey = legacyActivityProgressKey(activity, index);
         return lesson.progress?.[`${key}.q${questionId}`]
@@ -954,6 +972,35 @@
         syncProgressDisplay(lessonId);
     }
 
+    function backupAnswer(lessonId, activityIndex, questionId, response) {
+        if (!user || openedLesson?.id !== lessonId) return null;
+        const identity = lessonWriteIdentity(openedLesson, activityIndex, lessonId);
+        const record = draftStore.put({ userId: user.id, lessonId, revision: identity.lessonRevision,
+            activityId: identity.activityId, activityIndex, questionId, response: structuredClone(response) });
+        backupFailed = !record;
+        return record;
+    }
+
+    function updateSaveStatus(state = saveState) {
+        saveState = state;
+        const status = pageContent.querySelector("[data-draft-save-status]");
+        if (!status) return;
+        status.innerHTML = `<span>${escapeHtml(text(state === "error" ? "answerPending" : state === "saving" ? "savingAnswer" : "answerSaved"))}</span>${state === "error" ? ` <button type="button" class="button secondary small" data-retry-answer-save>${escapeHtml(text("retrySave"))}</button>` : ""}${backupFailed && pendingDrafts.size ? `<p>${escapeHtml(text("localUnavailable"))}</p>` : ""}`;
+    }
+
+    function recoveryMarkup() {
+        const current = recoverableAnswers.filter(record => record.revision === openedLesson?.revision);
+        if (!recoverableAnswers.length) return "";
+        return `<section class="panel student-answer-recovery" role="status"><p>${escapeHtml(text(current.length ? "recoverAnswers" : "changedDraft"))}</p><div class="student-activity-actions">${current.length ? `<button type="button" class="button secondary small" data-restore-answer-backup>${escapeHtml(text("restoreAnswers"))}</button>` : ""}<button type="button" class="button secondary small" data-export-answer-backup>${escapeHtml(text("exportAnswers"))}</button><button type="button" class="button secondary small" data-discard-answer-backup>${escapeHtml(text("discardAnswers"))}</button></div></section>`;
+    }
+
+    async function retryPendingAnswers() {
+        if (!openedLesson || !pendingDrafts.size) return;
+        updateSaveStatus("saving");
+        try { await flushDraftSaves(); updateSaveStatus("saved"); }
+        catch { updateSaveStatus("error"); }
+    }
+
     function activityDraftKey(activityIndex, questionId) {
         return questionId ? `${activityIndex}:${questionId}` : String(activityIndex);
     }
@@ -969,19 +1016,40 @@
         feedback.className = `student-answer-feedback${isError ? " is-incorrect" : ""}`;
     }
 
-    function saveFindErrorEvent(root,errorEvent) {
-        if(!openedLesson)return Promise.reject(new Error(text('lessonChanged')));
-        const element=root.closest('[data-activity-index]'),lessonId=openedLesson.id,index=Number(element.dataset.activityIndex),questionId=element.dataset.questionId||null;
-        const identity=lessonWriteIdentity(openedLesson,index,lessonId);
-        const write=draftSaveQueue.catch(()=>{}).then(async()=>{
-            const result=await invokeLessonApi({action:'find-error-event',lessonId,activityIndex:index,...identity,...(questionId?{questionId}:{}),errorEvent});
-            updateLessonProgress(lessonId,result.answers,result.completed);return result;
-        });
-        draftSaveQueue=write;return write;
+    function saveFindErrorEvent(root, errorEvent) {
+        if (!openedLesson) return Promise.reject(new Error(text("lessonChanged")));
+        const element = root.closest("[data-activity-index]"), lessonId = openedLesson.id;
+        const activityIndex = Number(element.dataset.activityIndex), questionId = element.dataset.questionId || null;
+        const identity = lessonWriteIdentity(openedLesson, activityIndex, lessonId);
+        const response = structuredClone(responseForActivity(element));
+        const key = activityDraftKey(activityIndex, questionId);
+        pendingDrafts.set(key, { activityIndex, questionId, response });
+        const backup = backupAnswer(lessonId, activityIndex, questionId, response);
+        savingAnswers += 1;
+        updateSaveStatus("saving");
+        const write = draftSaveQueue.catch(() => {}).then(async () => {
+            const result = await invokeLessonApi({ action: "find-error-event", lessonId, activityIndex,
+                ...identity, ...(questionId ? { questionId } : {}), errorEvent });
+            draftStore.acknowledge(backup);
+            const pending = pendingDrafts.get(key);
+            if (pending && JSON.stringify(pending.response) === JSON.stringify(response)) pendingDrafts.delete(key);
+            updateLessonProgress(lessonId, result.answers, result.completed);
+            updateSaveStatus(pendingDrafts.size ? "saving" : "saved");
+            return result;
+        }).catch(error => {
+            updateSaveStatus("error");
+            throw error;
+        }).finally(() => { savingAnswers -= 1; });
+        draftSaveQueue = write;
+        return write;
     }
 
     function queueDraftSave(lessonId, draftKey, activityIndex, questionId, response) {
         const snapshot = structuredClone(response);
+        savingAnswers += 1;
+        if (!pendingDrafts.has(draftKey)) pendingDrafts.set(draftKey, { activityIndex, questionId, response: snapshot });
+        const backup = backupAnswer(lessonId, activityIndex, questionId, snapshot);
+        updateSaveStatus("saving");
         const identity = lessonWriteIdentity(openedLesson, activityIndex, lessonId);
         const activity = activitiesFor(openedLesson)[activityIndex];
         const answerActivity = questionId ? activity?.questions?.find((question) => question.questionId === questionId) : activity;
@@ -997,12 +1065,14 @@
                 response: snapshot,
                 ...identity
             });
+            draftStore.acknowledge(backup);
             updateLessonProgress(lessonId, result.answers, result.completed);
             const pending = pendingDrafts.get(draftKey);
             const isLatest = !pending || JSON.stringify(pending.response) === JSON.stringify(snapshot);
             if (pending && isLatest) {
                 pendingDrafts.delete(draftKey);
             }
+            updateSaveStatus(pendingDrafts.size ? "saving" : "saved");
             if (isLatest && openedLesson?.id === lessonId) {
                 const element = [...pageContent.querySelectorAll(".student-activity[data-activity-index]")].find((item) =>
                     item.dataset.activityIndex === String(activityIndex) && (questionId ? item.dataset.questionId === questionId : !item.dataset.questionId));
@@ -1024,10 +1094,12 @@
                 }
             }
         }).catch((error) => {
+            if (!pendingDrafts.has(draftKey)) pendingDrafts.set(draftKey, { activityIndex, questionId, response: snapshot });
+            updateSaveStatus("error");
             console.error("Could not save the student answer draft.", error);
             setDraftFeedback(lessonId, activityIndex, questionId, error.message || text("loadError"), true);
             throw error;
-        });
+        }).finally(() => { savingAnswers -= 1; });
         draftSaveQueue = save;
         return save;
     }
@@ -1067,9 +1139,11 @@
         const draftKey = activityDraftKey(activityIndex, questionId);
         const response = responseForActivity(element);
         pendingDrafts.set(draftKey, { activityIndex, questionId, response: structuredClone(response) });
+        backupAnswer(lessonId, activityIndex, questionId, response);
+        updateSaveStatus("saving");
         const feedback = element.querySelector("[data-answer-feedback]");
         if (feedback) {
-            feedback.textContent = "";
+            feedback.textContent = text("savingAnswer");
             feedback.className = "student-answer-feedback";
         }
         clearTimeout(draftSaveTimers.get(draftKey));
@@ -1310,6 +1384,10 @@
     }
 
     async function openStudentLesson(lessonId) {
+        if (openedLesson) {
+            try { await flushDraftSaves(); }
+            catch (error) { showToast(`${text("draftSaveError")} ${error.message}`, true); return; }
+        }
         const summary = lessons.find((item) => item.id === lessonId);
         if (!summary) return;
         selectedLessonId = lessonId;
@@ -1319,6 +1397,16 @@
             if (selectedLessonId !== lessonId) return;
             openedLesson = result.lesson;
             openedLesson.className = result.className;
+            pendingDrafts.clear();
+            saveState = "saved";
+            recoverableAnswers = draftStore.list(user.id, lessonId).filter(record => {
+                if (record.revision !== openedLesson.revision) return true;
+                const activity = activitiesFor(openedLesson).find(item => item.id === record.activityId);
+                if (!activity) return true;
+                const saved = record.questionId ? progressForQuestion(openedLesson, activity, activity.index, record.questionId) : progressForActivity(openedLesson, activity);
+                if (saved && JSON.stringify(saved.response) === JSON.stringify(record.response)) { draftStore.acknowledge(record); return false; }
+                return true;
+            });
             studentWorkspaceTab = "lesson";
             activeStudentSectionId = lessonSections(openedLesson).find((section) => !section.homework)?.id || "";
             openedLesson.activityCount = activityCount(openedLesson);
@@ -1363,8 +1451,9 @@
             return;
         }
         pageContent.innerHTML = `${activeView === "calendar" ? "" : renderWelcome()}${openedLesson && openedLesson.id === selectedLessonId
-            ? renderLessonDetail(openedLesson)
+            ? `${recoveryMarkup()}<p data-draft-save-status role="status" aria-live="polite"></p>${renderLessonDetail(openedLesson)}`
             : activeView === "classes" ? renderClasses() : activeView === "calendar" ? renderStudentCalendar() : renderLessons()}`;
+        updateSaveStatus();
         pageHistory?.sync();
         window.SlovaFindErrorUI?.bind(pageContent,{send:(event,root)=>saveFindErrorEvent(root,event)});
         window.SlovaBlankCards?.bind(pageContent);
@@ -1654,7 +1743,9 @@
                 const hardOnly = activity.querySelector("[data-flashcards-hard-only]")?.getAttribute("aria-pressed") === "true";
                 card.hidden = hardOnly && rating === "know";
                 const deck=activity.querySelector("[data-flashcard-deck]");if(deck)window.SlovaFlashcardDeck.refresh(deck);
-                queueDraftSave(openedLesson.id, activityDraftKey(activityIndex, null), activityIndex, null, ratings);
+                const key = activityDraftKey(activityIndex, null);
+                pendingDrafts.set(key, { activityIndex, questionId: null, response: structuredClone(ratings) });
+                queueDraftSave(openedLesson.id, key, activityIndex, null, ratings).catch(() => updateSaveStatus("error"));
             });
         });
     }
@@ -1905,7 +1996,7 @@
             const { error } = await window.supabaseClient.auth.signOut();
             if (error) throw error;
             try {
-                if (user) localStorage.removeItem(`slovasofi-student:${user.id}`);
+                if (user) { localStorage.removeItem(`slovasofi-student:${user.id}`); draftStore.clearUser(user.id); }
             } catch { /* Storage restrictions must not block a successful sign-out. */ }
             user = null;
             closePopover();
@@ -1960,8 +2051,12 @@
         await loadDashboard(client, session.user);
     }
 
-    document.querySelectorAll(".nav-item").forEach((button) => button.addEventListener("click", () => {
-        const pendingSave = openedLesson && selectedLessonId ? flushDraftSaves() : Promise.resolve();
+    document.querySelectorAll(".nav-item").forEach((button) => button.addEventListener("click", async () => {
+        if (button.disabled) return;
+        button.disabled = true;
+        try { await flushDraftSaves(); }
+        catch (error) { showToast(`${text("draftSaveError")} ${error.message}`, true); return; }
+        finally { button.disabled = false; }
         activeRecorders.forEach((recording) => {
             if (recording.recorder.state !== "inactive") recording.recorder.stop();
         });
@@ -1975,11 +2070,39 @@
         document.getElementById("studentSidebarBackdrop").classList.remove("open");
         document.getElementById("studentMenuToggle").setAttribute("aria-expanded", "false");
         render();
-        pendingSave.catch((error) => {
-            console.error("Could not save student progress while changing sections.", error);
-            showToast(`${text("draftSaveError")} ${error.message}`, true);
-        });
+
     }));
+    pageContent.addEventListener("click", async (event) => {
+        if (event.target.closest("[data-retry-answer-save]")) await retryPendingAnswers();
+        if (event.target.closest("[data-restore-answer-backup]") && openedLesson) {
+            const remaining = [];
+            for (const record of recoverableAnswers) {
+                const activity = activitiesFor(openedLesson).find(item => item.id === record.activityId);
+                if (record.revision !== openedLesson.revision || !activity
+                    || (record.questionId && !activity.questions?.some(question => question.questionId === record.questionId))) { remaining.push(record); continue; }
+                pendingDrafts.set(activityDraftKey(activity.index, record.questionId), { activityIndex: activity.index, questionId: record.questionId, response: structuredClone(record.response) });
+            }
+            recoverableAnswers = remaining;
+            render();
+            await retryPendingAnswers();
+        }
+        if (event.target.closest("[data-export-answer-backup]")) {
+            const blob = new Blob([recoverableAnswers.map(record => `# ${record.activityIndex + 1}\n${typeof record.response === "string" ? record.response : JSON.stringify(record.response)}\n`).join("\n")], { type: "text/plain;charset=utf-8" });
+            const url = URL.createObjectURL(blob), link = document.createElement("a");
+            link.href = url; link.download = "SlovaSofi-answers.txt"; link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        if (event.target.closest("[data-discard-answer-backup]")) {
+            recoverableAnswers.forEach(record => draftStore.acknowledge(record));
+            recoverableAnswers = []; render();
+        }
+    });
+    window.addEventListener("online", () => { retryPendingAnswers(); });
+    window.addEventListener("offline", () => { if (pendingDrafts.size) updateSaveStatus("error"); });
+    window.addEventListener("beforeunload", event => {
+        if (!pendingDrafts.size && !savingAnswers) return;
+        event.preventDefault(); event.returnValue = "";
+    });
     document.querySelectorAll(".language-button").forEach((button) => button.addEventListener("click", () => {
         if (!languageChoices.includes(button.dataset.lang)) return;
         language = button.dataset.lang;

@@ -13,14 +13,17 @@ function readFunction(source, name, indent = "") {
 function studentContext() {
     const element = { dataset: { activityIndex: "0" }, response: ["answer"], querySelector: (selector) => selector === "[data-answer-kind]" ? {} : null, closest: () => null };
     const calls = [], results = [];
+    const items = new Map(), window = {};
+    vm.runInNewContext(fs.readFileSync(`${__dirname}/student-drafts.js`, "utf8"), { window });
+    const draftStore = window.SlovaStudentDrafts.create({ get length() { return items.size; }, key: index => [...items.keys()][index], getItem: key => items.get(key) || null, setItem: (key,value) => items.set(key,value), removeItem: key => items.delete(key) });
     const ctx = vm.createContext({
-        structuredClone, console, Event, Map, JSON,
+        structuredClone, console, Event, Map, JSON, draftStore, saveState: "saved", backupFailed: false, savingAnswers: 0,
         openedLesson: { id: "lesson", activities: [{ type: "fill-blank", gradable: true }] },
         selectedLessonId: "lesson", user: { id: "student" },
         activitiesFor: (lesson) => lesson.activities,
-        lessonWriteIdentity: () => ({ activityId: "block-id" }),
+        lessonWriteIdentity: () => ({ activityId: "block-id", lessonRevision: "revision" }),
         draftSaveQueue: Promise.resolve(), pendingDrafts: new Map(), draftSaveTimers: new Map(),
-        pageContent: { querySelectorAll: () => [element] },
+        pageContent: { querySelectorAll: () => [element], querySelector: () => null },
         responseForActivity: (item) => item.response, updateLessonProgress() {},
         setDraftFeedback: (...args) => results.push({ feedback: args }),
         applyAnswerResult: (item, result) => results.push({ item, result }),
@@ -29,7 +32,7 @@ function studentContext() {
         setTimeout: (callback, delay) => { ctx.timer = { callback, delay }; return 1; },
         clearTimeout() {}
     });
-    vm.runInContext(["hasAnswerResponse", "shouldAutoCheckAnswer", "queueDraftSave", "activityDraftKey", "scheduleDraftSave"].map((name) => readFunction(student, name, "    ")).join("\n"), ctx);
+    vm.runInContext(["hasAnswerResponse", "shouldAutoCheckAnswer", "backupAnswer", "updateSaveStatus", "saveFindErrorEvent", "queueDraftSave", "activityDraftKey", "scheduleDraftSave"].map((name) => readFunction(student, name, "    ")).join("\n"), ctx);
     return { ctx, element, calls, results };
 }
 test("automatic checks use server grading; empty answers, media, flashcards and recordings remain drafts", async () => {
@@ -128,6 +131,8 @@ test("failed server checking retains the answer for retry and reports a visible 
     ctx.invokeLessonApi = async () => { throw Error("offline"); };
     await assert.rejects(ctx.queueDraftSave("lesson", "0", 0, null, ["answer"]), /offline/);
     assert.equal(ctx.pendingDrafts.size, 1);
+    assert.equal(ctx.draftStore.list("student", "lesson").length, 1);
+    assert.equal(ctx.saveState, "error");
     assert.equal(results[0].feedback.at(-1), true);
 });
 test("preview checks debounce typing and immediately check changes, moves and drops", () => {
@@ -157,4 +162,19 @@ test("grading buttons are absent from teacher previews and student markup; recor
     assert.doesNotMatch(readFunction(teacher, "renderPreviewActivity"), /data-check-activity/);
     assert.doesNotMatch(readFunction(student, "renderActivity", "    "), /data-submit-activity-group/);
     assert.match(student, /activity.type === "pronunciation-recording"\s*\n\s*\? `<button[^>]+data-submit-answer/);
+});
+
+test("failed error-finding events retain a draft without replaying the grading event", async () => {
+    const { ctx, element, calls } = studentContext();
+    ctx.openedLesson.activities = [{ type: "find-error", gradable: true }];
+    element.response = { selected: [0], corrections: { 0: "correction" } };
+    ctx.invokeLessonApi = async () => { throw Error("offline"); };
+    await assert.rejects(ctx.saveFindErrorEvent({ closest: () => element }, { type: "check", index: 0 }), /offline/);
+    assert.equal(ctx.pendingDrafts.size, 1);
+    assert.equal(ctx.draftStore.list("student", "lesson").length, 1);
+    ctx.invokeLessonApi = async payload => { calls.push(payload); return { answers: {}, completed: false }; };
+    await ctx.queueDraftSave("lesson", "0", 0, null, element.response);
+    assert.equal(calls[0].action, "save-draft");
+    assert.equal(ctx.pendingDrafts.size, 0);
+    assert.equal(ctx.draftStore.list("student", "lesson").length, 0);
 });
