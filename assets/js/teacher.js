@@ -4970,11 +4970,11 @@ function bindActivityBlockActions() {
         if (contentField && currentBlock()?.type === "image") {
             const photoPanel = document.createElement('details');
             const photoTitle = document.createElement('summary');
-            photoTitle.textContent = currentLanguage === 'ru' ? '✎ Рисовать и писать на фото' : currentLanguage === 'ua' ? '✎ Малювати та писати на фото' : '✎ Draw and write on photos';
+            photoTitle.textContent = currentLanguage === 'ru' ? '✎ Рисовать, писать и добавлять поля на фото' : currentLanguage === 'ua' ? '✎ Малювати, писати та додавати поля на фото' : '✎ Draw, write and add fields on photos';
             const photoBody = document.createElement('div');photoPanel.append(photoTitle,photoBody);contentField.after(photoPanel);
             const refreshPhotoEditor = () => {
                 const images = window.slovaGallery.parse(contentField.value);
-                photoBody.innerHTML = window.SlovaPhotoEditor.markup(images,{},currentBlock().settings?.imageAnnotations||{},true,currentLanguage);
+                photoBody.innerHTML = window.SlovaPhotoEditor.markup(images,{},currentBlock().settings?.imageAnnotations||{},true,currentLanguage,{authorFields:true});
                 window.SlovaPhotoEditor.bind(photoBody,{language:currentLanguage,change:annotations=>{
                     currentBlock().settings={...currentBlock().settings,imageAnnotations:annotations};
                     scheduleLessonDraftAutosave();refreshRichPreview();

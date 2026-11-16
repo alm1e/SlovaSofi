@@ -250,3 +250,14 @@ test('photo drafts retain teacher annotations and isolated student strokes witho
  assert.equal((await e.write(0,'{}','save-draft')).status,200);
  loaded=(await e.request({action:'load'})).body.lesson;assert.equal(loaded.progress['b'+id(1)].response,'{}');assert.deepEqual(loaded.sections[0].activities[0].imageAnnotations,annotations);
 });
+
+test('photo fields restore typed answers and reject forged fields or coordinates',async()=>{
+ const url='https://school.example/photo.png',field={type:'field',id:'gap-1',x:250,y:100,w:80,h:35};
+ const e=engine([{id:id(1),type:'image',content:url,answer:'',settings:{imageAnnotations:{[url]:[field]}}}]);
+ let lesson=(await e.request({action:'load'})).body.lesson;assert.deepEqual(lesson.sections[0].activities[0].imageAnnotations[url][0],field);
+ const answer=JSON.stringify({[url]:[{type:'field-answer',id:'gap-1',text:'á'}]});assert.equal((await e.write(0,answer,'save-draft')).status,200);
+ lesson=(await e.request({action:'load'})).body.lesson;assert.equal(lesson.progress['b'+id(1)].response,answer);
+ const writes=e.writes;
+ for(const ops of [[field],[{type:'field-answer',id:'other-gap',text:'á'}],[{type:'field-answer',id:'gap-1',text:'a'.repeat(201)}]])assert.equal((await e.write(0,JSON.stringify({[url]:ops}),'save-draft')).status,400);
+ assert.equal(e.writes,writes);assert.equal((await e.write(0,JSON.stringify({[url]:[]}),'save-draft')).status,200);
+});

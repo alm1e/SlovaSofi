@@ -12,3 +12,10 @@ test('invalid geometry, URLs, colours, text and excessive payloads are rejected'
 test('corrupt historical photo data falls back safely and empty annotations remain valid',()=>{
  assert.deepEqual(core.read('broken'),{});assert.deepEqual(Object.keys(core.validate({})),[]);
 });
+
+test('photo answer fields preserve identity, geometry and Unicode answers with bounded validation',()=>{
+ const field={type:'field',id:'gap-1',x:250,y:100,w:80,h:35},answer={type:'field-answer',id:'gap-1',text:'í'};
+ assert.deepEqual(core.validate({[url]:[field]})[url][0],field);assert.deepEqual(core.validate({[url]:[answer]})[url][0],answer);
+ for(const invalid of [{...field,w:0},{...field,x:950,w:80},{...field,h:NaN},{...field,id:'<bad>'},{...answer,text:'x'.repeat(201)}])assert.throws(()=>core.validate({[url]:[invalid]}));
+ assert.throws(()=>core.validate({[url]:[field,field]}));
+});

@@ -1078,6 +1078,13 @@ Deno.serve(async (request: Request) => {
                 const annotations=photoAnnotations.validate(response);
                 const urls=lines(answerActivity.content).map(line=>{const url=line.match(/^!\[[^\]]*\]\(([^)]+)\)$/)?.[1]||line;try{return new URL(url).href;}catch{return '';}});
                 if(Object.keys(annotations).some(url=>!urls.includes(url)))throw Error('Unknown image');
+                const template=photoAnnotations.read(answerActivity.settings?.imageAnnotations);
+                for(const [url,rawOps] of Object.entries(annotations)){
+                    const fields=new Set((template[url] as JsonRecord[]|undefined)?.filter(op=>op.type==='field').map(op=>op.id)||[]);
+                    for(const op of rawOps as JsonRecord[]){
+                        if(op.type==='field'||op.type==='field-answer'&&!fields.has(op.id))throw Error('Unknown answer field');
+                    }
+                }
             }catch{return jsonResponse(400,{error:'Invalid drawing or drawing limit exceeded.'},allowedOrigin);}
         }
         const openResponse = answerActivity.type === "open-answer" ? normalizeOpenAnswerResponse(response) : null;
