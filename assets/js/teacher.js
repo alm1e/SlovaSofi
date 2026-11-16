@@ -2350,6 +2350,37 @@ function renderCalendar() {
         <aside class="panel calendar-upcoming"><div class="panel-heading"><div><h2>${t("calendar.upcoming")}</h2><p class="hint">${t("calendar.upcomingHint")}</p></div><span class="calendar-upcoming-count">${nextEvents.length}</span></div>${nextEvents.length ? `<div class="calendar-upcoming-list">${nextEvents.map((event) => `<article class="calendar-upcoming-item" ${writable ? `data-calendar-event="${escapeHtml(event.id)}"` : ""}><time><strong>${formatCalendarDate(event.occurrenceAt, { day: "numeric" })}</strong><small>${formatCalendarDate(event.occurrenceAt, { month: "short" })}</small></time><div><strong>${escapeHtml(event.title)}</strong><small>${formatCalendarDate(event.occurrenceAt, { hour: "2-digit", minute: "2-digit" })} · ${escapeHtml(data.classes.find((item) => item.id === event.class_id)?.name || t("class.noClass"))}${calendarRecurrenceLabel(event.recurrence) ? ` · ${calendarRecurrenceLabel(event.recurrence)}` : ""}</small></div></article>`).join("")}</div>` : `<div class="calendar-empty">${t(calendarEvents.length ? "calendar.empty" : "calendar.noEvents")}${!calendarEvents.length ? `<small>${t("calendar.createFirst")}</small>` : ""}</div>`}</aside></div>`;
 }
 
+function historyText(key) {
+    return window.SlovaHistoryUI?.text(currentLanguage, key) || ({audit:"Activity log",versions:"Version history",saveFirst:"Save lesson changes first"})[key];
+}
+
+function historyContext() {
+    return { api: window.teacherWorkspaceApi, client: window.supabaseClient, language: currentLanguage,
+        openModal, modalCard, showToast, canRestore: hasPermission("edit_lessons"),
+        async onRestored(lessonId) {
+            const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient, currentUser.id, currentUser.email || "");
+            data = workspace.data;
+            closeModal();
+            openLessonPreview(lessonId);
+        }
+    };
+}
+
+function openSchoolAudit(classId = null) {
+    if (!hasPermission("view_classes_students") && !hasPermission("edit_lessons")) return;
+    if (classId && !data.classes.some(group => group.id === classId)) return;
+    window.SlovaHistoryUI.openAudit(historyContext(), classId);
+}
+
+async function openLessonHistory(lessonId) {
+    if (!data.lessons.some(lesson => lesson.id === lessonId)) return;
+    if (lessonWorkspaceMode === "edit" || editorReturnToPreview || previewActivityEdit) {
+        showToast(historyText("saveFirst")); return;
+    }
+    if (!await waitForWorkspaceSave()) return;
+    await window.SlovaHistoryUI.openVersions(historyContext(), lessonId);
+}
+
 function classArchiveText(key) {
     const labels = SlovaI18n.locales({
         ua: { active: "Активні", archive: "Архів", move: "До архіву", restore: "Відновити", archived: "Клас перенесено до архіву.", restored: "Клас відновлено.", empty: "Архів порожній", hint: "Тут будуть завершені класи. Учні та прогрес зберігаються.", error: "Не вдалося змінити архів класу." },
@@ -2382,7 +2413,7 @@ function renderClasses() {
     const filtered = data.classes.filter((item) => Boolean(item.archivedAt) === classArchiveView
         && `${item.name} ${item.course}`.toLowerCase().includes(searchQuery.toLowerCase()));
     const teacherName = userDisplayName(currentUser);
-    return `<div class="section-heading"><div><h1>${t("classes.title")}</h1><p>${t("classes.description")}</p></div></div>
+    return `<div class="section-heading"><div><h1>${t("classes.title")}</h1><p>${t("classes.description")}</p></div><button type="button" class="button secondary small" data-action="audit-log">${historyText("audit")}</button></div>
         <div class="toolbar class-toolbar" role="group" aria-label="${t("classes.title")}">${[false, true].map(archived => `<button type="button" class="button secondary small" data-action="class-archive-view" data-id="${archived ? "archive" : "active"}" aria-pressed="${classArchiveView === archived}">${classArchiveText(archived ? "archive" : "active")} (${data.classes.filter(item => Boolean(item.archivedAt) === archived).length})</button>`).join("")}</div>
         <div class="toolbar class-toolbar">${canManageClasses ? `<button class="button secondary" data-action="new-class">${t("classes.create")}</button>` : ""}<input type="search" data-search placeholder="${t("classes.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("classes.search")}"></div>
         <div class="card-grid class-grid">${filtered.length ? filtered.map((item, index) => `<article class="class-card class-card-enhanced class-tone-${index % 4}" data-open-class-id="${escapeHtml(item.id)}">
@@ -2392,7 +2423,7 @@ function renderClasses() {
             <div class="class-roster"><div class="class-roster-heading"><strong>${t("classes.studentsLabel")}</strong><span>${item.students.length}</span></div>
                 ${item.students.length ? `<ul class="class-roster-list">${(item.studentRecords?.length ? item.studentRecords.map((student) => ({ name: student.display_name, userId: student.linked_user_id })) : item.students.map((name) => ({ name, userId: null }))).map((student) => `<li><span class="class-student-avatar">${escapeHtml(student.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toLocaleUpperCase())}</span><span class="class-roster-student-name">${escapeHtml(student.name)}</span>${presenceBadge(student.userId)}</li>`).join("")}</ul>` : `<p class="class-roster-empty">${t("classes.noStudents")}</p>`}
             </div>
-            <div class="class-card-meta">${hasPermission("view_lessons") || hasPermission("view_assign_lessons") || hasPermission("edit_lessons") ? `<button class="text-link" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${t("classes.lessons")}</button>` : ""}${canManageClasses ? `<button type="button" class="button secondary small" data-action="${item.archivedAt ? "restore-class" : "archive-class"}" data-id="${escapeHtml(item.id)}" ${archivingClassIds.has(item.id) ? "disabled" : ""}>${classArchiveText(item.archivedAt ? "restore" : "move")}</button>` : ""}</div>
+            <div class="class-card-meta"><button type="button" class="text-link" data-action="class-audit-log" data-id="${escapeHtml(item.id)}">${historyText("audit")}</button>${hasPermission("view_lessons") || hasPermission("view_assign_lessons") || hasPermission("edit_lessons") ? `<button class="text-link" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${t("classes.lessons")}</button>` : ""}${canManageClasses ? `<button type="button" class="button secondary small" data-action="${item.archivedAt ? "restore-class" : "archive-class"}" data-id="${escapeHtml(item.id)}" ${archivingClassIds.has(item.id) ? "disabled" : ""}>${classArchiveText(item.archivedAt ? "restore" : "move")}</button>` : ""}</div>
             ${canManageClasses && !item.archivedAt ? `<button class="button secondary small class-invite-button" data-action="invite-student" data-id="${escapeHtml(item.id)}">${t("classes.inviteStudent")}</button>` : ""}</article>`).join("") : emptyMessage(classArchiveView && !searchQuery ? classArchiveText("empty") : t("classes.notFound"), classArchiveView && !searchQuery ? classArchiveText("hint") : t("classes.notFoundHint"))}</div>`;
 }
 
@@ -2425,7 +2456,7 @@ function renderLessons() {
         <div class="toolbar"><select data-class-filter aria-label="${t("lessons.allClasses")}">${classSelect}</select><input type="search" data-search placeholder="${t("lessons.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("lessons.search")}"></div>
         ${selectedLessonUnit ? `<section class="course-hero course-hero-${LESSON_UNITS.includes(selectedLessonUnit) ? selectedLessonUnit.toLowerCase() : "custom"}"><div class="course-hero-art" aria-hidden="true"><span>${escapeHtml(selectedLessonUnit)}</span></div><div class="course-hero-copy"><span class="course-hero-kicker">${lessonText("courseLabel")}</span><h2>${escapeHtml(selectedLessonUnit)}</h2><p>${escapeHtml(lessonText("levelDescription", { level: selectedLessonUnit }))}</p><span class="course-hero-count">${countLabel(selectedLevelLessons.length, "lesson")}</span></div></section>
             <div class="course-lessons-heading"><h2>${lessonText("levelLessons")}</h2><span>${selectedLevelLessons.length}</span></div>
-            <div class="course-lesson-list">${selectedLevelLessons.length ? selectedLevelLessons.map((item) => `<article class="course-lesson-row">${lessonIcon(item)}<div class="lesson-main"><button class="lesson-preview-link" data-action="preview-lesson" data-id="${escapeHtml(item.id)}">${escapeHtml(item.title)}</button><small>${escapeHtml(lessonClassNames(item)) || lessonText("unassigned")} · ${countLabel(lessonActivities(item).length, "activity")}</small></div><div class="course-lesson-actions"><button class="mini-action course-action-preview" data-action="preview-lesson" data-id="${escapeHtml(item.id)}" aria-label="${previewText("open")}" title="${previewText("open")}">${lessonActionIcon("preview")}</button>${canEditLessons ? `<button class="mini-action course-action-edit" data-action="edit-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editLesson")}" title="${t("modal.editLesson")}">${lessonActionIcon("edit")}</button>` : ""}${canAssignLessons ? `<button class="mini-action course-action-assign" data-action="assign-lesson" data-id="${escapeHtml(item.id)}" aria-label="${assignmentText("add")}" title="${assignmentText("add")}">${lessonActionIcon("assign")}</button>` : ""}${canEditLessons ? `<button class="mini-action course-action-delete" data-action="delete-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}" title="${t("action.delete")}">${lessonActionIcon("delete")}</button>` : ""}</div></article>`).join("") : emptyMessage(data.lessons.length ? lessonText("noSearch") : t("lessons.notFound"), data.lessons.length ? "" : t("lessons.notFoundHint"))}</div>`
+            <div class="course-lesson-list">${selectedLevelLessons.length ? selectedLevelLessons.map((item) => `<article class="course-lesson-row">${lessonIcon(item)}<div class="lesson-main"><button class="lesson-preview-link" data-action="preview-lesson" data-id="${escapeHtml(item.id)}">${escapeHtml(item.title)}</button><small>${escapeHtml(lessonClassNames(item)) || lessonText("unassigned")} · ${countLabel(lessonActivities(item).length, "activity")}</small></div><div class="course-lesson-actions"><button class="button secondary small" type="button" data-action="lesson-history" data-id="${escapeHtml(item.id)}">${historyText("versions")}</button><button class="mini-action course-action-preview" data-action="preview-lesson" data-id="${escapeHtml(item.id)}" aria-label="${previewText("open")}" title="${previewText("open")}">${lessonActionIcon("preview")}</button>${canEditLessons ? `<button class="mini-action course-action-edit" data-action="edit-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editLesson")}" title="${t("modal.editLesson")}">${lessonActionIcon("edit")}</button>` : ""}${canAssignLessons ? `<button class="mini-action course-action-assign" data-action="assign-lesson" data-id="${escapeHtml(item.id)}" aria-label="${assignmentText("add")}" title="${assignmentText("add")}">${lessonActionIcon("assign")}</button>` : ""}${canEditLessons ? `<button class="mini-action course-action-delete" data-action="delete-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}" title="${t("action.delete")}">${lessonActionIcon("delete")}</button>` : ""}</div></article>`).join("") : emptyMessage(data.lessons.length ? lessonText("noSearch") : t("lessons.notFound"), data.lessons.length ? "" : t("lessons.notFoundHint"))}</div>`
             : `<div class="unit-sections">${lessonCategories().map((unit) => {
                 const unitLessons = filtered.filter((item) => (item.unit || inferLessonUnit(item)) === unit);
                 return `<button type="button" class="unit-card unit-card-link unit-card-${LESSON_UNITS.includes(unit) ? unit.toLowerCase() : "custom"}" data-unit-open="${escapeHtml(unit)}"><span class="unit-card-mark">${escapeHtml(unit.slice(0, 2))}</span><span class="unit-card-copy"><strong>${escapeHtml(unit)}</strong><small>${unitLessons.length ? countLabel(unitLessons.length, "lesson") : lessonText("unitEmpty")}</small></span><span class="unit-card-chevron" aria-hidden="true">→</span></button>`;
@@ -3386,6 +3417,9 @@ function handleAction(action, id) {
     if (action === "new-lesson") openLessonEditor();
     if (action === "edit-lesson") openLessonEditor(data.lessons.find((item) => item.id === id));
     if (action === "preview-lesson") openLessonPreview(id);
+    if (action === "audit-log") openSchoolAudit();
+    if (action === "class-audit-log") openSchoolAudit(id);
+    if (action === "lesson-history") openLessonHistory(id);
     if (action === "assign-lesson") openLessonAssignment(id);
     if (action === "add-class-lessons") openClassLessonPicker(id);
     if (action === "delete-lesson") deleteLesson(id);
@@ -4184,7 +4218,7 @@ function renderLessonWorkspace() {
             <div class="lesson-workspace-heading"><button type="button" class="button back-to-lessons" data-workspace-back ${quickEditActive ? "disabled" : ""}>← ${lessonSectionText("back")}</button>
                 ${isEditing ? `<div class="lesson-workspace-fields"><div class="form-field"><label for="lessonTitle">${t("field.lessonTitle")}</label><input id="lessonTitle" name="title" required maxlength="100" value="${escapeHtml(title)}" placeholder="${t("field.exampleLesson")}"></div><div class="form-field"><label for="lessonUnit">${categoryText("name")}</label><select id="lessonUnit" name="unit" required><option value="">${lessonText("chooseUnit")}</option>${lessonCategories().map((level) => `<option value="${escapeHtml(level)}" ${unit === level ? "selected" : ""}>${escapeHtml(level)}</option>`).join("")}</select></div></div>` : `<div><span class="course-hero-kicker">${escapeHtml(lessonClassNames(lesson)) || lessonText("unassigned")} · ${escapeHtml(unit)}</span><h1>${escapeHtml(title)}</h1></div>`}
             </div>
-            ${isEditing ? "" : `<div class="lesson-workspace-preview-actions"><span class="lesson-workspace-unit">${escapeHtml(unit)}</span></div>`}
+            ${isEditing ? "" : `<div class="lesson-workspace-preview-actions"><span class="lesson-workspace-unit">${escapeHtml(unit)}</span>${lesson ? `<button type="button" class="button secondary small" data-open-lesson-history>${historyText("versions")}</button>` : ""}</div>`}
         </header>
         ${liveMonitor ? "" : workspaceTabs}
         ${previewDraftNotice}
@@ -4209,6 +4243,7 @@ function renderLessonWorkspace() {
         ${actionBar ? `<div class="lesson-workspace-actions">${actionBar}</div>` : ""}
     </form></section>`;
     pageContent.querySelector("[data-workspace-back]").addEventListener("click", exitLessonWorkspace);
+    pageContent.querySelector("[data-open-lesson-history]")?.addEventListener("click", () => openLessonHistory(lesson.id));
     pageContent.querySelector("[data-workspace-cancel]")?.addEventListener("click", exitLessonWorkspace);
     if (isEditing) {
         const lessonForm = pageContent.querySelector("#lessonForm");

@@ -223,26 +223,15 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(500, { error: "Could not resolve the teacher account." }, configuredOrigin);
     }
 
-    if (action !== "remove") {
-        const { error } = await adminClient.from("profiles").update({ role: requestedRole }).eq("id", teacher.id);
-        if (error) return jsonResponse(500, { error: "Could not update staff role. Apply the school scope migration first." }, configuredOrigin);
-    }
-
-    if (action === "remove" || requestedRole === "director" || (payload.permissions as { edit_lessons: boolean }).edit_lessons === false) {
-        const { error } = await adminClient.from("teacher_lesson_editors").delete().eq("user_id", teacher.id);
-        if (error) {
-            console.error("Could not revoke lesson-editing permission.", error);
-            return jsonResponse(500, { error: "Could not remove lesson-editing permission." }, configuredOrigin);
-        }
-    } else {
-        const { error } = await adminClient.from("teacher_lesson_editors").upsert(
-            { user_id: teacher.id },
-            { onConflict: "user_id" }
-        );
-        if (error) {
-            console.error("Could not grant lesson-editing permission.", error);
-            return jsonResponse(500, { error: "Could not grant lesson-editing permission." }, configuredOrigin);
-        }
+    const { error: accessError } = await userClient.rpc("set_staff_access", {
+        target_user_id: teacher.id,
+        target_role: requestedRole,
+        can_edit: action !== "remove" && requestedRole === "teacher"
+            && (payload.permissions as { edit_lessons: boolean }).edit_lessons === true
+    });
+    if (accessError) {
+        console.error("Could not update audited staff access.", accessError);
+        return jsonResponse(500, { error: "Could not update staff access. Apply the audit migration first." }, configuredOrigin);
     }
 
     return jsonResponse(200, { message: action === "invite" ? "Teacher account saved." : "Teacher access updated." }, configuredOrigin);

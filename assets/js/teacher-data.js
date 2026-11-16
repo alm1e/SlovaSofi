@@ -26,7 +26,7 @@
             (readAllVisible
                 ? client.from("teacher_classes").select("id,name,course,teacher_id,class_scope,archived_at").order("created_at")
                 : client.from("teacher_classes").select("id,name,course,teacher_id,class_scope,archived_at").eq("teacher_id", userId).order("created_at")),
-            client.from("teacher_lessons").select("id,title,unit,activities,teacher_id").order("created_at"),
+            client.from("teacher_lessons").select("id,title,unit,activities,teacher_id,updated_at").order("created_at"),
             (readAllVisible
                 ? client.from("class_students").select("id,class_id,teacher_id,display_name,email,linked_user_id")
                 : client.from("class_students").select("id,class_id,teacher_id,display_name,email,linked_user_id").eq("teacher_id", userId)),
@@ -130,6 +130,41 @@
             { onConflict: "user_id" }
         );
         fail(error, "Не удалось сохранить настройки кабинета");
+    }
+
+    async function listAuditLog(client, classId = null, beforeId = null) {
+        let query = client.from("school_audit_log").select("id,created_at,actor_id,actor_name,action,entity_id,entity_label,details").order("id", { ascending: false }).limit(50);
+        if (classId) query = query.eq("class_id", classId);
+        if (beforeId) query = query.lt("id", beforeId);
+        const { data, error } = await query;
+        fail(error, "Не удалось загрузить журнал. Проверьте миграцию истории");
+        return data;
+    }
+
+    async function listLessonVersions(client, lessonId, beforeVersion = null) {
+        let query = client.from("lesson_versions").select("id,lesson_id,version_no,created_at,actor_id,actor_name,restored_from").eq("lesson_id", lessonId).order("version_no", { ascending: false }).limit(50);
+        if (beforeVersion) query = query.lt("version_no", beforeVersion);
+        const { data, error } = await query;
+        fail(error, "Не удалось загрузить версии урока");
+        return data;
+    }
+
+    async function getLessonVersion(client, versionId) {
+        const { data, error } = await client.from("lesson_versions").select("id,lesson_id,version_no,snapshot,created_at,actor_name").eq("id", versionId).single();
+        fail(error, "Версия урока недоступна");
+        return data;
+    }
+
+    async function getLessonRevision(client, lessonId) {
+        const { data, error } = await client.from("teacher_lessons").select("updated_at").eq("id", lessonId).single();
+        fail(error, "Урок недоступен");
+        return data.updated_at;
+    }
+
+    async function restoreLessonVersion(client, versionId, expectedRevision) {
+        const { data, error } = await client.rpc("restore_lesson_version", { target_version_id: versionId, expected_updated_at: expectedRevision });
+        fail(error, "Не удалось восстановить версию");
+        return data;
     }
 
     async function setClassArchived(client, classId, archived) {
@@ -397,6 +432,11 @@
     window.teacherWorkspaceApi = {
         loadWorkspace,
         loadStaff,
+        listAuditLog,
+        listLessonVersions,
+        getLessonVersion,
+        getLessonRevision,
+        restoreLessonVersion,
         createLessonCategory,
         deleteLessonCategory,
         saveWorkspace,

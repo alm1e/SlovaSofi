@@ -139,7 +139,7 @@ Deno.serve(async (request: Request) => {
 
         const [{ data: profile, error: profileError }, { data: classStudents, error: membershipError }] = await Promise.all([
             adminClient.from("profiles").select("role").eq("id", studentUserId).maybeSingle(),
-            adminClient.from("class_students").select("id,linked_user_id,email,display_name").eq("class_id", classId)
+            userClient.from("class_students").select("id,linked_user_id,email,display_name").eq("class_id", classId)
         ]);
         if (profileError || membershipError) {
             console.error("Could not verify the selected student's account or class membership.", profileError || membershipError);
@@ -158,7 +158,7 @@ Deno.serve(async (request: Request) => {
             if (emailMembership.linked_user_id) {
                 return jsonResponse(409, { error: "This email address is already linked to another account in the class." }, configuredOrigin);
             }
-            const { error: linkError } = await adminClient.from("class_students").update({
+            const { error: linkError } = await userClient.from("class_students").update({
                 linked_user_id: studentUserId,
                 email: existingStudent.email
             }).eq("id", emailMembership.id);
@@ -178,7 +178,7 @@ Deno.serve(async (request: Request) => {
             displayName = `${baseDisplayName.slice(0, 120 - suffixText.length)}${suffixText}`;
         }
 
-        const { error: insertError } = await adminClient.from("class_students").insert({
+        const { error: insertError } = await userClient.from("class_students").insert({
             class_id: classId,
             teacher_id: group.teacher_id,
             display_name: displayName,
@@ -194,7 +194,7 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(200, { message: "Existing student added to the class." }, configuredOrigin);
     }
 
-    const { data: existingStudent, error: studentLookupError } = await adminClient.from("class_students")
+    const { data: existingStudent, error: studentLookupError } = await userClient.from("class_students")
         .select("id").eq("class_id", classId).eq("email", email).maybeSingle();
     if (studentLookupError) {
         console.error("Could not check whether this student is already in the class.", studentLookupError);
@@ -202,7 +202,7 @@ Deno.serve(async (request: Request) => {
     }
     if (existingStudent) return jsonResponse(409, { error: "This email is already in the class." }, configuredOrigin);
 
-    const { data: studentRecord, error: insertError } = await adminClient.from("class_students")
+    const { data: studentRecord, error: insertError } = await userClient.from("class_students")
         .insert({ class_id: classId, teacher_id: group.teacher_id, display_name: displayName, email })
         .select("id").single();
     if (insertError) {
@@ -221,7 +221,7 @@ Deno.serve(async (request: Request) => {
         }
     });
     if (inviteError || !invite.user) {
-        const { error: cleanupError } = await adminClient.from("class_students").delete().eq("id", studentRecord.id);
+        const { error: cleanupError } = await userClient.from("class_students").delete().eq("id", studentRecord.id);
         if (cleanupError) console.error("Could not clean up the class roster after the invitation failed.", cleanupError);
         console.error("Could not send the student invitation.", inviteError);
         return jsonResponse(502, {
@@ -229,7 +229,7 @@ Deno.serve(async (request: Request) => {
         }, configuredOrigin);
     }
 
-    const { error: linkError } = await adminClient.from("class_students")
+    const { error: linkError } = await userClient.from("class_students")
         .update({ linked_user_id: invite.user.id }).eq("id", studentRecord.id);
     if (linkError) {
         console.error("The invite was sent, but the new user could not be linked to the class.", linkError);

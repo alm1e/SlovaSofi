@@ -2301,3 +2301,13 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
     box-shadow: inset 0 0 0 2px #116744, 0 0 0 2px #ffffff80;
 }
 :root:not([data-theme="dark"]) .platform .class-toolbar .button:focus-visible { outline-color: #fff; }
+
+.history-entry { display: grid; gap: 8px; padding: 16px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.history-entry p { margin: 0; }
+.history-entry small { color: var(--muted); }
+.history-entry .button { justify-self: start; }
+.history-snapshot { max-height: 50vh; overflow: auto; padding: 16px; border: 1px solid var(--line); border-radius: 12px; margin: 16px 0; }
+.history-snapshot-activity { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.history-source-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.course-lesson-actions { flex-wrap: wrap; }

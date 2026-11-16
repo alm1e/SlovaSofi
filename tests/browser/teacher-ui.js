@@ -134,6 +134,27 @@
   const previous=currentTheme,container=document.createElement('section');container.innerHTML='<div class="toolbar class-toolbar"><button class="button secondary" aria-pressed="true">Активные</button><button class="button secondary" aria-pressed="false">Архив</button><button class="button secondary">Создать класс</button></div>';document.body.append(container);
   try {setTheme('light');const styles=[...container.querySelectorAll('button')].map(button=>getComputedStyle(button));assert(styles.every(style=>style.backgroundColor==='rgb(255, 255, 255)'&&style.backgroundImage==='none'),'Кнопки не белые');assert(styles.every(style=>style.color==='rgb(17, 103, 68)'),'Текст не зелёный');assert(styles[0].boxShadow!==styles[1].boxShadow,'Не видна активная вкладка');}finally{setTheme(previous);container.remove();}
  });
+ await run('Журнал действий: дата, автор и безопасное отображение',async()=>{
+  const ctx={api:{listAuditLog:async()=>[{id:1,action:'class.archived',entity_label:'<img src=x onerror=bad()>',actor_name:'Автор',created_at:'2026-11-16T10:00:00Z'}]},client:{},language:'ru',openModal,modalCard};
+  await SlovaHistoryUI.openAudit(ctx);assert(modalCard.textContent.includes('Автор'),'Не показан автор');assert(modalCard.textContent.includes('архив'),'Нет названия действия');assert(!modalCard.querySelector('img'),'Журнал исполняет HTML');closeModal();
+ });
+ await run('История версий: просмотр и восстановление с проверкой ревизии',async()=>{
+  const calls=[];let restored=false;const api={getLessonRevision:async()=> 'revision-2',listLessonVersions:async()=>[{id:'version-1',version_no:1,actor_name:'Учитель',created_at:'2026-11-16T10:00:00Z'}],getLessonVersion:async()=>({id:'version-1',version_no:1,snapshot:{title:'Прошлая версия',unit:'A1',activities:[{prompt:'Текст',content:'<script>bad()</script>',answer:'Answer'}]}}),restoreLessonVersion:async(...args)=>{calls.push(args);}};
+  const ctx={api,client:{},language:'ru',openModal,modalCard,canRestore:true,showToast(){},onRestored:async id=>{restored=id==='lesson-id';closeModal();}};
+  await SlovaHistoryUI.openVersions(ctx,'lesson-id');modalCard.querySelector('[data-view-version]').click();await new Promise(resolve=>setTimeout(resolve,10));assert(modalCard.textContent.includes('Прошлая версия'),'Не показано содержимое');assert(!modalCard.querySelector('script'),'Содержимое версии исполняется');modalCard.querySelector('[data-restore-version]').click();await new Promise(resolve=>setTimeout(resolve,10));assert(restored,'Не обновлён урок');assert(calls[0][1]==='version-1'&&calls[0][2]==='revision-2','Не проверяется ревизия перед восстановлением');
+  ctx.canRestore=false;await SlovaHistoryUI.openVersions(ctx,'lesson-id');modalCard.querySelector('[data-view-version]').click();await new Promise(resolve=>setTimeout(resolve,10));assert(!modalCard.querySelector('[data-restore-version]'),'Восстановление доступно без права редактирования');closeModal();
+ });
+ await run('История версий не перезаписывает одновременно изменённый урок',async()=>{
+  let restored=false;const api={getLessonRevision:async()=> 'old-revision',listLessonVersions:async()=>[{id:'v',version_no:1}],getLessonVersion:async()=>({version_no:1,snapshot:{title:'Old',activities:[]}}),restoreLessonVersion:async()=>{throw Error('lesson_changed');}};
+  await SlovaHistoryUI.openVersions({api,client:{},language:'ru',openModal,modalCard,canRestore:true,showToast(){},onRestored:async()=>{restored=true;}},'lesson');modalCard.querySelector('[data-view-version]').click();await new Promise(resolve=>setTimeout(resolve,10));modalCard.querySelector('[data-restore-version]').click();await new Promise(resolve=>setTimeout(resolve,10));assert(!restored,'Конфликт выдан за успешное восстановление');assert(modalCard.textContent.includes('уже изменился'),'Нет сообщения о конфликте');closeModal();
+ });
+ await run('Поздний ответ журнала не меняет другое открытое окно',async()=>{
+  let finish;const pending=new Promise(resolve=>{finish=resolve;});const opened=SlovaHistoryUI.openAudit({api:{listAuditLog:()=>pending},client:{},language:'ru',openModal,modalCard});closeModal();openModal('<h2 data-other-dialog>Другое окно</h2>');finish([{id:1,action:'lesson.updated'}]);await opened;assert(modalCard.querySelector('[data-other-dialog]'),'Поздний ответ затёр новое окно');closeModal();
+ });
+ await run('Последняя страница истории не возвращается к первым версиям',async()=>{
+  let calls=0;const api={getLessonRevision:async()=> 'revision',listLessonVersions:async()=>{calls++;return calls===1?Array.from({length:50},(_,index)=>({id:'v'+index,version_no:50-index})):[];}};
+  await SlovaHistoryUI.openVersions({api,client:{},language:'ru',openModal,modalCard,canRestore:false},'lesson');modalCard.querySelector('[data-version-more]').click();await new Promise(resolve=>setTimeout(resolve,10));assert(!modalCard.querySelector('[data-version-more]'),'Пустая страница предлагает загрузить начало повторно');assert(modalCard.querySelectorAll('[data-view-version]').length===50,'Версии продублированы');closeModal();
+ });
  await run('Нет ошибок JavaScript при работе кнопок',()=>{assert(!window.qaErrors.length,window.qaErrors.join('; '));});
  clearTimeout(lessonDraftAutosaveTimer);
  lessonWorkspaceMode='';data=structuredClone(original);activeView='lessons';selectedLessonUnit='A1';searchQuery='';render();

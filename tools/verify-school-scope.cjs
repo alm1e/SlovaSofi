@@ -37,6 +37,7 @@ const migrationPath = process.argv[3] || path.join(root,'supabase/migrations/202
  await db.exec(fs.readFileSync(migrationPath,'utf8'));
  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261117_director_lesson_editing.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261118_class_archive.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261119_audit_and_lesson_versions.sql'),'utf8'));
  assert.equal((await db.query(`select class_scope from teacher_classes where id='${uid(11)}'`)).rows[0].class_scope,'private');
  await db.exec(`
  update profiles set role='director' where id='${uid(4)}';
@@ -109,6 +110,62 @@ const migrationPath = process.argv[3] || path.join(root,'supabase/migrations/202
   assert.equal((await rows('select * from teacher_classes')).length,2,'Student memberships preserved');
   assert.equal((await rows(`select * from teacher_classes where id='${uid(13)}'`)).length,0,'Student cannot read unrelated class');
  });
- console.log('PASS: Shared lesson creation/editing and media uploads; PostgreSQL migration, existing-class privacy, default school / explicit personal, director read-only across classes/rosters/assignments/calendar/progress/recordings, stale-role isolation, teacher isolation, student membership and admin transfer.');
+ // Version history and audit trail use real PostgreSQL permissions and triggers.
+ await asUser(2,async()=>{
+  const oldest=(await rows(`select * from lesson_versions where lesson_id='${uid(21)}' order by version_no limit 1`))[0];
+  assert(oldest,'Initial lesson snapshot');
+  await db.exec(`update teacher_lessons set title='Teacher revised lesson' where id='${uid(21)}'`);
+  const before=(await rows(`select count(*)::int as n from lesson_versions where lesson_id='${uid(21)}'`))[0].n;
+  const revision=(await rows(`select updated_at from teacher_lessons where id='${uid(21)}'`))[0].updated_at;
+  const logsBefore=(await rows(`select count(*)::int as n from school_audit_log where action like 'lesson.%'`))[0].n;
+  await db.exec(`update teacher_lessons set updated_at=now() where id='${uid(21)}'`);
+  assert.equal((await rows(`select count(*)::int as n from lesson_versions where lesson_id='${uid(21)}'`))[0].n,before,'No-op autosave creates no version');
+  assert.deepEqual((await rows(`select updated_at from teacher_lessons where id='${uid(21)}'`))[0].updated_at,revision,'No-op autosave preserves revision');
+  assert.equal((await rows(`select count(*)::int as n from school_audit_log where action like 'lesson.%'`))[0].n,logsBefore,'No-op autosave creates no audit noise');
+  const progressBefore=await rows(`select * from student_lesson_progress where lesson_id='${uid(21)}' order by student_id`);
+  const assignmentsBefore=await rows(`select * from class_lesson_assignments where lesson_id='${uid(21)}' order by class_id`);
+  await db.query('select public.restore_lesson_version($1,$2)',[oldest.id,revision]);
+  assert.equal((await rows(`select title from teacher_lessons where id='${uid(21)}'`))[0].title,oldest.snapshot.title);
+  assert.equal((await rows(`select count(*)::int as n from lesson_versions where lesson_id='${uid(21)}'`))[0].n,before+1,'Restore creates a new version');
+  assert.deepEqual(await rows(`select * from student_lesson_progress where lesson_id='${uid(21)}' order by student_id`),progressBefore,'Restore preserves student answers');
+  assert.deepEqual(await rows(`select * from class_lesson_assignments where lesson_id='${uid(21)}' order by class_id`),assignmentsBefore,'Restore preserves assignments');
+  await assert.rejects(()=>db.query('select public.restore_lesson_version($1,$2)',[oldest.id,revision]),/lesson_changed/,'Concurrent revision cannot be overwritten');
+  assert((await rows(`select actor_id from school_audit_log where action='lesson.restored' order by id desc limit 1`))[0].actor_id===uid(2),'Verified restore actor');
+  assert.equal((await rows(`select * from school_audit_log where class_id='${uid(13)}'`)).length,0,'Teacher cannot read another teacher private class log');
+  await assert.rejects(()=>db.exec("insert into school_audit_log(action) values ('forged')"),/permission denied/i);
+  await assert.rejects(()=>db.exec('delete from lesson_versions'),/permission denied/i);
+  await assert.rejects(()=>db.query('select public.set_staff_access($1,$2,$3)',[uid(2),'director',false]),/staff_access_forbidden/);
+ });
+ await asUser(4,async()=>{
+  assert.equal((await rows(`select * from school_audit_log where class_id='${uid(13)}'`)).length,0,'Director cannot see private class history');
+  assert((await rows(`select * from lesson_versions where lesson_id='${uid(21)}'`)).length>1,'Director sees shared lesson history');
+  assert.equal((await rows("select * from school_audit_log where action like 'staff.%'")).length,0,'Director cannot read staff security history');
+ });
+ await asUser(5,async()=>{
+  assert.equal((await rows('select * from lesson_versions')).length,0,'Student cannot read historical answer keys');
+  assert.equal((await rows('select * from school_audit_log')).length,0,'Student cannot read audit logs');
+  await assert.rejects(()=>db.query('select public.restore_lesson_version($1,$2)',[uid(21),new Date()]),/restore_forbidden/);
+ });
+ await asUser(1,async()=>{
+  await db.query('select public.set_staff_access($1,$2,$3)',[uid(3),'director',false]);
+  const event=(await rows("select * from school_audit_log where action='staff.role_changed' order by id desc limit 1"))[0];
+  assert.equal(event.actor_id,uid(1),'Staff role audit uses administrator identity');
+  assert.equal(event.details.to,'director');
+  await db.query('select public.set_staff_access($1,$2,$3)',[uid(3),'teacher',false]);
+ });
+ await asUser(1,async()=>{
+  await db.query('select public.set_staff_access($1,$2,$3)',[uid(3),'teacher',true]);
+  assert.equal((await rows(`select actor_id from school_audit_log where action='staff.editor_granted' order by id desc limit 1`))[0].actor_id,uid(1));
+  await db.query('select public.set_staff_access($1,$2,$3)',[uid(3),'teacher',false]);
+  assert.equal((await rows(`select actor_id from school_audit_log where action='staff.editor_revoked' order by id desc limit 1`))[0].actor_id,uid(1));
+  const versionsBefore=(await rows(`select count(*)::int as n from lesson_versions where lesson_id='${uid(22)}'`))[0].n;
+  await db.exec(`delete from teacher_lessons where id='${uid(22)}'`);
+  assert.equal((await rows(`select count(*)::int as n from lesson_versions where lesson_id='${uid(22)}'`))[0].n,versionsBefore,'Deleting a lesson preserves its history');
+  assert((await rows(`select * from school_audit_log where action='lesson.deleted' and entity_id='${uid(22)}'`)).length>0);
+ });
+ await asUser(3,async()=>{
+  await assert.rejects(()=>db.query('select public.restore_lesson_version($1,$2)',[uid(21),new Date()]),/restore_forbidden/,'Teacher without editor permission cannot restore');
+ });
+ console.log('PASS: Version snapshots, restore/concurrency protection, immutable scoped audit log and actor attribution; shared lesson creation/editing and media uploads; PostgreSQL migration, existing-class privacy, default school / explicit personal, director read-only across classes/rosters/assignments/calendar/progress/recordings, stale-role isolation, teacher isolation, student membership and admin transfer.');
  await db.close();
 })().catch(e=>{console.error(e);process.exit(1);});

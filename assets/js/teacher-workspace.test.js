@@ -76,6 +76,7 @@ function workspaceContext() {
     const section={id:'section',title:'Reading',activities:[]},homework={id:'homework',title:'Practice',activities:[]};
     const listener={addEventListener(){}};
     const ctx=vm.createContext({
+        historyText:key=>key,
         lessonWorkspaceMode:'preview',workspaceLessonId:'lesson',lessonWorkspaceTab:'lesson',
         data:{lessons:[{id:'lesson',title:'Reading',unit:'A1',sections:[section],homeworkSections:[homework]}],classes:[]},
         activeLessonSectionId:'section',activeHomeworkSectionId:'homework',monitorClassId:'',selectedLiveStudentId:'',

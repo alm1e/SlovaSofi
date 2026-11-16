@@ -54,7 +54,7 @@ function sourceFunction(name) {
  return source.slice(start,end<0?undefined:end);
 }
 test('director class cards show scope and lesson links without edit, invite or create buttons',()=>{
- const ctx={SlovaI18n:{locales:x=>x},currentLanguage:'ru',classArchiveView:false,archivingClassIds:new Set(),workspaceAccess:{role:'director'},currentUser:{},data:{classes:[{id:'class',name:'School',classScope:'school',course:'A1',students:[],teacherName:'Teacher'}]},searchQuery:'',hasPermission:key=>['view_classes_students','view_lessons'].includes(key),userDisplayName:()=>'',escapeHtml:x=>String(x??''),formatCourse:x=>x,t:x=>x,presenceBadge:()=>'',emptyMessage:()=>''};
+ const ctx={historyText:key=>key,SlovaI18n:{locales:x=>x},currentLanguage:'ru',classArchiveView:false,archivingClassIds:new Set(),workspaceAccess:{role:'director'},currentUser:{},data:{classes:[{id:'class',name:'School',classScope:'school',course:'A1',students:[],teacherName:'Teacher'}]},searchQuery:'',hasPermission:key=>['view_classes_students','view_lessons'].includes(key),userDisplayName:()=>'',escapeHtml:x=>String(x??''),formatCourse:x=>x,t:x=>x,presenceBadge:()=>'',emptyMessage:()=>''};
  vm.createContext(ctx);vm.runInContext(sourceFunction('classScopeText')+sourceFunction('classArchiveText')+sourceFunction('renderClasses'),ctx);const html=ctx.renderClasses();
  assert(html.includes('Класс школы'));assert(html.includes('data-action="class-lessons"'));
  for(const action of ['new-class','edit-class','delete-class','invite-student']) assert(!html.includes(`data-action="${action}"`));
