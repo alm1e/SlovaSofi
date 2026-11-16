@@ -2284,3 +2284,20 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .platform .button:not(.danger):disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
 /* Archive tabs stay together; selection remains visible in both themes. */
 .platform .toolbar[role="group"] { justify-content: flex-start; gap: 12px; }
+
+/* White actions contrast with the green class toolbars in the light theme. */
+:root:not([data-theme="dark"]) .platform .class-toolbar .button:not(.danger) {
+    background: #fff !important;
+    color: #116744 !important;
+    border-color: #fff !important;
+    box-shadow: 0 2px 6px #123c2624;
+}
+:root:not([data-theme="dark"]) .platform .class-toolbar .button:not(.danger):hover:not(:disabled) {
+    background: #13794f !important;
+    color: #fff !important;
+    border-color: #fff !important;
+}
+:root:not([data-theme="dark"]) .platform .class-toolbar .button:not(.danger)[aria-pressed="true"] {
+    box-shadow: inset 0 0 0 2px #116744, 0 0 0 2px #ffffff80;
+}
+:root:not([data-theme="dark"]) .platform .class-toolbar .button:focus-visible { outline-color: #fff; }

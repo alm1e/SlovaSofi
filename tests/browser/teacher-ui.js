@@ -130,6 +130,10 @@
   const loaded=new Promise(resolve=>{frame.onload=resolve;});frame.srcdoc='<link rel="stylesheet" href="'+href+'"><a class="btn-card-green-cta">Войти</a><a class="btn-custom-lg">Курсы</a>';document.body.append(frame);await loaded;
   try {for(const theme of ['light','dark']){frame.contentDocument.documentElement.dataset.theme=theme;for(const button of frame.contentDocument.querySelectorAll('a')){const style=frame.contentWindow.getComputedStyle(button);assert(style.backgroundImage.includes('19, 121, 79'),'Цвет публичной кнопки отличается: '+theme);assert(style.color==='rgb(255, 255, 255)','Нечитаемый текст публичной кнопки: '+theme);}}}finally{frame.remove();}
  });
+ await run('Белые кнопки на зелёных панелях классов в светлой теме',()=>{
+  const previous=currentTheme,container=document.createElement('section');container.innerHTML='<div class="toolbar class-toolbar"><button class="button secondary" aria-pressed="true">Активные</button><button class="button secondary" aria-pressed="false">Архив</button><button class="button secondary">Создать класс</button></div>';document.body.append(container);
+  try {setTheme('light');const styles=[...container.querySelectorAll('button')].map(button=>getComputedStyle(button));assert(styles.every(style=>style.backgroundColor==='rgb(255, 255, 255)'&&style.backgroundImage==='none'),'Кнопки не белые');assert(styles.every(style=>style.color==='rgb(17, 103, 68)'),'Текст не зелёный');assert(styles[0].boxShadow!==styles[1].boxShadow,'Не видна активная вкладка');}finally{setTheme(previous);container.remove();}
+ });
  await run('Нет ошибок JavaScript при работе кнопок',()=>{assert(!window.qaErrors.length,window.qaErrors.join('; '));});
  clearTimeout(lessonDraftAutosaveTimer);
  lessonWorkspaceMode='';data=structuredClone(original);activeView='lessons';selectedLessonUnit='A1';searchQuery='';render();
