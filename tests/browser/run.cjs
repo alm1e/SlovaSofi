@@ -24,13 +24,13 @@ write('student-fixture.js',student);write('student.html',isolate('student.html')
 const publicPages=Object.fromEntries(['index.html','login.html','register.html','reset-password.html','teacher-setup.html'].map(name=>[name,isolate(name)]));
 write('public.html',`<meta charset="utf-8"><div id="qa-report"></div><script>
 const pages=${JSON.stringify(publicPages).replace(/</g,'\\u003c')},results=[],report=document.querySelector('#qa-report');
-(async()=>{for(const [name,html]of Object.entries(pages))for(const width of [360,768,1440]){
+(async()=>{for(const [name,html]of Object.entries(pages))for(const width of [320,360,768,1440]){
  const frame=document.createElement('iframe');frame.style='position:fixed;inset:0;width:'+width+'px;height:900px;border:0';
  const loaded=new Promise(r=>frame.onload=r);frame.srcdoc=html;document.body.append(frame);await loaded;
  await new Promise(r=>frame.contentWindow.requestAnimationFrame(()=>frame.contentWindow.requestAnimationFrame(r)));
- try{const d=frame.contentDocument;if(!d.querySelector('h1'))throw Error('Missing title');if(d.documentElement.scrollWidth>d.documentElement.clientWidth+1)throw Error('Horizontal overflow');
- for(const lang of ['ua','ru','en','sk','kk']){d.querySelector('[data-lang="'+lang+'"]')?.click();if(d.body.textContent.includes('undefined'))throw Error('Missing translation');}
- const toggle=d.querySelector('[data-theme-toggle]');if(toggle){const before=d.documentElement.dataset.theme;toggle.click();if(d.documentElement.dataset.theme===before)throw Error('Theme did not change');}
+ try{const d=frame.contentDocument;if(!d.querySelector('h1'))throw Error('Missing title');const checkOverflow=()=>{if(d.documentElement.scrollWidth>d.documentElement.clientWidth+1)throw Error('Horizontal overflow: '+[...d.body.querySelectorAll('*')].filter(el=>{const rect=el.getBoundingClientRect();return rect.width>0&&(rect.right>d.documentElement.clientWidth+1||rect.left< -1);}).slice(0,5).map(el=>el.tagName+'.'+el.className).join(', '));};checkOverflow();
+ for(const lang of ['ua','ru','en','sk','kk']){d.querySelector('[data-lang="'+lang+'"]')?.click();if(d.body.textContent.includes('undefined'))throw Error('Missing translation');checkOverflow();}
+ const toggle=d.querySelector('[data-theme-toggle]');if(toggle){const before=d.documentElement.dataset.theme;toggle.click();if(d.documentElement.dataset.theme===before)throw Error('Theme did not change');checkOverflow();}
  results.push('PASS '+name+' '+width);}catch(e){results.push('FAIL '+name+' '+width+' '+e.message);}finally{frame.remove();}
 }report.innerText=results.join('\\n')+'\\nTOTAL '+results.length+'; FAIL '+results.filter(r=>r.startsWith('FAIL')).length;})();</script>`);
 const browser=process.env.QA_BROWSER||'C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe';
@@ -47,12 +47,13 @@ const keepAlive=setInterval(()=>{},1000);
  ws.onmessage=e=>{const r=JSON.parse(e.data),p=pending.get(r.id);if(p){pending.delete(r.id);r.error?p.reject(Error(r.error.message)):p.resolve(r.result);}};
  await send('Page.enable');
  const reports=[];
- for(const name of ['teacher','student','public']){
+ for(const [name,width] of [['teacher',1280],['student',1280],['student',390],['public',1280]]){
+  await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false});
   await send('Page.navigate',{url:url(name+'.html')});
   if(name==='student'){for(let i=0;i<100;i++){if(await evaluate("!![...document.querySelectorAll('button')].find(b=>b.textContent.includes('QA'))"))break;await delay(100);}await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.includes('QA')).click()");}
   let result='';for(let i=0;i<300;i++){result=await evaluate("document.body?.innerText||''");if(/TOTAL \d+; FAIL \d+/.test(result))break;await delay(100);}
   const report=await evaluate("document.querySelector('#qa-report')?.innerText||''");
-  const lines=(report||result).split('\n').filter(l=>/^(PASS |FAIL |TOTAL )/.test(l));reports.push({page:name,lines});console.log(name,lines.filter(l=>/^(FAIL |TOTAL )/.test(l)).join('\n'));if(!lines.some(l=>l.startsWith('TOTAL')))throw Error(name+' checks did not finish');
+  const lines=(report||result).split('\n').filter(l=>/^(PASS |FAIL |TOTAL )/.test(l));reports.push({page:name,width,lines});console.log(name+' '+width,lines.filter(l=>/^(FAIL |TOTAL )/.test(l)).join('\n'));if(!lines.some(l=>l.startsWith('TOTAL')))throw Error(name+' checks did not finish');
  }
  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(reports,null,2));
  if(reports.some(r=>r.lines.some(l=>l.startsWith('FAIL '))))process.exitCode=1;

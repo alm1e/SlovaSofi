@@ -54,7 +54,31 @@
         await run('Перемотка аудио',()=>{const card=qaReset('audio');const media=card.querySelector('audio');let time=10;Object.defineProperty(media,'currentTime',{get:()=>time,set:v=>{time=v;}});Object.defineProperty(media,'duration',{value:60});card.querySelector('[data-media-seek="5"]').click();assert(time===15,'Позиция '+time);});
         await run('Повтор аудио A/B и сброс',()=>{const card=qaReset('audio');const media=card.querySelector('audio');let time=2;Object.defineProperty(media,'currentTime',{get:()=>time,set:v=>{time=v;}});card.querySelector('[data-media-loop="a"]').click();time=8;card.querySelector('[data-media-loop="b"]').click();assert(media.dataset.loopStart==='2'&&media.dataset.loopEnd==='8','Не заданы границы');card.querySelector('[data-media-loop="clear"]').click();assert(!media.dataset.loopStart&&!media.dataset.loopEnd,'Повтор не сброшен');});
         await run('Домашняя работа и возврат',async()=>{qaReset();pageContent.querySelector('[data-student-workspace-tab="homework"]').click();for(let i=0;i<10;i++)await Promise.resolve();assert(studentWorkspaceTab==='homework','Домашняя работа не открылась');pageContent.querySelector('[data-student-workspace-tab="lesson"]').click();for(let i=0;i<10;i++)await Promise.resolve();assert(studentWorkspaceTab==='lesson','Нет возврата');});
-        await run('Навигация скрывается в уроке и возвращается при выходе',async()=>{qaReset();const sidebar=document.getElementById('studentSidebar'),menu=document.getElementById('studentMenuToggle');assert(document.body.classList.contains('lesson-focus')&&sidebar.inert,'Меню не скрыто');menu.click();assert(!sidebar.inert&&sidebar.classList.contains('open'),'Меню не открылось');document.getElementById('studentSidebarBackdrop').click();assert(sidebar.inert,'Меню не закрылось');pageContent.querySelector('[data-back-to-lessons]').click();for(let i=0;i<10;i++)await Promise.resolve();assert(!document.body.classList.contains('lesson-focus'),'Не вышел из режима урока');assert(sidebar.inert===matchMedia('(max-width: 700px)').matches,'Навигация не восстановилась');});
+        await run('Навигация урока доступна на компьютере и открывается кнопкой на телефоне',async()=>{
+            qaReset();
+            const sidebar=document.getElementById('studentSidebar'),menu=document.getElementById('studentMenuToggle');
+            const mobile=matchMedia('(max-width: 700px)').matches;
+            assert(document.body.classList.contains('lesson-focus'),'Не включён режим урока');
+            if(mobile){
+                assert(sidebar.inert,'Закрытое мобильное меню доступно для фокуса');
+                assert(getComputedStyle(menu).display!=='none','Нет кнопки мобильного меню');
+                menu.click();assert(!sidebar.inert&&sidebar.classList.contains('open'),'Мобильное меню не открылось');
+                assert(menu.getAttribute('aria-expanded')==='true','Не объявлено открытие меню');
+                document.getElementById('studentSidebarBackdrop').click();
+                assert(sidebar.inert&&!sidebar.classList.contains('open'),'Мобильное меню не закрылось');
+            }else{
+                assert(!sidebar.inert,'Левая панель заблокирована внутри урока');
+                assert(getComputedStyle(sidebar).visibility==='visible','Панель не видна на компьютере');
+                const link=sidebar.querySelector('[data-view="lessons"]');
+                link.focus();assert(document.activeElement===link,'Пункт меню недоступен с клавиатуры');
+                link.click();for(let i=0;i<10;i++)await Promise.resolve();assert(!selectedLessonId&&!openedLesson,'Клик по меню не выводит из урока');
+                qaReset();
+            }
+            pageContent.querySelector('[data-back-to-lessons]').click();
+            for(let i=0;i<10;i++)await Promise.resolve();
+            assert(!document.body.classList.contains('lesson-focus'),'Не вышел из режима урока');
+            assert(sidebar.inert===mobile,'Навигация не восстановилась');
+        });
         draftSaveTimers.forEach(clearTimeout);draftSaveTimers.clear();pendingDrafts.clear();await draftSaveQueue;
         const report=document.createElement('div');report.style='position:fixed;inset:20px;z-index:99999;background:#0f191e;color:#dff5e7;overflow:auto;padding:20px;font-size:16px';for(const line of [...results,'TOTAL '+results.length+'; FAIL '+results.filter(x=>x.startsWith('FAIL')).length]){const p=document.createElement('p');p.textContent=line;report.append(p);}document.body.append(report);
     };
