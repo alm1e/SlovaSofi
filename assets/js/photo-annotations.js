@@ -21,7 +21,13 @@
                     }
                     if(!coordinate(op.x)||!coordinate(op.y)||!Number.isFinite(op.w)||op.w<20||op.w>500||!Number.isFinite(op.h)||op.h<10||op.h>200||op.x+op.w>1000.1||op.y+op.h>1000.1)throw Error('Invalid field geometry');
                     if(op.type==='input'&&(typeof op.text!=='string'||op.text.length>200))throw Error('Invalid inline text');
-                    return {type:op.type,id:op.id,x:op.x,y:op.y,w:op.w,h:op.h,...(op.type==='input'?{text:op.text}:{})};
+                    const extra={};
+                    if(op.type==='input'&&op.font!==undefined){if(!Number.isFinite(op.font)||op.font<6||op.font>100)throw Error('Invalid font');extra.font=op.font;}
+                    if(op.type==='input'&&op.mask!==undefined){
+                        const m=op.mask;if(!m||!coordinate(m.x)||!coordinate(m.y)||!Number.isFinite(m.w)||!Number.isFinite(m.h)||m.w<=0||m.w>500||m.h<=0||m.h>200||m.x+m.w>1000.2||m.y+m.h>1000.2||!/^#[0-9a-f]{6}$/i.test(m.color))throw Error('Invalid gap mask');
+                        extra.mask={x:m.x,y:m.y,w:m.w,h:m.h,color:m.color};
+                    }
+                    return {type:op.type,id:op.id,x:op.x,y:op.y,w:op.w,h:op.h,...(op.type==='input'?{text:op.text}:{}),...extra};
                 }
                 if(!/^#[0-9a-f]{6}$/i.test(op.color)||![2,4,8].includes(op.width))throw Error('Invalid drawing tool');
                 if(op.type==='text'){

@@ -21,6 +21,29 @@
             let ops=JSON.parse(el.dataset.photoValue||'[]'),base=JSON.parse(el.dataset.photoBase||'[]'),tool=el.dataset.photoDirect==='true'?'input':'pen',active=null,selected=null;
             const author=el.dataset.photoAuthor==='true',editable=canvas.hasAttribute('data-photo-editable'),history=[];
             const fieldsLayer=el.querySelector('[data-photo-fields]');
+            let gaps=[],scanVersion=0;
+            const gapHint=language==='ru'?['Нажмите на точки, чтобы вписать ответ.','Пропуски не найдены. Можно нажать на фото и вписать ответ вручную.','Не удалось распознать фото. Доступен ручной ввод.']:language==='ua'?['Натисніть на крапки, щоб вписати відповідь.','Пропусків не знайдено. Доступне ручне введення.','Не вдалося розпізнати фото. Доступне ручне введення.']:['Click the dots to type an answer.','No gaps found. Click the photo to type manually.','Could not analyse this image. Manual typing is available.'];
+            const overlaps=(a,b)=>Math.abs(a.x+a.w/2-b.x-b.w/2)<Math.max(a.w,b.w)*.65&&Math.abs(a.y+a.h/2-b.y-b.h/2)<Math.max(a.h,b.h)*.65;
+            async function scan(){
+                if(!root.SlovaPhotoGapDetector||!img.naturalWidth)return;
+                const version=++scanVersion;
+                const read=source=>{const scale=Math.min(1,1200/source.naturalWidth,1400/source.naturalHeight);const temp=document.createElement('canvas');temp.width=Math.max(1,Math.round(source.naturalWidth*scale));temp.height=Math.max(1,Math.round(source.naturalHeight*scale));const c=temp.getContext('2d',{willReadFrequently:true});c.drawImage(source,0,0,temp.width,temp.height);return c.getImageData(0,0,temp.width,temp.height);};
+                try{
+                    let pixels;
+                    try{pixels=read(img);}catch{
+                        const probe=new Image();probe.crossOrigin='anonymous';
+                        await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Image timeout')),8000);probe.onload=()=>{clearTimeout(timer);resolve();};probe.onerror=()=>{clearTimeout(timer);reject(Error('Image access'));};probe.src=img.currentSrc||img.src;});pixels=read(probe);
+                    }
+                    const found=root.SlovaPhotoGapDetector.detect(pixels);if(version!==scanVersion||!el.isConnected)return;
+                    gaps=found;el.dataset.photoDetection='ready';el.dataset.photoGapCount=String(gaps.length);renderFields();if(hint&&tool==='input')hint.textContent=gaps.length?gapHint[0]:gapHint[1];
+                }catch{if(version===scanVersion){el.dataset.photoDetection='unavailable';if(hint&&tool==='input')hint.textContent=gapHint[2];}}
+            }
+            function insertInput(x,y,gap=null){
+                const existing=gap?ops.find(op=>op.type==='input'&&overlaps(op,gap)):null;
+                if(existing){fieldsLayer.querySelector(`[data-photo-field-answer="${existing.id}"]`)?.focus();return;}
+                const {w,h}=fieldSize(),field={type:'input',id:crypto.randomUUID(),x:Math.max(0,Math.min(1000-w,x-w/2)),y:Math.max(0,Math.min(1000-h,y-h/2)),w,h,text:'',...(gap||{})};
+                selected=field.id;commit([...ops,field]);fieldsLayer.querySelector(`[data-photo-field-answer="${field.id}"]`)?.focus();
+            }
             function fieldSize(){return {w:Math.max(20,Math.min(500,(Number(el.querySelector('[data-photo-field-width]')?.value)||8)*10)),h:Math.max(10,Math.min(200,(Number(el.querySelector('[data-photo-field-height]')?.value)||3.5)*10))};}
             function selectField(field){
                 selected=field.id;
@@ -29,15 +52,18 @@
                 fieldsLayer.querySelectorAll('[data-photo-field-id]').forEach(node=>node.classList.toggle('is-selected',node.dataset.photoFieldId===selected));
             }
             function renderFields(){
-                if(!fieldsLayer)return;fieldsLayer.replaceChildren();
+                if(!fieldsLayer)return;
+                const focused=fieldsLayer.contains(document.activeElement)?{id:document.activeElement.dataset.photoFieldAnswer,start:document.activeElement.selectionStart,end:document.activeElement.selectionEnd}:null;
+                fieldsLayer.replaceChildren();
                 const fields=(author?ops:base).filter(op=>op.type==='field').concat(base.filter(op=>op.type==='input'),ops.filter(op=>op.type==='input'));
                 fields.forEach((field,index)=>{
                     const inline=field.type==='input',owned=inline&&ops.includes(field);
-                    const box=document.createElement('div');box.className='photo-answer-field';box.dataset.photoFieldId=field.id;
+                    const box=document.createElement('div');box.className='photo-answer-field'+(inline?' is-inline':'')+(field.mask?' is-detected-gap':'');box.dataset.photoFieldId=field.id;
                     box.style.left=field.x/10+'%';box.style.top=field.y/10+'%';box.style.width=field.w/10+'%';box.style.height=field.h/10+'%';
                     const input=document.createElement('input');input.type='text';input.maxLength=200;input.autocomplete='off';input.spellcheck=false;
                     input.setAttribute('aria-label',f[4]+' '+(index+1));input.dataset.photoFieldAnswer=field.id;
                     input.value=inline?field.text:author?'':ops.find(op=>op.type==='field-answer'&&op.id===field.id)?.text||'';
+                    if(inline&&field.font)input.style.setProperty('font-size',`${field.font/10}cqw`,'important');
                     input.readOnly=inline?(!owned||!editable):author||!editable;input.placeholder=author&&!inline?String(index+1):'';box.append(input);fieldsLayer.append(box);
                     if(editable&&(inline?owned:!author)){
                         const save=()=>{if(inline){commit(ops.map(op=>op.id===field.id?{...op,text:input.value}:op),false);return;}const next=ops.filter(op=>!(op.type==='field-answer'&&op.id===field.id));if(input.value)next.push({type:'field-answer',id:field.id,text:input.value});commit(next,false);};
@@ -66,12 +92,20 @@
                         }
                     }
                 });
+                if(editable&&tool==='input')gaps.forEach((gap,index)=>{
+                    if(fields.some(field=>overlaps(field,gap)))return;
+                    const target=document.createElement('button');target.type='button';target.className='photo-gap-target';target.dataset.photoGap=String(index);target.setAttribute('aria-label',f[4]+' '+(index+1));
+                    Object.assign(target.style,{left:gap.x/10+'%',top:gap.y/10+'%',width:gap.w/10+'%',height:gap.h/10+'%'});
+                    target.addEventListener('click',()=>insertInput(gap.x+gap.w/2,gap.y+gap.h/2,gap));fieldsLayer.append(target);
+                });
+                if(focused){const input=fieldsLayer.querySelector(`[data-photo-field-answer="${focused.id}"]`);input?.focus({preventScroll:true});if(input)input.setSelectionRange(focused.start,focused.end);}
             }
             const hint=el.querySelector('[data-photo-hint]');
             function draw(){
                 const rect=img.getBoundingClientRect();if(!rect.width||!img.naturalWidth)return;
                 canvas.width=Math.round(rect.width*2);canvas.height=Math.round(rect.height*2);
                 const w=canvas.width,h=canvas.height;
+                for(const op of [...base,...ops])if(op.type==='input'&&op.text&&op.mask){const m=op.mask;ctx.fillStyle=m.color;ctx.fillRect(m.x*w/1000,m.y*h/1000,m.w*w/1000,m.h*h/1000);}
                 for(const op of [...base,...ops,...(active?[active]:[])]){
                     if(op.type==='field'||op.type==='field-answer'||op.type==='input')continue;
                     ctx.strokeStyle=ctx.fillStyle=op.color;ctx.lineWidth=op.width*w/1000;ctx.lineCap=ctx.lineJoin='round';
@@ -84,12 +118,12 @@
                 if(remember){history.push(structuredClone(ops));if(history.length>20)history.shift();}
                 ops=next;el.dataset.photoValue=JSON.stringify(ops);if(hint)hint.textContent='';draw();if(refreshFields)renderFields();change(value(container));el.dispatchEvent(new CustomEvent('photo-change',{bubbles:true}));
             }
-            img.addEventListener('load',draw);img.addEventListener('error',()=>{el.querySelector('[data-photo-error]').hidden=false;});draw();renderFields();
+            img.addEventListener('load',()=>{draw();scan();});img.addEventListener('error',()=>{el.querySelector('[data-photo-error]').hidden=false;});draw();renderFields();scan();
             const observer=new ResizeObserver(()=>{if(!el.isConnected){observer.disconnect();return;}draw();});observer.observe(img);
             if(!canvas.hasAttribute('data-photo-editable'))return;
             el.querySelectorAll('[data-photo-tool]').forEach(button=>button.addEventListener('click',()=>{
                 tool=button.dataset.photoTool;el.querySelectorAll('[data-photo-tool]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
-                el.querySelector('[data-photo-caption]').hidden=tool!=='text';if(hint)hint.textContent=tool==='text'?t[7]:tool==='field'?f[3]:'';
+                el.querySelector('[data-photo-caption]').hidden=tool!=='text';if(hint)hint.textContent=tool==='text'?t[7]:tool==='field'?f[3]:tool==='input'&&gaps.length?gapHint[0]:'';renderFields();
             }));
             el.querySelector('[data-photo-undo]').addEventListener('click',()=>commit(history.length?history.pop():ops.slice(0,-1),true,false));
             el.querySelector('[data-photo-clear]').addEventListener('click',()=>commit([]));
@@ -101,9 +135,8 @@
                 if(e.button!==0||active||!img.naturalWidth)return;e.preventDefault();
                 const [x,y]=point(e);
                 if(tool==='input'){
-                    const {w,h}=fieldSize(),field={type:'input',id:crypto.randomUUID(),x:Math.max(0,Math.min(1000-w,x-w/2)),y:Math.max(0,Math.min(1000-h,y-h/2)),w,h,text:''};
-                    selected=field.id;commit([...ops,field]);
-                    const input=fieldsLayer.querySelector(`[data-photo-field-answer="${field.id}"]`);input?.focus();return;
+                    const nearby=gaps.filter(gap=>Math.abs(x-gap.x-gap.w/2)<=gap.w/2+15&&Math.abs(y-gap.y-gap.h/2)<=gap.h/2+12).sort((a,b)=>Math.hypot(x-a.x-a.w/2,y-a.y-a.h/2)-Math.hypot(x-b.x-b.w/2,y-b.y-b.h/2))[0];
+                    insertInput(x,y,nearby||null);return;
                 }
                 if(tool==='field'&&author){const size=fieldSize(),field={type:'field',id:crypto.randomUUID(),x:Math.max(0,Math.min(1000-size.w,x-size.w/2)),y:Math.max(0,Math.min(1000-size.h,y-size.h/2)),...size};selected=field.id;commit([...ops,field]);return;}
                 const color=el.querySelector('[data-photo-color]').value,width=Number(el.querySelector('[data-photo-width]').value);

@@ -34,7 +34,7 @@ const pages=${JSON.stringify(publicPages).replace(/</g,'\\u003c')},results=[],re
  results.push('PASS '+name+' '+width);}catch(e){results.push('FAIL '+name+' '+width+' '+e.message);}finally{frame.remove();}
 }report.innerText=results.join('\\n')+'\\nTOTAL '+results.length+'; FAIL '+results.filter(r=>r.startsWith('FAIL')).length;})();</script>`);
 write('photo-ui.js',read('tests/browser/photo-ui.js'));
-write('photo.html',`<!doctype html><html><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="${pathToFileURL(root).href}/assets/css/photo-editor.css"><body style="margin:16px;font-family:sans-serif"><div id="photo-fixture"></div><script src="${pathToFileURL(root).href}/assets/js/photo-annotations.js"></script><script src="${pathToFileURL(root).href}/assets/js/photo-editor.js"></script><script src="photo-ui.js"></script></body></html>`);
+write('photo.html',`<!doctype html><html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="${pathToFileURL(root).href}/assets/css/photo-editor.css"><body style="margin:16px;font-family:sans-serif"><div id="photo-fixture"></div><script src="${pathToFileURL(root).href}/assets/js/photo-annotations.js"></script><script src="${pathToFileURL(root).href}/assets/js/photo-gap-detector.js"></script><script src="${pathToFileURL(root).href}/assets/js/photo-editor.js"></script><script src="photo-ui.js"></script></body></html>`);
 const browser=process.env.QA_BROWSER||'C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe';
 const port=19346,proc=spawn(browser,['--headless=new','--no-first-run','--no-default-browser-check','--disable-gpu','--allow-file-access-from-files',`--remote-debugging-port=${port}`,`--user-data-dir=${path.join(out,'profile')}`],{stdio:'ignore',windowsHide:true});
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
@@ -55,6 +55,7 @@ const keepAlive=setInterval(()=>{},1000);
   if(name==='student'){for(let i=0;i<100;i++){if(await evaluate("!![...document.querySelectorAll('button')].find(b=>b.textContent.includes('QA'))"))break;await delay(100);}await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.includes('QA')).click()");}
   let result='';for(let i=0;i<300;i++){result=await evaluate("document.body?.innerText||''");if(/TOTAL \d+; FAIL \d+/.test(result))break;await delay(100);}
   const report=await evaluate("document.querySelector('#qa-report')?.innerText||''");
+  if(name==='photo'){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(out,`photo-${width}.png`),Buffer.from(shot.data,'base64'));}
   const lines=(report||result).split('\n').filter(l=>/^(PASS |FAIL |TOTAL )/.test(l));reports.push({page:name,width,lines});console.log(name+' '+width,lines.filter(l=>/^(FAIL |TOTAL )/.test(l)).join('\n'));if(!lines.some(l=>l.startsWith('TOTAL')))throw Error(name+' checks did not finish');
  }
  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(reports,null,2));

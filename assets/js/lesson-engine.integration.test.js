@@ -264,7 +264,7 @@ test('photo fields restore typed answers and reject forged fields or coordinates
 
 test('students can type anywhere on an unprepared photo and reload the saved inline text',async()=>{
  const url='https://school.example/plain.png',e=engine([{id:id(1),type:'image',content:url,answer:''}]);
- const note={type:'input',id:'inline-1',x:100,y:200,w:100,h:40,text:'áno'};
+ const note={type:'input',id:'inline-1',x:100,y:200,w:100,h:40,text:'áno',font:32,mask:{x:100,y:230,w:100,h:5,color:'#ceccd0'}};
  const response=JSON.stringify({[url]:[note]});assert.equal((await e.write(0,response,'save-draft')).status,200);
  const loaded=(await e.request({action:'load'})).body.lesson;assert.equal(loaded.progress['b'+id(1)].response,response);
  assert.equal((await e.write(0,JSON.stringify({[url]:[{...note,text:'x'.repeat(201)}]}),'save-draft')).status,400);

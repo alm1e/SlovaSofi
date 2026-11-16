@@ -19,3 +19,9 @@ test('photo answer fields preserve identity, geometry and Unicode answers with b
  for(const invalid of [{...field,w:0},{...field,x:950,w:80},{...field,h:NaN},{...field,id:'<bad>'},{...answer,text:'x'.repeat(201)}])assert.throws(()=>core.validate({[url]:[invalid]}));
  assert.throws(()=>core.validate({[url]:[field,field]}));
 });
+
+test('detected gap styling survives validation without allowing arbitrary CSS or unbounded masks',()=>{
+ const input={type:'input',id:'gap',x:10,y:10,w:80,h:35,text:'á',font:32,mask:{x:10,y:30,w:80,h:4,color:'#cdcacb'}};
+ assert.deepEqual(core.validate({[url]:[input]})[url][0],input);
+ for(const invalid of [{...input,font:NaN},{...input,font:1000},{...input,mask:{...input.mask,color:'url(evil)'}},{...input,mask:{...input.mask,x:995}},{...input,mask:{...input.mask,h:-1}}])assert.throws(()=>core.validate({[url]:[invalid]}));
+});

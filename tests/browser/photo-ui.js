@@ -42,6 +42,19 @@
  check('teacher sees the saved field answer',host.querySelector('[data-photo-field-answer]').value==='á'&&host.querySelector('[data-photo-field-answer]').readOnly);
  host.innerHTML=SlovaPhotoEditor.markup([{url}],template,filled,true,'ru');host.querySelector('img').src='wide.svg';await host.querySelector('img').decode();SlovaPhotoEditor.bind(host);host.querySelector('[data-photo-clear]').click();check('clear removes answers but keeps template fields',host.querySelector('[data-photo-field-answer]').value===''&&host.querySelectorAll('[data-photo-field-answer]').length===1);
  host.innerHTML=SlovaPhotoEditor.markup([{url}],{},filled,true,'ru');host.querySelector('img').src='wide.svg';await host.querySelector('img').decode();SlovaPhotoEditor.bind(host);check('removed template fields do not leave unsaveable orphan answers',SlovaPhotoEditor.value(host)[url].length===0);
+ const sheet=document.createElement('canvas');sheet.width=1000;sheet.height=420;const paper=sheet.getContext('2d');paper.fillStyle='#c7bddf';paper.fillRect(0,0,1000,420);paper.fillStyle='#202020';paper.font='32px Arial';paper.fillText('m ... me – m ... me',40,80);paper.fillText('bol ... – bol ...',40,160);paper.fillText('r .. d – r .. d',40,240);
+ host.innerHTML=SlovaPhotoEditor.markup([{url}],{},{},true,'ru',{direct:true});const sheetImage=host.querySelector('img');sheetImage.src=sheet.toDataURL();await sheetImage.decode();SlovaPhotoEditor.bind(host);
+ for(let i=0;i<20&&!host.querySelector('[data-photo-gap]');i++)await new Promise(resolve=>setTimeout(resolve,20));
+ const targets=host.querySelectorAll('[data-photo-gap]');check('actual printed dotted gaps are detected on coloured paper',targets.length>=5);
+ if(targets.length){
+  const originalRect=targets[0].getBoundingClientRect();targets[0].click();const answer=host.querySelector('[data-photo-field-answer]');answer.value='á';answer.dispatchEvent(new InputEvent('input',{bubbles:true}));const note=SlovaPhotoEditor.value(host)[url][0];
+  check('typing snaps to the detected gap',!!note.mask&&Math.abs(answer.getBoundingClientRect().left-originalRect.left)<1);
+  const style=getComputedStyle(answer),outline=getComputedStyle(answer.closest('.photo-answer-field'));
+  check('answer has no white background or border',style.backgroundColor==='rgba(0, 0, 0, 0)'&&parseFloat(style.borderTopWidth)===0&&outline.outlineStyle==='none');
+  check('dots use a patch matching the paper instead of white',note.mask.color==='#c7bddf');
+  const size=host.querySelector('canvas'),context=size.getContext('2d'),pixel=context.getImageData(Math.round((note.mask.x+note.mask.w/2)*size.width/1000),Math.round((note.mask.y+note.mask.h/2)*size.height/1000),1,1).data;check('only the dotted area is covered with the sampled paper colour',pixel[0]===199&&pixel[1]===189&&pixel[2]===223&&pixel[3]===255);
+  const savedGap=SlovaPhotoEditor.value(host);host.innerHTML=SlovaPhotoEditor.markup([{url}],{},savedGap,false,'ru');host.querySelector('img').src=sheet.toDataURL();await host.querySelector('img').decode();SlovaPhotoEditor.bind(host);check('saved gap answer keeps its transparent appearance after reopening',host.querySelector('[data-photo-field-answer]').value==='á'&&getComputedStyle(host.querySelector('[data-photo-field-answer]')).backgroundColor==='rgba(0, 0, 0, 0)');
+ }
  check('mobile editor does not overflow the viewport',document.documentElement.scrollWidth<=innerWidth+1);
  }catch(e){check('browser exception: '+e.message,false);}
  log.textContent+=`TOTAL ${total}; FAIL ${failed}\n`;
