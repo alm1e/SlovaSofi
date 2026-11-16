@@ -109,6 +109,27 @@
    workspaceAccess={role:'director',permissions:{view_classes_students:true,view_lessons:true,edit_lessons:true}};render();assert(!pageContent.querySelector('[data-action="archive-class"]'),'Директор видит действие архивирования');assert(calls===2,'Лишние запросы сохранения');
   } finally {data=before.data;currentUser=before.currentUser;workspaceAccess=before.workspaceAccess;window.teacherWorkspaceApi=before.api;window.supabaseClient=before.client;classArchiveView=false;activeClassFilter='';}
  });
+ await run('Одинаковые зелёные кнопки в светлой и тёмной теме',()=>{
+  const container=document.createElement('section');container.innerHTML='<div class="toolbar"><button class="button">Основная</button><button class="button secondary">Категория</button><button class="button secondary small" aria-pressed="true">Активные</button><button class="button secondary small" aria-pressed="false">Архив</button><button class="button" disabled>Недоступно</button></div>';
+  document.body.append(container);const previous=currentTheme;
+  try {
+   for(const theme of ['light','dark']){
+    setTheme(theme);const buttons=[...container.querySelectorAll('button')],styles=buttons.map(button=>getComputedStyle(button));
+    assert(styles.slice(0,4).every(style=>style.backgroundImage===styles[0].backgroundImage),'Цвета основных и вторичных кнопок различаются: '+theme);
+    assert(styles.slice(0,4).every(style=>style.color==='rgb(255, 255, 255)'),'Нечитаемый текст: '+theme);
+    assert(styles[0].backgroundImage.includes('19, 121, 79'),'Нет единого зелёного цвета: '+theme);
+    assert(styles[2].boxShadow!==styles[3].boxShadow,'Не видна выбранная вкладка: '+theme);
+    assert(Number(styles[4].opacity)<1&&styles[4].cursor==='not-allowed','Не видна блокировка кнопки: '+theme);
+    buttons[1].focus();assert(getComputedStyle(buttons[1]).outlineStyle!=='none','Нет видимого фокуса: '+theme);
+   }
+  } finally {setTheme(previous);container.remove();}
+ });
+ await run('Зелёные кнопки публичного сайта и входа в двух темах',async()=>{
+  const href=[...document.querySelectorAll('link[rel="stylesheet"]')].find(link=>link.href.includes('/assets/css/teacher.css')).href.replace('/teacher.css','/style.css');
+  const frame=document.createElement('iframe');frame.style='position:fixed;left:-10000px;width:400px;height:200px';
+  const loaded=new Promise(resolve=>{frame.onload=resolve;});frame.srcdoc='<link rel="stylesheet" href="'+href+'"><a class="btn-card-green-cta">Войти</a><a class="btn-custom-lg">Курсы</a>';document.body.append(frame);await loaded;
+  try {for(const theme of ['light','dark']){frame.contentDocument.documentElement.dataset.theme=theme;for(const button of frame.contentDocument.querySelectorAll('a')){const style=frame.contentWindow.getComputedStyle(button);assert(style.backgroundImage.includes('19, 121, 79'),'Цвет публичной кнопки отличается: '+theme);assert(style.color==='rgb(255, 255, 255)','Нечитаемый текст публичной кнопки: '+theme);}}}finally{frame.remove();}
+ });
  await run('Нет ошибок JavaScript при работе кнопок',()=>{assert(!window.qaErrors.length,window.qaErrors.join('; '));});
  clearTimeout(lessonDraftAutosaveTimer);
  lessonWorkspaceMode='';data=structuredClone(original);activeView='lessons';selectedLessonUnit='A1';searchQuery='';render();

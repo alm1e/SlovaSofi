@@ -2262,3 +2262,25 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .class-lesson-picker-list .class-choice > span { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
 .class-lesson-picker-list .class-choice small { color: var(--muted); }
 .class-lesson-picker-list .class-choice:has(input:disabled) { cursor: default; opacity: .7; }
+
+/* One action-button palette overrides the legacy primary/secondary theme layers. */
+:root { --action-green: #13794f; --action-green-end: #116744; --action-green-hover: #0f6743; --action-focus: #145c39; }
+:root[data-theme="dark"] { --action-focus: #8fe4b7; }
+.platform .button:not(.danger) {
+    background: linear-gradient(135deg, var(--action-green), var(--action-green-end)) !important;
+    color: #fff !important;
+    border-color: var(--action-green-end) !important;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px #11674424;
+}
+.platform .button:not(.danger):hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--action-green-hover), #0c5738) !important;
+    color: #fff !important;
+    border-color: #0c5738 !important;
+    box-shadow: 0 5px 14px #11674430;
+}
+.platform .button:not(.danger):focus-visible { outline: 3px solid var(--action-focus); outline-offset: 3px; }
+.platform .button:not(.danger)[aria-pressed="true"] { box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px var(--action-green-end); }
+.platform .button:not(.danger):disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+/* Archive tabs stay together; selection remains visible in both themes. */
+.platform .toolbar[role="group"] { justify-content: flex-start; gap: 12px; }

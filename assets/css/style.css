@@ -976,3 +976,21 @@ html {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* Public and authentication actions use the same green palette as the classrooms. */
+:root .btn-card-green-cta, :root .btn-custom-lg,
+:root[data-theme="dark"] .btn-card-green-cta, :root[data-theme="dark"] .btn-custom-lg {
+    background: linear-gradient(135deg, #13794f, #116744) !important;
+    color: #fff !important;
+    border-color: #116744 !important;
+    border-radius: 12px;
+}
+:root .btn-card-green-cta:hover, :root .btn-custom-lg:hover,
+:root[data-theme="dark"] .btn-card-green-cta:hover, :root[data-theme="dark"] .btn-custom-lg:hover {
+    background: linear-gradient(135deg, #0f6743, #0c5738) !important;
+    color: #fff !important;
+}
+.btn-card-green-cta:focus-visible, .btn-custom-lg:focus-visible { outline: 3px solid #145c39; outline-offset: 3px; }
+:root[data-theme="dark"] .btn-card-green-cta:focus-visible,
+:root[data-theme="dark"] .btn-custom-lg:focus-visible { outline-color: #8fe4b7; }
+.btn-card-green-cta:disabled, .btn-custom-lg:disabled { opacity: .5; cursor: not-allowed; transform: none; }
