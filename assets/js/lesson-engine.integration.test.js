@@ -261,3 +261,11 @@ test('photo fields restore typed answers and reject forged fields or coordinates
  for(const ops of [[field],[{type:'field-answer',id:'other-gap',text:'á'}],[{type:'field-answer',id:'gap-1',text:'a'.repeat(201)}]])assert.equal((await e.write(0,JSON.stringify({[url]:ops}),'save-draft')).status,400);
  assert.equal(e.writes,writes);assert.equal((await e.write(0,JSON.stringify({[url]:[]}),'save-draft')).status,200);
 });
+
+test('students can type anywhere on an unprepared photo and reload the saved inline text',async()=>{
+ const url='https://school.example/plain.png',e=engine([{id:id(1),type:'image',content:url,answer:''}]);
+ const note={type:'input',id:'inline-1',x:100,y:200,w:100,h:40,text:'áno'};
+ const response=JSON.stringify({[url]:[note]});assert.equal((await e.write(0,response,'save-draft')).status,200);
+ const loaded=(await e.request({action:'load'})).body.lesson;assert.equal(loaded.progress['b'+id(1)].response,response);
+ assert.equal((await e.write(0,JSON.stringify({[url]:[{...note,text:'x'.repeat(201)}]}),'save-draft')).status,400);
+});

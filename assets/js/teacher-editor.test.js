@@ -13,7 +13,7 @@ function createEditorContext() {
         location: { href: "https://example.test/teacher.html" },
         document: { addEventListener() {} },
         localStorage: { getItem: () => "en" },
-        currentLanguage: "en", t: (key) => key,
+        currentLanguage: "en", lessonWorkspaceMode: "edit", t: (key) => key,
         liveStudentText: (key) => key,
         lessonSectionText: (key) => key,
         lessonDraft: { sections: [] },

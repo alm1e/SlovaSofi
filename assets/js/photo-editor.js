@@ -8,8 +8,8 @@
         const t=words[language]||words.en,f=fieldWords[language]||fieldWords.en;
         const template=core.read(base),responses=core.read(value);
         const visibleOps=url=>(responses[url]||[]).filter(op=>options.authorFields||(op.type!=='field'&&(op.type!=='field-answer'||(template[url]||[]).some(field=>field.type==='field'&&field.id===op.id))));
-        return images.map(image=>`<div class="photo-editor" data-photo-editor data-photo-author="${options.authorFields?'true':'false'}" data-photo-url="${escape(image.url)}" data-photo-base="${escape(JSON.stringify(template[image.url]||[]))}" data-photo-value="${escape(JSON.stringify(visibleOps(image.url)))}">
-            ${editable?`<div class="photo-tools"><button type="button" class="button secondary small" data-photo-tool="pen" aria-pressed="true">✎ ${t[0]}</button><button type="button" class="button secondary small" data-photo-tool="text" aria-pressed="false">T ${t[1]}</button>${options.authorFields?`<button type="button" class="button secondary small" data-photo-tool="field" aria-pressed="false">${f[0]}</button><label>${f[1]} <input type="number" min="2" max="50" step="0.5" value="8" data-photo-field-width></label><label>${f[2]} <input type="number" min="1" max="20" step="0.5" value="3.5" data-photo-field-height></label>`:''}<label>${t[2]} <input type="color" data-photo-color value="#e53935"></label><label>${t[3]} <select data-photo-width><option value="2">2</option><option value="4" selected>4</option><option value="8">8</option></select></label><button type="button" class="button secondary small" data-photo-undo>${t[4]}</button><button type="button" class="button secondary small" data-photo-clear>${t[5]}</button></div><input class="photo-caption" data-photo-caption maxlength="200" placeholder="${t[6]}" aria-label="${t[6]}" hidden><p class="photo-hint" data-photo-hint role="status"></p>`:''}
+        return images.map(image=>`<div class="photo-editor" data-photo-editor data-photo-direct="${options.direct?'true':'false'}" data-photo-author="${options.authorFields?'true':'false'}" data-photo-url="${escape(image.url)}" data-photo-base="${escape(JSON.stringify(template[image.url]||[]))}" data-photo-value="${escape(JSON.stringify(visibleOps(image.url)))}">
+            ${editable?`<div class="photo-tools">${options.direct?`<button type="button" class="button secondary small" data-photo-tool="input" aria-pressed="true">${language==='ru'?'Вписать':language==='ua'?'Вписати':'Type here'}</button>`:''}<button type="button" class="button secondary small" data-photo-tool="pen" aria-pressed="${options.direct?'false':'true'}">✎ ${t[0]}</button><button type="button" class="button secondary small" data-photo-tool="text" aria-pressed="false">T ${t[1]}</button>${options.authorFields?`<button type="button" class="button secondary small" data-photo-tool="field" aria-pressed="false">${f[0]}</button><label>${f[1]} <input type="number" min="2" max="50" step="0.5" value="8" data-photo-field-width></label><label>${f[2]} <input type="number" min="1" max="20" step="0.5" value="3.5" data-photo-field-height></label>`:''}<label>${t[2]} <input type="color" data-photo-color value="#e53935"></label><label>${t[3]} <select data-photo-width><option value="2">2</option><option value="4" selected>4</option><option value="8">8</option></select></label><button type="button" class="button secondary small" data-photo-undo>${t[4]}</button><button type="button" class="button secondary small" data-photo-clear>${t[5]}</button></div><input class="photo-caption" data-photo-caption maxlength="200" placeholder="${t[6]}" aria-label="${t[6]}" hidden><p class="photo-hint" data-photo-hint role="status"></p>`:''}
             <div class="photo-stage"><img src="${escape(image.url)}" alt="${escape(image.alt||'')}" draggable="false"><canvas ${editable?'data-photo-editable tabindex="0" aria-label="'+t[0]+'"':''}></canvas><div class="photo-fields" data-photo-fields></div></div><p data-photo-error hidden role="alert">${t[9]}</p></div>`).join('');
     }
     function value(container){const result={};container.querySelectorAll('[data-photo-editor]').forEach(el=>{result[el.dataset.photoUrl]=JSON.parse(el.dataset.photoValue||'[]');});return core.validate(result);}
@@ -18,33 +18,34 @@
         container.querySelectorAll('[data-photo-editor]').forEach(el=>{
             if(el.dataset.photoBound)return;el.dataset.photoBound='true';
             const canvas=el.querySelector('canvas'),img=el.querySelector('img'),ctx=canvas.getContext('2d');
-            let ops=JSON.parse(el.dataset.photoValue||'[]'),base=JSON.parse(el.dataset.photoBase||'[]'),tool='pen',active=null,selected=null;
+            let ops=JSON.parse(el.dataset.photoValue||'[]'),base=JSON.parse(el.dataset.photoBase||'[]'),tool=el.dataset.photoDirect==='true'?'input':'pen',active=null,selected=null;
             const author=el.dataset.photoAuthor==='true',editable=canvas.hasAttribute('data-photo-editable'),history=[];
             const fieldsLayer=el.querySelector('[data-photo-fields]');
             function fieldSize(){return {w:Math.max(20,Math.min(500,(Number(el.querySelector('[data-photo-field-width]')?.value)||8)*10)),h:Math.max(10,Math.min(200,(Number(el.querySelector('[data-photo-field-height]')?.value)||3.5)*10))};}
             function selectField(field){
                 selected=field.id;
-                el.querySelector('[data-photo-field-width]').value=String(field.w/10);
-                el.querySelector('[data-photo-field-height]').value=String(field.h/10);
+                const widthControl=el.querySelector('[data-photo-field-width]');if(widthControl)widthControl.value=String(field.w/10);
+                const heightControl=el.querySelector('[data-photo-field-height]');if(heightControl)heightControl.value=String(field.h/10);
                 fieldsLayer.querySelectorAll('[data-photo-field-id]').forEach(node=>node.classList.toggle('is-selected',node.dataset.photoFieldId===selected));
             }
             function renderFields(){
                 if(!fieldsLayer)return;fieldsLayer.replaceChildren();
-                const fields=(author?ops:base).filter(op=>op.type==='field');
+                const fields=(author?ops:base).filter(op=>op.type==='field').concat(base.filter(op=>op.type==='input'),ops.filter(op=>op.type==='input'));
                 fields.forEach((field,index)=>{
+                    const inline=field.type==='input',owned=inline&&ops.includes(field);
                     const box=document.createElement('div');box.className='photo-answer-field';box.dataset.photoFieldId=field.id;
                     box.style.left=field.x/10+'%';box.style.top=field.y/10+'%';box.style.width=field.w/10+'%';box.style.height=field.h/10+'%';
                     const input=document.createElement('input');input.type='text';input.maxLength=200;input.autocomplete='off';input.spellcheck=false;
                     input.setAttribute('aria-label',f[4]+' '+(index+1));input.dataset.photoFieldAnswer=field.id;
-                    input.value=author?'':ops.find(op=>op.type==='field-answer'&&op.id===field.id)?.text||'';
-                    input.readOnly=author||!editable;input.placeholder=author?String(index+1):'';box.append(input);fieldsLayer.append(box);
-                    if(!author&&editable){
-                        const save=()=>{const next=ops.filter(op=>!(op.type==='field-answer'&&op.id===field.id));if(input.value)next.push({type:'field-answer',id:field.id,text:input.value});commit(next,false);};
+                    input.value=inline?field.text:author?'':ops.find(op=>op.type==='field-answer'&&op.id===field.id)?.text||'';
+                    input.readOnly=inline?(!owned||!editable):author||!editable;input.placeholder=author&&!inline?String(index+1):'';box.append(input);fieldsLayer.append(box);
+                    if(editable&&(inline?owned:!author)){
+                        const save=()=>{if(inline){commit(ops.map(op=>op.id===field.id?{...op,text:input.value}:op),false);return;}const next=ops.filter(op=>!(op.type==='field-answer'&&op.id===field.id));if(input.value)next.push({type:'field-answer',id:field.id,text:input.value});commit(next,false);};
                         input.addEventListener('input',e=>{e.stopPropagation();if(!e.isComposing)save();});
                         input.addEventListener('compositionend',save);
                         input.addEventListener('change',e=>e.stopPropagation());
                     }
-                    if(author&&editable){
+                    if(editable&&(inline?owned:author)){
                         box.classList.add('is-author');if(field.id===selected)box.classList.add('is-selected');
                         const move=document.createElement('button');move.type='button';move.className='photo-field-move';move.textContent=String(index+1)+' ↔';move.setAttribute('aria-label',f[6]+' '+(index+1));
                         const resize=document.createElement('button');resize.type='button';resize.className='photo-field-resize';resize.textContent='↘';resize.setAttribute('aria-label',f[7]+' '+(index+1));
@@ -72,7 +73,7 @@
                 canvas.width=Math.round(rect.width*2);canvas.height=Math.round(rect.height*2);
                 const w=canvas.width,h=canvas.height;
                 for(const op of [...base,...ops,...(active?[active]:[])]){
-                    if(op.type==='field'||op.type==='field-answer')continue;
+                    if(op.type==='field'||op.type==='field-answer'||op.type==='input')continue;
                     ctx.strokeStyle=ctx.fillStyle=op.color;ctx.lineWidth=op.width*w/1000;ctx.lineCap=ctx.lineJoin='round';
                     if(op.type==='text'){ctx.font=`${(18+op.width*2)*w/1000}px sans-serif`;ctx.fillText(op.text,op.x*w/1000,op.y*h/1000);}
                     else {ctx.beginPath();op.points.forEach((p,i)=>i?ctx.lineTo(p[0]*w/1000,p[1]*h/1000):ctx.moveTo(p[0]*w/1000,p[1]*h/1000));if(op.points.length===1){ctx.lineTo(op.points[0][0]*w/1000+.1,op.points[0][1]*h/1000);}ctx.stroke();}
@@ -99,6 +100,11 @@
             canvas.addEventListener('pointerdown',e=>{
                 if(e.button!==0||active||!img.naturalWidth)return;e.preventDefault();
                 const [x,y]=point(e);
+                if(tool==='input'){
+                    const {w,h}=fieldSize(),field={type:'input',id:crypto.randomUUID(),x:Math.max(0,Math.min(1000-w,x-w/2)),y:Math.max(0,Math.min(1000-h,y-h/2)),w,h,text:''};
+                    selected=field.id;commit([...ops,field]);
+                    const input=fieldsLayer.querySelector(`[data-photo-field-answer="${field.id}"]`);input?.focus();return;
+                }
                 if(tool==='field'&&author){const size=fieldSize(),field={type:'field',id:crypto.randomUUID(),x:Math.max(0,Math.min(1000-size.w,x-size.w/2)),y:Math.max(0,Math.min(1000-size.h,y-size.h/2)),...size};selected=field.id;commit([...ops,field]);return;}
                 const color=el.querySelector('[data-photo-color]').value,width=Number(el.querySelector('[data-photo-width]').value);
                 if(tool==='text'){const text=el.querySelector('[data-photo-caption]').value.trim();if(text)commit([...ops,{type:'text',color,width,x,y,text}]);else el.querySelector('[data-photo-caption]').focus();return;}

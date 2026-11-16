@@ -774,7 +774,7 @@
             body = image ? `<div class="student-hotspot-image"><img src="${escapeHtml(image)}" alt="${escapeHtml(activity.prompt || text("imageAlt"))}" loading="lazy">${hotspots.map((hotspot, hotspotIndex) => `<button type="button" class="student-hotspot" data-hotspot-index="${hotspotIndex}" style="left:${Number(hotspot.x)}%;top:${Number(hotspot.y)}%" aria-label="${escapeHtml(hotspot.word)}">${hotspotIndex + 1}</button>`).join("")}</div><p class="student-hotspot-detail" data-hotspot-detail>${escapeHtml(text("selectHotspot"))}</p>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         } else if (activity.type === "image") {
             const images = window.slovaGallery.parse(activity.content);
-            body = images.length ? window.SlovaPhotoEditor.markup(images,activity.imageAnnotations||{},window.SlovaPhotoAnnotations.read(savedResponse),true,language) + `<input type="hidden" data-answer-kind="photo">` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
+            body = images.length ? window.SlovaPhotoEditor.markup(images,activity.imageAnnotations||{},window.SlovaPhotoAnnotations.read(savedResponse),true,language,{direct:true}) + `<input type="hidden" data-answer-kind="photo">` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         } else if (activity.type === "audio" || activity.type === "video") {
             const embed = activity.type === "video" ? videoEmbedUrl(activity.content) : "";
             const source = mediaUrl(activity.content);

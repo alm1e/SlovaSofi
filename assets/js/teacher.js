@@ -2893,6 +2893,9 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
     } else if (type === "image") {
         const images = window.slovaGallery.parse(content, true);
         body = images.length ? (activity.settings?.imageAnnotations && window.SlovaPhotoEditor ? window.SlovaPhotoEditor.markup(images,activity.settings.imageAnnotations,{},false,currentLanguage) : window.slovaGallery.html(images, activity.prompt || "", "preview-image")) : `<p class="preview-material">${escapeHtml(displayContent || previewText("imageError"))}</p>`;
+        if(images.length && lessonWorkspaceMode === 'preview' && hasPermission('edit_lessons')){
+            body = `<div data-photo-live-index="${index}">${window.SlovaPhotoEditor.markup(images,{},activity.settings?.imageAnnotations||{},true,currentLanguage,{direct:true})}<button type="button" class="button secondary small" data-save-photo-live>${currentLanguage==='ru'?'Сохранить пометки':currentLanguage==='ua'?'Зберегти позначки':'Save annotations'}</button><span data-photo-live-status role="status"></span></div>`;
+        }
         checkable = false;
     } else if (type === "audio" || type === "video") {
         const embed = type === "video" ? previewVideoEmbedUrl(content) : "";
@@ -3167,6 +3170,28 @@ async function savePreviewActivities(lesson, sectionId, activities, successMessa
 }
 
 function bindLessonPreviewActions(container = pageContent, lesson = null, section = null, isHomework = false) {
+    container.querySelectorAll('[data-photo-live-index]').forEach(host=>{
+        const targetLesson=data.lessons.find(item=>item.id===workspaceLessonId);
+        if(!targetLesson)return;
+        const sections=lessonWorkspaceTab==='homework'?normalizePreviewHomeworkSections(targetLesson):normalizeLessonSections(targetLesson);
+        const sectionId=lessonWorkspaceTab==='homework'?activeHomeworkSectionId:activeLessonSectionId;
+        const targetSection=sections.find(item=>item.id===sectionId);
+        const activity=targetSection?.activities[Number(host.dataset.photoLiveIndex)];
+        if(!activity||!hasPermission('edit_lessons'))return;
+        const status=host.querySelector('[data-photo-live-status]');let revision=0;
+        window.SlovaPhotoEditor.bind(host,{language:currentLanguage,change:()=>{revision++;status.textContent=currentLanguage==='ru'?' Есть несохранённые пометки':' Unsaved annotations';}});
+        host.querySelector('[data-save-photo-live]')?.addEventListener('click',async event=>{
+            const button=event.currentTarget,snapshot=window.SlovaPhotoEditor.value(host),version=revision;
+            button.disabled=true;status.textContent=currentLanguage==='ru'?' Сохранение…':' Saving…';
+            activity.settings={...activity.settings,imageAnnotations:snapshot};
+            // Keep the normalized section containers used for legacy lessons as well.
+            if(lessonWorkspaceTab==='homework')targetLesson.homeworkSections=sections;else targetLesson.sections=sections;
+            targetLesson.activities=normalizeLessonSections(targetLesson).flatMap(item=>item.activities);
+            const saved=persist()&&await waitForWorkspaceSave();
+            status.textContent=version!==revision?(currentLanguage==='ru'?' Есть несохранённые пометки':' Unsaved annotations'):saved?(currentLanguage==='ru'?' Сохранено':' Saved'):(currentLanguage==='ru'?' Не сохранено. Нажмите ещё раз.':' Not saved. Retry.');
+            button.disabled=false;
+        });
+    });
     window.SlovaPhotoEditor?.bind(container, {language:currentLanguage});
     container.querySelectorAll('[data-preview-reveal]').forEach(button=>button.addEventListener('click',()=>{
         const show=button.getAttribute('aria-pressed')!=='true';button.setAttribute('aria-pressed',String(show));

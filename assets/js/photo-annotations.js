@@ -12,7 +12,7 @@
             const ids=new Set();
             result[url]=ops.map(op=>{
                 if(++count>100||!op)throw Error('Too many drawing elements');
-                if(op.type==='field'||op.type==='field-answer'){
+                if(op.type==='field'||op.type==='field-answer'||op.type==='input'){
                     if(typeof op.id!=='string'||! /^[A-Za-z0-9-]{1,64}$/.test(op.id)||ids.has(op.id))throw Error('Invalid field identity');
                     ids.add(op.id);
                     if(op.type==='field-answer'){
@@ -20,7 +20,8 @@
                         return {type:'field-answer',id:op.id,text:op.text};
                     }
                     if(!coordinate(op.x)||!coordinate(op.y)||!Number.isFinite(op.w)||op.w<20||op.w>500||!Number.isFinite(op.h)||op.h<10||op.h>200||op.x+op.w>1000.1||op.y+op.h>1000.1)throw Error('Invalid field geometry');
-                    return {type:'field',id:op.id,x:op.x,y:op.y,w:op.w,h:op.h};
+                    if(op.type==='input'&&(typeof op.text!=='string'||op.text.length>200))throw Error('Invalid inline text');
+                    return {type:op.type,id:op.id,x:op.x,y:op.y,w:op.w,h:op.h,...(op.type==='input'?{text:op.text}:{})};
                 }
                 if(!/^#[0-9a-f]{6}$/i.test(op.color)||![2,4,8].includes(op.width))throw Error('Invalid drawing tool');
                 if(op.type==='text'){

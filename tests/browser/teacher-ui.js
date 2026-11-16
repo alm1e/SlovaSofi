@@ -170,6 +170,18 @@
   const student={id:'qa-member',name:'Learner'},activity=activeDraftSection().activities[0];liveProgressRows.set(student.id,{answers:{[activityProgressKey(activity,0)]:{response:JSON.stringify(saved),correct:null,draft:true}}});const liveMarkup=renderLiveAnswerPanel(student,activity,0);assert(liveMarkup.includes('data-photo-editor')&&!liveMarkup.includes('data-photo-editable'),'Ответ не показывается учителю как рисунок');
   panel.querySelector('[data-photo-clear]').click();assert(activeDraftSection().activities[0].settings.imageAnnotations['https://school.example/photo.png'].length===0,'Очистка не сохранена');
  });
+ await run('Учитель печатает прямо в фото в режиме урока и сохраняет без редактора',async()=>{
+  const before={user:currentUser,api:window.teacherWorkspaceApi,client:window.supabaseClient};let fail=true;const writes=[];
+  try{
+   currentLanguage='ru';reset();data.lessons[0].sections[0].activities=[{id:'qa-direct-photo',type:'image',content:'https://school.example/photo.png',settings:{}}];
+   currentUser={id:'qa-teacher'};window.supabaseClient={};window.teacherWorkspaceApi={saveWorkspace:async(client,user,snapshot)=>{if(fail)throw Error('Test offline');writes.push(snapshot);}};
+   openLessonPreview(data.lessons[0].id);
+   const host=pageContent.querySelector('[data-photo-live-index]');assert(host&&lessonWorkspaceMode==='preview','Нужно переключаться в редактор');const img=host.querySelector('img');img.src='wide.svg';await img.decode();const canvas=host.querySelector('canvas'),r=canvas.getBoundingClientRect();canvas.dispatchEvent(new PointerEvent('pointerdown',{button:0,pointerId:15,clientX:r.left+r.width*.4,clientY:r.top+r.height*.4}));
+   const input=host.querySelector('[data-photo-field-answer]');assert(input&&document.activeElement===input,'Нет ввода на фото');input.value='í';input.dispatchEvent(new InputEvent('input',{bubbles:true}));host.querySelector('[data-save-photo-live]').click();await new Promise(resolve=>setTimeout(resolve,20));
+   assert(host.querySelector('[data-photo-live-status]').textContent.includes('Не сохранено')&&input.value==='í','Сбой потерял ответ или выдан за успех');fail=false;host.querySelector('[data-save-photo-live]').click();await new Promise(resolve=>setTimeout(resolve,20));assert(writes.length===1&&writes[0].lessons[0].sections[0].activities[0].settings.imageAnnotations['https://school.example/photo.png'][0].text==='í','Текст не сохранён в урок');
+   assert(host.querySelector('[data-photo-live-status]').textContent.includes('Сохранено')&&lessonWorkspaceMode==='preview','Не сохранилось в режиме урока');
+  }finally{currentUser=before.user;window.teacherWorkspaceApi=before.api;window.supabaseClient=before.client;}
+ });
  await run('Нет ошибок JavaScript при работе кнопок',()=>{assert(!window.qaErrors.length,window.qaErrors.join('; '));});
  clearTimeout(lessonDraftAutosaveTimer);
  lessonWorkspaceMode='';data=structuredClone(original);activeView='lessons';selectedLessonUnit='A1';searchQuery='';render();
