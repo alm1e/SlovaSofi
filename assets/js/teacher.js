@@ -1010,6 +1010,8 @@ const savedViewState = (() => {
 let activeView = savedViewState.view || "overview";
 let selectedLessonUnit = typeof savedViewState.unit === "string" ? savedViewState.unit : "";
 let activeClassFilter = "";
+let classArchiveView = false;
+const archivingClassIds = new Set();
 let searchQuery = "";
 let selectedActivityCategory = "all";
 let activitySearch = "";
@@ -1613,7 +1615,7 @@ function initializeWorkspaceHistory() {
                 }));
             }
             return {
-                route: { view: activeView, unit: selectedLessonUnit, classId: activeClassFilter,
+                route: { view: activeView, unit: selectedLessonUnit, classId: activeClassFilter, archived: classArchiveView,
                     lessonId: workspaceLessonId, mode: lessonWorkspaceMode, tab: lessonWorkspaceTab,
                     section: activeLessonSectionId, homeworkSection: activeHomeworkSectionId },
                 search: searchQuery
@@ -1626,6 +1628,7 @@ function initializeWorkspaceHistory() {
             setView(route.view);
             selectedLessonUnit = route.unit;
             activeClassFilter = route.classId;
+            classArchiveView = Boolean(route.archived);
             searchQuery = state.search;
             if (route.mode) {
                 const lesson = data.lessons.find((item) => item.id === route.lessonId);
@@ -1930,15 +1933,16 @@ function translateStaticUI() {
 }
 
 function renderOverview() {
-    const studentCount = data.classes.reduce((total, item) => total + item.students.length, 0);
+    const activeClasses = data.classes.filter(item => !item.archivedAt);
+    const studentCount = activeClasses.reduce((total, item) => total + item.students.length, 0);
     const recentLessons = [...data.lessons].slice(-3).reverse();
-    const featuredClasses = data.classes.slice(0, 3);
+    const featuredClasses = activeClasses.slice(0, 3);
     const initials = userInitials(currentUser);
     const roleLabel = roleLabels[workspaceAccess.role]?.[currentLanguage] || t("teacher.role");
     return `<section class="profile-hero"><div class="profile-identity"><span class="profile-avatar">${escapeHtml(initials)}</span><div><span class="eyebrow">✦ ${t("welcome.badge")}</span><h1 id="welcomeHeading">${escapeHtml(profileGreeting(currentUser))}</h1><p>${escapeHtml(currentUser?.email || t("profile.notSignedIn"))}</p></div></div><div class="profile-role">${roleLabel}</div></section>
         <div class="profile-welcome"><div><h2>${t("profile.dashboardTitle")}</h2><p>${t("profile.dashboardHint")}</p><span class="storage-note">${t("welcome.storage")}</span></div>${hasPermission("edit_lessons") ? `<button class="button" data-action="new-lesson">${t("action.createLesson")}</button>` : ""}</div>
         <div class="stats-grid profile-stats">
-            <article class="stat-card"><span class="stat-icon stat-icon-classes" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M8 4.5v15M8 9h12.5M8 14h12.5"/></svg></span><span>${t("stat.classes")}</span><strong>${data.classes.length}</strong></article>
+            <article class="stat-card"><span class="stat-icon stat-icon-classes" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M8 4.5v15M8 9h12.5M8 14h12.5"/></svg></span><span>${t("stat.classes")}</span><strong>${activeClasses.length}</strong></article>
             <article class="stat-card"><span class="stat-icon stat-icon-students" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 5.5a3 3 0 0 1 0 5.5M17 14a5 5 0 0 1 3.5 5"/></svg></span><span>${t("stat.students")}</span><strong>${studentCount}</strong></article>
             <article class="stat-card"><span class="stat-icon stat-icon-lessons" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17H7.5A2.5 2.5 0 0 0 5 21.5z"/><path d="M5 5h12M9 9h7M9 12.5h7"/></svg></span><span>${t("stat.lessons")}</span><strong>${data.lessons.length}</strong></article>
         </div>
@@ -2346,21 +2350,50 @@ function renderCalendar() {
         <aside class="panel calendar-upcoming"><div class="panel-heading"><div><h2>${t("calendar.upcoming")}</h2><p class="hint">${t("calendar.upcomingHint")}</p></div><span class="calendar-upcoming-count">${nextEvents.length}</span></div>${nextEvents.length ? `<div class="calendar-upcoming-list">${nextEvents.map((event) => `<article class="calendar-upcoming-item" ${writable ? `data-calendar-event="${escapeHtml(event.id)}"` : ""}><time><strong>${formatCalendarDate(event.occurrenceAt, { day: "numeric" })}</strong><small>${formatCalendarDate(event.occurrenceAt, { month: "short" })}</small></time><div><strong>${escapeHtml(event.title)}</strong><small>${formatCalendarDate(event.occurrenceAt, { hour: "2-digit", minute: "2-digit" })} · ${escapeHtml(data.classes.find((item) => item.id === event.class_id)?.name || t("class.noClass"))}${calendarRecurrenceLabel(event.recurrence) ? ` · ${calendarRecurrenceLabel(event.recurrence)}` : ""}</small></div></article>`).join("")}</div>` : `<div class="calendar-empty">${t(calendarEvents.length ? "calendar.empty" : "calendar.noEvents")}${!calendarEvents.length ? `<small>${t("calendar.createFirst")}</small>` : ""}</div>`}</aside></div>`;
 }
 
+function classArchiveText(key) {
+    const labels = SlovaI18n.locales({
+        ua: { active: "Активні", archive: "Архів", move: "До архіву", restore: "Відновити", archived: "Клас перенесено до архіву.", restored: "Клас відновлено.", empty: "Архів порожній", hint: "Тут будуть завершені класи. Учні та прогрес зберігаються.", error: "Не вдалося змінити архів класу." },
+        ru: { active: "Активные", archive: "Архив", move: "В архив", restore: "Восстановить", archived: "Класс перенесён в архив.", restored: "Класс восстановлен.", empty: "Архив пуст", hint: "Здесь будут завершённые классы. Ученики и прогресс сохраняются.", error: "Не удалось изменить архив класса." },
+        en: { active: "Active", archive: "Archive", move: "Archive class", restore: "Restore", archived: "Class archived.", restored: "Class restored.", empty: "Archive is empty", hint: "Completed classes appear here. Students and progress are preserved.", error: "Could not update class archive." }
+    });
+    return (labels[currentLanguage] || labels.en)[key];
+}
+
+async function setClassArchived(id, archived) {
+    if (!hasPermission("manage_classes_students") || archivingClassIds.has(id)) return;
+    const group = data.classes.find(item => item.id === id);
+    if (!group) return;
+    archivingClassIds.add(id);
+    render();
+    try {
+        const archivedAt = await window.teacherWorkspaceApi.setClassArchived(window.supabaseClient, id, archived);
+        data.classes = data.classes.map(item => item.id === id ? { ...item, archivedAt } : item);
+        showToast(classArchiveText(archived ? "archived" : "restored"));
+    } catch (error) {
+        showToast(`${classArchiveText("error")} ${error.message}`);
+    } finally {
+        archivingClassIds.delete(id);
+        render();
+    }
+}
+
 function renderClasses() {
     const canManageClasses = hasPermission("manage_classes_students");
-    const filtered = data.classes.filter((item) => `${item.name} ${item.course}`.toLowerCase().includes(searchQuery.toLowerCase()));
+    const filtered = data.classes.filter((item) => Boolean(item.archivedAt) === classArchiveView
+        && `${item.name} ${item.course}`.toLowerCase().includes(searchQuery.toLowerCase()));
     const teacherName = userDisplayName(currentUser);
     return `<div class="section-heading"><div><h1>${t("classes.title")}</h1><p>${t("classes.description")}</p></div></div>
+        <div class="toolbar" role="group" aria-label="${t("classes.title")}">${[false, true].map(archived => `<button type="button" class="button secondary small" data-action="class-archive-view" data-id="${archived ? "archive" : "active"}" aria-pressed="${classArchiveView === archived}">${classArchiveText(archived ? "archive" : "active")} (${data.classes.filter(item => Boolean(item.archivedAt) === archived).length})</button>`).join("")}</div>
         <div class="toolbar">${canManageClasses ? `<button class="button secondary" data-action="new-class">${t("classes.create")}</button>` : ""}<input type="search" data-search placeholder="${t("classes.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("classes.search")}"></div>
         <div class="card-grid class-grid">${filtered.length ? filtered.map((item, index) => `<article class="class-card class-card-enhanced class-tone-${index % 4}" data-open-class-id="${escapeHtml(item.id)}">
-            ${canManageClasses ? `<div class="card-actions"><button class="mini-action" data-action="edit-class" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editClass")}">✎</button><button class="mini-action" data-action="delete-class" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}">×</button></div>` : ""}
+            ${canManageClasses ? `<div class="card-actions"><button class="mini-action" data-action="edit-class" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editClass")}">✎</button></div>` : ""}
             <div class="class-card-top"><span class="class-card-avatar">${escapeHtml(item.name.slice(0, 2).toUpperCase())}</span><span class="class-course-pill">${escapeHtml(formatCourse(item.course))} · ${escapeHtml(classScopeText(item.classScope || "private"))}</span></div><h3><button type="button" class="class-card-title" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${escapeHtml(item.name)}</button></h3>
             <div class="class-teacher-line"><span class="class-person-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="7" r="4"></circle><path d="M4.5 21v-2a7.5 7.5 0 0 1 15 0v2z"></path></svg></span><span><small>${t("classes.teacherLabel")}</small><strong>${escapeHtml(item.teacherName || teacherName)}</strong>${presenceBadge(item.teacherId)}</span></div>
             <div class="class-roster"><div class="class-roster-heading"><strong>${t("classes.studentsLabel")}</strong><span>${item.students.length}</span></div>
                 ${item.students.length ? `<ul class="class-roster-list">${(item.studentRecords?.length ? item.studentRecords.map((student) => ({ name: student.display_name, userId: student.linked_user_id })) : item.students.map((name) => ({ name, userId: null }))).map((student) => `<li><span class="class-student-avatar">${escapeHtml(student.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toLocaleUpperCase())}</span><span class="class-roster-student-name">${escapeHtml(student.name)}</span>${presenceBadge(student.userId)}</li>`).join("")}</ul>` : `<p class="class-roster-empty">${t("classes.noStudents")}</p>`}
             </div>
-            <div class="class-card-meta">${hasPermission("view_lessons") || hasPermission("view_assign_lessons") || hasPermission("edit_lessons") ? `<button class="text-link" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${t("classes.lessons")}</button>` : ""}</div>
-            ${canManageClasses ? `<button class="button secondary small class-invite-button" data-action="invite-student" data-id="${escapeHtml(item.id)}">${t("classes.inviteStudent")}</button>` : ""}</article>`).join("") : emptyMessage(t("classes.notFound"), t("classes.notFoundHint"))}</div>`;
+            <div class="class-card-meta">${hasPermission("view_lessons") || hasPermission("view_assign_lessons") || hasPermission("edit_lessons") ? `<button class="text-link" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${t("classes.lessons")}</button>` : ""}${canManageClasses ? `<button type="button" class="text-link" data-action="${item.archivedAt ? "restore-class" : "archive-class"}" data-id="${escapeHtml(item.id)}" ${archivingClassIds.has(item.id) ? "disabled" : ""}>${classArchiveText(item.archivedAt ? "restore" : "move")}</button>` : ""}</div>
+            ${canManageClasses && !item.archivedAt ? `<button class="button secondary small class-invite-button" data-action="invite-student" data-id="${escapeHtml(item.id)}">${t("classes.inviteStudent")}</button>` : ""}</article>`).join("") : emptyMessage(classArchiveView && !searchQuery ? classArchiveText("empty") : t("classes.notFound"), classArchiveView && !searchQuery ? classArchiveText("hint") : t("classes.notFoundHint"))}</div>`;
 }
 
 // Consistent line icons for lesson actions, independent of the system font.
@@ -3337,10 +3370,13 @@ function handleAction(action, id) {
         render();
         return;
     }
-    if (action === "new-class") openClassEditor();
+    if (action === "new-class") { classArchiveView = false; openClassEditor(); }
     if (action === "invite-student") openStudentInvite(data.classes.find((item) => item.id === id));
     if (action === "edit-class") openClassEditor(data.classes.find((item) => item.id === id));
     if (action === "delete-class") deleteClass(id);
+    if (action === "class-archive-view") { classArchiveView = id === "archive"; searchQuery = ""; render(); }
+    if (action === "archive-class") setClassArchived(id, true);
+    if (action === "restore-class") setClassArchived(id, false);
     if (action === "class-lessons") {
         activeClassFilter = id;
         searchQuery = "";
@@ -3437,6 +3473,7 @@ function openClassEditor(item) {
             teacherId: item?.teacherId || currentUser?.id,
             teacherName: item?.teacherName,
             classScope: String(form.get("classScope") || item?.classScope || "school"),
+            archivedAt: item?.archivedAt || null,
             name,
             course: String(form.get("course")).trim() || t("class.unnamedCourse"),
             students: updatedStudents.map((student) => typeof student === "string" ? student : student.display_name),

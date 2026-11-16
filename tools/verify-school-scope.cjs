@@ -36,6 +36,7 @@ const migrationPath = process.argv[3] || path.join(root,'supabase/migrations/202
  await db.exec(`insert into teacher_classes(id,teacher_id,name) values ('${uid(11)}','${uid(2)}','Legacy personal');`);
  await db.exec(fs.readFileSync(migrationPath,'utf8'));
  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261117_director_lesson_editing.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261118_class_archive.sql'),'utf8'));
  assert.equal((await db.query(`select class_scope from teacher_classes where id='${uid(11)}'`)).rows[0].class_scope,'private');
  await db.exec(`
  update profiles set role='director' where id='${uid(4)}';
@@ -78,6 +79,7 @@ const migrationPath = process.argv[3] || path.join(root,'supabase/migrations/202
   assert.equal(permissions.view_classes_students,true); assert.equal(permissions.view_lessons,true);
   for(const key of ['manage_classes_students','view_assign_lessons','manage_teachers']) assert.equal(permissions[key],false,key);
   assert.equal((await rows(`update teacher_classes set name='forged' returning *`)).length,0);
+  assert.equal((await rows(`update teacher_classes set archived_at=now() returning *`)).length,0,'Director cannot archive classes');
   assert.equal((await rows(`update student_lesson_progress set answers='{"forged":true}' returning *`)).length,0);
   await assert.rejects(()=>db.exec(`insert into teacher_classes(teacher_id,name) values ('${uid(4)}','forged')`),/row-level security/i);
   await assert.rejects(()=>db.exec(`update profiles set role='admin' where id='${uid(4)}'`),/row-level security/i);
@@ -90,6 +92,14 @@ const migrationPath = process.argv[3] || path.join(root,'supabase/migrations/202
   await db.exec(`insert into teacher_classes(id,teacher_id,name,class_scope) values ('${uid(16)}','${uid(2)}','Explicit personal','private')`);
   await assert.rejects(()=>db.exec(`update teacher_classes set class_scope='private' where id='${uid(12)}'`),/Only the administrator/);
   await db.exec(`update teacher_classes set name='Edited personal' where id='${uid(11)}'`);
+  const before = await rows(`select c.id,s.id as student_id,p.answers,a.lesson_id from teacher_classes c join class_students s on s.class_id=c.id join class_lesson_assignments a on a.class_id=c.id join student_lesson_progress p on p.student_id=s.id where c.id='${uid(12)}'`);
+  await db.exec(`update teacher_classes set archived_at=now() where id='${uid(12)}'`);
+  assert((await rows(`select archived_at from teacher_classes where id='${uid(12)}'`))[0].archived_at);
+  assert.deepEqual(await rows(`select c.id,s.id as student_id,p.answers,a.lesson_id from teacher_classes c join class_students s on s.class_id=c.id join class_lesson_assignments a on a.class_id=c.id join student_lesson_progress p on p.student_id=s.id where c.id='${uid(12)}'`),before,'Archive preserves students, assignments and answers');
+  assert.equal((await rows(`update teacher_classes set archived_at=now() where id='${uid(13)}' returning *`)).length,0,'Teacher cannot archive another teacher class');
+  await db.exec(`update teacher_classes set archived_at=null where id='${uid(12)}'`);
+  assert.equal((await rows(`select archived_at from teacher_classes where id='${uid(12)}'`))[0].archived_at,null);
+
  });
  await asUser(1,async()=>{
   assert.equal((await rows('select * from teacher_classes')).length,6,'Admin sees all');

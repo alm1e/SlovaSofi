@@ -24,8 +24,8 @@
         const [settingsResult, classesResult, lessonsResult, rosterResult, assignmentsResult, categoriesResult] = await Promise.all([
             client.from("teacher_workspace_settings").select("legacy_imported").eq("user_id", userId).maybeSingle(),
             (readAllVisible
-                ? client.from("teacher_classes").select("id,name,course,teacher_id,class_scope").order("created_at")
-                : client.from("teacher_classes").select("id,name,course,teacher_id,class_scope").eq("teacher_id", userId).order("created_at")),
+                ? client.from("teacher_classes").select("id,name,course,teacher_id,class_scope,archived_at").order("created_at")
+                : client.from("teacher_classes").select("id,name,course,teacher_id,class_scope,archived_at").eq("teacher_id", userId).order("created_at")),
             client.from("teacher_lessons").select("id,title,unit,activities,teacher_id").order("created_at"),
             (readAllVisible
                 ? client.from("class_students").select("id,class_id,teacher_id,display_name,email,linked_user_id")
@@ -53,6 +53,7 @@
             name: group.name,
             course: group.course,
             classScope: group.class_scope,
+            archivedAt: group.archived_at || null,
             teacherId: group.teacher_id,
             teacherName: [profileById.get(group.teacher_id)?.first_name, profileById.get(group.teacher_id)?.last_name]
                 .filter(Boolean).join(" ") || (group.teacher_id === userId ? userEmail : "Преподаватель"),
@@ -129,6 +130,15 @@
             { onConflict: "user_id" }
         );
         fail(error, "Не удалось сохранить настройки кабинета");
+    }
+
+    async function setClassArchived(client, classId, archived) {
+        const { data, error } = await client.from("teacher_classes")
+            .update({ archived_at: archived ? new Date().toISOString() : null })
+            .eq("id", classId).select("id,archived_at").single();
+        fail(error, "Не удалось изменить архив класса");
+        if (!data) throw new Error("Класс недоступен для изменения.");
+        return data.archived_at || null;
     }
 
     async function assignLessonsToClass(client, classId, teacherId, lessonIds) {
@@ -391,6 +401,7 @@
         deleteLessonCategory,
         saveWorkspace,
         assignLessonsToClass,
+        setClassArchived,
         inviteStudent,
         listExistingStudents,
         addExistingStudent,

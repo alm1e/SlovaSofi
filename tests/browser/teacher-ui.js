@@ -93,6 +93,22 @@
    workspaceAccess={role:'director',permissions:{view_lessons:true,view_classes_students:true,edit_lessons:true}};render();assert(!pageContent.querySelector('[data-action="add-class-lessons"]'),'Директор видит назначение уроков');
   } finally {closeModal();data=before.data;currentUser=before.currentUser;workspaceAccess=before.workspaceAccess;window.teacherWorkspaceApi=before.api;window.supabaseClient=before.client;activeClassFilter='';}
  });
+ await run('Архив классов: перемещение, восстановление и запрет директору',async()=>{
+  const before={data,currentUser,workspaceAccess,api:window.teacherWorkspaceApi,client:window.supabaseClient};
+  try {
+   currentUser={id:'qa-owner'};workspaceAccess={role:'teacher',permissions:{manage_classes_students:true,view_classes_students:true,view_assign_lessons:true}};
+   data={classes:[{id:'archive-test',teacherId:'qa-owner',name:'Архивный тест',course:'A1',students:['Ученик'],studentRecords:[{id:'same-student',display_name:'Ученик'}],archivedAt:null}],lessons:[{id:'assigned',classIds:['archive-test']}],categories:[]};
+   let calls=0;window.supabaseClient={};window.teacherWorkspaceApi={setClassArchived:async(client,id,archived)=>{calls++;return archived?'2026-11-16T12:00:00Z':null;}};
+   classArchiveView=false;lessonWorkspaceMode='';activeView='classes';searchQuery='';render();
+   pageContent.querySelector('[data-action="archive-class"]').click();await new Promise(resolve=>setTimeout(resolve,20));
+   assert(!pageContent.querySelector('[data-open-class-id="archive-test"]'),'Архивный класс остался среди активных');
+   pageContent.querySelector('[data-action="class-archive-view"][data-id="archive"]').click();assert(pageContent.querySelector('[data-open-class-id="archive-test"]'),'Архивный класс не появился');
+   assert(data.classes[0].studentRecords[0].id==='same-student'&&data.lessons[0].classIds.includes('archive-test'),'Потеряны ученики или назначения');
+   pageContent.querySelector('[data-action="restore-class"]').click();await new Promise(resolve=>setTimeout(resolve,20));
+   pageContent.querySelector('[data-action="class-archive-view"][data-id="active"]').click();assert(pageContent.querySelector('[data-open-class-id="archive-test"]'),'Класс не восстановился');
+   workspaceAccess={role:'director',permissions:{view_classes_students:true,view_lessons:true,edit_lessons:true}};render();assert(!pageContent.querySelector('[data-action="archive-class"]'),'Директор видит действие архивирования');assert(calls===2,'Лишние запросы сохранения');
+  } finally {data=before.data;currentUser=before.currentUser;workspaceAccess=before.workspaceAccess;window.teacherWorkspaceApi=before.api;window.supabaseClient=before.client;classArchiveView=false;activeClassFilter='';}
+ });
  await run('Нет ошибок JavaScript при работе кнопок',()=>{assert(!window.qaErrors.length,window.qaErrors.join('; '));});
  clearTimeout(lessonDraftAutosaveTimer);
  lessonWorkspaceMode='';data=structuredClone(original);activeView='lessons';selectedLessonUnit='A1';searchQuery='';render();
