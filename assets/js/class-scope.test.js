@@ -24,8 +24,12 @@ test('teacher workspace queries retain ownership filters',async()=>{
  const {client,filters}=clientFor('teacher'); await api().loadWorkspace(client,'user');
  for(const table of ['teacher_classes','class_students','class_lesson_assignments']) assert(filters.some(([name,key,value])=>name===table&&key==='teacher_id'&&value==='user'));
 });
-test('director workspace saves are rejected before any database calls, even with stale permissions',async()=>{
- let calls=0;await assert.rejects(api().saveWorkspace({from(){calls++;throw Error('Unexpected database call')}},'user',{classes:[],lessons:[]},{role:'director',permissions:{manage_classes_students:true,edit_lessons:true,view_assign_lessons:true}}),/read-only/);assert.equal(calls,0);
+test('director library saves never synchronize classes even with stale permissions',async()=>{
+ const calls=[];
+ const client={from(table){calls.push(table);return {upsert:async()=>({error:null})}}};
+ await api().saveWorkspace(client,'director',{classes:[{id:'school',students:[]}],lessons:[{id:'lesson',title:'Edited',unit:'A1',activities:[]}]},{role:'director',permissions:{manage_classes_students:true,edit_lessons:true,view_assign_lessons:true}});
+ assert(calls.includes('teacher_lessons'));
+ for(const table of ['teacher_classes','class_students','class_lesson_assignments']) assert(!calls.includes(table));
 });
 test('class persistence preserves personal scope and defaults new classes to school',async()=>{
  const written=[];

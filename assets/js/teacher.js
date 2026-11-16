@@ -2520,10 +2520,10 @@ function openTeacherForm(member = null) {
     modalCard.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", closeModal));
     const staffForm = modalCard.querySelector("#teacherInviteForm");
     const syncRolePermissions = () => {
-        const readOnly = staffForm.elements.staffRole.value === "director";
+        const director = staffForm.elements.staffRole.value === "director";
         staffForm.querySelectorAll("[data-permission-key]").forEach((input) => {
-            input.disabled = readOnly;
-            if (readOnly) input.checked = false;
+            input.disabled = director;
+            if (director) input.checked = true;
         });
     };
     staffForm.elements.staffRole.addEventListener("change", syncRolePermissions);

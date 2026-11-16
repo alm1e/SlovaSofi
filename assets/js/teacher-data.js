@@ -132,8 +132,10 @@
     }
 
     async function saveWorkspace(client, userId, data, access, deletedLessonIds = []) {
-        if (access?.role === "director") throw new Error("Director access is read-only.");
-        const permissions = access?.permissions || {};
+        // A director may save library content, never synchronize class data.
+        const permissions = access?.role === "director"
+            ? { ...access.permissions, manage_classes_students: false, view_assign_lessons: false }
+            : access?.permissions || {};
         if (permissions.manage_classes_students) {
             const classes = data.classes.map(({ id, name, course, teacherId, classScope }) => ({
                 id,

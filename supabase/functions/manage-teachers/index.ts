@@ -144,7 +144,7 @@ Deno.serve(async (request: Request) => {
                 email: candidate.email || "",
                 name,
                 role: profiles.find((profile) => profile.id === candidate.id)?.role,
-                permissions: { edit_lessons: profiles.some((profile) => profile.id === candidate.id && profile.role === "admin") || (profiles.some((profile) => profile.id === candidate.id && profile.role === "teacher") && editorIds.has(candidate.id)) },
+                permissions: { edit_lessons: profiles.some((profile) => profile.id === candidate.id && ["admin", "director"].includes(profile.role)) || (profiles.some((profile) => profile.id === candidate.id && profile.role === "teacher") && editorIds.has(candidate.id)) },
                 created_at: candidate.created_at
             };
         });

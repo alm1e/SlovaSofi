@@ -30,11 +30,12 @@ const migrationPath = process.argv[3] || path.join(root,'supabase/migrations/202
  ('00000000-0000-4000-8000-000000000005','student@example.test');
  insert into profiles(id,role) select id,case when email='akhumanoid@gmail.com' then 'admin' when email='student@example.test' then 'student' else 'teacher' end from auth.users;
  `);
- const names = ['20261014_teacher_workspace.sql','20261015_student_invites.sql','20261016_teacher_workspace_members.sql','20261017_remove_legacy_teacher_materials.sql','20261018_teacher_roles_and_isolation.sql','20261019_teacher_student_directory.sql','20261021_lock_student_direct_access.sql','20261022_revoke_anon_teacher_workspace_rpc_execute.sql','20261023_teacher_role_rls_and_fk_indexes.sql','20261024_calendar_events.sql','20261029_student_pronunciation_recordings.sql','20261031_workspace_editors_reset_lesson_progress.sql','20261103_lesson_categories.sql','20261104_delete_lesson_category.sql'];
+ const names = ['20261014_teacher_workspace.sql','20261015_student_invites.sql','20261016_teacher_workspace_members.sql','20261017_remove_legacy_teacher_materials.sql','20261018_teacher_roles_and_isolation.sql','20261019_teacher_student_directory.sql','20261021_lock_student_direct_access.sql','20261022_revoke_anon_teacher_workspace_rpc_execute.sql','20261023_teacher_role_rls_and_fk_indexes.sql','20261024_calendar_events.sql','20261027_lesson_images_storage.sql','20261028_lesson_media_storage.sql','20261029_student_pronunciation_recordings.sql','20261031_workspace_editors_reset_lesson_progress.sql','20261103_lesson_categories.sql','20261104_delete_lesson_category.sql'];
  for (const name of names) await db.exec(fs.readFileSync(path.join(root,'supabase/migrations',name),'utf8'));
  const uid = n => `00000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
  await db.exec(`insert into teacher_classes(id,teacher_id,name) values ('${uid(11)}','${uid(2)}','Legacy personal');`);
  await db.exec(fs.readFileSync(migrationPath,'utf8'));
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261117_director_lesson_editing.sql'),'utf8'));
  assert.equal((await db.query(`select class_scope from teacher_classes where id='${uid(11)}'`)).rows[0].class_scope,'private');
  await db.exec(`
  update profiles set role='director' where id='${uid(4)}';
@@ -64,10 +65,18 @@ const migrationPath = process.argv[3] || path.join(root,'supabase/migrations/202
    assert.equal((await rows(`delete from ${table} returning *`)).length,0,`Director DELETE denied: ${table}`);
   }
   assert.equal((await rows('select * from storage.objects')).length,1,'Recording privacy');
-  assert.equal((await rows('select public.can_edit_lessons() as allowed'))[0].allowed,false,'Stale editor grant ignored');
+  assert.equal((await rows('select public.can_edit_lessons() as allowed'))[0].allowed,true,'Director can edit shared lessons');
   const {permissions}=(await rows('select public.teacher_workspace_context() as context'))[0].context;
+  assert.equal(permissions.edit_lessons,true);
+  await db.exec(`insert into storage.objects(bucket_id,name) values ('lesson-images','director/example.png'),('lesson-media','director/example.mp3')`);
+  await assert.rejects(()=>db.exec(`insert into storage.objects(bucket_id,name) values ('student-recordings','${uid(4)}/${uid(13)}/${uid(21)}/forged.webm')`),/row-level security/i);
+
+  await db.exec(`update teacher_lessons set title='Director edited existing lesson' where id='${uid(21)}'`);
+  assert.equal((await rows(`select title from teacher_lessons where id='${uid(21)}'`))[0].title,'Director edited existing lesson');
+  await db.exec(`insert into teacher_lessons(id,teacher_id,title,unit) values ('${uid(22)}','${uid(4)}','Director new lesson','A1')`);
+  await db.exec(`insert into lesson_categories(name) values ('Director category')`);
   assert.equal(permissions.view_classes_students,true); assert.equal(permissions.view_lessons,true);
-  for(const key of ['manage_classes_students','view_assign_lessons','edit_lessons','manage_teachers']) assert.equal(permissions[key],false,key);
+  for(const key of ['manage_classes_students','view_assign_lessons','manage_teachers']) assert.equal(permissions[key],false,key);
   assert.equal((await rows(`update teacher_classes set name='forged' returning *`)).length,0);
   assert.equal((await rows(`update student_lesson_progress set answers='{"forged":true}' returning *`)).length,0);
   await assert.rejects(()=>db.exec(`insert into teacher_classes(teacher_id,name) values ('${uid(4)}','forged')`),/row-level security/i);
@@ -90,6 +99,6 @@ const migrationPath = process.argv[3] || path.join(root,'supabase/migrations/202
   assert.equal((await rows('select * from teacher_classes')).length,2,'Student memberships preserved');
   assert.equal((await rows(`select * from teacher_classes where id='${uid(13)}'`)).length,0,'Student cannot read unrelated class');
  });
- console.log('PASS: PostgreSQL migration, existing-class privacy, default school / explicit personal, director read-only across classes/rosters/assignments/calendar/progress/recordings, stale-role isolation, teacher isolation, student membership and admin transfer.');
+ console.log('PASS: Shared lesson creation/editing and media uploads; PostgreSQL migration, existing-class privacy, default school / explicit personal, director read-only across classes/rosters/assignments/calendar/progress/recordings, stale-role isolation, teacher isolation, student membership and admin transfer.');
  await db.close();
 })().catch(e=>{console.error(e);process.exit(1);});
