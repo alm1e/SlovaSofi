@@ -8,6 +8,7 @@
     const text = (language, key) => (copies[language] || copies.en)[key];
     function actionLabel(action, language) {
         const t = key => text(language,key), [entity, operation] = action.split('.');
+        if (action.startsWith('homework.')) return `${({ua:'Домашня робота',ru:'Домашняя работа',en:'Homework'})[language] || 'Homework'} · ${({assigned:{ua:'призначено',ru:'назначена',en:'assigned'},updated:{ua:'змінено',ru:'изменена',en:'updated'},deleted:{ua:'видалено',ru:'удалена',en:'deleted'},in_progress:{ua:'у роботі',ru:'в работе',en:'in progress'},submitted:{ua:'здано',ru:'сдана',en:'submitted'},reviewed:{ua:'перевірено',ru:'проверена',en:'reviewed'}})[operation]?.[language] || operation}`;
         if (action === 'staff.role_changed') return t('role');
         if (action === 'staff.editor_granted') return t('editorGranted');
         if (action === 'staff.editor_revoked') return t('editorRevoked');

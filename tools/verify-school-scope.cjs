@@ -38,6 +38,7 @@ const migrationPath = process.argv[3] || path.join(root,'supabase/migrations/202
  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261117_director_lesson_editing.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261118_class_archive.sql'),'utf8'));
  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261119_audit_and_lesson_versions.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261120_homework_deadlines.sql'),'utf8'));
  assert.equal((await db.query(`select class_scope from teacher_classes where id='${uid(11)}'`)).rows[0].class_scope,'private');
  await db.exec(`
  update profiles set role='director' where id='${uid(4)}';
@@ -166,6 +167,56 @@ const migrationPath = process.argv[3] || path.join(root,'supabase/migrations/202
  await asUser(3,async()=>{
   await assert.rejects(()=>db.query('select public.restore_lesson_version($1,$2)',[uid(21),new Date()]),/restore_forbidden/,'Teacher without editor permission cannot restore');
  });
- console.log('PASS: Version snapshots, restore/concurrency protection, immutable scoped audit log and actor attribution; shared lesson creation/editing and media uploads; PostgreSQL migration, existing-class privacy, default school / explicit personal, director read-only across classes/rosters/assignments/calendar/progress/recordings, stale-role isolation, teacher isolation, student membership and admin transfer.');
+ await db.exec("select set_config('request.jwt.claim.sub','',false)");
+  await db.exec(`insert into auth.users(id,email) values ('${uid(6)}','peer@example.test');insert into profiles(id,role) values ('${uid(6)}','student');insert into class_students(id,class_id,teacher_id,display_name,linked_user_id) values ('${uid(34)}','${uid(12)}','${uid(2)}','Z Peer','${uid(6)}')`);
+ await asUser(1,async()=>{
+  await db.exec(`insert into teacher_lessons(id,teacher_id,title,unit,activities) values ('${uid(23)}','${uid(2)}','Homework lesson','A1','{"format":"sections-v1","sections":[{"title":"Lesson","activities":[{"id":"${uid(25)}","type":"open-answer","content":"Practice"}]}],"homeworkSections":[{"title":"Homework","activities":[{"id":"${uid(24)}","type":"open-answer","content":"Write"}]}]}'::jsonb)`);
+  await db.exec(`insert into class_lesson_assignments(class_id,lesson_id,teacher_id) values ('${uid(12)}','${uid(23)}','${uid(2)}'),('${uid(13)}','${uid(23)}','${uid(3)}')`);
+  await db.exec(`insert into homework_tasks(id,class_id,lesson_id,due_at) values ('${uid(61)}','${uid(12)}','${uid(23)}',now()+interval '7 days'),('${uid(62)}','${uid(13)}','${uid(23)}',now()+interval '7 days')`);
+ });
+ await asUser(5,async()=>{
+  const tasks=(await rows('select public.list_homework() as tasks'))[0].tasks;
+  assert.equal(tasks.length,1,'Student only sees assigned homework');
+  assert.equal(tasks[0].submissions.length,1,'Student only sees own status');
+  assert.equal(tasks[0].submissions[0].state,'not_started');
+  await db.query('select public.start_homework($1)',[uid(61)]);
+  assert.equal((await rows('select public.list_homework() as tasks'))[0].tasks[0].submissions[0].state,'in_progress');
+  await db.query('select public.submit_homework($1)',[uid(61)]);
+  assert.equal((await rows('select public.list_homework() as tasks'))[0].tasks[0].submissions[0].state,'submitted');
+  const firstSubmitted=(await rows('select public.list_homework() as tasks'))[0].tasks[0].submissions[0].submitted_at;
+  await db.query('select public.submit_homework($1)',[uid(61)]);
+  assert.equal((await rows('select public.list_homework() as tasks'))[0].tasks[0].submissions[0].submitted_at,firstSubmitted,'A retry does not manufacture a new submission');
+  await assert.rejects(()=>db.exec("update homework_submissions set state='reviewed'"),/permission denied/);
+  await assert.rejects(()=>db.query('select public.start_homework($1)',[uid(62)]),/homework_forbidden/);
+ });
+ let submittedAt;
+ await asUser(2,async()=>{
+  const tasks=(await rows('select public.list_homework() as tasks'))[0].tasks;
+  const submitted=tasks.find(task=>task.id===uid(61)).submissions[0];submittedAt=submitted.submitted_at;
+  await db.query('select public.review_homework($1,$2,$3,$4)',[uid(61),uid(32),submittedAt,'Good work']);
+  assert.equal((await rows('select public.list_homework() as tasks'))[0].tasks[0].submissions[0].state,'reviewed');
+  assert.equal((await rows(`update homework_tasks set instructions='forged' where id='${uid(62)}' returning *`)).length,0,'Teacher cannot edit another teacher homework');
+ });
+ await asUser(4,async()=>{
+  assert.equal((await rows('select public.list_homework() as tasks'))[0].tasks.length,1,'Director cannot see private homework');
+  await assert.rejects(()=>db.query('select public.review_homework($1,$2,$3,$4)',[uid(61),uid(32),submittedAt,'forged']),/review_forbidden/);
+ });
+ // Lecture-only progress changes must not invalidate reviewed homework.
+ await db.exec(`insert into student_lesson_progress(student_id,class_id,lesson_id,answers) values ('${uid(32)}','${uid(12)}','${uid(23)}','{"b${uid(25)}":{"response":"Lecture practice"}}')`);
+ await asUser(5,async()=>{
+  assert.equal((await rows('select public.list_homework() as tasks'))[0].tasks[0].submissions[0].state,'reviewed','Lecture answers do not invalidate reviewed homework');
+ });
+ // Simulate a student API answer write, which uses the service/owner connection.
+ await db.exec(`update student_lesson_progress set answers=answers||'{"b${uid(24)}":{"response":"Changed after review"}}'::jsonb,updated_at=clock_timestamp() where student_id='${uid(32)}' and lesson_id='${uid(23)}'`);
+ await asUser(5,async()=>{
+  const task=(await rows('select public.list_homework() as tasks'))[0].tasks[0];
+  assert.equal(task.submissions[0].state,'in_progress','Changed responses invalidate reviewed status');
+  assert.equal(task.submissions[0].feedback,'Good work','Prior teacher feedback is preserved');
+  await db.query('select public.submit_homework($1)',[uid(61)]);
+ });
+ await asUser(2,async()=>{
+  await assert.rejects(()=>db.query('select public.review_homework($1,$2,$3,$4)',[uid(61),uid(32),submittedAt,'Stale review']),/submission_changed/);
+ });
+ console.log('PASS: Homework deadlines, submission/review workflow and isolation; version snapshots, restore/concurrency protection, immutable scoped audit log and actor attribution; shared lesson creation/editing and media uploads; PostgreSQL migration, existing-class privacy, default school / explicit personal, director read-only across classes/rosters/assignments/calendar/progress/recordings, stale-role isolation, teacher isolation, student membership and admin transfer.');
  await db.close();
 })().catch(e=>{console.error(e);process.exit(1);});

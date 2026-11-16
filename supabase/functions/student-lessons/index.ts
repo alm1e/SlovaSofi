@@ -608,7 +608,7 @@ function safeActivity(activity: Activity): Record<string, unknown> {
                 }] : [];
             }).map((word, cardIndex) => ({ ...word, cardIndex }));
             return { type: activity.type, prompt, content: activity.content, cards: words,
-                settings: { vocabularyFormat: settings.vocabularyFormat } };
+                settings: { vocabularyFormat: settings?.vocabularyFormat } };
         }
         case "phrase-list":
         case "audio":
@@ -996,7 +996,8 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(200, { classes, lessons, presenceWorkspaceIds, calendarEvents: calendarEvents || [] }, allowedOrigin);
     }
 
-    const assignment = assignmentRows.find((row) => String(row.lesson.id) === lessonId);
+    const requestedClassId = stringValue(payload.classId);
+    const assignment = assignmentRows.find((row) => String(row.lesson.id) === lessonId && (!requestedClassId || row.classId === requestedClassId));
     if (!assignment) return jsonResponse(404, { error: "This lesson is not assigned to your classes." }, allowedOrigin);
     const allActivities = flattenActivities(assignment.lesson.activities);
     const progress = progressByLesson.get(`${assignment.memberId}:${lessonId}`);

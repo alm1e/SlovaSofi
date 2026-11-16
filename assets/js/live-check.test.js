@@ -17,7 +17,7 @@ function studentContext() {
     vm.runInNewContext(fs.readFileSync(`${__dirname}/student-drafts.js`, "utf8"), { window });
     const draftStore = window.SlovaStudentDrafts.create({ get length() { return items.size; }, key: index => [...items.keys()][index], getItem: key => items.get(key) || null, setItem: (key,value) => items.set(key,value), removeItem: key => items.delete(key) });
     const ctx = vm.createContext({
-        structuredClone, console, Event, Map, JSON, draftStore, saveState: "saved", backupFailed: false, savingAnswers: 0,
+        structuredClone, console, Event, Map, JSON, window: {}, homeworkTasks: [], draftStore, saveState: "saved", backupFailed: false, savingAnswers: 0,
         openedLesson: { id: "lesson", activities: [{ type: "fill-blank", gradable: true }] },
         selectedLessonId: "lesson", user: { id: "student" },
         activitiesFor: (lesson) => lesson.activities,

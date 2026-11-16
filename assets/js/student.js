@@ -177,6 +177,10 @@
     let classes = [];
     let lessons = [];
     let calendarEvents = [];
+    let homeworkTasks = [];
+    let homeworkError = false;
+    let homeworkGeneration = 0;
+    let homeworkRefreshTimer = null;
     let calendarChannel = null;
     let calendarAudioContext = null;
     const playedCalendarReminders = new Set();
@@ -865,6 +869,9 @@
     }
 
     async function invokeLessonApi(payload) {
+        if (payload.lessonId && !payload.classId && openedLesson?.id === payload.lessonId && openedLesson.classId) {
+            payload = { ...payload, classId: openedLesson.classId };
+        }
         if (['submit','save-draft','find-error-event'].includes(payload.action) && !payload.activityId) {
             payload = {...payload,...lessonWriteIdentity(openedLesson,payload.activityIndex,payload.lessonId)};
         }
@@ -970,10 +977,47 @@
             if (progressActivityCount !== null) lesson.progressActivityCount = progressActivityCount;
         });
         syncProgressDisplay(lessonId);
+        if (homeworkTasks.some(task => task.lesson_id === lessonId)) {
+            clearTimeout(homeworkRefreshTimer);
+            homeworkRefreshTimer = setTimeout(async () => {
+                await refreshHomeworkTasks(false);
+                if (openedLesson?.id === lessonId) replaceHomeworkPanel();
+            }, 300);
+        }
+    }
+
+    function replaceHomeworkPanel() {
+        const panel = pageContent.querySelector(".homework-panel");
+        if (panel) panel.outerHTML = studentHomeworkMarkup();
+    }
+
+    async function refreshHomeworkTasks(shouldRender = true) {
+        const generation = ++homeworkGeneration, accountId = user?.id;
+        try {
+            const tasks = await window.SlovaHomework.api.list(window.supabaseClient);
+            if (generation !== homeworkGeneration || user?.id !== accountId || signingOut) return;
+            homeworkTasks = [...pendingDrafts.values()].some(entry => window.SlovaHomework.isHomeworkActivity(openedLesson,entry.activityIndex)) && openedLesson ? window.SlovaHomework.markDirty(tasks, openedLesson.id, openedLesson.classId) : tasks; homeworkError = false;
+        } catch {
+            if (generation !== homeworkGeneration || user?.id !== accountId || signingOut) return;
+            homeworkError = true;
+        }
+        if (shouldRender) render();
+    }
+
+    function studentHomeworkMarkup() {
+        if (!window.SlovaHomework || activeView === "calendar") return "";
+        const inside = Boolean(openedLesson && openedLesson.id === selectedLessonId);
+        const tasks = inside ? homeworkTasks.filter(task => task.lesson_id === openedLesson.id && task.class_id === openedLesson.classId) : homeworkTasks;
+        if (inside && !tasks.length) return "";
+        return window.SlovaHomework.studentMarkup(tasks, language, inside && studentWorkspaceTab === "homework", homeworkError);
     }
 
     function backupAnswer(lessonId, activityIndex, questionId, response) {
         if (!user || openedLesson?.id !== lessonId) return null;
+        if (window.SlovaHomework?.isHomeworkActivity(openedLesson,activityIndex) && homeworkTasks.some(task => task.lesson_id === lessonId && task.class_id === openedLesson.classId)) {
+            homeworkTasks = window.SlovaHomework.markDirty(homeworkTasks, lessonId, openedLesson.classId);
+            replaceHomeworkPanel();
+        }
         const identity = lessonWriteIdentity(openedLesson, activityIndex, lessonId);
         const record = draftStore.put({ userId: user.id, lessonId, revision: identity.lessonRevision,
             activityId: identity.activityId, activityIndex, questionId, response: structuredClone(response) });
@@ -1383,7 +1427,7 @@
         }
     }
 
-    async function openStudentLesson(lessonId) {
+    async function openStudentLesson(lessonId, classId = null) {
         if (openedLesson) {
             try { await flushDraftSaves(); }
             catch (error) { showToast(`${text("draftSaveError")} ${error.message}`, true); return; }
@@ -1393,7 +1437,7 @@
         selectedLessonId = lessonId;
         pageContent.innerHTML = `<div class="panel student-empty"><p>${escapeHtml(text("loading"))}</p></div>`;
         try {
-            const result = await invokeLessonApi({ action: "load", lessonId });
+            const result = await invokeLessonApi({ action: "load", lessonId, ...(classId ? { classId } : {}) });
             if (selectedLessonId !== lessonId) return;
             openedLesson = result.lesson;
             openedLesson.className = result.className;
@@ -1450,7 +1494,7 @@
             });
             return;
         }
-        pageContent.innerHTML = `${activeView === "calendar" ? "" : renderWelcome()}${openedLesson && openedLesson.id === selectedLessonId
+        pageContent.innerHTML = `${activeView === "calendar" ? "" : renderWelcome()}${studentHomeworkMarkup()}${openedLesson && openedLesson.id === selectedLessonId
             ? `${recoveryMarkup()}<p data-draft-save-status role="status" aria-live="polite"></p>${renderLessonDetail(openedLesson)}`
             : activeView === "classes" ? renderClasses() : activeView === "calendar" ? renderStudentCalendar() : renderLessons()}`;
         updateSaveStatus();
@@ -1855,6 +1899,8 @@
                 if (signingOut) return;
                 classes = result.classes || [];
                 lessons = result.lessons || [];
+                await refreshHomeworkTasks(false);
+                if (signingOut || user?.id !== signedInUser.id) return;
                 calendarEvents = result.calendarEvents || [];
                 trackPresence(client, result.presenceWorkspaceIds || classes.map((group) => group.teacherId), signedInUser);
                 subscribeToCalendar(client, signedInUser);
@@ -1998,6 +2044,7 @@
             try {
                 if (user) { localStorage.removeItem(`slovasofi-student:${user.id}`); draftStore.clearUser(user.id); }
             } catch { /* Storage restrictions must not block a successful sign-out. */ }
+            homeworkTasks = []; homeworkGeneration += 1; clearTimeout(homeworkRefreshTimer);
             user = null;
             closePopover();
             window.location.assign("login.html");
@@ -2097,7 +2144,37 @@
             recoverableAnswers = []; render();
         }
     });
-    window.addEventListener("online", () => { retryPendingAnswers(); });
+    pageContent.addEventListener("click", async event => {
+        const retry = event.target.closest("[data-homework-retry]");
+        if (retry) { await refreshHomeworkTasks(); return; }
+        const button = event.target.closest("[data-homework-open], [data-homework-submit]");
+        if (!button || button.disabled) return;
+        const task = homeworkTasks.find(item => item.id === (button.dataset.homeworkOpen || button.dataset.homeworkSubmit));
+        if (!task) return;
+        button.disabled = true;
+        try {
+            await flushDraftSaves();
+            if (button.dataset.homeworkOpen) {
+                await openStudentLesson(task.lesson_id, task.class_id);
+                if (openedLesson?.id !== task.lesson_id || openedLesson.classId !== task.class_id) throw new Error(text("loadError"));
+                studentWorkspaceTab = "homework";
+                activeStudentSectionId = lessonSections(openedLesson).find(section => section.homework)?.id || "";
+                await window.SlovaHomework.api.start(window.supabaseClient, task.id);
+            } else {
+                if (openedLesson?.id !== task.lesson_id || openedLesson.classId !== task.class_id || studentWorkspaceTab !== "homework") return;
+                await window.SlovaHomework.api.submit(window.supabaseClient, task.id);
+                showToast(window.SlovaHomework.text(language, "sent"));
+            }
+            await refreshHomeworkTasks();
+        } catch (error) {
+            showToast(window.SlovaHomework.text(language, "error"), true);
+            button.disabled = false;
+        }
+    });
+    window.addEventListener("online", () => {
+        retryPendingAnswers();
+        if (user) refreshHomeworkTasks(false).then(replaceHomeworkPanel);
+    });
     window.addEventListener("offline", () => { if (pendingDrafts.size) updateSaveStatus("error"); });
     window.addEventListener("beforeunload", event => {
         if (!pendingDrafts.size && !savingAnswers) return;

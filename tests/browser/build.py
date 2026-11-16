@@ -36,6 +36,7 @@ start = student.index('    async function invokeLessonApi(payload) {')
 end = student.index('    function responseForActivity(', start)
 student = student[:start] + '''    async function invokeLessonApi(payload) {
         qaRequests.push(structuredClone(payload));
+        if(payload.action==='load'){const lesson=structuredClone(qaLesson);let index=0;lesson.sections.forEach(section=>section.activities.forEach(activity=>{activity.index=index++;}));lesson.classId=payload.classId||'qa-class';return {lesson,className:'Тестовый класс'};}
         return { answers: {}, completed: false, correct: true, reviewRequired: typeof payload.response === 'object' && !Array.isArray(payload.response) };
     }
 

@@ -79,6 +79,18 @@
             assert(!document.body.classList.contains('lesson-focus'),'Не вышел из режима урока');
             assert(sidebar.inert===mobile,'Навигация не восстановилась');
         });
-        draftSaveTimers.forEach(clearTimeout);draftSaveTimers.clear();pendingDrafts.clear();await draftSaveQueue;
+        await run('Домашняя работа ученика: срок, открытие нужного класса и сдача',async()=>{
+            const beforeClient=window.supabaseClient;let state='not_started';const calls=[];
+            const task={id:'qa-homework-task',class_id:'qa-class',lesson_id:'qa-lesson',lesson_title:'Домашняя работа QA',class_name:'Тестовый класс',unit:'A1',due_at:'2026-12-01T18:00:00Z',instructions:'Напишите ответ',submissions:[{student_id:'qa-member',state}]};
+            try{
+                window.supabaseClient={rpc:async(name,args)=>{calls.push({name,args});if(name==='list_homework')return{data:[{...task,submissions:[{student_id:'qa-member',state}]}],error:null};if(name==='start_homework')state='in_progress';if(name==='submit_homework')state='submitted';return{data:null,error:null};}};
+                qaReset();homeworkTasks=[task];openedLesson=null;selectedLessonId='';activeView='lessons';render();
+                assert(pageContent.textContent.includes('Сдать до'),'Нет срока');pageContent.querySelector('[data-homework-open]').click();await new Promise(resolve=>setTimeout(resolve,30));
+                assert(qaRequests.some(request=>request.action==='load'&&request.classId==='qa-class'),'Не передан класс урока');assert(studentWorkspaceTab==='homework'&&activeStudentSectionId==='homework','Не открыт домашний раздел');assert(pageContent.querySelector('[data-homework-submit]'),'Нет отправки на проверку');
+                const input=pageContent.querySelector('[data-open-answer]');input.value='My homework';input.dispatchEvent(new Event('input',{bubbles:true}));await flushDraftSaves();
+                pageContent.querySelector('[data-homework-submit]').click();await new Promise(resolve=>setTimeout(resolve,30));assert(calls.some(call=>call.name==='submit_homework'&&call.args.target_task_id===task.id),'Работа не отправлена');assert(pageContent.textContent.includes('Сдано'),'Нет статуса сдачи');
+            }finally{clearTimeout(homeworkRefreshTimer);homeworkTasks=[];window.supabaseClient=beforeClient;qaReset();}
+        });
+        draftSaveTimers.forEach(clearTimeout);draftSaveTimers.clear();pendingDrafts.clear();await draftSaveQueue.catch(error=>results.push("FAIL Очередь сохранения — "+error.message));
         const report=document.createElement('div');report.style='position:fixed;inset:20px;z-index:99999;background:#0f191e;color:#dff5e7;overflow:auto;padding:20px;font-size:16px';for(const line of [...results,'TOTAL '+results.length+'; FAIL '+results.filter(x=>x.startsWith('FAIL')).length]){const p=document.createElement('p');p.textContent=line;report.append(p);}document.body.append(report);
     };

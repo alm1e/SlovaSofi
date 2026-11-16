@@ -2350,6 +2350,27 @@ function renderCalendar() {
         <aside class="panel calendar-upcoming"><div class="panel-heading"><div><h2>${t("calendar.upcoming")}</h2><p class="hint">${t("calendar.upcomingHint")}</p></div><span class="calendar-upcoming-count">${nextEvents.length}</span></div>${nextEvents.length ? `<div class="calendar-upcoming-list">${nextEvents.map((event) => `<article class="calendar-upcoming-item" ${writable ? `data-calendar-event="${escapeHtml(event.id)}"` : ""}><time><strong>${formatCalendarDate(event.occurrenceAt, { day: "numeric" })}</strong><small>${formatCalendarDate(event.occurrenceAt, { month: "short" })}</small></time><div><strong>${escapeHtml(event.title)}</strong><small>${formatCalendarDate(event.occurrenceAt, { hour: "2-digit", minute: "2-digit" })} · ${escapeHtml(data.classes.find((item) => item.id === event.class_id)?.name || t("class.noClass"))}${calendarRecurrenceLabel(event.recurrence) ? ` · ${calendarRecurrenceLabel(event.recurrence)}` : ""}</small></div></article>`).join("")}</div>` : `<div class="calendar-empty">${t(calendarEvents.length ? "calendar.empty" : "calendar.noEvents")}${!calendarEvents.length ? `<small>${t("calendar.createFirst")}</small>` : ""}</div>`}</aside></div>`;
 }
 
+function homeworkText(key) {
+    return window.SlovaHomework?.text(currentLanguage, key) || "Homework";
+}
+
+function openClassHomework(classId) {
+    const group = data.classes.find(item => item.id === classId);
+    if (!group || (!hasPermission("view_classes_students") && !hasPermission("manage_classes_students"))) return;
+    window.SlovaHomework.openTeacher({ client: window.supabaseClient, language: currentLanguage,
+        classId, className: group.name, openModal, modalCard,
+        canAssign: hasPermission("manage_classes_students") && !group.archivedAt,
+        canReview: hasPermission("manage_classes_students"),
+        lessons: data.lessons.filter(lesson => lessonClassIds(lesson).includes(classId)),
+        hasHomework: lesson => normalizeHomeworkSections(lesson).some(section => section.activities?.length),
+        openAnswers(lessonId, studentId) {
+            closeModal(); activeClassFilter = classId; openLessonPreview(lessonId);
+            monitorClassId = classId; selectedLiveStudentId = studentId;
+            lessonWorkspaceTab = "homework"; liveMonitorOpen = true; render();
+        }
+    });
+}
+
 function historyText(key) {
     return window.SlovaHistoryUI?.text(currentLanguage, key) || ({audit:"Activity log",versions:"Version history",saveFirst:"Save lesson changes first"})[key];
 }
@@ -2423,7 +2444,7 @@ function renderClasses() {
             <div class="class-roster"><div class="class-roster-heading"><strong>${t("classes.studentsLabel")}</strong><span>${item.students.length}</span></div>
                 ${item.students.length ? `<ul class="class-roster-list">${(item.studentRecords?.length ? item.studentRecords.map((student) => ({ name: student.display_name, userId: student.linked_user_id })) : item.students.map((name) => ({ name, userId: null }))).map((student) => `<li><span class="class-student-avatar">${escapeHtml(student.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toLocaleUpperCase())}</span><span class="class-roster-student-name">${escapeHtml(student.name)}</span>${presenceBadge(student.userId)}</li>`).join("")}</ul>` : `<p class="class-roster-empty">${t("classes.noStudents")}</p>`}
             </div>
-            <div class="class-card-meta"><button type="button" class="text-link" data-action="class-audit-log" data-id="${escapeHtml(item.id)}">${historyText("audit")}</button>${hasPermission("view_lessons") || hasPermission("view_assign_lessons") || hasPermission("edit_lessons") ? `<button class="text-link" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${t("classes.lessons")}</button>` : ""}${canManageClasses ? `<button type="button" class="button secondary small" data-action="${item.archivedAt ? "restore-class" : "archive-class"}" data-id="${escapeHtml(item.id)}" ${archivingClassIds.has(item.id) ? "disabled" : ""}>${classArchiveText(item.archivedAt ? "restore" : "move")}</button>` : ""}</div>
+            <div class="class-card-meta"><button type="button" class="text-link" data-action="class-homework" data-id="${escapeHtml(item.id)}">${homeworkText("title")}</button><button type="button" class="text-link" data-action="class-audit-log" data-id="${escapeHtml(item.id)}">${historyText("audit")}</button>${hasPermission("view_lessons") || hasPermission("view_assign_lessons") || hasPermission("edit_lessons") ? `<button class="text-link" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${t("classes.lessons")}</button>` : ""}${canManageClasses ? `<button type="button" class="button secondary small" data-action="${item.archivedAt ? "restore-class" : "archive-class"}" data-id="${escapeHtml(item.id)}" ${archivingClassIds.has(item.id) ? "disabled" : ""}>${classArchiveText(item.archivedAt ? "restore" : "move")}</button>` : ""}</div>
             ${canManageClasses && !item.archivedAt ? `<button class="button secondary small class-invite-button" data-action="invite-student" data-id="${escapeHtml(item.id)}">${t("classes.inviteStudent")}</button>` : ""}</article>`).join("") : emptyMessage(classArchiveView && !searchQuery ? classArchiveText("empty") : t("classes.notFound"), classArchiveView && !searchQuery ? classArchiveText("hint") : t("classes.notFoundHint"))}</div>`;
 }
 
@@ -3417,6 +3438,7 @@ function handleAction(action, id) {
     if (action === "new-lesson") openLessonEditor();
     if (action === "edit-lesson") openLessonEditor(data.lessons.find((item) => item.id === id));
     if (action === "preview-lesson") openLessonPreview(id);
+    if (action === "class-homework") openClassHomework(id);
     if (action === "audit-log") openSchoolAudit();
     if (action === "class-audit-log") openSchoolAudit(id);
     if (action === "lesson-history") openLessonHistory(id);
