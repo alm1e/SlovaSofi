@@ -2618,7 +2618,7 @@ function openStudentScopeForm(id) {
     if (!student) return;
     const teachers = new Map(data.classes.map(c => [c.teacherId, c.teacherName]));
     for (const member of workspaceAccess.staff || []) if (["teacher","admin"].includes(member.role)) teachers.set(member.id,member.name || member.email);
-    if (currentUser) teachers.set(currentUser.id, teacherName);
+    if (currentUser) teachers.set(currentUser.id, userDisplayName(currentUser));
     openModal(`${modalHeader("Принадлежность ученика")}<form id="studentScopeForm"><div class="form-field"><label>Принадлежность<select name="scope"><option value="school">Школа SlovaSofi</option><option value="private">Личный ученик</option></select></label></div><div class="form-field"><label>Преподаватель личного ученика<select name="teacher">${[...teachers].map(([id,name]) => `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`).join('')}</select></label></div><p class="hint">Личный ученик доступен администратору и выбранному преподавателю. Сначала переведите его классы в личные или уберите из школьных классов. Удалять ответы не нужно.</p><div class="modal-actions"><button type="button" class="button secondary" data-close>Отмена</button><button type="submit" class="button">Сохранить</button></div></form>`);
     const form = modalCard.querySelector('form');
     form.elements.scope.value = student.student_scope;

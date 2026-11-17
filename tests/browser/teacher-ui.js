@@ -13,6 +13,17 @@
  try{workspaceAccess={...previous,role:'admin'};data={...data,classes:[],studentDirectory:[{id:'school',display_name:'School pupil',student_scope:'school'},{id:'private',display_name:'Private pupil',student_scope:'private'}]};studentScopeView='school';let html=renderStudents();assert(html.includes('School pupil')&&!html.includes('Private pupil'),'Личный ученик виден в школе');studentScopeView='private';html=renderStudents();assert(html.includes('Private pupil')&&!html.includes('School pupil'),'Личная вкладка не отделена');workspaceAccess={...previous,role:'director'};data.studentDirectory=data.studentDirectory.filter(p=>p.student_scope==='school');html=renderStudents();assert(studentScopeView==='school'&&!html.includes('student-scope-edit'),'Директору доступны изменения');}
  finally{workspaceAccess=previous;data=savedData;studentScopeView=savedScope;}
  });
+ await run('Администратор открывает принадлежность ученика нажатием кнопки',()=>{
+ const before={access:workspaceAccess,user:currentUser,data,view:activeView,scope:studentScopeView};
+ try{
+  workspaceAccess={...workspaceAccess,role:'admin'};currentUser={id:'qa-admin',email:'admin@example.test',user_metadata:{first_name:'Admin'}};
+  data={...data,classes:[],studentDirectory:[{id:'qa-pupil',display_name:'Pupil',student_scope:'school'}]};activeView='students';studentScopeView='school';render();
+  const button=pageContent.querySelector('[data-action="student-scope-edit"]');assert(button,'Нет кнопки принадлежности');button.click();
+  const form=modalCard.querySelector('#studentScopeForm');assert(!modalBackdrop.hidden&&form,'Окно не открылось');assert(form.elements.teacher.disabled,'Преподаватель доступен для школьного ученика');
+  form.elements.scope.value='private';form.elements.scope.dispatchEvent(new Event('change',{bubbles:true}));assert(!form.elements.teacher.disabled,'Нет выбора преподавателя');assert([...form.elements.teacher.options].some(option=>option.value==='qa-admin'),'Нет администратора среди преподавателей');
+  modalCard.querySelector('[data-close]').click();assert(modalBackdrop.hidden,'Окно не закрылось');
+ }finally{closeModal();workspaceAccess=before.access;currentUser=before.user;data=before.data;activeView=before.view;studentScopeView=before.scope;}
+ });
  const select=(editor)=>{editor.focus();const r=document.createRange();r.selectNodeContents(editor);const s=getSelection();s.removeAllRanges();s.addRange(r);editor.dispatchEvent(new Event('keyup'));};
  const prepare=()=>{const root=reset();const source=root.querySelector('textarea[data-field="content"]');source.value='Проверка текста';source.dispatchEvent(new Event('input',{bubbles:true}));const editor=root.querySelector('.visual-rich-editor');select(editor);return {root,source,editor};};
  const click=(b)=>{b.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true}));b.click();};
