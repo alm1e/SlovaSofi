@@ -1135,9 +1135,29 @@ function loadNewLessonDraft() {
     }
 }
 
+let lessonImageDraftProtectionQueue = Promise.resolve();
+async function protectNewLessonDraftImages(snapshot) {
+    if (!currentUser || !window.supabaseClient?.rpc) return;
+    const userId=currentUser.id;
+    const key=lessonDraftStorageKey()+':image-protection-id';
+    let browserDraftId=localStorage.getItem(key);
+    if(!browserDraftId){browserDraftId=crypto.randomUUID();localStorage.setItem(key,browserDraftId);}
+    const ids=[...new Set([...JSON.stringify(snapshot).matchAll(/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})\.(?:png|jpe?g|webp|gif)/gi)].map(match=>match[1].toLowerCase()))];
+    // Each browser has its own draft. Serialize writes so a late older request
+    // cannot remove the protection of a newer snapshot or another browser.
+    const write=lessonImageDraftProtectionQueue.catch(()=>{}).then(async()=>{
+        if(currentUser?.id!==userId)return;
+        const {error}=await window.supabaseClient.rpc('protect_lesson_image_draft',{draft_key:'new-lesson:'+browserDraftId,image_ids:ids});
+        if(error)throw new Error(currentLanguage==='ru'?'Не удалось защитить фото черновика от очистки. Сохраните урок.':'Could not protect draft images. Save the lesson.');
+    });
+    lessonImageDraftProtectionQueue=write;
+    return write;
+}
+
 function clearNewLessonDraft() {
     try {
         localStorage.removeItem(lessonDraftStorageKey());
+        protectNewLessonDraftImages({}).catch(error=>console.warn(error.message));
     } catch (error) {
         console.error("Could not clear the local lesson draft.", error);
         showToast(t("toast.storageError"));
@@ -1160,6 +1180,7 @@ function scheduleLessonDraftAutosave() {
         if (!targetLessonId) {
             try {
                 localStorage.setItem(lessonDraftStorageKey(), JSON.stringify(snapshot));
+                await protectNewLessonDraftImages(snapshot);
                 if (revision === lessonDraftAutosaveRevision) setLessonAutosaveStatus("saved");
             } catch (error) {
                 console.error("Could not save the local lesson draft.", error);
@@ -3708,6 +3729,7 @@ function openLessonEditor(item, sectionId = "", activityIndex = -1, tab = "lesso
     if (!hasPermission("edit_lessons")) return;
     stopLiveProgressSubscription();
     const recoveredDraft = item ? null : loadNewLessonDraft();
+    if(recoveredDraft)protectNewLessonDraftImages(recoveredDraft).catch(error=>showToast(error.message));
     activeView = "lessons";
     document.getElementById("breadcrumb").textContent = t("page.lessons");
     document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === "lessons"));
