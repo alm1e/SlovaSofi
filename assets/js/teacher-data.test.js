@@ -144,7 +144,7 @@ test("workspace navigation data loads without a redundant network user lookup", 
     const queriedTables = [];
     let earlyContext;
     const client = {
-        rpc: async () => ({ data: { owner_id: "teacher-1", role: "teacher", permissions: {} }, error: null }),
+        rpc: async (name) => ({ data: name === "student_directory" ? [] : { owner_id: "teacher-1", role: "teacher", permissions: {} }, error: null }),
         auth: { getUser: async () => { userLookupCount += 1; throw new Error("Unexpected network user lookup"); } },
         from(table) {
             queriedTables.push(table);
@@ -172,7 +172,7 @@ test("workspace navigation data loads without a redundant network user lookup", 
     });
     assert.ok(queriedTables.length > 0);
     assert.equal(workspace.role, "teacher");
-    assert.deepEqual(JSON.parse(JSON.stringify(workspace.data)), { classes: [], lessons: [], categories: ["Conversation"] });
+    assert.deepEqual(JSON.parse(JSON.stringify(workspace.data)), { classes: [], lessons: [], studentDirectory: [], categories: ["Conversation"] });
     assert.equal(workspace.staff.length, 0);
 });
 

@@ -10,7 +10,7 @@ function api() {
 function clientFor(role) {
  const filters=[];
  const tables={teacher_workspace_settings:[{legacy_imported:true}],teacher_classes:[{id:'class',name:'School',course:'A1',class_scope:'school',teacher_id:'owner'}],teacher_lessons:[],class_students:[],class_lesson_assignments:[],lesson_categories:[],profiles:[{id:'owner',first_name:'Teacher',last_name:''}]};
- const client={rpc:async()=>({data:{owner_id:'user',role,permissions:{view_classes_students:true}},error:null}),from(table){
+ const client={rpc:async(name)=>({data:name==='student_directory'?[]:{owner_id:'user',role,permissions:{view_classes_students:true}},error:null}),from(table){
   const q={select(){return q},order(){return q},eq(key,value){filters.push([table,key,value]);return q},in(){return q},maybeSingle:async()=>({data:tables[table][0],error:null}),then(resolve,reject){return Promise.resolve({data:tables[table],error:null}).then(resolve,reject)}};return q;
  }};
  return {client,filters};

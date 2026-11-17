@@ -2354,3 +2354,24 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 @media(max-width:700px){
     .lesson-workspace-footer{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
 }
+
+/* Compact word/letter arrangement with empty answer slots, including touch screens. */
+.sequence-exercise { --tile-bg: var(--white, #fff); --tile-border: #638278; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.sequence-exercise > div { min-width: 0; }
+.sequence-exercise .preview-word-bank, .sequence-exercise .student-word-bank,
+.sequence-exercise .preview-dropzone, .sequence-exercise .student-answer-zone { display: flex; flex-wrap: wrap; align-items: center; align-content: flex-start; justify-content: flex-start; gap: 9px; padding: 14px; min-height: 76px; width: 100%; box-sizing: border-box; }
+.sequence-exercise .preview-word-bank, .sequence-exercise .student-word-bank { border: 0; border-bottom: 1px dashed var(--tile-border); border-radius: 0; }
+.sequence-exercise .preview-dropzone, .sequence-exercise .student-answer-zone { background: transparent; border: 0; }
+.sequence-exercise .preview-word, .sequence-exercise .student-word-token, .sequence-exercise .sequence-slot { border: 1px solid var(--tile-border); border-radius: 7px; min-width: 48px; min-height: 44px; padding: 7px 12px; box-sizing: border-box; font-size: 18px; font-weight: 500; line-height: 1.4; max-width: 100%; overflow-wrap: anywhere; }
+.sequence-exercise .preview-word, .sequence-exercise .student-word-token { background: var(--tile-bg); color: inherit; cursor: grab; }
+.sequence-exercise .sequence-slot { display: inline-block; background: rgba(127,150,145,.08); border-style: dashed; }
+.sequence-exercise .preview-dropzone .preview-word, .sequence-exercise .student-word-token.selected { border-color: #21bd83; }
+.sequence-exercise button:hover, .sequence-exercise button:focus-visible { border-color: #20cc83; outline: 2px solid #20cc83; outline-offset: 2px; }
+.sequence-letters .preview-word, .sequence-letters .student-word-token, .sequence-letters .sequence-slot { width: 44px; min-width: 44px; padding: 7px 4px; text-align: center; }
+[data-theme="light"] .sequence-exercise { --tile-bg: #fff; --tile-border: #b8cdc5; }
+@media(max-width:700px) { .sequence-exercise { gap: 10px; } .sequence-exercise .preview-word-bank, .sequence-exercise .student-word-bank, .sequence-exercise .preview-dropzone, .sequence-exercise .student-answer-zone { padding: 8px 0; gap: 7px; } }
+
+.student-list .student-row { flex-wrap: wrap; }
+.student-list .student-row-main { flex-basis: 140px; overflow-wrap: anywhere; }
+.student-list .class-label { max-width: 100%; overflow-wrap: anywhere; }
+.student-list .student-row > button { max-width: 100%; white-space: normal; }

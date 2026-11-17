@@ -4,6 +4,15 @@
  const original=structuredClone(data);
  const run=async(name,fn)=>{try{await fn();results.push('PASS '+name);}catch(e){results.push('FAIL '+name+' — '+e.message);}out.textContent=results.join('\n');};
  const reset=()=>{data=structuredClone(original);openLessonEditor(data.lessons[0], 'qa-intro',0);return pageContent.querySelector('.builder-block');};
+ await run('Пустые места для букв и возврат плитки',()=>{
+ const host=document.createElement('div');host.innerHTML=renderPreviewActivity({type:'drag-words',content:'a á a',answer:'a / á / a'},0);document.body.append(host);
+ try {bindLessonPreviewActions(host);assert(!host.querySelector('.preview-answer-ghost'),'Показан правильный ответ');assert(host.querySelectorAll('.sequence-slot').length===3,'Нет мест для букв');const tile=host.querySelector('.preview-word');tile.click();assert(host.querySelectorAll('.sequence-slot').length===2,'Место не заполнено');tile.click();assert(host.querySelectorAll('.sequence-slot').length===3,'Место не восстановилось');}finally{host.remove();}
+ });
+ await run('Школьные и личные ученики разделены',()=>{
+ const previous=workspaceAccess, savedData=data, savedScope=studentScopeView;
+ try{workspaceAccess={...previous,role:'admin'};data={...data,classes:[],studentDirectory:[{id:'school',display_name:'School pupil',student_scope:'school'},{id:'private',display_name:'Private pupil',student_scope:'private'}]};studentScopeView='school';let html=renderStudents();assert(html.includes('School pupil')&&!html.includes('Private pupil'),'Личный ученик виден в школе');studentScopeView='private';html=renderStudents();assert(html.includes('Private pupil')&&!html.includes('School pupil'),'Личная вкладка не отделена');workspaceAccess={...previous,role:'director'};data.studentDirectory=data.studentDirectory.filter(p=>p.student_scope==='school');html=renderStudents();assert(studentScopeView==='school'&&!html.includes('student-scope-edit'),'Директору доступны изменения');}
+ finally{workspaceAccess=previous;data=savedData;studentScopeView=savedScope;}
+ });
  const select=(editor)=>{editor.focus();const r=document.createRange();r.selectNodeContents(editor);const s=getSelection();s.removeAllRanges();s.addRange(r);editor.dispatchEvent(new Event('keyup'));};
  const prepare=()=>{const root=reset();const source=root.querySelector('textarea[data-field="content"]');source.value='Проверка текста';source.dispatchEvent(new Event('input',{bubbles:true}));const editor=root.querySelector('.visual-rich-editor');select(editor);return {root,source,editor};};
  const click=(b)=>{b.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true}));b.click();};

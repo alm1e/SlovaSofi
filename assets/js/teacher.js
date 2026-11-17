@@ -2460,7 +2460,7 @@ function renderClasses() {
         <div class="toolbar class-toolbar" role="group" aria-label="${t("classes.title")}">${[false, true].map(archived => `<button type="button" class="button secondary small" data-action="class-archive-view" data-id="${archived ? "archive" : "active"}" aria-pressed="${classArchiveView === archived}">${classArchiveText(archived ? "archive" : "active")} (${data.classes.filter(item => Boolean(item.archivedAt) === archived).length})</button>`).join("")}</div>
         <div class="toolbar class-toolbar">${canManageClasses ? `<button class="button secondary" data-action="new-class">${t("classes.create")}</button>` : ""}<input type="search" data-search placeholder="${t("classes.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("classes.search")}"></div>
         <div class="card-grid class-grid">${filtered.length ? filtered.map((item, index) => `<article class="class-card class-card-enhanced class-tone-${index % 4}" data-open-class-id="${escapeHtml(item.id)}">
-            ${canManageClasses ? `<div class="card-actions"><button class="mini-action" data-action="edit-class" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editClass")}">✎</button></div>` : ""}
+            ${canManageClasses ? `<div class="card-actions"><button class="mini-action" data-action="edit-class" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editClass")}">✎</button><button type="button" class="mini-action" data-action="delete-class" data-id="${escapeHtml(item.id)}" aria-label="Удалить класс" title="Удалить класс">×</button></div>` : ""}
             <div class="class-card-top"><span class="class-card-avatar">${escapeHtml(item.name.slice(0, 2).toUpperCase())}</span><span class="class-course-pill">${escapeHtml(formatCourse(item.course))} · ${escapeHtml(classScopeText(item.classScope || "private"))}</span></div><h3><button type="button" class="class-card-title" data-action="class-lessons" data-id="${escapeHtml(item.id)}">${escapeHtml(item.name)}</button></h3>
             <div class="class-teacher-line"><span class="class-person-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="7" r="4"></circle><path d="M4.5 21v-2a7.5 7.5 0 0 1 15 0v2z"></path></svg></span><span><small>${t("classes.teacherLabel")}</small><strong>${escapeHtml(item.teacherName || teacherName)}</strong>${presenceBadge(item.teacherId)}</span></div>
             <div class="class-roster"><div class="class-roster-heading"><strong>${t("classes.studentsLabel")}</strong><span>${item.students.length}</span></div>
@@ -2593,15 +2593,48 @@ function openCategoryEditor() {
         }
     });
 }
+let studentScopeView = "school";
 function renderStudents() {
+    if (workspaceAccess.role === "director") studentScopeView = "school";
     const canManageClasses = hasPermission("manage_classes_students");
-    const students = data.classes.flatMap((item) => item.studentRecords?.length
+    const memberships = data.classes.flatMap((item) => item.studentRecords?.length
         ? item.studentRecords.map((student) => ({ name: student.display_name, className: item.name, id: student.id, userId: student.linked_user_id }))
         : item.students.map((name, index) => ({ name, className: item.name, id: `${item.id}-${index}`, userId: null })));
+    const directory = data.studentDirectory || [];
+    const students = directory.filter(p => p.student_scope === studentScopeView).map(p => {
+        const rows = memberships.filter(row => row.userId === p.id);
+        return {name: rows[0]?.name || p.display_name || "Ученик", className: [...new Set(rows.map(row => row.className))].join(", "), id:p.id, userId:p.id};
+    }).concat(studentScopeView === "school" ? memberships.filter(row => !row.userId) : []);
     const filtered = students.filter((student) => `${student.name} ${student.className}`.toLowerCase().includes(searchQuery.toLowerCase()));
     return `<div class="section-heading"><div><h1>${t("students.title")}</h1><p>${t("students.description")}</p></div>${canManageClasses ? `<button class="button secondary" data-view-link="classes">${t("students.manage")}</button>` : ""}</div>
         <div class="toolbar"><span class="hint" style="color:#d7e9dd">${t("students.total", { count: students.length })}</span><input type="search" data-search placeholder="${t("students.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("students.search")}"></div>
-        <div class="student-list">${filtered.length ? filtered.map((student) => `<div class="student-row"><span class="avatar">${escapeHtml(student.name.split(" ").map((part) => part[0]).join("").slice(0, 2))}</span><div class="student-row-main"><strong>${escapeHtml(student.name)}</strong><small>${t("students.role")}</small>${presenceBadge(student.userId)}</div><span class="class-label">${escapeHtml(student.className)}</span></div>`).join("") : emptyMessage(t("students.notFound"), t("students.notFoundHint"))}</div>`;
+        <div class="toolbar"><button type="button" class="button secondary" data-action="student-scope-view" data-id="school" aria-pressed="${studentScopeView === 'school'}">Ученики SlovaSofi</button>${workspaceAccess.role !== 'director' ? `<button type="button" class="button secondary" data-action="student-scope-view" data-id="private" aria-pressed="${studentScopeView === 'private'}">Личные ученики</button>` : ''}</div>
+        <div class="student-list">${filtered.length ? filtered.map((student) => `<div class="student-row"><span class="avatar">${escapeHtml(student.name.split(" ").map((part) => part[0]).join("").slice(0, 2))}</span><div class="student-row-main"><strong>${escapeHtml(student.name)}</strong><small>${t("students.role")}</small>${presenceBadge(student.userId)}</div><span class="class-label">${escapeHtml(student.className || "Без класса")}</span>${workspaceAccess.role === 'admin' && student.userId ? `<button type="button" class="button secondary small" data-action="student-scope-edit" data-id="${escapeHtml(student.userId)}">Принадлежность</button>` : ''}</div>`).join("") : emptyMessage(t("students.notFound"), t("students.notFoundHint"))}</div>`;
+}
+
+function openStudentScopeForm(id) {
+    if (workspaceAccess.role !== "admin") return;
+    const student = data.studentDirectory?.find(p => p.id === id);
+    if (!student) return;
+    const teachers = new Map(data.classes.map(c => [c.teacherId, c.teacherName]));
+    for (const member of workspaceAccess.staff || []) if (["teacher","admin"].includes(member.role)) teachers.set(member.id,member.name || member.email);
+    if (currentUser) teachers.set(currentUser.id, teacherName);
+    openModal(`${modalHeader("Принадлежность ученика")}<form id="studentScopeForm"><div class="form-field"><label>Принадлежность<select name="scope"><option value="school">Школа SlovaSofi</option><option value="private">Личный ученик</option></select></label></div><div class="form-field"><label>Преподаватель личного ученика<select name="teacher">${[...teachers].map(([id,name]) => `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`).join('')}</select></label></div><p class="hint">Личный ученик доступен администратору и выбранному преподавателю. Сначала переведите его классы в личные или уберите из школьных классов. Удалять ответы не нужно.</p><div class="modal-actions"><button type="button" class="button secondary" data-close>Отмена</button><button type="submit" class="button">Сохранить</button></div></form>`);
+    const form = modalCard.querySelector('form');
+    form.elements.scope.value = student.student_scope;
+    if (student.private_teacher_id) form.elements.teacher.value = student.private_teacher_id;
+    const sync = () => { form.elements.teacher.disabled = form.elements.scope.value !== 'private'; };
+    form.elements.scope.addEventListener('change',sync); sync();
+    modalCard.querySelector('[data-close]').addEventListener('click',closeModal);
+    form.addEventListener('submit',async event => {
+        event.preventDefault(); const button = form.querySelector('[type="submit"]'); button.disabled = true;
+        try {
+            const {error} = await window.supabaseClient.rpc('set_student_scope',{target_student:id,target_scope:form.elements.scope.value,target_teacher:form.elements.scope.value === 'private' ? form.elements.teacher.value : null});
+            if (error) throw error;
+            const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient,currentUser.id); data = workspace.data;
+            closeModal(); render(); showToast('Принадлежность ученика сохранена');
+        } catch(error) {showToast(error.message); button.disabled=false;}
+    });
 }
 
 function renderStaff() {
@@ -2852,11 +2885,10 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         body=`<p class="preview-instruction">${inline.content.split('___').map((part,i)=>escapeHtml(part)+(inline.choices[i]?`<select data-inline-choice aria-label="${previewText('choose')}"><option value="">---</option>${window.SlovaExerciseFormat.shuffleChoices(inline.choices[i]).map(option=>`<option value="${escapeHtml(option)}" ${option===inline.answers[i]?'data-correct-option':''}>${escapeHtml(option)}</option>`).join('')}</select>`:'')).join('')}</p>`;
     } else if (type === "drag-words") {
         const expected = answer ? previewTokens(answer) : content.trim().split(/\s+/).filter(Boolean);
-        const correctOrder = answer ? expected.join(" ") : content.trim();
         const tokens = expected.map((word, wordIndex) => ({ word, wordIndex }));
         if (tokens.length > 1) tokens.push(tokens.shift());
         const previewKey = isQuestion ? `${index}-q${questionIndex}` : String(index);
-        body = `<div class="preview-drag-layout"><div><strong>${previewText("bank")}</strong><div class="preview-word-bank" data-word-bank>${tokens.map(({ word, wordIndex }) => `<button type="button" class="preview-word" draggable="true" data-word-index="${previewKey}-${wordIndex}">${escapeHtml(word)}</button>`).join("")}</div></div><div><strong>${previewText("answer")}</strong><div class="preview-dropzone" data-dropzone tabindex="0">${correctOrder ? `<span class="preview-answer-ghost">${escapeHtml(correctOrder)}</span>` : `<span class="preview-drop-hint">${previewText("drop")}</span>`}</div></div></div>`;
+        body = `<div class="preview-drag-layout sequence-exercise ${expected.every(word => Array.from(word).length === 1) ? 'sequence-letters' : ''}"><div><strong>${previewText("bank")}</strong><div class="preview-word-bank" data-word-bank>${tokens.map(({ word, wordIndex }) => `<button type="button" class="preview-word" draggable="true" data-word-index="${previewKey}-${wordIndex}">${escapeHtml(word)}</button>`).join("")}</div></div><div><strong>${previewText("answer")}</strong><div class="preview-dropzone" data-dropzone data-token-count="${expected.length}" aria-label="${previewText("answer")}" tabindex="0">${expected.map(() => '<span class="sequence-slot" aria-hidden="true"></span>').join('')}</div></div></div>`;
         if (!expected.length) checkable = false;
     } else if (type === "fill-blank") {
         const blanks = window.SlovaFillBlanks.parse(content, answer, activity.settings);
@@ -3007,6 +3039,7 @@ function checkPreviewActivity(card) {
     if (type === "drag-words") {
         const actual = Array.from(card.querySelectorAll("[data-dropzone] .preview-word"), (word) => word.textContent.trim());
         const expected = answer ? previewTokens(answer) : card.dataset.previewContent.trim().split(/\s+/).filter(Boolean);
+        if (actual.length !== expected.length) { result.textContent = ""; result.className = resultClass(); return; }
         correct = actual.length === expected.length && actual.every((word, index) => word.toLocaleLowerCase() === expected[index].toLocaleLowerCase());
     } else if (type === "fill-blank") {
         const inputs = Array.from(card.querySelectorAll("[data-answer-index]"));
@@ -3398,7 +3431,9 @@ function movePreviewWord(word, target) {
     const dropzone = destination.closest("[data-preview-activity]").querySelector("[data-dropzone]");
     dropzone.classList.toggle("has-words", Boolean(dropzone.querySelector(".preview-word")));
     word.animate([{ transform: "translateY(4px) scale(.96)", opacity: .65 }, { transform: "translateY(0) scale(1)", opacity: 1 }], { duration: 200, easing: "cubic-bezier(.2,.75,.25,1)" });
-    if (!dropzone.querySelector(".preview-word") && !dropzone.querySelector(".preview-answer-ghost")) dropzone.innerHTML = `<span class="preview-drop-hint">${previewText("drop")}</span>`;
+    dropzone.querySelectorAll('.sequence-slot,.preview-drop-hint').forEach(slot => slot.remove());
+    const remaining = Number(dropzone.dataset.tokenCount || 0) - dropzone.querySelectorAll('.preview-word').length;
+    for (let i=0;i<remaining;i++) { const slot=document.createElement('span'); slot.className='sequence-slot'; slot.setAttribute('aria-hidden','true'); dropzone.append(slot); }
 }
 
 function animatePreviewReorder(container, update) {
@@ -3481,6 +3516,8 @@ function handleAction(action, id) {
     if (action === "new-class") { classArchiveView = false; openClassEditor(); }
     if (action === "invite-student") openStudentInvite(data.classes.find((item) => item.id === id));
     if (action === "edit-class") openClassEditor(data.classes.find((item) => item.id === id));
+    if (action === "student-scope-view") { studentScopeView = id === "private" && workspaceAccess.role !== "director" ? "private" : "school"; render(); }
+    if (action === "student-scope-edit") openStudentScopeForm(id);
     if (action === "delete-class") deleteClass(id);
     if (action === "class-archive-view") { classArchiveView = id === "archive"; searchQuery = ""; render(); }
     if (action === "archive-class") setClassArchived(id, true);
@@ -3696,7 +3733,7 @@ function openStudentInvite(group) {
         existingStatus.textContent = t("profile.login");
         return;
     }
-    window.teacherWorkspaceApi.listExistingStudents(window.supabaseClient).then((students) => {
+    window.teacherWorkspaceApi.listExistingStudents(window.supabaseClient, group.id).then((students) => {
         const currentMemberships = group.studentRecords || [];
         const currentStudentIds = new Set(currentMemberships.map((student) => student.linked_user_id).filter(Boolean));
         const currentLinkedEmails = new Set(currentMemberships
@@ -3726,12 +3763,22 @@ function openStudentInvite(group) {
 async function deleteClass(id) {
     if (!hasPermission("manage_classes_students")) return;
     const item = data.classes.find((current) => current.id === id);
-    if (!item || !window.confirm(t("confirm.deleteClass", { name: item.name }))) return;
-    const previousData = structuredClone(data);
-    data.classes = data.classes.filter((current) => current.id !== id);
-    data.lessons = data.lessons.map((lesson) => ({ ...lesson, classIds: lessonClassIds(lesson).filter((classId) => classId !== id) }));
-    if (!await persistWorkspaceChange(previousData)) return;
-    showToast(t("toast.classDeleted"));
+    if (!item || !window.confirm(`Удалить класс «${item.name}» навсегда? Состав класса, назначения, его ответы, домашние работы и события будут удалены. Общие уроки и аккаунты учеников сохранятся. Для сохранения прогресса используйте архив.`)) return;
+    if (archivingClassIds.has(id)) return;
+    archivingClassIds.add(id);
+    try {
+        if (currentUser && window.teacherWorkspaceApi) {
+            const { data: removed, error } = await window.supabaseClient.from('teacher_classes').delete().eq('id',id).select('id').single();
+            if (error) throw error;
+            if (!removed) throw new Error('Класс недоступен для удаления.');
+            const workspace = await window.teacherWorkspaceApi.loadWorkspace(window.supabaseClient,currentUser.id); data = workspace.data;
+        } else {
+            data.classes = data.classes.filter(c => c.id !== id);
+            data.lessons.forEach(lesson => { lesson.classIds = lessonClassIds(lesson).filter(classId => classId !== id); });
+        }
+        render(); showToast(t('toast.classDeleted'));
+    } catch(error) {showToast(error.message);}
+    finally {archivingClassIds.delete(id);}
 }
 
 function openLessonEditor(item, sectionId = "", activityIndex = -1, tab = "lesson") {

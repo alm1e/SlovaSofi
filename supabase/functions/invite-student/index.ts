@@ -52,7 +52,7 @@ Deno.serve(async (request: Request) => {
     if (!["invite", "list-existing", "add-existing"].includes(action)) {
         return jsonResponse(400, { error: "Choose a valid student action." }, configuredOrigin);
     }
-    if (action !== "list-existing" && !isUuid(classId)) {
+    if (!isUuid(classId)) {
         return jsonResponse(400, { error: "Choose a valid class." }, configuredOrigin);
     }
     if (action === "invite" && (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -96,6 +96,15 @@ Deno.serve(async (request: Request) => {
     }
 
     const isAdmin = context.role === "admin";
+    let classQuery = adminClient.from("teacher_classes").select("id,teacher_id,class_scope").eq("id", classId);
+    if (!isAdmin) classQuery = classQuery.eq("teacher_id", user.id);
+    const { data: group, error: classError } = await classQuery.maybeSingle();
+    if (classError) {
+        console.error("Could not verify class ownership.", classError);
+        return jsonResponse(500, { error: "Could not verify that this class belongs to you." }, configuredOrigin);
+    }
+    if (!group) return jsonResponse(404, { error: "Class not found." }, configuredOrigin);
+
     if (action === "list-existing") {
         let directoryQuery = adminClient.from("teacher_student_directory")
             .select("student_user_id,email,display_name")
@@ -106,23 +115,17 @@ Deno.serve(async (request: Request) => {
             console.error("Could not load the teacher's existing student directory.", directoryError);
             return jsonResponse(500, { error: "Could not load the existing students. Apply the latest database migration." }, configuredOrigin);
         }
+        const {data: visibleStudents, error: scopeError} = await userClient.rpc("student_directory");
+        if (scopeError) return jsonResponse(500, {error: "Apply migration 20261124_student_scope.sql before adding students."}, configuredOrigin);
+        const visibleIds = new Set((visibleStudents || []).filter((p: {id: string; student_scope: string; private_teacher_id: string | null}) => p.student_scope === "school" || (group.class_scope === "private" && p.private_teacher_id === group.teacher_id)).map((p: {id: string}) => p.id));
         return jsonResponse(200, {
-            students: [...new Map((students || []).map((student) => [String(student.student_user_id), student])).values()].map((student) => ({
+            students: [...new Map((students || []).filter((student) => visibleIds.has(student.student_user_id)).map((student) => [String(student.student_user_id), student])).values()].map((student) => ({
                 id: String(student.student_user_id),
                 email: String(student.email || ""),
                 displayName: String(student.display_name || "")
             }))
         }, configuredOrigin);
     }
-
-    let classQuery = adminClient.from("teacher_classes").select("id,teacher_id").eq("id", classId);
-    if (!isAdmin) classQuery = classQuery.eq("teacher_id", user.id);
-    const { data: group, error: classError } = await classQuery.maybeSingle();
-    if (classError) {
-        console.error("Could not verify class ownership.", classError);
-        return jsonResponse(500, { error: "Could not verify that this class belongs to you." }, configuredOrigin);
-    }
-    if (!group) return jsonResponse(404, { error: "Class not found." }, configuredOrigin);
 
     if (action === "add-existing") {
         let directoryQuery = adminClient.from("teacher_student_directory")
@@ -138,7 +141,7 @@ Deno.serve(async (request: Request) => {
         if (!existingStudent) return jsonResponse(404, { error: "This student is not in your student directory." }, configuredOrigin);
 
         const [{ data: profile, error: profileError }, { data: classStudents, error: membershipError }] = await Promise.all([
-            adminClient.from("profiles").select("role").eq("id", studentUserId).maybeSingle(),
+            adminClient.from("profiles").select("role,student_scope,private_teacher_id").eq("id", studentUserId).maybeSingle(),
             userClient.from("class_students").select("id,linked_user_id,email,display_name").eq("class_id", classId)
         ]);
         if (profileError || membershipError) {
@@ -147,6 +150,9 @@ Deno.serve(async (request: Request) => {
         }
         if (profile?.role !== "student") {
             return jsonResponse(409, { error: "Only a student account can be added to this class." }, configuredOrigin);
+        }
+        if (profile.student_scope === "private" && (group.class_scope !== "private" || profile.private_teacher_id !== group.teacher_id)) {
+            return jsonResponse(403, {error: "Private students can only join their teacher's personal classes."}, configuredOrigin);
         }
         const existingMembership = (classStudents || []).find((student) => student.linked_user_id === studentUserId);
         if (existingMembership) return jsonResponse(409, { error: "This student is already in the class." }, configuredOrigin);

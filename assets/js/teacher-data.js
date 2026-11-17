@@ -42,6 +42,9 @@
         fail(assignmentsResult.error, "Не удалось загрузить назначения уроков");
         fail(categoriesResult.error, "Не удалось загрузить категории уроков. Проверьте применение миграции 20261103_lesson_categories");
 
+        const { data: studentDirectory, error: directoryError } = await client.rpc("student_directory");
+        fail(directoryError, "Не удалось загрузить принадлежность учеников. Примените миграцию 20261124_student_scope.sql");
+        if (!Array.isArray(studentDirectory)) throw new Error("Некорректный ответ списка учеников.");
         const teacherIds = [...new Set(classesResult.data.map((group) => group.teacher_id))];
         const { data: profiles, error: profilesError } = teacherIds.length
             ? await client.from("profiles").select("id,first_name,last_name").in("id", teacherIds)
@@ -92,7 +95,7 @@
                 console.error("Could not initialize teacher workspace settings.", error));
         }
         return {
-            data: { classes, lessons, categories: categoriesResult.data.map((category) => category.name) },
+            data: { classes, lessons, studentDirectory: studentDirectory || [], categories: categoriesResult.data.map((category) => category.name) },
             migratedLegacy: false,
             workspaceOwnerId: userId,
             role: context.role,
@@ -253,8 +256,8 @@
         return invokeStudentFunction(client, { action: "invite", classId, displayName, email });
     }
 
-    async function listExistingStudents(client) {
-        const result = await invokeStudentFunction(client, { action: "list-existing" });
+    async function listExistingStudents(client, classId) {
+        const result = await invokeStudentFunction(client, { action: "list-existing", classId });
         if (!result || !Array.isArray(result.students)) {
             throw new Error("The existing-student list response is invalid.");
         }

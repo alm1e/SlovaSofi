@@ -217,6 +217,46 @@ const migrationPath = process.argv[3] || path.join(root,'supabase/migrations/202
  await asUser(2,async()=>{
   await assert.rejects(()=>db.query('select public.review_homework($1,$2,$3,$4)',[uid(61),uid(32),submittedAt,'Stale review']),/submission_changed/);
  });
+ await db.exec("select set_config('request.jwt.claim.sub','',false)");
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261124_student_scope.sql'),'utf8'));
+ assert.equal((await rows(`select student_scope from profiles where id='${uid(5)}'`))[0].student_scope,'school','Existing students default to school');
+ await db.exec(`insert into auth.users(id,email) values('${uid(306)}','personal@example.test'); insert into profiles(id,role,first_name) values('${uid(306)}','student','Personal');
+ insert into teacher_classes(id,teacher_id,name,class_scope) values('${uid(316)}','${uid(2)}','Personal pupil class','private');
+ insert into class_students(id,class_id,teacher_id,display_name,linked_user_id) values('${uid(336)}','${uid(316)}','${uid(2)}','Personal','${uid(306)}');
+ insert into class_lesson_assignments(class_id,lesson_id,teacher_id) values('${uid(316)}','${uid(21)}','${uid(2)}');
+ insert into student_lesson_progress(student_id,class_id,lesson_id,answers) values('${uid(336)}','${uid(316)}','${uid(21)}','{"a0":{"response":"personal answer"}}');`);
+ assert.equal((await rows(`select student_scope from profiles where id='${uid(306)}'`))[0].student_scope,'school','New pupils default to school');
+ await asUser(1,async()=>{
+  await db.query('select public.set_student_scope($1,$2,$3)',[uid(306),'private',uid(2)]);
+  assert.equal((await rows('select * from public.student_directory()')).filter(p=>p.id===uid(306)).length,1,'Admin sees private student');
+  await assert.rejects(()=>db.query('select public.set_student_scope($1,$2,$3)',[uid(5),'private',uid(2)]),/Сначала перенесите/);
+ });
+ await asUser(4,async()=>{
+  assert.equal((await rows(`select * from profiles where id='${uid(306)}'`)).length,0,'Director cannot read private student profile');
+  assert.equal((await rows('select * from public.student_directory()')).filter(p=>p.id===uid(306)).length,0,'Director cannot list private student');
+  assert.equal((await rows(`select * from class_students where linked_user_id='${uid(306)}'`)).length,0,'Director cannot read private roster');
+  assert.equal((await rows(`delete from teacher_classes where id='${uid(316)}' returning id`)).length,0,'Director cannot delete class');
+ });
+ await asUser(3,async()=>{
+  assert.equal((await rows('select * from public.student_directory()')).filter(p=>p.id===uid(306)).length,0,'Other teacher cannot list private student');
+  await assert.rejects(()=>db.query('select public.set_student_scope($1,$2,$3)',[uid(306),'school',null]),/Только администратор/);
+ });
+ await asUser(2,async()=>{
+  assert.equal((await rows('select * from public.student_directory()')).filter(p=>p.id===uid(306)).length,1,'Assigned teacher sees private student');
+  await assert.rejects(()=>rows(`select * from teacher_student_directory where teacher_id='${uid(2)}' and student_user_id='${uid(306)}'`),/permission denied/);
+  await assert.rejects(()=>db.exec(`insert into class_students(class_id,teacher_id,display_name,linked_user_id) values('${uid(12)}','${uid(2)}','Forbidden personal pupil','${uid(306)}')`),/Личного ученика/);
+ });
+ await asUser(1,async()=>{
+  await assert.rejects(()=>db.exec(`update teacher_classes set class_scope='school' where id='${uid(316)}'`),/В классе есть личные ученики/);
+ });
+ await asUser(2,async()=>{
+  assert.equal((await rows(`delete from teacher_classes where id='${uid(316)}' returning id`)).length,1,'Owner can delete class');
+  assert.equal((await rows(`select * from class_students where id='${uid(336)}'`)).length,0,'Class deletion cascades roster');
+  assert.equal((await rows(`select * from student_lesson_progress where student_id='${uid(336)}'`)).length,0,'Class deletion cascades its progress');
+  assert.equal((await rows(`select * from teacher_lessons where id='${uid(21)}'`)).length,1,'Class deletion preserves library lesson');
+ });
+ assert.equal((await rows(`select * from profiles where id='${uid(306)}'`)).length,1,'Class deletion preserves account');
+ console.log('PASS: Student school/private defaults, admin-only classification, director and other teacher privacy, owner access, incompatible memberships rejected without deleting progress, class delete authorization and account preservation.');
  console.log('PASS: Homework deadlines, submission/review workflow and isolation; version snapshots, restore/concurrency protection, immutable scoped audit log and actor attribution; shared lesson creation/editing and media uploads; PostgreSQL migration, existing-class privacy, default school / explicit personal, director read-only across classes/rosters/assignments/calendar/progress/recordings, stale-role isolation, teacher isolation, student membership and admin transfer.');
  await db.close();
 })().catch(e=>{console.error(e);process.exit(1);});

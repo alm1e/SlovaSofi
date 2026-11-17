@@ -682,7 +682,7 @@
                 const tokenIndex = remaining.indexOf(word);
                 if (tokenIndex >= 0) remaining.splice(tokenIndex, 1);
             });
-            body = `<p class="student-muted">${escapeHtml(text("addWords"))}</p><div class="student-word-bank" data-word-bank>${remaining.map((word) => `<button class="student-word-token" type="button" draggable="true" data-word-token="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}</div><div class="student-answer-zone" data-word-answer aria-label="${escapeHtml(text("yourAnswer"))}">${selected.map((word) => lockedWords.includes(word) ? `<span class="student-word-token selected is-locked" data-locked-word="${escapeHtml(word)}" aria-label="${escapeHtml(text("locked"))}">${escapeHtml(word)} 🔒</span>` : `<button class="student-word-token selected" type="button" draggable="true" data-remove-word="${escapeHtml(word)}">${escapeHtml(word)} ×</button>`).join("")}</div>`;
+            body = `<div class="sequence-exercise ${activity.tokens.every(word => Array.from(String(word)).length === 1) ? 'sequence-letters' : ''}"><p class="student-muted">${escapeHtml(text("addWords"))}</p><div class="student-word-bank" data-word-bank>${remaining.map((word) => `<button class="student-word-token" type="button" draggable="true" data-word-token="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}</div><div class="student-answer-zone" data-word-answer data-token-count="${activity.tokens.length}" aria-label="${escapeHtml(text("yourAnswer"))}">${selected.map((word) => lockedWords.includes(word) ? `<span class="student-word-token selected is-locked" data-locked-word="${escapeHtml(word)}" aria-label="${escapeHtml(text("locked"))}">${escapeHtml(word)} 🔒</span>` : `<button class="student-word-token selected" type="button" draggable="true" data-remove-word="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}${Array.from({length:Math.max(0,activity.tokens.length-selected.length)}, () => '<span class="sequence-slot" aria-hidden="true"></span>').join('')}</div></div>`;
             controls = `<input type="hidden" data-answer-kind="words">`;
         } else if (activity.type === "fill-blank") {
             const savedParts = Array.isArray(savedResponse) ? [...savedResponse] : [];
@@ -1163,6 +1163,8 @@
     }
 
     function shouldAutoCheckAnswer(activity, response) {
+        if (activity?.type === "drag-words" && Array.isArray(activity.tokens)
+            && (!Array.isArray(response) || response.length !== activity.tokens.length)) return false;
         return Boolean(activity && activity.type !== "pronunciation-recording" && activity.type !== "find-error"
             && (activity.gradable || activity.reviewRequired) && hasAnswerResponse(response));
     }
@@ -1253,9 +1255,15 @@
         replacement.draggable = true;
         if (selected) replacement.dataset.removeWord = word;
         else replacement.dataset.wordToken = word;
-        replacement.textContent = selected ? `${word} ×` : word;
+        replacement.textContent = word;
+        replacement.setAttribute('aria-label', selected ? `${word} — ${text("addWords")}` : word);
         button.replaceWith(replacement);
         target.append(replacement);
+        const zone = activity.querySelector('[data-word-answer]');
+        zone.querySelectorAll('.sequence-slot').forEach(slot => slot.remove());
+        const count = Number(zone.dataset.tokenCount || 0) - zone.querySelectorAll('[data-remove-word],[data-locked-word]').length;
+        for (let i=0;i<count;i++) { const slot=document.createElement('span'); slot.className='sequence-slot'; slot.setAttribute('aria-hidden','true'); zone.append(slot); }
+        replacement.focus({preventScroll:true});
     }
 
     function stopRecording(activityElement) {
