@@ -2327,3 +2327,30 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 [data-homework-panel] input, [data-homework-panel] select, [data-homework-panel] textarea { max-width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--white); color: var(--ink); padding: 10px; }
 [data-homework-panel] textarea { min-height: 90px; }
 .class-card-meta { flex-wrap: wrap; gap: 10px; }
+
+/* Lesson content must shrink with its column instead of using a long word's width. */
+.preview-activity-header h3{min-width:0;overflow-wrap:anywhere}
+.preview-answer-ghost{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+:is(.preview-activity,.student-activity) :is(.gap-word-bank button,.preview-word){max-width:100%;white-space:normal;overflow-wrap:anywhere}
+:is(.preview-activity,.student-activity) :is(.preview-options,.student-answer-options,.gap-board,.gap-content,.flashcard-deck,.flashcard-deck-stage){min-width:0;max-width:100%}
+@media(max-width:700px){
+    :is(.preview-activity,.student-activity) :is(.button,.preview-word,.student-word-token,.preview-order-actions button,.student-order-actions button){min-height:40px;white-space:normal;overflow-wrap:anywhere;max-width:100%}
+    .preview-activity :is(.preview-material,.preview-question-heading,.preview-text-answer){min-width:0;max-width:100%;overflow-wrap:anywhere}
+    .preview-activity .preview-option{min-width:0}
+    .preview-activity .preview-order-list{padding-left:18px}
+    .preview-activity .preview-order-actions{flex-shrink:0}
+    .preview-activity :is(.preview-media,.preview-video-embed){min-width:0;max-width:100%}
+}
+/* Rich text and centred flashcard faces also need a bounded inline size. */
+.preview-activity :is(.activity-rich-text,.preview-rich-text){min-width:0;max-width:100%;overflow-wrap:anywhere}
+.preview-flashcard :is(strong,button){min-width:0;max-width:100%;overflow-wrap:anywhere;white-space:normal}
+.builder-block-editor{overflow-wrap:anywhere}
+.preview-activity .preview-inline-input{min-width:0;max-width:calc(100% - 20px);box-sizing:border-box}
+@media(max-width:700px){
+    .builder-block-editor :is(textarea,input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]):not([type=file])){font-size:16px}
+}
+
+:is(.activity-description,.activity-helper,.preview-instruction,.preview-material){min-width:0;max-width:100%;overflow-wrap:anywhere}
+@media(max-width:700px){
+    .lesson-workspace-footer{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+}

@@ -14,6 +14,8 @@ html=html.replace('</body>','<pre id="qa-log"></pre></body>');
 const child=html.replace('</body>',"<script>openLessonEditor(data.lessons[0],'qa-intro',0);</script></body>");
 write('teacher-ui.js',read('tests/browser/teacher-ui.js').replace('__QA_CHILD_HTML__',JSON.stringify(child)));
 write('teacher.html',html.replace('</body>',`<script src="${url('teacher-ui.js')}"></script></body>`));
+write('live-photo-ui.js',read('tests/browser/live-photo-ui.js'));
+write('live-photo.html',html.replace('</body>',`<script src="${url('live-photo-ui.js')}"></script></body>`));
 let student=read('assets/js/student.js');
 const studentStart='start().catch((error) => {\n        console.error("Could not start the student dashboard.", error);\n        showError(text("loadError"), error);\n    });';
 if(!student.includes(studentStart))throw Error('Student startup changed');
@@ -35,6 +37,14 @@ const pages=${JSON.stringify(publicPages).replace(/</g,'\\u003c')},results=[],re
 }report.innerText=results.join('\\n')+'\\nTOTAL '+results.length+'; FAIL '+results.filter(r=>r.startsWith('FAIL')).length;})();</script>`);
 write('photo-ui.js',read('tests/browser/photo-ui.js'));
 write('photo.html',`<!doctype html><html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="${pathToFileURL(root).href}/assets/css/photo-editor.css"><body style="margin:16px;font-family:sans-serif"><div id="photo-fixture"></div><script src="${pathToFileURL(root).href}/assets/js/photo-annotations.js"></script><script src="${pathToFileURL(root).href}/assets/js/photo-gap-detector.js"></script><script src="${pathToFileURL(root).href}/assets/js/photo-editor.js"></script><script src="photo-ui.js"></script></body></html>`);
+const mobileFixtures=require('./mobile-block-fixtures.cjs')(root);
+write('mobile-block-fixtures.js','window.MobileBlockFixtures='+JSON.stringify(mobileFixtures)+';');
+for(const name of ['mobile-block-audit.js','mobile-teacher-ui.js'])write(name,read('tests/browser/'+name));
+const mobileScripts=`<script src="${url('mobile-block-fixtures.js')}"></script><script src="${url('mobile-block-audit.js')}"></script>`;
+write('mobile-teacher.html',html.replace('</body>',mobileScripts+`<script src="${url('mobile-teacher-ui.js')}"></script></body>`));
+const mobileStudent=read('assets/js/student.js').replace(studentStart,read('tests/browser/mobile-student-ui.js'));
+write('mobile-student-fixture.js',mobileStudent);
+write('mobile-student.html',isolate('student.html').replace(/src="[^"]*\/assets\/js\/student.js"/,`src="${url('mobile-student-fixture.js')}"`).replace('</head>',mobileScripts+'</head>'));
 const browser=process.env.QA_BROWSER||'C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe';
 const port=19346,proc=spawn(browser,['--headless=new','--no-first-run','--no-default-browser-check','--disable-gpu','--allow-file-access-from-files',`--remote-debugging-port=${port}`,`--user-data-dir=${path.join(out,'profile')}`],{stdio:'ignore',windowsHide:true});
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
@@ -49,14 +59,23 @@ const keepAlive=setInterval(()=>{},1000);
  ws.onmessage=e=>{const r=JSON.parse(e.data),p=pending.get(r.id);if(p){pending.delete(r.id);r.error?p.reject(Error(r.error.message)):p.resolve(r.result);}};
  await send('Page.enable');
  const reports=[];
- for(const [name,width] of [['teacher',1280],['student',1280],['student',390],['public',1280],['photo',1280],['photo',390]]){
-  await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false});
+ for(const [name,width] of [['teacher',1280],['student',1280],['student',390],['public',1280],['photo',1280],['photo',390],['live-photo',1280],['live-photo',390],...['mobile-teacher','mobile-student'].flatMap(name=>[320,360,390,430,768].map(width=>[name,width]))].filter(([name,width])=>(!process.env.QA_PAGES||process.env.QA_PAGES.split(',').includes(name))&&(!process.env.QA_WIDTHS||process.env.QA_WIDTHS.split(',').includes(String(width))))){
+  await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:name.startsWith('mobile-')});
+  await send('Emulation.setTouchEmulationEnabled',{enabled:name.startsWith('mobile-'),maxTouchPoints:1});
   await send('Page.navigate',{url:url(name+'.html')});
   if(name==='student'){for(let i=0;i<100;i++){if(await evaluate("!![...document.querySelectorAll('button')].find(b=>b.textContent.includes('QA'))"))break;await delay(100);}await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.includes('QA')).click()");}
-  let result='';for(let i=0;i<300;i++){result=await evaluate("document.body?.innerText||''");if(/TOTAL \d+; FAIL \d+/.test(result))break;await delay(100);}
+  let result='';for(let i=0;i<600;i++){result=await evaluate("document.body?.innerText||''");if(/TOTAL \d+; FAIL \d+/.test(result))break;await delay(100);}
   const report=await evaluate("document.querySelector('#qa-report')?.innerText||''");
   if(name==='photo'){const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(out,`photo-${width}.png`),Buffer.from(shot.data,'base64'));}
-  const lines=(report||result).split('\n').filter(l=>/^(PASS |FAIL |TOTAL )/.test(l));reports.push({page:name,width,lines});console.log(name+' '+width,lines.filter(l=>/^(FAIL |TOTAL )/.test(l)).join('\n'));if(!lines.some(l=>l.startsWith('TOTAL')))throw Error(name+' checks did not finish');
+  if(name==='live-photo')for(const theme of ['light','dark']){
+   await evaluate(`document.documentElement.dataset.theme='${theme}';document.querySelector('[data-live-photo-answer]')?.scrollIntoView({block:'start'});`);
+   await delay(100);const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(out,`live-photo-${width}-${theme}.png`),Buffer.from(shot.data,'base64'));
+  }
+  if(name.startsWith('mobile-')&&width===390)for(const theme of ['light','dark'])for(const type of ['drag-words','image','table']){
+   await evaluate(`(async()=>{document.querySelector('#qa-report').hidden=true;const blocks=MobileBlockFixtures.${name==='mobile-teacher'?'raw':'safe'};const index=blocks.findIndex(block=>block.type==='${type}');const target=await showMobileBlock(index,'${theme}');target.scrollIntoView({block:'start'});scrollBy(0,-90);})()`);
+   await delay(50);const shot=await send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(out,`${name}-${type}-${theme}.png`),Buffer.from(shot.data,'base64'));
+  }
+  const lines=(report||result).split('\n').filter(l=>/^(PASS |FAIL |TOTAL )/.test(l));reports.push({page:name,width,lines});console.log(name+' '+width,lines.filter(l=>/^(FAIL |TOTAL )/.test(l)).join('\n'));if(!lines.some(l=>l.startsWith('TOTAL')))throw Error(name+' checks did not finish: '+JSON.stringify(await evaluate('({state:document.readyState,progress:window.qaMobileProgress,errors:window.qaErrors})')));
  }
  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(reports,null,2));
  if(reports.some(r=>r.lines.some(l=>l.startsWith('FAIL '))))process.exitCode=1;

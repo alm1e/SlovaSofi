@@ -16,3 +16,5 @@
 .lesson-fill-text .activity-rich-text p { margin: 0 0 12px; }
 .lesson-fill-text .activity-rich-text li { padding: 4px 0; }
 .lesson-fill-text input { vertical-align: baseline; min-width: 65px; max-width: min(180px, 65vw); border-radius: 8px; }
+
+.activity-note-body{min-width:0;overflow-wrap:anywhere}

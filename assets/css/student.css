@@ -493,3 +493,30 @@
 
 .student-platform [data-activity-type="true-false"] .student-answer-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .student-platform [data-activity-type="true-false"] .student-answer-option { min-width: 0; }
+
+/* Keep exercise grid items inside their available column, including long words. */
+.student-platform .student-activity-list{grid-template-columns:minmax(0,1fr)}
+.student-platform :is(.student-activity,.student-activity-group,.student-activity-subitems,.student-text-block,.student-answer-options,.student-flashcard-card,.student-flashcard-list){min-width:0;max-width:100%}
+.student-platform :is(.student-activity-main h3,.student-activity-group-heading h3,.student-text-block,.student-answer-option>span){min-width:0;overflow-wrap:anywhere}
+.student-platform .student-activity-actions{flex-wrap:wrap}
+.student-platform .student-answer-option>span{white-space:normal}
+.student-platform :is(.student-table-wrap,.student-open-answer,.student-activity-media){min-width:0;max-width:100%}
+@media(max-width:700px){
+    .student-platform .student-section{padding:12px}
+    .student-platform .student-activity{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;padding:12px}
+    .student-platform .student-activity-main{display:contents}
+    .student-platform .student-activity-main>h3{grid-column:2;margin:3px 0 8px}
+    .student-platform .student-activity-main>:not(h3){grid-column:1 / -1;min-width:0;max-width:100%}
+    .student-platform .student-activity-number{width:28px;height:28px}
+    .student-platform .student-activity-group{padding:10px}
+    .student-platform .student-activity-group-heading h3{margin-top:2px}
+    .student-platform .student-activity-main>:is(input,textarea,select):not([type=hidden]){font-size:16px}
+    .student-platform .student-sections-panel{transform:none;visibility:hidden;opacity:0;pointer-events:none;transition:opacity .2s ease,visibility .2s ease}
+    .student-platform .student-sections-panel.is-open{transform:none;visibility:visible;opacity:1;pointer-events:auto}
+}
+@media(max-width:700px){
+    .student-platform .student-activity-main :is(textarea,select,input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range]):not([type=file])){font-size:16px}
+}
+@media(max-width:700px){
+    .student-platform .student-workspace-footer{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+}
