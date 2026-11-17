@@ -789,18 +789,20 @@
         }
         const incompleteResponse = Array.isArray(savedResponse) && ["fill-blank", "table", "match", "columns", "one-of-many"].includes(activity.type)
             && savedResponse.some((value) => !value.trim());
-        const feedback = saved?.draft ? text("progressSaved") : incompleteResponse ? ""
+        const photoPending=activity.type==='image'&&pendingDrafts.has(activityDraftKey(index,null));
+        const feedback = photoPending ? text(saveState==='error'?'answerPending':'savingAnswer') : saved?.draft ? text("progressSaved") : incompleteResponse ? ""
             : saved?.correct === true ? text("correct")
                 : saved?.correct === false ? text("incorrect")
                     : saved?.correct === null ? text("submitted") : "";
         const isQuestion = Number.isInteger(questionIndex);
         const canSubmit = activity.type!=="find-error" && Boolean(activity.gradable || activity.reviewRequired);
-        const feedbackMarkup = canSubmit || activity.type === "flashcards"
+        const feedbackMarkup = canSubmit || activity.type === "flashcards" || activity.type === "image"
             ? `<p class="student-answer-feedback ${!incompleteResponse && saved?.correct === true ? "is-correct" : !incompleteResponse && saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml([feedback, saved?.feedback].filter(Boolean).join(" "))}</p>`
             : "";
+        const photoRetry = activity.type === 'image' ? `<button type="button" class="button secondary small" data-retry-answer-save data-photo-retry-save ${photoPending&&saveState==='error'?'':'hidden'}>${escapeHtml(text('retrySave'))}</button>` : '';
         const recordingSubmit = activity.type === "pronunciation-recording"
             ? `<button class="button small" type="button" data-submit-answer>${escapeHtml(text("save"))}</button>` : "";
-        const submitMarkup = !canSubmit ? feedbackMarkup
+        const submitMarkup = !canSubmit ? feedbackMarkup + photoRetry
             : isQuestion ? `${controls}${recordingSubmit}`
                 : `<div class="student-activity-actions">${controls}${recordingSubmit}</div>${feedbackMarkup}`;
         const questionId = isQuestion ? String(activity.questionId || `legacy-${questionIndex}`) : "";
@@ -1056,6 +1058,7 @@
             item.dataset.activityIndex === String(activityIndex)
             && (questionId ? item.dataset.questionId === questionId : !item.dataset.questionId));
         const feedback = activity?.querySelector("[data-answer-feedback]");
+        const retry=activity?.querySelector('[data-photo-retry-save]');if(retry)retry.hidden=!isError;
         if (!feedback) return;
         feedback.textContent = message;
         feedback.className = `student-answer-feedback${isError ? " is-incorrect" : ""}`;
@@ -1110,6 +1113,13 @@
                 response: snapshot,
                 ...identity
             });
+            if(answerActivity?.type==='image'){
+                const key=activityProgressKey(activity,activityIndex);
+                const entry=result.answers?.[key]||result.answers?.[legacyActivityProgressKey(activity,activityIndex)];
+                if(typeof entry?.response!=='string'||entry.response!==snapshot){
+                    throw new Error(language==='ru'?'Сервер не подтвердил сохранение текста на фото. Обновите student-lessons и повторите сохранение.':language==='ua'?'Сервер не підтвердив збереження тексту на фото. Оновіть student-lessons і повторіть.':'The server did not confirm the photo answer. Update student-lessons and retry saving.');
+                }
+            }
             draftStore.acknowledge(backup);
             updateLessonProgress(lessonId, result.answers, result.completed);
             const pending = pendingDrafts.get(draftKey);
@@ -1142,7 +1152,10 @@
             if (!pendingDrafts.has(draftKey)) pendingDrafts.set(draftKey, { activityIndex, questionId, response: snapshot });
             updateSaveStatus("error");
             console.error("Could not save the student answer draft.", error);
-            setDraftFeedback(lessonId, activityIndex, questionId, error.message || text("loadError"), true);
+            const detail=answerActivity?.type==='image'&&/does not accept a saved answer|Invalid drawing/i.test(error.message||'')
+                ? (language==='ru'?'Сервер не принял пометки на фото. Обновите функцию student-lessons и нажмите «Повторить сохранение».':language==='ua'?'Сервер не прийняв позначки. Оновіть student-lessons і повторіть збереження.':'The server rejected the photo answer. Update student-lessons and retry saving.')
+                : error.message || text("loadError");
+            setDraftFeedback(lessonId, activityIndex, questionId, detail, true);
             throw error;
         }).finally(() => { savingAnswers -= 1; });
         draftSaveQueue = save;

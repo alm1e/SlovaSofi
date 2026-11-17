@@ -42,6 +42,7 @@
         if(JSON.stringify(result).length>MAX_BYTES)throw Error('Drawing is too large');return result;
     }
     function read(value){try{return validate(value||{});}catch{return {};}}
-    root.SlovaPhotoAnnotations={validate,read,MAX_BYTES};
+    function hasContent(value){return Object.values(read(value)).some(ops=>ops.some(op=>op.type==='pen'?op.points.length>0:typeof op.text==='string'&&op.text.trim().length>0));}
+    root.SlovaPhotoAnnotations={validate,read,hasContent,MAX_BYTES};
     if(typeof module!=='undefined')module.exports=root.SlovaPhotoAnnotations;
 })(typeof window!=='undefined'?window:globalThis);

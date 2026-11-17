@@ -780,7 +780,7 @@ const activityQuestionLabels = SlovaI18n.locales({
 const liveAnswerActivityTypes = new Set([
     "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
     "sentence-order", "true-false", "table", "match", "columns", "open-answer",
-    "pronunciation-recording", "listening-questions", "find-error"
+    "pronunciation-recording", "listening-questions", "find-error", "image"
 ]);
 
 function activityQuestionText(key) {
@@ -1038,6 +1038,7 @@ let liveProgressKey = "";
 let liveProgressGeneration = 0;
 let liveProgressStatus = "idle";
 let liveProgressError = "";
+const teacherPhotoDrafts=new Map();
 let activeSelectDropdown = null;
 let selectDropdownSequence = 0;
 const enhancedSelectRefreshers = new WeakMap();
@@ -2915,7 +2916,12 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         const images = window.slovaGallery.parse(content, true);
         body = images.length ? (activity.settings?.imageAnnotations && window.SlovaPhotoEditor ? window.SlovaPhotoEditor.markup(images,activity.settings.imageAnnotations,{},false,currentLanguage) : window.slovaGallery.html(images, activity.prompt || "", "preview-image")) : `<p class="preview-material">${escapeHtml(displayContent || previewText("imageError"))}</p>`;
         if(images.length && lessonWorkspaceMode === 'preview' && hasPermission('edit_lessons')){
-            body = `<div data-photo-live-index="${index}">${window.SlovaPhotoEditor.markup(images,{},activity.settings?.imageAnnotations||{},true,currentLanguage,{direct:true})}<button type="button" class="button secondary small" data-save-photo-live>${currentLanguage==='ru'?'Сохранить пометки':currentLanguage==='ua'?'Зберегти позначки':'Save annotations'}</button><span data-photo-live-status role="status"></span></div>`;
+            const photoKey=`${workspaceLessonId}:${lessonWorkspaceTab}:${lessonWorkspaceTab==='homework'?activeHomeworkSectionId:activeLessonSectionId}:${index}`;
+            body = `<div data-photo-live-index="${index}">${window.SlovaPhotoEditor.markup(images,{},teacherPhotoDrafts.get(photoKey)||activity.settings?.imageAnnotations||{},true,currentLanguage,{direct:true})}<button type="button" class="button secondary small" data-save-photo-live>${currentLanguage==='ru'?'Сохранить пометки':currentLanguage==='ua'?'Зберегти позначки':'Save annotations'}</button><span data-photo-live-status role="status"></span></div>`;
+        }
+        if(liveAnswerMarkup.includes('data-live-photo-answer')){
+            body=liveAnswerMarkup+`<details class="photo-teacher-notes"><summary>${currentLanguage==='ru'?'Пометки учителя':currentLanguage==='ua'?'Позначки вчителя':'Teacher annotations'}</summary>${body}</details>`;
+            liveAnswerMarkup='';
         }
         checkable = false;
     } else if (type === "audio" || type === "video") {
@@ -3200,7 +3206,9 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
         const activity=targetSection?.activities[Number(host.dataset.photoLiveIndex)];
         if(!activity||!hasPermission('edit_lessons'))return;
         const status=host.querySelector('[data-photo-live-status]');let revision=0;
-        window.SlovaPhotoEditor.bind(host,{language:currentLanguage,change:()=>{revision++;status.textContent=currentLanguage==='ru'?' Есть несохранённые пометки':' Unsaved annotations';}});
+        const photoKey=`${targetLesson.id}:${lessonWorkspaceTab}:${sectionId}:${host.dataset.photoLiveIndex}`;
+        if(teacherPhotoDrafts.has(photoKey))status.textContent=currentLanguage==='ru'?' Есть несохранённые пометки':' Unsaved annotations';
+        window.SlovaPhotoEditor.bind(host,{language:currentLanguage,change:annotations=>{teacherPhotoDrafts.set(photoKey,annotations);revision++;status.textContent=currentLanguage==='ru'?' Есть несохранённые пометки':' Unsaved annotations';}});
         host.querySelector('[data-save-photo-live]')?.addEventListener('click',async event=>{
             const button=event.currentTarget,snapshot=window.SlovaPhotoEditor.value(host),version=revision;
             button.disabled=true;status.textContent=currentLanguage==='ru'?' Сохранение…':' Saving…';
@@ -3209,6 +3217,7 @@ function bindLessonPreviewActions(container = pageContent, lesson = null, sectio
             if(lessonWorkspaceTab==='homework')targetLesson.homeworkSections=sections;else targetLesson.sections=sections;
             targetLesson.activities=normalizeLessonSections(targetLesson).flatMap(item=>item.activities);
             const saved=persist()&&await waitForWorkspaceSave();
+            if(saved&&JSON.stringify(teacherPhotoDrafts.get(photoKey))===JSON.stringify(snapshot))teacherPhotoDrafts.delete(photoKey);
             status.textContent=version!==revision?(currentLanguage==='ru'?' Есть несохранённые пометки':' Unsaved annotations'):saved?(currentLanguage==='ru'?' Сохранено':' Saved'):(currentLanguage==='ru'?' Не сохранено. Нажмите ещё раз.':' Not saved. Retry.');
             button.disabled=false;
         });
@@ -3858,7 +3867,9 @@ function stopLiveProgressSubscription() {
     }
 }
 
-function applyLiveProgressEvent(rows, payload, classId) {
+function applyLiveProgressEvent(rows, payload, classId, lessonId = null) {
+    const eventLesson=payload.eventType==="DELETE"?payload.old?.lesson_id:payload.new?.lesson_id;
+    if(lessonId&&eventLesson&&eventLesson!==lessonId)return;
     if (payload.eventType === "DELETE") {
         const studentId = payload.old?.student_id;
         if (studentId) rows.delete(studentId);
@@ -3892,11 +3903,36 @@ function ensureLiveProgressSubscription(lesson, group) {
     let channelReady = false;
     let channelFailed = false;
     const bufferedEvents = [];
+    function refreshView(){
+        const root=typeof pageContent==='undefined'?null:pageContent;
+        const active=typeof document==='undefined'?null:document.activeElement;
+        const focusedHost=active?.closest?.('[data-photo-live-index]');
+        const focus=focusedHost&&active.dataset?.photoFieldAnswer?{index:focusedHost.dataset.photoLiveIndex,id:active.dataset.photoFieldAnswer,start:active.selectionStart,end:active.selectionEnd}:null;
+        const expanded=root?[...root.querySelectorAll('[data-photo-live-index]')].filter(host=>host.closest('.photo-teacher-notes')?.open).map(host=>host.dataset.photoLiveIndex):[];
+        render();
+        expanded.forEach(index=>{const panel=root?.querySelector(`[data-photo-live-index="${index}"]`)?.closest('.photo-teacher-notes');if(panel)panel.open=true;});
+        if(focus){const input=root?.querySelector(`[data-photo-live-index="${focus.index}"] [data-photo-field-answer="${focus.id}"]`);input?.focus({preventScroll:true});input?.setSelectionRange(focus.start,focus.end);}
+    }
+    let snapshotGeneration=0;
+    function loadSnapshot(){
+        const ticket=++snapshotGeneration;
+        snapshotLoaded=false;bufferedEvents.length=0;
+        return api.loadLessonProgress(client,group.id,lesson.id).then(rows=>{
+            if(generation!==liveProgressGeneration||ticket!==snapshotGeneration)return;
+            liveProgressRows=new Map(rows.map(progress=>[progress.student_id,progress]));
+            bufferedEvents.forEach(payload=>applyLiveProgressEvent(liveProgressRows,payload,group.id,lesson.id));
+            bufferedEvents.length=0;snapshotLoaded=true;
+            if(channelReady)updateStatus('ready');else if(channelFailed)updateStatus('error',liveProgressError);else updateStatus('connecting');
+        }).catch(error=>{
+            if(generation!==liveProgressGeneration||ticket!==snapshotGeneration)return;
+            updateStatus('error',error.message||'');
+        });
+    }
     const updateStatus = (status, error = "") => {
         if (generation !== liveProgressGeneration) return;
         liveProgressStatus = status;
         liveProgressError = error;
-        render();
+        refreshView();
     };
     const handleEvent = (payload) => {
         if (generation !== liveProgressGeneration) return;
@@ -3904,8 +3940,8 @@ function ensureLiveProgressSubscription(lesson, group) {
             bufferedEvents.push(payload);
             return;
         }
-        applyLiveProgressEvent(liveProgressRows, payload, group.id);
-        render();
+        applyLiveProgressEvent(liveProgressRows, payload, group.id,lesson.id);
+        refreshView();
     };
 
     try {
@@ -3914,7 +3950,7 @@ function ensureLiveProgressSubscription(lesson, group) {
             if (status === "SUBSCRIBED") {
                 channelReady = true;
                 channelFailed = false;
-                if (snapshotLoaded) updateStatus("ready");
+                loadSnapshot();
             } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
                 channelFailed = true;
                 updateStatus("error", error?.message || status);
@@ -3928,22 +3964,7 @@ function ensureLiveProgressSubscription(lesson, group) {
         return;
     }
 
-    api.loadLessonProgress(client, group.id, lesson.id).then((rows) => {
-        if (generation !== liveProgressGeneration) return;
-        liveProgressRows = new Map(rows.map((progress) => [progress.student_id, progress]));
-        bufferedEvents.forEach((payload) => applyLiveProgressEvent(liveProgressRows, payload, group.id));
-        bufferedEvents.length = 0;
-        snapshotLoaded = true;
-        if (channelReady) updateStatus("ready");
-        else if (channelFailed) updateStatus("error", liveProgressError);
-        else updateStatus("connecting");
-    }).catch((error) => {
-        if (generation !== liveProgressGeneration) return;
-        liveProgressStatus = "error";
-        liveProgressError = error.message || "";
-        console.error("Could not load the current student answers.", error);
-        render();
-    });
+    loadSnapshot();
 }
 
 function activityProgressKey(activity, index) {
@@ -4095,7 +4116,11 @@ function liveStudentAnswerProgress(lesson, studentId, progressIndexes) {
                 || (questionId && legacyKey ? answers[`${legacyKey}.q${questionId}`] : null)
                 || ((questionIndex === 0 || !questionId) && legacyKey ? answers[legacyKey] : null);
             const response = answer?.response;
-            const hasResponse = Array.isArray(response)
+            const hasResponse = activity.type==='image'
+                ? Boolean(window.SlovaPhotoAnnotations?.hasContent(response))
+                : response&&typeof response==='object'&&!Array.isArray(response)
+                ? Boolean(String(response.text||'').trim()||(Array.isArray(response.attachments)&&response.attachments.some(url=>typeof url==='string'&&url.trim())))
+                : Array.isArray(response)
                 ? response.some((item) => typeof item === "string" && item.trim())
                 : typeof response === "string" && Boolean(response.trim());
             if (hasResponse) answered += 1;
@@ -4118,10 +4143,12 @@ function renderLiveAnswerPanel(student, activity, progressIndex, questionId = nu
         && /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.(webm|ogg|mp4|wav)$/i.test(answer.response)
         ? answer.response
         : "";
-    const photoAnswer = activity.type === 'image' && answer?.response && window.SlovaPhotoEditor
-        ? window.SlovaPhotoEditor.markup(window.slovaGallery.parse(activity.content),activity.settings?.imageAnnotations||{},window.SlovaPhotoAnnotations.read(answer.response),false,currentLanguage) : '';
-    const response = activity.type === 'image' ? '' : recordingPath ? liveStudentText("recording") : formatLiveResponse(activity, answer?.response);
-    const answerStatus = answer
+    const photoAnswer = activity.type === 'image' && window.SlovaPhotoEditor
+        ? window.SlovaPhotoEditor.markup(window.slovaGallery.parse(activity.content),activity.settings?.imageAnnotations||{},window.SlovaPhotoAnnotations.read(answer?.response),false,currentLanguage) : '';
+    const response = activity.type === 'image' ? (window.SlovaPhotoAnnotations?.hasContent(answer?.response)?(currentLanguage==='ru'?'Пометки на фото':currentLanguage==='ua'?'Позначки на фото':'Photo answer'):'') : recordingPath ? liveStudentText("recording") : formatLiveResponse(activity, answer?.response);
+    const answerStatus = activity.type==='image'
+        ? (window.SlovaPhotoAnnotations?.hasContent(answer?.response)?`<span class="live-answer-status is-submitted">${currentLanguage==='ru'?'Сохранено':currentLanguage==='ua'?'Збережено':'Saved'}</span>`:'')
+        : answer
         ? `<span class="live-answer-status ${answer.draft ? "is-draft" : "is-submitted"}">${answer.draft ? lessonSectionText("liveDraft") : lessonSectionText("liveSubmitted")}</span>`
         : "";
     const name = student?.name || lessonSectionText("liveNoStudents");
@@ -4139,7 +4166,7 @@ function renderLiveAnswerPanel(student, activity, progressIndex, questionId = nu
         </details>`
         : "";
     const teacherFeedback = answer?.teacher_feedback ? `<small class="live-answer-teacher-feedback">${escapeHtml(answer.teacher_feedback)}</small>` : "";
-    return `<div class="live-answer-inline ${answerTone}" aria-label="${escapeHtml(name)}"><span class="live-answer-avatar" aria-hidden="true">${escapeHtml(name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2))}</span><strong>${escapeHtml(name)}</strong>${answerStatus}<span class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</span>${recordingPath ? `<button class="button secondary small" type="button" data-play-recording="${escapeHtml(recordingPath)}">${escapeHtml(liveStudentText("playRecording"))}</button>` : ""}<span data-recording-player></span>${teacherFeedback}${reviewForm}${photoAnswer}</div>`;
+    return `<div ${activity.type==='image'?'data-live-photo-answer':''} class="live-answer-inline ${answerTone}" aria-label="${escapeHtml(name)}"><span class="live-answer-avatar" aria-hidden="true">${escapeHtml(name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2))}</span><strong>${escapeHtml(name)}</strong>${answerStatus}<span class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</span>${recordingPath ? `<button class="button secondary small" type="button" data-play-recording="${escapeHtml(recordingPath)}">${escapeHtml(liveStudentText("playRecording"))}</button>` : ""}<span data-recording-player></span>${teacherFeedback}${reviewForm}${photoAnswer}</div>`;
 }
 
 function renderLiveMonitor(lesson, progressIndexes) {

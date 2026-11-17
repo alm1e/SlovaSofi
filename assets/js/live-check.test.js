@@ -178,3 +178,29 @@ test("failed error-finding events retain a draft without replaying the grading e
     assert.equal(ctx.pendingDrafts.size, 0);
     assert.equal(ctx.draftStore.list("student", "lesson").length, 0);
 });
+
+test('photo autosave requires the exact acknowledged response before clearing local recovery',async()=>{
+ const {ctx,element}=studentContext();ctx.language='ru';ctx.openedLesson.activities=[{type:'image',id:'photo',index:0}];ctx.activityProgressKey=()=> 'photo-key';ctx.legacyActivityProgressKey=()=>null;
+ element.response=JSON.stringify({'https://example.test/photo.png':[{type:'input',id:'gap',x:100,y:200,w:80,h:35,text:'á'}]});
+ ctx.invokeLessonApi=async()=>({answers:{},completed:false});await assert.rejects(()=>ctx.queueDraftSave('lesson','0',0,null,element.response),/не подтвердил/);
+ assert.equal(ctx.pendingDrafts.size,1);assert.equal(ctx.draftStore.list('student','lesson').length,1);assert.equal(ctx.saveState,'error');
+ ctx.invokeLessonApi=async payload=>({answers:{'photo-key':{response:payload.response,correct:null,draft:true}},completed:false});await ctx.queueDraftSave('lesson','0',0,null,element.response);
+ assert.equal(ctx.pendingDrafts.size,0);assert.equal(ctx.draftStore.list('student','lesson').length,0);assert.equal(ctx.saveState,'saved');
+});
+test('Realtime snapshots buffer photo changes and reconnect reloads missed answers without accepting stale reads',async()=>{
+ const reads=[],listeners={};let renders=0;
+ const api={subscribeLessonProgress(client,id,event,status){listeners.event=event;listeners.status=status;return {};},loadLessonProgress(){return new Promise((resolve,reject)=>reads.push({resolve,reject}));}};
+ const ctx=vm.createContext({console,Map,liveProgressGeneration:0,liveProgressChannel:null,liveProgressKey:'',liveProgressRows:new Map(),liveProgressStatus:'idle',liveProgressError:'',currentUser:{id:'teacher'},window:{supabaseClient:{removeChannel:async()=> 'ok'},teacherWorkspaceApi:api},lessonSectionText:key=>key,render:()=>renders++});
+ vm.runInContext(['stopLiveProgressSubscription','applyLiveProgressEvent','ensureLiveProgressSubscription'].map(name=>readFunction(teacher,name)).join('\n'),ctx);
+ ctx.ensureLiveProgressSubscription({id:'lesson'},{id:'class'});assert.equal(reads.length,1);listeners.status('SUBSCRIBED');assert.equal(reads.length,2);
+ const row={student_id:'learner',class_id:'class',answers:{photo:{response:'first word'}}};listeners.event({eventType:'UPDATE',new:row});reads[1].resolve([]);await Promise.resolve();await Promise.resolve();assert.equal(ctx.liveProgressRows.get('learner').answers.photo.response,'first word');
+ reads[0].resolve([]);await Promise.resolve();assert.equal(ctx.liveProgressRows.size,1);
+ listeners.status('CHANNEL_ERROR');listeners.status('SUBSCRIBED');assert.equal(reads.length,3);reads[2].resolve([{...row,answers:{photo:{response:'second word'}}}]);await Promise.resolve();await Promise.resolve();assert.equal(ctx.liveProgressRows.get('learner').answers.photo.response,'second word');assert.equal(ctx.liveProgressStatus,'ready');
+ ctx.stopLiveProgressSubscription();listeners.event({eventType:'UPDATE',new:row});assert.equal(ctx.liveProgressRows.size,0);assert.ok(renders>0);
+});
+
+test('a delete from another lesson cannot erase the currently monitored photo answer',()=>{
+ const rows=new Map([['learner',{student_id:'learner',class_id:'class',lesson_id:'current',answers:{photo:'saved'}}]]),ctx=vm.createContext({});vm.runInContext(readFunction(teacher,'applyLiveProgressEvent'),ctx);
+ ctx.applyLiveProgressEvent(rows,{eventType:'DELETE',old:{student_id:'learner',lesson_id:'other'}},'class','current');assert.equal(rows.size,1);
+ ctx.applyLiveProgressEvent(rows,{eventType:'DELETE',old:{student_id:'learner',lesson_id:'current'}},'class','current');assert.equal(rows.size,0);
+});

@@ -55,6 +55,14 @@
             const write=qaRequests.slice(before).filter(req=>req.action==='save-draft').at(-1);assert(JSON.parse(write.response)[url][0].text==='á','Текст не сохранён');
             openedLesson.progress[activityProgressKey(openedLesson.sections[0].activities[0],0)]={response:write.response,correct:null,draft:true};render();assert(pageContent.querySelector('[data-photo-field-answer]').value==='á','Текст не восстановился');
         });
+        await run('Неподтверждённое фото сохраняет локальный ответ и показывает ошибку рядом с ним',async()=>{
+            const originalInvoke=invokeLessonApi;
+            try{
+                const card=qaReset('image');card.querySelector('img').src='wide.svg';await card.querySelector('img').decode();const canvas=card.querySelector('canvas'),r=canvas.getBoundingClientRect();invokeLessonApi=async()=>({answers:{},completed:false});canvas.dispatchEvent(new PointerEvent('pointerdown',{button:0,pointerId:41,clientX:r.left+r.width*.4,clientY:r.top+r.height*.4}));const input=card.querySelector('[data-photo-field-answer]');input.value='á';input.dispatchEvent(new InputEvent('input',{bubbles:true}));
+                let failed=false;try{await flushDraftSaves();}catch{failed=true;}assert(failed&&pendingDrafts.size===1,'Неподтверждённый ответ выдан за сохранённый');assert(card.querySelector('[data-answer-feedback]').textContent.includes('не подтвердил'),'Нет сообщения возле фото');assert(!card.querySelector('[data-photo-retry-save]').hidden,'Нет повторного сохранения возле фото');assert(input.value==='á','Ошибка потеряла введённое слово');
+                invokeLessonApi=originalInvoke;await retryPendingAnswers();assert(pendingDrafts.size===0&&card.querySelector('[data-photo-retry-save]').hidden,'Повторное сохранение не завершилось');
+            }finally{invokeLessonApi=originalInvoke;}
+        });
         await run('Свободный ответ отправляется',async()=>{const card=qaReset('open-answer');card.querySelector('[data-open-answer]').value='Volám sa Sofia.';const count=qaRequests.length;await submitActivity(card);assert(qaRequests.slice(count).some(r=>r.action==='submit'&&r.response.text==='Volám sa Sofia.'),'Ответ не отправился');});
         await run('Пустой свободный ответ не отправляется',async()=>{const card=qaReset('open-answer');const count=qaRequests.length;await submitActivity(card);assert(!qaRequests.slice(count).some(r=>r.action==='submit'),'Отправлен пустой ответ');});
         await run('Удаление нового вложения',()=>{const card=qaReset('open-answer');card.querySelector('[data-add-open-attachment]').click();assert(card.querySelector('[data-open-attachment]'),'Вложение не добавлено');card.querySelector('[data-remove-open-attachment]').click();assert(!card.querySelector('[data-open-attachment]'),'Вложение не удалилось');});

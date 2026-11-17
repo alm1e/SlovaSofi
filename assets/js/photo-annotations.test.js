@@ -25,3 +25,7 @@ test('detected gap styling survives validation without allowing arbitrary CSS or
  assert.deepEqual(core.validate({[url]:[input]})[url][0],input);
  for(const invalid of [{...input,font:NaN},{...input,font:1000},{...input,mask:{...input.mask,color:'url(evil)'}},{...input,mask:{...input.mask,x:995}},{...input,mask:{...input.mask,h:-1}}])assert.throws(()=>core.validate({[url]:[invalid]}));
 });
+
+test('live photo counters ignore empty boxes and count typed answers or drawing strokes',()=>{
+ assert.equal(core.hasContent({}),false);assert.equal(core.hasContent({[url]:[{type:'input',id:'gap',x:1,y:1,w:80,h:35,text:''}]}),false);assert.equal(core.hasContent({[url]:[{type:'input',id:'gap',x:1,y:1,w:80,h:35,text:'á'}]}),true);assert.equal(core.hasContent({[url]:[pen]}),true);
+});

@@ -1117,7 +1117,7 @@ Deno.serve(async (request: Request) => {
             console.error("Could not save the student's answer draft.", error);
             return jsonResponse(500, { error: "Could not save your draft. Please try again." }, allowedOrigin);
         }
-        return jsonResponse(200, { answers, completed }, allowedOrigin);
+        return jsonResponse(200, { answers, completed, ...(answerActivity.type==='image'?{photo_answer_saved:true}:{}) }, allowedOrigin);
     }
     if (answerActivity.type === "pronunciation-recording") {
         if (!validRecordingPath(response, user.id, assignment.classId, lessonId)) {
