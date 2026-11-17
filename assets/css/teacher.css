@@ -2375,3 +2375,5 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .student-list .student-row-main { flex-basis: 140px; overflow-wrap: anywhere; }
 .student-list .class-label { max-width: 100%; overflow-wrap: anywhere; }
 .student-list .student-row > button { max-width: 100%; white-space: normal; }
+
+.live-answer-inline > [data-photo-live-index] { grid-column: 1 / -1; width: 100%; min-width: 0; }

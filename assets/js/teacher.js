@@ -2948,11 +2948,10 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         const images = window.slovaGallery.parse(content, true);
         body = images.length ? (activity.settings?.imageAnnotations && window.SlovaPhotoEditor ? window.SlovaPhotoEditor.markup(images,activity.settings.imageAnnotations,{},false,currentLanguage) : window.slovaGallery.html(images, activity.prompt || "", "preview-image")) : `<p class="preview-material">${escapeHtml(displayContent || previewText("imageError"))}</p>`;
         if(images.length && lessonWorkspaceMode === 'preview' && hasPermission('edit_lessons')){
-            const photoKey=`${workspaceLessonId}:${lessonWorkspaceTab}:${lessonWorkspaceTab==='homework'?activeHomeworkSectionId:activeLessonSectionId}:${index}`;
-            body = `<div data-photo-live-index="${index}">${window.SlovaPhotoEditor.markup(images,{},teacherPhotoDrafts.get(photoKey)||activity.settings?.imageAnnotations||{},true,currentLanguage,{direct:true})}<button type="button" class="button secondary small" data-save-photo-live>${currentLanguage==='ru'?'Сохранить пометки':currentLanguage==='ua'?'Зберегти позначки':'Save annotations'}</button><span data-photo-live-status role="status"></span></div>`;
+            body = renderTeacherPhotoSurface(activity,index);
         }
         if(liveAnswerMarkup.includes('data-live-photo-answer')){
-            body=liveAnswerMarkup+`<details class="photo-teacher-notes"><summary>${currentLanguage==='ru'?'Пометки учителя':currentLanguage==='ua'?'Позначки вчителя':'Teacher annotations'}</summary>${body}</details>`;
+            body=liveAnswerMarkup;
             liveAnswerMarkup='';
         }
         checkable = false;
@@ -4176,6 +4175,15 @@ function liveStudentAnswerProgress(lesson, studentId, progressIndexes) {
     return { answered, total };
 }
 
+function renderTeacherPhotoSurface(activity,index,studentResponse={}) {
+    const images=window.slovaGallery.parse(activity.content,true);
+    const photoKey=`${workspaceLessonId}:${lessonWorkspaceTab}:${lessonWorkspaceTab==='homework'?activeHomeworkSectionId:activeLessonSectionId}:${index}`;
+    const own=teacherPhotoDrafts.get(photoKey)||activity.settings?.imageAnnotations||{};
+    const student=window.SlovaPhotoAnnotations.read(studentResponse),base={};
+    for(const image of images) base[image.url]=[...(student[image.url]||[]),...(own[image.url]||[]).filter(op=>op.type==='field')];
+    return `<div data-photo-live-index="${index}">${window.SlovaPhotoEditor.markup(images,base,own,true,currentLanguage,{direct:true,preserveFields:true})}<button type="button" class="button secondary small" data-save-photo-live>${currentLanguage==='ru'?'Сохранить пометки':currentLanguage==='ua'?'Зберегти позначки':'Save annotations'}</button><span data-photo-live-status role="status"></span></div>`;
+}
+
 function renderLiveAnswerPanel(student, activity, progressIndex, questionId = null, questionIndex = null, reviewContext = null) {
     const answerKey = questionId
         ? `${activityProgressKey(activity, progressIndex)}.q${questionId}`
@@ -4191,7 +4199,7 @@ function renderLiveAnswerPanel(student, activity, progressIndex, questionId = nu
         ? answer.response
         : "";
     const photoAnswer = activity.type === 'image' && window.SlovaPhotoEditor
-        ? window.SlovaPhotoEditor.markup(window.slovaGallery.parse(activity.content),activity.settings?.imageAnnotations||{},window.SlovaPhotoAnnotations.read(answer?.response),false,currentLanguage) : '';
+        ? (lessonWorkspaceMode === 'preview' && hasPermission('edit_lessons') ? renderTeacherPhotoSurface(activity,reviewContext?.photoIndex ?? progressIndex,answer?.response) : window.SlovaPhotoEditor.markup(window.slovaGallery.parse(activity.content),activity.settings?.imageAnnotations||{},window.SlovaPhotoAnnotations.read(answer?.response),false,currentLanguage)) : '';
     const response = activity.type === 'image' ? (window.SlovaPhotoAnnotations?.hasContent(answer?.response)?(currentLanguage==='ru'?'Пометки на фото':currentLanguage==='ua'?'Позначки на фото':'Photo answer'):'') : recordingPath ? liveStudentText("recording") : formatLiveResponse(activity, answer?.response);
     const answerStatus = activity.type==='image'
         ? (window.SlovaPhotoAnnotations?.hasContent(answer?.response)?`<span class="live-answer-status is-submitted">${currentLanguage==='ru'?'Сохранено':currentLanguage==='ua'?'Збережено':'Saved'}</span>`:'')
@@ -4330,10 +4338,12 @@ function renderLessonWorkspace() {
                         settings: { ...activity.settings, ...question.settings }
                     }, progressIndex, activityQuestionProgressId(question, questionIndex, activity.questions), questionIndex, {
                         classId: monitorClassId,
+                        photoIndex: index,
                         lessonId: lesson.id
                     }))
                     : renderLiveAnswerPanel(liveStudent, activity, progressIndex, null, null, {
                         classId: monitorClassId,
+                        photoIndex: index,
                         lessonId: lesson.id
                     })
                 : "";

@@ -10,13 +10,17 @@
         liveProgressRows=new Map([['qa-member',{student_id:'qa-member',class_id:'qa-class',lesson_id:'qa-lesson',answers:{['b'+blockId]:{response:JSON.stringify({[url]:[note]}),correct:null,draft:true}}}]]);
         render();
         const panel=pageContent.querySelector('[data-live-photo-answer]'),editor=panel.querySelector('.photo-editor'),img=editor.querySelector('img');
+        check('one primary photo without a collapsed teacher notes panel',panel.querySelectorAll('.photo-editor').length===1&&!pageContent.querySelector('.photo-teacher-notes'));
+        check('teacher can type directly on the primary photo',Boolean(editor.querySelector('[data-photo-tool="input"]')&&editor.querySelector('[data-photo-editable]')));
+        check('student words remain separate from saved teacher annotations',!JSON.stringify(window.SlovaPhotoEditor.value(panel)).includes('áno'));
+
         img.src='tall.svg';await img.decode();await new Promise(requestAnimationFrame);
         for(const theme of ['light','dark']){
             document.documentElement.dataset.theme=theme;await new Promise(requestAnimationFrame);
             const card=panel.closest('[data-preview-activity]'),style=getComputedStyle(card),available=card.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
             const imageBox=img.getBoundingClientRect(),editorBox=editor.getBoundingClientRect(),canvasBox=editor.querySelector('canvas').getBoundingClientRect();
             check(`${theme}: photo spans the lesson card (${Math.round(imageBox.width)} / ${Math.round(available)} px)`,imageBox.width>=available*.9);
-            check(`${theme}: answer photo occupies a full grid row`,getComputedStyle(editor).gridColumnStart==='1'&&getComputedStyle(editor).gridColumnEnd==='-1');
+            check(`${theme}: answer photo occupies a full grid row`,getComputedStyle(editor.closest('[data-photo-live-index]')||editor).gridColumnStart==='1'&&getComputedStyle(editor.closest('[data-photo-live-index]')||editor).gridColumnEnd==='-1');
             check(`${theme}: image retains its full portrait proportions`,Math.abs(imageBox.height/imageBox.width-2)<.01);
             check(`${theme}: annotation canvas stays aligned`,Math.abs(imageBox.left-canvasBox.left)<1&&Math.abs(imageBox.top-canvasBox.top)<1&&Math.abs(imageBox.width-canvasBox.width)<1&&Math.abs(imageBox.height-canvasBox.height)<1);
             check(`${theme}: avatar remains small while the photo fills the row`,panel.querySelector('.live-answer-avatar').getBoundingClientRect().width===28&&editorBox.width>150);
