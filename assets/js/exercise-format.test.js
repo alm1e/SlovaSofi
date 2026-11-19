@@ -125,3 +125,10 @@ test('deck swipes and arrow keys remain inside the cards instead of switching le
     const d=deckHarness();d.deck.handlers.pointerdown({pointerType:'touch',clientX:200,clientY:20});d.deck.handlers.pointerup({clientX:80,clientY:25});assert.equal(d.count.textContent,'2 / 3');
     let prevented=false,stopped=false;d.deck.handlers.keydown({key:'ArrowRight',target:{closest:()=>false},preventDefault(){prevented=true;},stopPropagation(){stopped=true;}});assert.ok(prevented&&stopped&&d.deck.focused);assert.equal(d.count.textContent,'3 / 3');
 });
+
+ test('drag sentences form independent stable subitems with emoji only in headings',()=>{
+ const source={type:'drag-words',content:'😊 [Nech sa páči!]\n📌 Dobrý deň.'};const result=format.prepare(source);
+ assert.equal(result.questions.length,2);assert.equal(result.questions[0].prompt,'😊');assert.equal(result.questions[1].prompt,'📌');assert.equal(result.questions[0].answer,'Nech / sa / páči!');assert(!result.questions.some(q=>/[😊📌]/u.test(q.content)));
+ const swapped=format.prepare({...source,content:'📌 Dobrý deň.\n😊 Nech sa páči!'});assert.equal(swapped.questions[1].id,result.questions[0].id);assert.equal(swapped.questions[0].id,result.questions[1].id);
+ const single=format.prepare({type:'drag-words',prompt:'Words',content:'👨‍👩‍👧‍👦 Ahoj!'});assert.equal(single.answer,'Ahoj!');assert(single.prompt.includes('👨‍👩‍👧‍👦'));
+ });

@@ -13,7 +13,7 @@ function engine(activities){
     vm.runInContext(stripTypeScriptTypes(fs.readFileSync(path,'utf8').replace(/^import .*;\r?\n/gm,'')),ctx);
     async function request(payload){const response=await handler(new Request('https://db.example/functions/v1/student-lessons',{method:'POST',headers:{Origin:'https://school.example',Authorization:'Bearer test'},body:JSON.stringify({lessonId,...payload})}));return{status:response.status,body:await response.json()};}
     const write=(index,response,action='submit',extra={})=>request({action,activityIndex:index,activityId:activities[index].id,lessonRevision:revision,response,...extra});
-    return{ctx,lesson,categories,revision,userId,classId,lessonId,request,write,get saved(){return saved;},get writes(){return writes;}};
+    return{ctx,lesson,categories,revision,userId,classId,lessonId,request,write,seedProgress(answers){saved={student_id:memberId,class_id:classId,lesson_id:lessonId,answers,completed_at:new Date().toISOString()};},get saved(){return saved;},get writes(){return writes;}};
 }
 test('literal numeric choices take precedence over legacy indices and remain stable in the editor',async()=>{
     const e=engine([{id:id(1),type:'multiple-choice',prompt:'Choose 1',content:'1\n2\n3',answer:'1'},{id:id(2),type:'multiple-choice',prompt:'Legacy index',content:'dom\nauto\nškola',answer:'1'}]);
@@ -281,4 +281,19 @@ test('note eye hides private text from pupils without changing answer revisions'
 test('assigned course summaries include their uploaded category cover',async()=>{
  const e=engine([{id:id(601),type:'text',content:'Lesson'}]);e.categories.push({name:'A1',cover_url:'https://example.test/a1.png',lesson_order:[e.lessonId]});
  const result=await e.request({action:'list'});assert.equal(result.status,200);assert.equal(result.body.lessons[0].categoryCover,'https://example.test/a1.png');assert.equal(result.body.classes[0].lessons[0].categoryCover,'https://example.test/a1.png');
+});
+
+test('automatic sentence subitems grade and save independently without emoji tokens',async()=>{
+ const block={id:id(801),type:'drag-words',content:'😊 Nech sa páči!\n📌 Dobrý deň.',answer:''};const e=engine([block]);
+ const loaded=await e.request({action:'load'});const activity=loaded.body.lesson.sections[0].activities[0];assert.equal(activity.questions.length,2);
+ assert(!activity.questions.some(q=>q.tokens.some(word=>/[😊📌]/u.test(word))));
+ const first=await e.write(0,['Nech','sa','páči!'],'submit',{questionId:activity.questions[0].questionId});assert.equal(first.status,200);assert.equal(first.body.correct,true);
+ const second=await e.write(0,['Dobrý','deň.'],'submit',{questionId:activity.questions[1].questionId});assert.equal(second.status,200);assert.equal(second.body.correct,true);assert.equal(Object.keys(e.saved.answers).filter(k=>k.includes('.q')).length,2);
+});
+
+test('legacy combined sentence answers remain available as separate subitem answers',async()=>{
+ const block={id:id(901),type:'drag-words',content:'😊 Nech sa páči!\nDobrý deň.',answer:''};const e=engine([block]);
+ e.seedProgress({['b'+block.id]:{response:['😊','Nech','sa','páči!','Dobrý','deň.'],correct:true,draft:false,submitted_at:'2026-11-19T10:00:00Z'}});
+ const loaded=await e.request({action:'load'});assert.equal(loaded.status,200);const questions=loaded.body.lesson.sections[0].activities[0].questions;
+ assert.deepEqual(loaded.body.lesson.progress['b'+block.id+'.q'+questions[0].questionId].response,['Nech','sa','páči!']);assert.deepEqual(loaded.body.lesson.progress['b'+block.id+'.q'+questions[1].questionId].response,['Dobrý','deň.']);
 });

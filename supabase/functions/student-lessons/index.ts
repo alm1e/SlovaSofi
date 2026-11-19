@@ -272,6 +272,14 @@ function progressEntry(answers: Record<string, ProgressAnswer>, item: ActivityPr
 
 function canonicalProgress(activities: Activity[], value: unknown): Record<string, ProgressAnswer> {
     const answers = publicProgress(value);
+    activities.forEach((activity,index)=>{
+        if(!activity.settings?.autoSentenceGroups||!activity.questions?.length)return;
+        const key=activityProgressKey(activity,index),legacy=legacyActivityProgressIndex(activity,index);
+        const prior=answers[key]||(legacy===null?undefined:answers[`a${legacy}`]);if(!prior||!Array.isArray(prior.response))return;
+        const words=prior.response.filter(word=>typeof word==='string'&&!/^[\p{Extended_Pictographic}\p{Regional_Indicator}\uFE0F\u200D]+$/u.test(word));
+        const counts=activity.questions.map(q=>answerParts(q.answer).length);if(counts.reduce((a,b)=>a+b,0)!==words.length)return;
+        let offset=0;activity.questions.forEach((q,i)=>{const child=`${key}.q${q.id}`;if(!answers[child])answers[child]={...prior,response:words.slice(offset,offset+counts[i])};offset+=counts[i];});
+    });
     const items = activityProgressItems(activities), stableKeys = new Set(items.map(item => item.key));
     for (const item of items) {
         let best = answers[item.key];
@@ -347,7 +355,7 @@ function flattenActivities(activities: unknown): Activity[] {
         const sectionRecord = record(section);
         if (!Array.isArray(sectionRecord.activities)) return [];
         return sectionRecord.activities.flatMap((rawActivity) => {
-            const activity = record(rawActivity);
+            const activity = record(exerciseFormat.prepare(record(rawActivity)));
             const type = stringValue(activity.type);
             if (!interactiveTypes.has(type)) return [];
             const questions = normalizedQuestions(activity.questions);

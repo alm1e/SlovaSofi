@@ -46,14 +46,10 @@
  activeView='students';render();assert(!pageContent.querySelector('[data-action="student-scope-edit"]'),'Доступна смена принадлежности ученика');assert(!pageContent.querySelector('[data-action="student-scope-view"][data-id="private"]'),'Доступна вкладка личных учеников');
  }finally{closeModal();workspaceAccess=before.access;currentUser=before.user;data=before.data;activeView=before.view;classArchiveView=before.archive;}
  });
- await run('Пропуски в диалоге выбираются нажатием слов без разметки',()=>{
- reset();const block=activeDraftSection().activities[0];block.type='one-of-many';block.content='MÁRIA: Dobrý deň.\nZUZANA: Ako sa voláš?';block.answer='';
- render();const launch=pageContent.querySelector('[data-word-gap-builder]');assert(launch,'Нет кнопки выбора пропусков');launch.click();const picker=modalCard.querySelector('[data-gap-word-picker]');
- for(const word of ['Dobrý','voláš']){const button=[...picker.querySelectorAll('button')].find(b=>b.textContent===word);assert(button,'Нет слова '+word);button.click();}
- modalCard.querySelector('[data-gap-apply]').click();
- assert(block.type==='fill-blank'&&block.settings.useWordBank===true,'Не включён банк слов');assert(block.content==='MÁRIA: [Dobrý] deň.\nZUZANA: Ako sa [voláš]?','Диалог или пропуски повреждены');
- const host=document.createElement('div');host.innerHTML=renderPreviewActivity(block,0);document.body.append(host);
- try{bindLessonPreviewActions(host);assert(host.querySelectorAll('[data-gap-word]').length===2,'Нет банка слов');assert(host.querySelectorAll('[data-answer-index]').length===2,'Нет двух пропусков');const token=[...host.querySelectorAll('[data-gap-word]')].find(b=>b.dataset.gapWord==='Dobrý');token.click();const field=host.querySelector('[data-answer-index]');field.click();assert(field.value==='Dobrý','Слово не вставлено');assert(host.textContent.includes('MÁRIA'),'Диалог пропал');}finally{host.remove();}
+ await run('Предложения автоматически образуют пункты 3.1 и 3.2 без смайлов в плитках',()=>{
+ const block={type:'drag-words',prompt:'Перетащить слова',content:'😊 Nech sa páči!\n📌 Dobrý deň.'};
+ const host=document.createElement('div');host.innerHTML=renderPreviewActivity(block,2);document.body.append(host);
+ try{assert(host.querySelectorAll('.preview-question-activity').length===2,'Нет двух пунктов');assert(host.textContent.includes('3.1')&&host.textContent.includes('3.2'),'Нет нумерации');assert(![...host.querySelectorAll('.preview-word')].some(b=>/[😊📌]/u.test(b.textContent)),'Смайл попал в банк');assert(host.textContent.includes('😊')&&host.textContent.includes('📌'),'Смайлы пропали');reset();assert(!pageContent.querySelector('[data-word-gap-builder]'),'Лишняя кнопка осталась');}finally{host.remove();}
  });
  const select=(editor)=>{editor.focus();const r=document.createRange();r.selectNodeContents(editor);const s=getSelection();s.removeAllRanges();s.addRange(r);editor.dispatchEvent(new Event('keyup'));};
  const prepare=()=>{const root=reset();const source=root.querySelector('textarea[data-field="content"]');source.value='Проверка текста';source.dispatchEvent(new Event('input',{bubbles:true}));const editor=root.querySelector('.visual-rich-editor');select(editor);return {root,source,editor};};

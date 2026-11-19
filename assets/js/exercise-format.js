@@ -4,6 +4,27 @@
     function shuffleChoices(items,random=Math.random){
         const result=[...items];for(let i=result.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result;
     }
+    function sentenceParts(content) {
+        const text=String(content||'').replace(/\[([^\[\]]+)\]/g,'$1');
+        const sentences=new Intl.Segmenter('sk',{granularity:'sentence'}),graphemes=new Intl.Segmenter('sk',{granularity:'grapheme'});
+        const result=[];let pending='';
+        for(const sentence of text.split(/\r?\n/).flatMap(line=>[...sentences.segment(line)].map(part=>part.segment))){
+            let clean='',emoji='';
+            for(const {segment} of graphemes.segment(sentence)) {
+                if(/[\p{Extended_Pictographic}\p{Regional_Indicator}\u20e3]/u.test(segment)){emoji+=segment;clean+=' ';}else clean+=segment;
+            }
+            clean=clean.trim();if(clean){result.push({content:clean,prompt:pending+emoji});pending='';}else pending+=emoji;
+        }
+        if(pending&&result.length)result[result.length-1].prompt+=pending;
+        return result;
+    }
+    function sentenceQuestions(content) {
+        const seen=new Map();return sentenceParts(content).map(part=>{
+            let hash=2166136261;for(const c of part.content)hash=Math.imul(hash^c.codePointAt(0),16777619);
+            const base=(hash>>>0).toString(36),occurrence=seen.get(base)||0;seen.set(base,occurrence+1);
+            return {...part,id:`sentence-${base}-${occurrence}`,answer:sequenceAnswer('drag-words',part.content)};
+        });
+    }
     function sequenceAnswer(type, content) {
         const text = String(content || '').replace(/\[([^\[\]]+)\]/g,'$1').trim();
         if (type === 'drag-words') return text.split(/\s+/).filter(Boolean).map(word=>word.replace(/_/g,' ')).join(' / ');
@@ -54,6 +75,16 @@
     function prepare(activity){
         const result={...activity,settings:{...activity.settings}},type=activity.type;
         let content=String(activity.content||'');
+        if(type==='drag-words'){
+            if(Array.isArray(activity.questions)&&activity.questions.length){
+                result.questions=activity.questions.map(question=>{const parts=sentenceParts(question.content);const clean=parts.map(p=>p.content).join(' ');return {...question,content:clean,answer:sequenceAnswer(type,clean),prompt:[question.prompt,parts.map(p=>p.prompt).join('')].filter(Boolean).join(' ')};});
+            }else{
+                const parts=sentenceParts(content);
+                if(!parts.length&&content.trim()){result.content='';result.answer='';result.prompt=[activity.prompt,content.replace(/[\[\]]/g,'').trim()].filter(Boolean).join(' ');return result;}
+                if(parts.length>1){result.questions=sentenceQuestions(content);result.settings.autoSentenceGroups=true;return result;}
+                if(parts.length===1){content=parts[0].content;result.content=content;result.answer=sequenceAnswer(type,content);result.settings.answerFromContent=true;if(parts[0].prompt)result.prompt=[activity.prompt,parts[0].prompt].filter(Boolean).join(' ');}
+            }
+        }
         if(['multiple-choice','one-of-many'].includes(type)){
             const lines=content.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
             if(lines.some(line=>/^\[[^\[\]]+\]$/.test(line))){
@@ -223,6 +254,6 @@
         kk:['Мысалы: Ja [bývam] v Bratislave. Жақшадағы сөз бос орынға айналады.','Сөздерді дұрыс ретпен жазыңыз: Ja bývam v Bratislave. Олар автоматты түрде араласады.','Элементтерді дұрыс ретпен, әрқайсын жаңа жолға жазыңыз. Олар автоматты түрде араласады.','Сөйлемдерді дұрыс ретпен, әрқайсын жаңа жолға жазыңыз. Олар автоматты түрде араласады.','Мысалы: Anna / [Bratislava] / [slovenčina]. Жақшадағы жауаптар бос орынға айналады.','Мысалы: auto [көлік]. Әр жаңа жол жаңа карточка жасайды.','Жауап батырмалары','Тізімі бар бос орын','Мысалы: астананы таңдаңыз — Bratislava, Košice немесе Žilina.','Мысалы: Ja [bývam/bývaš/býva] v Bratislave. Бірінші нұсқа дұрыс.']
     };
     function hint(type,language){const index={'fill-blank':0,'drag-words':1,'order-items':2,'sentence-order':3,table:4,flashcards:5,'multiple-choice':8,'one-of-many':9}[type];return index===undefined?'':(copy[language]||copy.en)[index];}
-    root.SlovaExerciseFormat={cards,cardsFor,cardsEditorContent,sequenceAnswer,sequenceTypes,answerFieldNeeded,contentEdited,dropdown,hint,copy,prepare,editorContent,applyContent,applyQuestionContent,shuffleChoices,parseColumns,findErrors};
+    root.SlovaExerciseFormat={sentenceParts,sentenceQuestions,cards,cardsFor,cardsEditorContent,sequenceAnswer,sequenceTypes,answerFieldNeeded,contentEdited,dropdown,hint,copy,prepare,editorContent,applyContent,applyQuestionContent,shuffleChoices,parseColumns,findErrors};
     if(typeof module!=='undefined')module.exports=root.SlovaExerciseFormat;
 })(typeof window!=='undefined'?window:globalThis);
