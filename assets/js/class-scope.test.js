@@ -24,10 +24,10 @@ test('teacher workspace queries retain ownership filters',async()=>{
  const {client,filters}=clientFor('teacher'); await api().loadWorkspace(client,'user');
  for(const table of ['teacher_classes','class_students','class_lesson_assignments']) assert(filters.some(([name,key,value])=>name===table&&key==='teacher_id'&&value==='user'));
 });
-test('director library saves never synchronize classes even with stale permissions',async()=>{
+test('director library saves respect disabled management permissions',async()=>{
  const calls=[];
  const client={from(table){calls.push(table);return {upsert:async()=>({error:null})}}};
- await api().saveWorkspace(client,'director',{classes:[{id:'school',students:[]}],lessons:[{id:'lesson',title:'Edited',unit:'A1',activities:[]}]},{role:'director',permissions:{manage_classes_students:true,edit_lessons:true,view_assign_lessons:true}});
+ await api().saveWorkspace(client,'director',{classes:[{id:'school',students:[]}],lessons:[{id:'lesson',title:'Edited',unit:'A1',activities:[]}]},{role:'director',permissions:{manage_classes_students:false,edit_lessons:true,view_assign_lessons:false}});
  assert(calls.includes('teacher_lessons'));
  for(const table of ['teacher_classes','class_students','class_lesson_assignments']) assert(!calls.includes(table));
 });
@@ -66,4 +66,10 @@ test('the class editor selects school by default and locks scope changes for tea
  assert(html.includes('value="school" selected'));assert(!html.includes('name="classScope" disabled'));
  ctx.openClassEditor({id:'existing',classScope:'private',students:[]});assert(html.includes('value="private" selected'));assert(html.includes('name="classScope" disabled'));
  ctx.workspaceAccess.role='admin';ctx.openClassEditor({id:'existing',classScope:'private',students:[]});assert(!html.includes('name="classScope" disabled'));
+});
+
+test('director class saves preserve school class ownership',async()=>{
+ const writes=[];const client={from(table){return{upsert:async rows=>{writes.push([table,rows]);return{error:null};},select(){const q={eq(){throw Error('Unexpected ownership filter for school manager');},then(resolve){return Promise.resolve({data:[],error:null}).then(resolve);}};return q;}};}};
+ await api().saveWorkspace(client,'director',{classes:[{id:'school',teacherId:'actual-teacher',classScope:'school',name:'School',students:[]}],lessons:[]},{role:'director',permissions:{manage_classes_students:true,view_assign_lessons:true}});
+ assert.equal(writes.find(([table])=>table==='teacher_classes')[1][0].teacher_id,'actual-teacher');
 });

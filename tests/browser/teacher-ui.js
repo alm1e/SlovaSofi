@@ -38,6 +38,14 @@
  openLessonPreview(lesson.id);const eye=pageContent.querySelector('[data-note-visibility]');assert(eye,'Нет глазика в уроке');eye.click();await new Promise(r=>setTimeout(r,0));assert(pageContent.querySelector('[data-note-visibility]').getAttribute('aria-pressed')==='false','Заметка не скрылась');assert(pageContent.textContent.includes('LIVE NOTE'),'Заметка пропала у учителя');
  }finally{data=before.data;window.supabaseClient=before.client;}
  });
+ await run('Директор управляет школой без личных классов и полномочий администратора',()=>{
+ const before={access:workspaceAccess,user:currentUser,data,view:activeView,archive:classArchiveView};
+ try{reset();workspaceAccess={...workspaceAccess,role:'director',permissions:{...workspaceAccess.permissions,manage_classes_students:true,view_assign_lessons:true,edit_lessons:true,view_classes_students:true,manage_teachers:false}};currentUser={id:'qa-director',email:'director@example.test'};activeView='classes';classArchiveView=false;lessonWorkspaceMode='';render();
+ assert(pageContent.querySelector('[data-action="new-class"]'),'Нет создания школьного класса');assert(pageContent.querySelector('[data-action="invite-student"]'),'Нет добавления ученика');assert(pageContent.querySelector('[data-action="edit-class"]'),'Нет редактирования класса');
+ openClassEditor();const scope=modalCard.querySelector('[name="classScope"]');assert(scope.disabled&&scope.value==='school','Директор может создавать личные классы');closeModal();
+ activeView='students';render();assert(!pageContent.querySelector('[data-action="student-scope-edit"]'),'Доступна смена принадлежности ученика');assert(!pageContent.querySelector('[data-action="student-scope-view"][data-id="private"]'),'Доступна вкладка личных учеников');
+ }finally{closeModal();workspaceAccess=before.access;currentUser=before.user;data=before.data;activeView=before.view;classArchiveView=before.archive;}
+ });
  const select=(editor)=>{editor.focus();const r=document.createRange();r.selectNodeContents(editor);const s=getSelection();s.removeAllRanges();s.addRange(r);editor.dispatchEvent(new Event('keyup'));};
  const prepare=()=>{const root=reset();const source=root.querySelector('textarea[data-field="content"]');source.value='Проверка текста';source.dispatchEvent(new Event('input',{bubbles:true}));const editor=root.querySelector('.visual-rich-editor');select(editor);return {root,source,editor};};
  const click=(b)=>{b.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true}));b.click();};

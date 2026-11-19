@@ -87,7 +87,7 @@ Deno.serve(async (request: Request) => {
         userClient.rpc("teacher_workspace_context"),
         userClient.rpc("teacher_workspace_has_permission", { permission_name: "manage_classes_students" })
     ]);
-    if (contextError || permissionError || !context?.owner_id || !["teacher", "admin"].includes(context.role)) {
+    if (contextError || permissionError || !context?.owner_id || !["teacher", "director", "admin"].includes(context.role)) {
         console.error("Could not verify student invitation permissions.", contextError || permissionError);
         return jsonResponse(500, { error: "Could not verify class permissions. Apply the latest database migration." }, configuredOrigin);
     }
@@ -96,8 +96,10 @@ Deno.serve(async (request: Request) => {
     }
 
     const isAdmin = context.role === "admin";
+    const isDirector = context.role === "director";
     let classQuery = adminClient.from("teacher_classes").select("id,teacher_id,class_scope").eq("id", classId);
-    if (!isAdmin) classQuery = classQuery.eq("teacher_id", user.id);
+    if (isDirector) classQuery = classQuery.eq("class_scope","school");
+    else if (!isAdmin) classQuery = classQuery.eq("teacher_id", user.id);
     const { data: group, error: classError } = await classQuery.maybeSingle();
     if (classError) {
         console.error("Could not verify class ownership.", classError);
@@ -109,7 +111,7 @@ Deno.serve(async (request: Request) => {
         let directoryQuery = adminClient.from("teacher_student_directory")
             .select("student_user_id,email,display_name")
             .order("display_name");
-        if (!isAdmin) directoryQuery = directoryQuery.eq("teacher_id", user.id);
+        if (!isAdmin && !isDirector) directoryQuery = directoryQuery.eq("teacher_id", user.id);
         const { data: students, error: directoryError } = await directoryQuery;
         if (directoryError) {
             console.error("Could not load the teacher's existing student directory.", directoryError);
@@ -131,7 +133,7 @@ Deno.serve(async (request: Request) => {
         let directoryQuery = adminClient.from("teacher_student_directory")
             .select("student_user_id,email,display_name")
             .eq("student_user_id", studentUserId);
-        if (isAdmin) directoryQuery = directoryQuery.limit(1);
+        if (isAdmin || isDirector) directoryQuery = directoryQuery.limit(1);
         else directoryQuery = directoryQuery.eq("teacher_id", user.id);
         const { data: existingStudent, error: directoryError } = await directoryQuery.maybeSingle();
         if (directoryError) {
@@ -151,6 +153,7 @@ Deno.serve(async (request: Request) => {
         if (profile?.role !== "student") {
             return jsonResponse(409, { error: "Only a student account can be added to this class." }, configuredOrigin);
         }
+        if (isDirector && profile.student_scope !== 'school') return jsonResponse(403,{error:'Student not available.'},configuredOrigin);
         if (profile.student_scope === "private" && (group.class_scope !== "private" || profile.private_teacher_id !== group.teacher_id)) {
             return jsonResponse(403, {error: "Private students can only join their teacher's personal classes."}, configuredOrigin);
         }

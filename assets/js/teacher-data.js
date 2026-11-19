@@ -190,21 +190,19 @@
     }
 
     async function saveWorkspace(client, userId, data, access, deletedLessonIds = []) {
-        // A director may save library content, never synchronize class data.
-        const permissions = access?.role === "director"
-            ? { ...access.permissions, manage_classes_students: false, view_assign_lessons: false }
-            : access?.permissions || {};
+        const permissions = access?.permissions || {};
+        const managesVisibleSchool = ["admin","director"].includes(access?.role);
         if (permissions.manage_classes_students) {
             const classes = data.classes.map(({ id, name, course, teacherId, classScope }) => ({
                 id,
-                teacher_id: access?.role === "admin" ? teacherId || userId : userId,
+                teacher_id: managesVisibleSchool ? teacherId || userId : userId,
                 name,
                 class_scope: classScope || "school",
                 course
             }));
             await upsertRows(client, "teacher_classes", classes, "Не удалось сохранить классы");
-            await syncRoster(client, userId, access?.role === "admin", data.classes);
-            await deleteMissing(client, "teacher_classes", userId, classes.map((row) => row.id), "Не удалось удалить классы", access?.role === "admin");
+            await syncRoster(client, userId, managesVisibleSchool, data.classes);
+            await deleteMissing(client, "teacher_classes", userId, classes.map((row) => row.id), "Не удалось удалить классы", managesVisibleSchool);
         }
         if (permissions.edit_lessons) {
             const lessons = data.lessons.map(({ id, title, unit, activities, sections, homeworkSections, teacherId }) => ({
@@ -225,7 +223,7 @@
             await upsertRows(client, "teacher_lessons", lessons, "Не удалось сохранить уроки");
         }
         if (permissions.view_assign_lessons) {
-            await syncAssignments(client, userId, access?.role === "admin", data.classes, data.lessons);
+            await syncAssignments(client, userId, managesVisibleSchool, data.classes, data.lessons);
         }
         if (deletedLessonIds.length) {
             const { error } = await client.from("teacher_lessons").delete().in("id", deletedLessonIds);
