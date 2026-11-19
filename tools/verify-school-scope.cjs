@@ -279,5 +279,15 @@ const migrationPath = process.argv[3] || path.join(root,'supabase/migrations/202
   await assert.rejects(()=>db.query('select set_note_visibility($1,$2,$3)',[uid(401),uid(402),false]),/Нет права/);
  });
  console.log('PASS: Category cover, persisted order with concurrency checks, note eye permissions and unchanged student revision.');
+ await db.exec("select set_config('request.jwt.claim.sub','',false)");
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261126_class_teacher_names.sql'),'utf8'));
+ await db.exec(`update auth.users set raw_user_meta_data='{"display_name":"Metadata teacher"}' where id='${uid(2)}'; update profiles set first_name='',last_name='' where id='${uid(2)}';`);
+ await asUser(1,async()=>{assert.equal((await rows('select * from class_teacher_names()')).find(p=>p.id===uid(2)).display_name,'Metadata teacher');});
+ await asUser(2,async()=>{const labels=await rows('select * from class_teacher_names()');assert.equal(labels.length,1);assert.equal(labels[0].id,uid(2));});
+ await asUser(4,async()=>{const labels=await rows('select * from class_teacher_names()');assert(labels.some(p=>p.id===uid(2)));assert(!labels.some(p=>p.id===uid(3)),'Director cannot get private class owner label');});
+ await asUser(5,async()=>{assert.equal((await rows('select * from class_teacher_names()')).length,0);});
+ await db.exec(`update profiles set first_name='Profile',last_name='Teacher' where id='${uid(2)}';`);
+ await asUser(1,async()=>{assert.equal((await rows('select * from class_teacher_names()')).find(p=>p.id===uid(2)).display_name,'Profile Teacher');});
+ console.log('PASS: Class teacher labels use profile and account metadata; teacher/director/student boundaries preserved.');
  await db.close();
 })().catch(e=>{console.error(e);process.exit(1);});

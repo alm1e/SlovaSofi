@@ -45,12 +45,10 @@
         const { data: studentDirectory, error: directoryError } = await client.rpc("student_directory");
         fail(directoryError, "Не удалось загрузить принадлежность учеников. Примените миграцию 20261124_student_scope.sql");
         if (!Array.isArray(studentDirectory)) throw new Error("Некорректный ответ списка учеников.");
-        const teacherIds = [...new Set(classesResult.data.map((group) => group.teacher_id))];
-        const { data: profiles, error: profilesError } = teacherIds.length
-            ? await client.from("profiles").select("id,first_name,last_name").in("id", teacherIds)
-            : { data: [], error: null };
-        fail(profilesError, "Не удалось загрузить профили преподавателей");
-        const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
+        const {data: teacherNames,error: teacherNamesError} = await client.rpc("class_teacher_names");
+        fail(teacherNamesError,"Не удалось загрузить имена преподавателей. Примените миграцию 20261126_class_teacher_names.sql");
+        if(!Array.isArray(teacherNames)) throw new Error("Некорректный ответ списка преподавателей.");
+        const teacherNameById = new Map(teacherNames.map(profile=>[profile.id,profile.display_name]));
         const classes = classesResult.data.map((group) => ({
             id: group.id,
             name: group.name,
@@ -58,8 +56,7 @@
             classScope: group.class_scope,
             archivedAt: group.archived_at || null,
             teacherId: group.teacher_id,
-            teacherName: [profileById.get(group.teacher_id)?.first_name, profileById.get(group.teacher_id)?.last_name]
-                .filter(Boolean).join(" ") || (group.teacher_id === userId ? userEmail : "Преподаватель"),
+            teacherName: teacherNameById.get(group.teacher_id) || (group.teacher_id === userId && userEmail ? userEmail : `Преподаватель · ${String(group.teacher_id).slice(0,8)}`),
             studentRecords: rosterResult.data.filter((student) => student.class_id === group.id),
             students: rosterResult.data.filter((student) => student.class_id === group.id).map((student) => student.display_name)
         }));

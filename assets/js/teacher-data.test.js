@@ -144,7 +144,7 @@ test("workspace navigation data loads without a redundant network user lookup", 
     const queriedTables = [];
     let earlyContext;
     const client = {
-        rpc: async (name) => ({ data: name === "student_directory" ? [] : { owner_id: "teacher-1", role: "teacher", permissions: {} }, error: null }),
+        rpc: async (name) => ({ data: ["student_directory","class_teacher_names"].includes(name) ? [] : { owner_id: "teacher-1", role: "teacher", permissions: {} }, error: null }),
         auth: { getUser: async () => { userLookupCount += 1; throw new Error("Unexpected network user lookup"); } },
         from(table) {
             queriedTables.push(table);
