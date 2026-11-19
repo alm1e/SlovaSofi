@@ -2387,3 +2387,13 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 @media(max-width:700px){.lesson-sort-controls{flex-direction:column;}.lesson-sort-controls button{min-width:32px;min-height:32px;}}
 
 .course-hero-art img {width:100%;height:100%;object-fit:cover;border-radius:inherit;}
+
+/* Keep visibility control in the note heading, including wrapped mobile titles. */
+.preview-activity.preview-note-card {padding:0;border:0;background:none;box-shadow:none;}
+.preview-note-card > .activity-note {margin:0;}
+.preview-note-card .activity-note > summary {position:relative;min-height:32px;padding-right:44px;}
+.preview-note-card .activity-note > summary > .note-visibility-toggle {position:absolute;top:0;right:0;width:32px;height:32px;min-width:32px;min-height:32px;display:inline-flex;align-items:center;justify-content:center;margin:0;padding:4px;background:transparent;}
+.gap-word-picker {white-space:pre-wrap;line-height:2.5;overflow-wrap:anywhere;max-height:340px;overflow:auto;padding:12px;border:1px solid var(--line);border-radius:12px;}
+.gap-word-picker button {display:inline;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--white);color:var(--ink);}
+.gap-word-picker button[aria-pressed="true"] {border-color:#159660;background:#ddf4e7;color:#105437;}
+[data-gap-wizard] textarea {display:block;width:100%;margin-top:8px;}

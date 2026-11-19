@@ -35,7 +35,7 @@
  await run('Глазик заметки работает из урока без редактора',async()=>{
  const before={data,client:window.supabaseClient};try{reset();const lesson=data.lessons[0],block={id:'00000000-0000-4000-8000-000000000701',type:'text',content:'LIVE NOTE',settings:{note:true}};lesson.sections[0].activities=[block];lesson.note_visibility={};
  window.supabaseClient={rpc:async(name,payload)=>{assert(name==='set_note_visibility','Неверный запрос');assert(payload.target_block===block.id,'Не та заметка');return{data:{[block.id]:false},error:null};}};
- openLessonPreview(lesson.id);const eye=pageContent.querySelector('[data-note-visibility]');assert(eye,'Нет глазика в уроке');eye.click();await new Promise(r=>setTimeout(r,0));assert(pageContent.querySelector('[data-note-visibility]').getAttribute('aria-pressed')==='false','Заметка не скрылась');assert(pageContent.textContent.includes('LIVE NOTE'),'Заметка пропала у учителя');
+ openLessonPreview(lesson.id);const eye=pageContent.querySelector('[data-note-visibility]');assert(eye,'Нет глазика в уроке');const summary=eye.closest('summary');assert(summary,'Глазик вне заголовка заметки');const er=eye.getBoundingClientRect(),sr=summary.getBoundingClientRect();assert(er.top>=sr.top-1&&er.bottom<=sr.bottom+1&&er.right<=sr.right+1,'Глазик съехал за заголовок');eye.click();await new Promise(r=>setTimeout(r,0));assert(pageContent.querySelector('[data-note-visibility]').getAttribute('aria-pressed')==='false','Заметка не скрылась');assert(pageContent.textContent.includes('LIVE NOTE'),'Заметка пропала у учителя');
  }finally{data=before.data;window.supabaseClient=before.client;}
  });
  await run('Директор управляет школой без личных классов и полномочий администратора',()=>{
@@ -45,6 +45,15 @@
  openClassEditor();const scope=modalCard.querySelector('[name="classScope"]');assert(scope.disabled&&scope.value==='school','Директор может создавать личные классы');closeModal();
  activeView='students';render();assert(!pageContent.querySelector('[data-action="student-scope-edit"]'),'Доступна смена принадлежности ученика');assert(!pageContent.querySelector('[data-action="student-scope-view"][data-id="private"]'),'Доступна вкладка личных учеников');
  }finally{closeModal();workspaceAccess=before.access;currentUser=before.user;data=before.data;activeView=before.view;classArchiveView=before.archive;}
+ });
+ await run('Пропуски в диалоге выбираются нажатием слов без разметки',()=>{
+ reset();const block=activeDraftSection().activities[0];block.type='one-of-many';block.content='MÁRIA: Dobrý deň.\nZUZANA: Ako sa voláš?';block.answer='';
+ render();const launch=pageContent.querySelector('[data-word-gap-builder]');assert(launch,'Нет кнопки выбора пропусков');launch.click();const picker=modalCard.querySelector('[data-gap-word-picker]');
+ for(const word of ['Dobrý','voláš']){const button=[...picker.querySelectorAll('button')].find(b=>b.textContent===word);assert(button,'Нет слова '+word);button.click();}
+ modalCard.querySelector('[data-gap-apply]').click();
+ assert(block.type==='fill-blank'&&block.settings.useWordBank===true,'Не включён банк слов');assert(block.content==='MÁRIA: [Dobrý] deň.\nZUZANA: Ako sa [voláš]?','Диалог или пропуски повреждены');
+ const host=document.createElement('div');host.innerHTML=renderPreviewActivity(block,0);document.body.append(host);
+ try{bindLessonPreviewActions(host);assert(host.querySelectorAll('[data-gap-word]').length===2,'Нет банка слов');assert(host.querySelectorAll('[data-answer-index]').length===2,'Нет двух пропусков');const token=[...host.querySelectorAll('[data-gap-word]')].find(b=>b.dataset.gapWord==='Dobrý');token.click();const field=host.querySelector('[data-answer-index]');field.click();assert(field.value==='Dobrý','Слово не вставлено');assert(host.textContent.includes('MÁRIA'),'Диалог пропал');}finally{host.remove();}
  });
  const select=(editor)=>{editor.focus();const r=document.createRange();r.selectNodeContents(editor);const s=getSelection();s.removeAllRanges();s.addRange(r);editor.dispatchEvent(new Event('keyup'));};
  const prepare=()=>{const root=reset();const source=root.querySelector('textarea[data-field="content"]');source.value='Проверка текста';source.dispatchEvent(new Event('input',{bubbles:true}));const editor=root.querySelector('.visual-rich-editor');select(editor);return {root,source,editor};};
