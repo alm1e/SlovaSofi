@@ -5,15 +5,15 @@ const id=n=>`${String(n).padStart(8,'0')}-1111-4111-8111-111111111111`;
 function engine(activities){
     const userId=id(101),memberId=id(102),classId=id(103),lessonId=id(104),revision='2026-10-23T10:00:00Z';
     const lesson={id:lessonId,title:'Test',unit:'A1',activities,updated_at:revision};
-    let saved=null,writes=0,handler;
-    const tables=()=>({profiles:{role:'student'},class_students:[{id:memberId,class_id:classId,teacher_classes:{id:classId,name:'Class',teacher_id:id(105)}}],class_lesson_assignments:[{class_id:classId,lesson_id:lessonId,teacher_lessons:lesson}],student_lesson_progress:saved?[saved]:[],calendar_events:[]});
+    let saved=null,writes=0,handler;const categories=[];
+    const tables=()=>({lesson_categories:categories,profiles:{role:'student'},class_students:[{id:memberId,class_id:classId,teacher_classes:{id:classId,name:'Class',teacher_id:id(105)}}],class_lesson_assignments:[{class_id:classId,lesson_id:lessonId,teacher_lessons:lesson}],student_lesson_progress:saved?[saved]:[],calendar_events:[]});
     const client={auth:{getUser:async()=>({data:{user:{id:userId}},error:null})},from(table){const chain={};for(const op of ['select','eq','in','gte','order'])chain[op]=()=>chain;chain.maybeSingle=async()=>({data:tables()[table],error:null});chain.then=(resolve,reject)=>Promise.resolve({data:tables()[table],error:null}).then(resolve,reject);chain.upsert=async row=>{saved=structuredClone(row);writes++;return{error:null};};return chain;}};
     const ctx=vm.createContext({SlovaPhotoAnnotations:require('./photo-annotations.js'),SlovaExerciseFormat:require("./exercise-format.js"),URL,Request,Response,crypto:require('node:crypto').webcrypto,createClient:()=>client,console,SlovaTable:require('./table.js'),SlovaFillBlanks:require('./fill-blanks.js'),Deno:{env:{get:key=>({APP_URL:'https://school.example',SUPABASE_URL:'https://db.example',SUPABASE_ANON_KEY:'test',SUPABASE_SERVICE_ROLE_KEY:'test'})[key]},serve:fn=>{handler=fn;}}});
     const path=process.env.LESSON_ENGINE_TEST_SOURCE||`${__dirname}/../../supabase/functions/student-lessons/index.ts`;
     vm.runInContext(stripTypeScriptTypes(fs.readFileSync(path,'utf8').replace(/^import .*;\r?\n/gm,'')),ctx);
     async function request(payload){const response=await handler(new Request('https://db.example/functions/v1/student-lessons',{method:'POST',headers:{Origin:'https://school.example',Authorization:'Bearer test'},body:JSON.stringify({lessonId,...payload})}));return{status:response.status,body:await response.json()};}
     const write=(index,response,action='submit',extra={})=>request({action,activityIndex:index,activityId:activities[index].id,lessonRevision:revision,response,...extra});
-    return{ctx,lesson,revision,userId,classId,lessonId,request,write,get saved(){return saved;},get writes(){return writes;}};
+    return{ctx,lesson,categories,revision,userId,classId,lessonId,request,write,get saved(){return saved;},get writes(){return writes;}};
 }
 test('literal numeric choices take precedence over legacy indices and remain stable in the editor',async()=>{
     const e=engine([{id:id(1),type:'multiple-choice',prompt:'Choose 1',content:'1\n2\n3',answer:'1'},{id:id(2),type:'multiple-choice',prompt:'Legacy index',content:'dom\nauto\nškola',answer:'1'}]);
@@ -268,4 +268,17 @@ test('students can type anywhere on an unprepared photo and reload the saved inl
  const response=JSON.stringify({[url]:[note]});assert.equal((await e.write(0,response,'save-draft')).status,200);
  const loaded=(await e.request({action:'load'})).body.lesson;assert.equal(loaded.progress['b'+id(1)].response,response);
  assert.equal((await e.write(0,JSON.stringify({[url]:[{...note,text:'x'.repeat(201)}]}),'save-draft')).status,400);
+});
+
+test('note eye hides private text from pupils without changing answer revisions',async()=>{
+ const block={id:id(501),type:'text',content:'PRIVATE NOTE',settings:{note:true}};const e=engine([block]);
+ e.lesson.note_visibility={[block.id]:false};
+ let state=await e.request({action:'note-state'});assert.equal(state.status,200);assert.equal(state.body.noteVisibility[block.id],false);assert(!JSON.stringify(state.body).includes('PRIVATE NOTE'));
+ let loaded=await e.request({action:'load'});assert.equal(loaded.status,200);assert(!JSON.stringify(loaded.body).includes('PRIVATE NOTE'));assert.equal(loaded.body.lesson.revision,e.revision);
+ e.lesson.note_visibility[block.id]=true;loaded=await e.request({action:'load'});assert(JSON.stringify(loaded.body).includes('PRIVATE NOTE'));
+});
+
+test('assigned course summaries include their uploaded category cover',async()=>{
+ const e=engine([{id:id(601),type:'text',content:'Lesson'}]);e.categories.push({name:'A1',cover_url:'https://example.test/a1.png',lesson_order:[e.lessonId]});
+ const result=await e.request({action:'list'});assert.equal(result.status,200);assert.equal(result.body.lessons[0].categoryCover,'https://example.test/a1.png');assert.equal(result.body.classes[0].lessons[0].categoryCover,'https://example.test/a1.png');
 });

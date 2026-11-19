@@ -882,7 +882,7 @@ Deno.serve(async (request: Request) => {
         return jsonResponse(400, { error: "The request must contain valid JSON." }, allowedOrigin);
     }
     const action = stringValue(payload.action);
-    if (!["list", "load", "submit", "save-draft", "find-error-event"].includes(action)) return jsonResponse(400, { error: "Choose a valid lesson action." }, allowedOrigin);
+    if (!["list", "load", "note-state", "submit", "save-draft", "find-error-event"].includes(action)) return jsonResponse(400, { error: "Choose a valid lesson action." }, allowedOrigin);
     const lessonId = stringValue(payload.lessonId);
     if (action !== "list" && !uuidPattern.test(lessonId)) return jsonResponse(400, { error: "Choose a valid assigned lesson." }, allowedOrigin);
 
@@ -932,7 +932,7 @@ Deno.serve(async (request: Request) => {
     }
 
     const { data: assignments, error: assignmentsError } = await admin.from("class_lesson_assignments")
-        .select("class_id,lesson_id,teacher_lessons(id,title,unit,activities,updated_at)")
+        .select("class_id,lesson_id,teacher_lessons(id,title,unit,activities,updated_at,note_visibility)")
         .in("class_id", classIds);
     if (assignmentsError) {
         console.error("Could not load assigned lessons.", assignmentsError);
@@ -944,6 +944,25 @@ Deno.serve(async (request: Request) => {
         if (!member || !lesson.id) return [];
         return [{ classId: String(row.class_id), memberId: member.id, group: member.group, lesson }];
     });
+    if(action === "note-state") {
+        const target=assignmentRows.find(row=>String(row.lesson.id)===lessonId && (!stringValue(payload.classId)||row.classId===stringValue(payload.classId)));
+        if(!target)return jsonResponse(404,{error:"Lesson not assigned."},allowedOrigin);
+        return jsonResponse(200,{noteVisibility:record(target.lesson.note_visibility)},allowedOrigin);
+    }
+    for(const row of assignmentRows){
+        const visibility=record(row.lesson.note_visibility);
+        const apply=(value:unknown):unknown=>Array.isArray(value)?value.map(apply):value&&typeof value==='object'?Object.fromEntries(Object.entries(value as JsonRecord).map(([key,child])=>[key,apply(child)])):value;
+        // Work on a copy; explicit block IDs keep answer identities stable.
+        row.lesson.activities=apply(row.lesson.activities);
+        const visit=(value:unknown):void=>{if(Array.isArray(value)){value.forEach(visit);return;}if(!value||typeof value!=='object')return;const node=value as JsonRecord;
+            if(node.type==='text'&&typeof visibility[String(node.id)]==='boolean')node.settings={...record(node.settings),studentVisible:visibility[String(node.id)]};
+            Object.values(node).forEach(visit);
+        };visit(row.lesson.activities);
+    }
+    const {data: categoryRows,error:categoryError}=action==='list'?await admin.from('lesson_categories').select('name,cover_url,lesson_order'):{data:[],error:null};
+    if(categoryError)return jsonResponse(500,{error:'Could not load course presentation.'},allowedOrigin);
+    const categoryMeta=new Map((categoryRows||[]).map((c:JsonRecord)=>[String(c.name),c]));
+    assignmentRows.sort((a,b)=>{const rank=(row:typeof a)=>{const ids=categoryMeta.get(String(row.lesson.unit))?.lesson_order;return Array.isArray(ids)&&ids.includes(row.lesson.id)?ids.indexOf(row.lesson.id):1e9;};return rank(a)-rank(b);});
     const lessonIds = [...new Set(assignmentRows.map((row) => String(row.lesson.id)))];
     const memberIds = [...new Set(assignmentRows.map((row) => row.memberId))];
     const { data: progressRows, error: progressError } = memberIds.length
@@ -971,6 +990,7 @@ Deno.serve(async (request: Request) => {
                 id: lessonIdValue,
                 title: stringValue(lesson.title),
                 unit: stringValue(lesson.unit),
+                categoryCover:stringValue(categoryMeta.get(String(lesson.unit))?.cover_url),
                 activityCount: activities.length,
                 completed: Boolean(progress?.completed_at),
                 ...progressSummary(activities, progress?.answers)
@@ -991,6 +1011,7 @@ Deno.serve(async (request: Request) => {
                 id: String(row.lesson.id),
                 title: stringValue(row.lesson.title),
                 unit: stringValue(row.lesson.unit),
+                categoryCover:stringValue(categoryMeta.get(String(row.lesson.unit))?.cover_url),
                 activityCount: activities.length,
                 completed: Boolean(progress?.completed_at),
                 ...progressSummary(activities, progress?.answers)
@@ -1012,6 +1033,8 @@ Deno.serve(async (request: Request) => {
         const safeLesson = {
             id: lessonId,
             revision: stringValue(assignment.lesson.updated_at),
+            noteVisibility:record(assignment.lesson.note_visibility),
+            hasNotes:allActivities.some(a=>a.type==='text'&&(a.settings?.note===true||/^\s*\[(info|star)\]/i.test(String(a.content||'')))),
             title: stringValue(assignment.lesson.title),
             unit: stringValue(assignment.lesson.unit),
             classId: assignment.classId,

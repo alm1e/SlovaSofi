@@ -26,14 +26,14 @@
             (readAllVisible
                 ? client.from("teacher_classes").select("id,name,course,teacher_id,class_scope,archived_at").order("created_at")
                 : client.from("teacher_classes").select("id,name,course,teacher_id,class_scope,archived_at").eq("teacher_id", userId).order("created_at")),
-            client.from("teacher_lessons").select("id,title,unit,activities,teacher_id,updated_at").order("created_at"),
+            client.from("teacher_lessons").select("id,title,unit,activities,teacher_id,updated_at,note_visibility").order("created_at"),
             (readAllVisible
                 ? client.from("class_students").select("id,class_id,teacher_id,display_name,email,linked_user_id")
                 : client.from("class_students").select("id,class_id,teacher_id,display_name,email,linked_user_id").eq("teacher_id", userId)),
             (readAllVisible
                 ? client.from("class_lesson_assignments").select("class_id,lesson_id,teacher_id")
                 : client.from("class_lesson_assignments").select("class_id,lesson_id,teacher_id").eq("teacher_id", userId)),
-            client.from("lesson_categories").select("name").order("created_at")
+            client.from("lesson_categories").select("name,cover_url,lesson_order").order("created_at")
         ]);
         fail(settingsResult.error, "Не удалось загрузить настройки кабинета");
         fail(classesResult.error, "Не удалось загрузить классы");
@@ -70,6 +70,9 @@
             assignmentsByLesson.set(lessonId, ids);
         });
         const lessons = lessonsResult.data.map((lesson) => {
+            const visit=value=>{if(Array.isArray(value)){value.forEach(visit);return;}if(!value||typeof value!=='object')return;
+                if(value.type==='text'&&typeof lesson.note_visibility?.[value.id]==='boolean')value.settings={...value.settings,studentVisible:lesson.note_visibility[value.id]};Object.values(value).forEach(visit);
+            };visit(lesson.activities);
             const isSectionFormat = lesson.activities?.format === "sections-v1";
             const sections = isSectionFormat && Array.isArray(lesson.activities.sections)
                 ? lesson.activities.sections
@@ -95,7 +98,7 @@
                 console.error("Could not initialize teacher workspace settings.", error));
         }
         return {
-            data: { classes, lessons, studentDirectory: studentDirectory || [], categories: categoriesResult.data.map((category) => category.name) },
+            data: { classes, lessons, categoryPresentation: Object.fromEntries(categoriesResult.data.map(c => [c.name,c])), studentDirectory: studentDirectory || [], categories: categoriesResult.data.map((category) => category.name) },
             migratedLegacy: false,
             workspaceOwnerId: userId,
             role: context.role,
@@ -219,6 +222,7 @@
                         homeworkSections: Array.isArray(homeworkSections) ? homeworkSections : []
                     }
                     : Array.isArray(activities) ? activities : [],
+                note_visibility: Object.fromEntries([...(sections||[]).flatMap(s=>s.activities||[]),...(homeworkSections||[]).flatMap(s=>s.activities||[]),...(Array.isArray(activities)?activities:[])].filter(a=>a.id&&a.type==='text').map(a=>[a.id,a.settings?.studentVisible!==false])),
                 updated_at: new Date().toISOString()
             }));
             await upsertRows(client, "teacher_lessons", lessons, "Не удалось сохранить уроки");

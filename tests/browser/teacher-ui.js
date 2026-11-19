@@ -24,6 +24,20 @@
   modalCard.querySelector('[data-close]').click();assert(modalBackdrop.hidden,'Окно не закрылось');
  }finally{closeModal();workspaceAccess=before.access;currentUser=before.user;data=before.data;activeView=before.view;studentScopeView=before.scope;}
  });
+ await run('Перестановка уроков и открытие загрузки обложки',async()=>{
+ const before={data,client:window.supabaseClient,view:activeView,unit:selectedLessonUnit,filter:activeClassFilter,query:searchQuery};const calls=[];
+ try{reset();const first=structuredClone(data.lessons[0]),second={...structuredClone(first),id:'qa-second',title:'Second'};first.unit=second.unit='A1';data.lessons=[first,second];data.categoryPresentation={A1:{lesson_order:[first.id,second.id]}};window.supabaseClient={rpc:async(name,payload)=>{calls.push({name,payload});return{error:null};}};
+ lessonWorkspaceMode='';activeView='lessons';selectedLessonUnit='A1';activeClassFilter='';searchQuery='';render();
+ pageContent.querySelector('[data-lesson-step="1"]').click();await new Promise(r=>setTimeout(r,0));assert(calls[0]?.name==='set_category_order','Порядок не отправлен');assert(pageContent.querySelector('[data-sort-lesson]').dataset.sortLesson==='qa-second','Порядок не изменился');
+ pageContent.querySelector('[data-category-cover]').click();assert(modalCard.querySelector('input[type="file"]'),'Нет загрузки обложки');closeModal();
+ }finally{closeModal();data=before.data;window.supabaseClient=before.client;activeView=before.view;selectedLessonUnit=before.unit;activeClassFilter=before.filter;searchQuery=before.query;}
+ });
+ await run('Глазик заметки работает из урока без редактора',async()=>{
+ const before={data,client:window.supabaseClient};try{reset();const lesson=data.lessons[0],block={id:'00000000-0000-4000-8000-000000000701',type:'text',content:'LIVE NOTE',settings:{note:true}};lesson.sections[0].activities=[block];lesson.note_visibility={};
+ window.supabaseClient={rpc:async(name,payload)=>{assert(name==='set_note_visibility','Неверный запрос');assert(payload.target_block===block.id,'Не та заметка');return{data:{[block.id]:false},error:null};}};
+ openLessonPreview(lesson.id);const eye=pageContent.querySelector('[data-note-visibility]');assert(eye,'Нет глазика в уроке');eye.click();await new Promise(r=>setTimeout(r,0));assert(pageContent.querySelector('[data-note-visibility]').getAttribute('aria-pressed')==='false','Заметка не скрылась');assert(pageContent.textContent.includes('LIVE NOTE'),'Заметка пропала у учителя');
+ }finally{data=before.data;window.supabaseClient=before.client;}
+ });
  const select=(editor)=>{editor.focus();const r=document.createRange();r.selectNodeContents(editor);const s=getSelection();s.removeAllRanges();s.addRange(r);editor.dispatchEvent(new Event('keyup'));};
  const prepare=()=>{const root=reset();const source=root.querySelector('textarea[data-field="content"]');source.value='Проверка текста';source.dispatchEvent(new Event('input',{bubbles:true}));const editor=root.querySelector('.visual-rich-editor');select(editor);return {root,source,editor};};
  const click=(b)=>{b.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true}));b.click();};

@@ -2488,22 +2488,54 @@ function renderLessons() {
     const filtered = data.lessons.filter((item) => (!activeClassFilter || lessonClassIds(item).includes(activeClassFilter))
         && `${item.title} ${item.unit} ${lessonClassNames(item)}`.toLowerCase().includes(searchQuery.toLowerCase()));
     const classSelect = `<option value="">${t("lessons.allClasses")}</option>${data.classes.map((item) => `<option value="${escapeHtml(item.id)}" ${activeClassFilter === item.id ? "selected" : ""}>${escapeHtml(item.name)}</option>`).join("")}`;
-    const selectedLevelLessons = filtered.filter((item) => (item.unit || inferLessonUnit(item)) === selectedLessonUnit);
+    const rank = data.categoryPresentation?.[selectedLessonUnit]?.lesson_order || [];
+    const selectedLevelLessons = filtered.filter((item) => (item.unit || inferLessonUnit(item)) === selectedLessonUnit).sort((a,b) => (rank.includes(a.id)?rank.indexOf(a.id):1e9)-(rank.includes(b.id)?rank.indexOf(b.id):1e9));
     const sectionHeading = selectedLessonUnit
         ? `<div class="lesson-breadcrumb"><button class="text-link" type="button" data-action="back-to-units">${t("lessons.title")}</button><span aria-hidden="true">›</span><strong>${escapeHtml(selectedLessonUnit)}</strong></div>`
         : "";
     const deleteCategoryButton = canEditLessons && selectedLessonUnit && !LESSON_UNITS.includes(selectedLessonUnit.toUpperCase())
         && (data.categories || []).includes(selectedLessonUnit)
         ? `<button class="button secondary" type="button" data-action="delete-category" data-id="${escapeHtml(selectedLessonUnit)}">${categoryText("remove")}</button>` : "";
-    return `${sectionHeading}<div class="section-heading"><div><h1>${escapeHtml(selectedClass ? `${selectedClass.name}${selectedLessonUnit ? ` · ${selectedLessonUnit}` : ""}` : selectedLessonUnit || t("lessons.title"))}</h1><p>${escapeHtml(selectedLessonUnit ? lessonText("levelDescription", { level: selectedLessonUnit }) : lessonText("description"))}</p></div><div class="lesson-heading-actions">${selectedClass && canAssignLessons ? `<button class="button" type="button" data-action="add-class-lessons" data-id="${escapeHtml(selectedClass.id)}">${classLessonText("add")}</button>` : ""}${canEditLessons ? `${deleteCategoryButton}<button class="button secondary" type="button" data-action="new-category">${categoryText("add")}</button><button class="button" data-action="new-lesson">${t("lessons.add")}</button>` : ""}</div></div>
+    return `${sectionHeading}<div class="section-heading"><div><h1>${escapeHtml(selectedClass ? `${selectedClass.name}${selectedLessonUnit ? ` · ${selectedLessonUnit}` : ""}` : selectedLessonUnit || t("lessons.title"))}</h1><p>${escapeHtml(selectedLessonUnit ? lessonText("levelDescription", { level: selectedLessonUnit }) : lessonText("description"))}</p></div><div class="lesson-heading-actions">${selectedClass && canAssignLessons ? `<button class="button" type="button" data-action="add-class-lessons" data-id="${escapeHtml(selectedClass.id)}">${classLessonText("add")}</button>` : ""}${canEditLessons ? `${selectedLessonUnit ? `<button type="button" class="button secondary" data-category-cover="${escapeHtml(selectedLessonUnit)}">Обложка категории</button>` : ""}${deleteCategoryButton}<button class="button secondary" type="button" data-action="new-category">${categoryText("add")}</button><button class="button" data-action="new-lesson">${t("lessons.add")}</button>` : ""}</div></div>
         <div class="toolbar"><select data-class-filter aria-label="${t("lessons.allClasses")}">${classSelect}</select><input type="search" data-search placeholder="${t("lessons.search")}" value="${escapeHtml(searchQuery)}" aria-label="${t("lessons.search")}"></div>
-        ${selectedLessonUnit ? `<section class="course-hero course-hero-${LESSON_UNITS.includes(selectedLessonUnit) ? selectedLessonUnit.toLowerCase() : "custom"}"><div class="course-hero-art" aria-hidden="true"><span>${escapeHtml(selectedLessonUnit)}</span></div><div class="course-hero-copy"><span class="course-hero-kicker">${lessonText("courseLabel")}</span><h2>${escapeHtml(selectedLessonUnit)}</h2><p>${escapeHtml(lessonText("levelDescription", { level: selectedLessonUnit }))}</p><span class="course-hero-count">${countLabel(selectedLevelLessons.length, "lesson")}</span></div></section>
+        ${selectedLessonUnit ? `<section class="course-hero course-hero-${LESSON_UNITS.includes(selectedLessonUnit) ? selectedLessonUnit.toLowerCase() : "custom"}"><div class="course-hero-art" aria-hidden="true">${data.categoryPresentation?.[selectedLessonUnit]?.cover_url ? `<img src="${escapeHtml(data.categoryPresentation[selectedLessonUnit].cover_url)}" alt="">` : `<span>${escapeHtml(selectedLessonUnit)}</span>`}</div><div class="course-hero-copy"><span class="course-hero-kicker">${lessonText("courseLabel")}</span><h2>${escapeHtml(selectedLessonUnit)}</h2><p>${escapeHtml(lessonText("levelDescription", { level: selectedLessonUnit }))}</p><span class="course-hero-count">${countLabel(selectedLevelLessons.length, "lesson")}</span></div></section>
             <div class="course-lessons-heading"><h2>${lessonText("levelLessons")}</h2><span>${selectedLevelLessons.length}</span></div>
-            <div class="course-lesson-list">${selectedLevelLessons.length ? selectedLevelLessons.map((item) => `<article class="course-lesson-row">${lessonIcon(item)}<div class="lesson-main"><button class="lesson-preview-link" data-action="preview-lesson" data-id="${escapeHtml(item.id)}">${escapeHtml(item.title)}</button><small>${escapeHtml(lessonClassNames(item)) || lessonText("unassigned")} · ${countLabel(lessonActivities(item).length, "activity")}</small></div><div class="course-lesson-actions"><button class="button secondary small" type="button" data-action="lesson-history" data-id="${escapeHtml(item.id)}">${historyText("versions")}</button><button class="mini-action course-action-preview" data-action="preview-lesson" data-id="${escapeHtml(item.id)}" aria-label="${previewText("open")}" title="${previewText("open")}">${lessonActionIcon("preview")}</button>${canEditLessons ? `<button class="mini-action course-action-edit" data-action="edit-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editLesson")}" title="${t("modal.editLesson")}">${lessonActionIcon("edit")}</button>` : ""}${canAssignLessons ? `<button class="mini-action course-action-assign" data-action="assign-lesson" data-id="${escapeHtml(item.id)}" aria-label="${assignmentText("add")}" title="${assignmentText("add")}">${lessonActionIcon("assign")}</button>` : ""}${canEditLessons ? `<button class="mini-action course-action-delete" data-action="delete-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}" title="${t("action.delete")}">${lessonActionIcon("delete")}</button>` : ""}</div></article>`).join("") : emptyMessage(data.lessons.length ? lessonText("noSearch") : t("lessons.notFound"), data.lessons.length ? "" : t("lessons.notFoundHint"))}</div>`
+            <div class="course-lesson-list">${selectedLevelLessons.length ? selectedLevelLessons.map((item) => `<article class="course-lesson-row" data-sort-lesson="${escapeHtml(item.id)}" draggable="${canEditLessons && !searchQuery && !activeClassFilter}">${canEditLessons && !searchQuery && !activeClassFilter ? `<div class="lesson-sort-controls"><span aria-hidden="true" title="Перетащить урок">⠿</span><button type="button" class="mini-action" data-lesson-step="-1" data-id="${escapeHtml(item.id)}" aria-label="Переместить урок выше">↑</button><button type="button" class="mini-action" data-lesson-step="1" data-id="${escapeHtml(item.id)}" aria-label="Переместить урок ниже">↓</button></div>` : ""}${lessonIcon(item)}<div class="lesson-main"><button class="lesson-preview-link" data-action="preview-lesson" data-id="${escapeHtml(item.id)}">${escapeHtml(item.title)}</button><small>${escapeHtml(lessonClassNames(item)) || lessonText("unassigned")} · ${countLabel(lessonActivities(item).length, "activity")}</small></div><div class="course-lesson-actions"><button class="button secondary small" type="button" data-action="lesson-history" data-id="${escapeHtml(item.id)}">${historyText("versions")}</button><button class="mini-action course-action-preview" data-action="preview-lesson" data-id="${escapeHtml(item.id)}" aria-label="${previewText("open")}" title="${previewText("open")}">${lessonActionIcon("preview")}</button>${canEditLessons ? `<button class="mini-action course-action-edit" data-action="edit-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("modal.editLesson")}" title="${t("modal.editLesson")}">${lessonActionIcon("edit")}</button>` : ""}${canAssignLessons ? `<button class="mini-action course-action-assign" data-action="assign-lesson" data-id="${escapeHtml(item.id)}" aria-label="${assignmentText("add")}" title="${assignmentText("add")}">${lessonActionIcon("assign")}</button>` : ""}${canEditLessons ? `<button class="mini-action course-action-delete" data-action="delete-lesson" data-id="${escapeHtml(item.id)}" aria-label="${t("action.delete")}" title="${t("action.delete")}">${lessonActionIcon("delete")}</button>` : ""}</div></article>`).join("") : emptyMessage(data.lessons.length ? lessonText("noSearch") : t("lessons.notFound"), data.lessons.length ? "" : t("lessons.notFoundHint"))}</div>`
             : `<div class="unit-sections">${lessonCategories().map((unit) => {
                 const unitLessons = filtered.filter((item) => (item.unit || inferLessonUnit(item)) === unit);
-                return `<button type="button" class="unit-card unit-card-link unit-card-${LESSON_UNITS.includes(unit) ? unit.toLowerCase() : "custom"}" data-unit-open="${escapeHtml(unit)}"><span class="unit-card-mark">${escapeHtml(unit.slice(0, 2))}</span><span class="unit-card-copy"><strong>${escapeHtml(unit)}</strong><small>${unitLessons.length ? countLabel(unitLessons.length, "lesson") : lessonText("unitEmpty")}</small></span><span class="unit-card-chevron" aria-hidden="true">→</span></button>`;
+                return `<button type="button" class="unit-card unit-card-link unit-card-${LESSON_UNITS.includes(unit) ? unit.toLowerCase() : "custom"}" data-unit-open="${escapeHtml(unit)}"><span class="unit-card-mark">${data.categoryPresentation?.[unit]?.cover_url ? `<img src="${escapeHtml(data.categoryPresentation[unit].cover_url)}" alt="" loading="lazy">` : escapeHtml(unit.slice(0,2))}</span><span class="unit-card-copy"><strong>${escapeHtml(unit)}</strong><small>${unitLessons.length ? countLabel(unitLessons.length, "lesson") : lessonText("unitEmpty")}</small></span><span class="unit-card-chevron" aria-hidden="true">→</span></button>`;
             }).join("")}</div>${filtered.length ? "" : emptyMessage(data.lessons.length ? lessonText("noSearch") : t("lessons.notFound"), data.lessons.length ? "" : t("lessons.notFoundHint"))}`}`;
+}
+
+let categoryOrderSaving=false;
+async function moveCategoryLesson(id,targetId,step=0){
+ if(categoryOrderSaving||!hasPermission('edit_lessons'))return;
+ const meta=data.categoryPresentation?.[selectedLessonUnit]||{lesson_order:[]};
+ const order=Array.from(document.querySelectorAll('[data-sort-lesson]'),row=>row.dataset.sortLesson);
+ const from=order.indexOf(id),to=step?from+step:order.indexOf(targetId);if(from<0||to<0||to>=order.length||from===to)return;
+ order.splice(to,0,order.splice(from,1)[0]);categoryOrderSaving=true;
+ try{const {error}=await window.supabaseClient.rpc('set_category_order',{category_name:selectedLessonUnit,ordered_ids:order,expected_order:meta.lesson_order||[]});if(error)throw error;
+ data.categoryPresentation||={};data.categoryPresentation[selectedLessonUnit]={...meta,lesson_order:order};render();
+ }catch(error){showToast(error.message);}finally{categoryOrderSaving=false;}
+}
+function bindCategoryPresentation(){
+ pageContent.querySelectorAll('[data-category-cover]').forEach(button=>button.addEventListener('click',()=>{
+  const unit=button.dataset.categoryCover;
+  openModal(`${modalHeader('Обложка категории')}<form id="categoryCoverForm"><label>Изображение<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" name="cover"></label><div class="modal-actions"><button type="button" class="button secondary" data-close>Отмена</button><button type="button" class="button secondary" data-remove-cover>Убрать обложку</button><button type="submit" class="button">Загрузить</button></div></form>`);
+  const form=modalCard.querySelector('form');modalCard.querySelector('[data-close]').onclick=closeModal;
+  async function save(remove=false){const file=form.elements.cover.files[0];if(!remove&&!file)return;form.querySelectorAll('button').forEach(b=>b.disabled=true);
+   try{const url=remove?'':await uploadLessonImage(file);
+    const {error}=await window.supabaseClient.rpc('set_category_cover',{category_name:unit,image_url:url});if(error)throw error;
+    data.categoryPresentation||={};data.categoryPresentation[unit]={...data.categoryPresentation[unit],cover_url:url};closeModal();render();
+   }catch(error){showToast(error.message);form.querySelectorAll('button').forEach(b=>b.disabled=false);}
+  }
+  form.onsubmit=e=>{e.preventDefault();save();};form.querySelector('[data-remove-cover]').onclick=()=>save(true);
+ }));
+ pageContent.querySelectorAll('[data-lesson-step]').forEach(b=>b.onclick=()=>moveCategoryLesson(b.dataset.id,null,Number(b.dataset.lessonStep)));
+ let dragging='';pageContent.querySelectorAll('[data-sort-lesson][draggable="true"]').forEach(row=>{
+  row.addEventListener('dragstart',e=>{if(e.target.closest('button,input,a')){e.preventDefault();return;}dragging=row.dataset.sortLesson;e.dataTransfer.setData('text/plain',dragging);});
+  row.addEventListener('dragover',e=>{if(dragging)e.preventDefault();});row.addEventListener('drop',e=>{e.preventDefault();if(dragging)moveCategoryLesson(dragging,row.dataset.sortLesson);dragging='';});row.addEventListener('dragend',()=>dragging='');
+ });
 }
 
 function lessonCategories() {
@@ -2968,10 +3000,12 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         }).join("")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
         checkable = table.blankCount > 0;
     } else if (type === "text") {
-        const note = window.SlovaActivityUI?.renderNote(content, activity.prompt, activity.settings);
+        const state=typeof data!=='undefined' && typeof workspaceLessonId!=='undefined' ? data.lessons.find(l=>l.id===workspaceLessonId)?.note_visibility : null;
+        const settings=state && Object.hasOwn(state,activity.id) ? {...activity.settings,studentVisible:state[activity.id]} : activity.settings;
+        const note = window.SlovaActivityUI?.renderNote(content, activity.prompt, settings);
         if (note && !quickEditing) {
             const noteEditTools = canEdit ? `<div class="preview-activity-actions note-actions">${duplicateBlockButton("data-duplicate-preview-block", index)}<button class="mini-action" type="button" data-edit-preview-block="${index}" aria-label="${lessonSectionText("edit")}" title="${lessonSectionText("edit")}">✎</button><button class="mini-action preview-activity-delete" type="button" data-delete-preview-block="${index}" aria-label="${lessonSectionText("remove")}" title="${lessonSectionText("remove")}">×</button></div>` : "";
-            return `<article class="preview-activity preview-note-card" data-preview-activity="${index}">${noteEditTools}${note}</article>`;
+            return `<article class="preview-activity preview-note-card" data-preview-activity="${index}">${noteEditTools}${lessonWorkspaceMode==='preview' && hasPermission('edit_lessons') && activity.id ? `<button type="button" class="mini-action note-visibility-toggle" data-note-visibility="${escapeHtml(activity.id)}" aria-pressed="${settings?.studentVisible !== false}" aria-label="${settings?.studentVisible === false ? 'Показать ученику' : 'Скрыть от ученика'}" title="${settings?.studentVisible === false ? 'Показать ученику' : 'Скрыть от ученика'}"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>${settings?.studentVisible === false ? '<path d="M3 3 21 21"/>' : ''}</svg></button>` : ''}${note}</article>`;
         }
         const richText = window.SlovaActivityUI?.renderRichText(content);
         body = richText || (displayContent ? `<div class="preview-material">${escapeHtml(displayContent).replace(/\n/g, "<br>")}</div>` : "");
@@ -3229,6 +3263,15 @@ async function savePreviewActivities(lesson, sectionId, activities, successMessa
 }
 
 function bindLessonPreviewActions(container = pageContent, lesson = null, section = null, isHomework = false) {
+    container.querySelectorAll('[data-note-visibility]').forEach(button=>button.addEventListener('click',async()=>{
+        const lesson=data.lessons.find(l=>l.id===workspaceLessonId);if(!lesson)return;
+        button.disabled=true;
+        try{const visible=button.getAttribute('aria-pressed')!=='true';
+            const {data:state,error}=await window.supabaseClient.rpc('set_note_visibility',{target_lesson:lesson.id,target_block:button.dataset.noteVisibility,visible});if(error)throw error;
+            lesson.note_visibility=state;
+            const visit=value=>{if(Array.isArray(value)){value.forEach(visit);return;}if(!value||typeof value!=='object')return;if(value.id===button.dataset.noteVisibility)value.settings={...value.settings,studentVisible:visible};Object.values(value).forEach(visit);};visit(lesson.sections);visit(lesson.homeworkSections);visit(lesson.activities);render();
+        }catch(error){showToast(error.message);button.disabled=false;}
+    }));
     container.querySelectorAll('[data-photo-live-index]').forEach(host=>{
         const targetLesson=data.lessons.find(item=>item.id===workspaceLessonId);
         if(!targetLesson)return;
@@ -3490,6 +3533,7 @@ function bindPageActions() {
         setView(button.dataset.viewLink);
     }));
     pageContent.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", () => handleAction(button.dataset.action, button.dataset.id)));
+    bindCategoryPresentation();
     pageContent.querySelectorAll("[data-search]").forEach((input) => input.addEventListener("input", () => {
         searchQuery = input.value;
         const start = input.selectionStart;

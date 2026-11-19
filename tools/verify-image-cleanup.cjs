@@ -60,5 +60,14 @@ const root=path.resolve(__dirname,'..'),id=n=>`00000000-0000-4000-8000-${String(
  await db.exec('update lesson_image_cleanup_settings set enabled=false');assert.equal(await scalar('select run_scheduled_lesson_image_cleanup()'),123);
  const queued=(await db.query('select * from test_http')).rows[0];assert.equal(queued.body.dry_run,true);assert.ok(queued.url.endsWith('/functions/v1/cleanup-images'));assert.equal(queued.headers['x-cleanup-token'],token);
  await db.exec('set role authenticated');await assert.rejects(()=>db.query('select run_scheduled_lesson_image_cleanup()'),/permission denied/);await db.exec('reset role');
+ await db.exec(`alter table teacher_lessons add column unit text not null default 'A1'; alter table teacher_lessons add column teacher_id uuid not null default '${id(2)}'; create table lesson_categories(name text primary key,created_by uuid default auth.uid());`);
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261125_category_presentation.sql'),'utf8'));
+ const cover=`${id(2)}/${id(910)}.png`;
+ await db.query("insert into storage.objects values($1,'lesson-images',$2,now()-interval '90 days')",[id(910),cover]);
+ await db.query('select set_category_cover($1,$2)',['A1','https://test.supabase.co/storage/v1/object/public/lesson-images/'+cover]);
+ assert.equal(await scalar(`select lesson_image_is_referenced('${cover}')`),true,'Used category cover is protected from cleanup');
+ await db.query('select set_category_cover($1,$2)',['A1','']);
+ assert.equal(await scalar(`select lesson_image_is_referenced('${cover}')`),false,'Removed cover can enter normal quarantine');
+ console.log('PASS: Uploaded category covers are protected while used and eligible for quarantine after removal.');
  console.log('PASS: references in 7 sources + drafts + website, age/quarantine, auth/RLS, dry-run, disabled gate, lease, recheck, tombstones, replacement guard and deletion confirmation. No school data accessed.');await db.close();
 })().catch(error=>{console.error(error);process.exitCode=1;});

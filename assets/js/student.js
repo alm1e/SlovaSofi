@@ -427,7 +427,7 @@
             const count = allLessons.filter((lesson) => unitFor(lesson) === unit).length;
             const label = unit || text("materials");
             const tone = standardUnits.includes(unit) ? unit.toLowerCase() : "custom";
-            return `<button type="button" class="unit-card unit-card-link unit-card-${tone}" data-student-unit="${escapeHtml(unit || "__uncategorized__")}"><span class="unit-card-mark">${escapeHtml(label.slice(0, 2))}</span><span class="unit-card-copy"><strong>${escapeHtml(label)}</strong><small>${escapeHtml(countLabel(count, "lesson"))}</small></span><span class="unit-card-chevron" aria-hidden="true">→</span></button>`;
+            return `<button type="button" class="unit-card unit-card-link unit-card-${tone}" data-student-unit="${escapeHtml(unit || "__uncategorized__")}"><span class="unit-card-mark">${allLessons.find(l=>unitFor(l)===unit)?.categoryCover ? `<img src="${escapeHtml(allLessons.find(l=>unitFor(l)===unit).categoryCover)}" alt="" loading="lazy">` : escapeHtml(label.slice(0,2))}</span><span class="unit-card-copy"><strong>${escapeHtml(label)}</strong><small>${escapeHtml(countLabel(count, "lesson"))}</small></span><span class="unit-card-chevron" aria-hidden="true">→</span></button>`;
         }).join("")}</div>`;
         const content = allLessons.length
             ? !selectedLessonUnit ? unitCards : `<div class="panel student-lessons-panel"><div class="student-lessons-list">${visibleLessons.map((lesson) => `<article class="lesson-row student-lesson-row" role="button" tabindex="0" data-open-lesson-card="${escapeHtml(lesson.id)}"><span class="lesson-symbol">▤</span><div class="lesson-main"><strong>${escapeHtml(lesson.title)}</strong><small>${escapeHtml(lesson.classNames.join(", "))}${lesson.unit ? ` · ${escapeHtml(lesson.unit)}` : ""}</small>${progressBadge(lesson)}</div><span class="lesson-count">${escapeHtml(countLabel(activityCount(lesson), "activity"))}<span class="student-lesson-open-arrow" aria-hidden="true"> →</span></span></article>`).join("")}</div></div>`
@@ -1449,6 +1449,24 @@
         }
     }
 
+    let noteSyncBusy=false, noteInputVersion=0;
+    pageContent.addEventListener('input',()=>noteInputVersion++);
+    pageContent.addEventListener('photo-change',()=>noteInputVersion++);
+    async function syncLessonNotes(){
+        if(noteSyncBusy||!openedLesson||openedLesson.hasNotes===false||!user||document.hidden||activeRecorders.size)return;
+        noteSyncBusy=true;const lesson=openedLesson;
+        try{
+            const state=await invokeLessonApi({action:'note-state',lessonId:lesson.id,classId:lesson.classId});
+            if(openedLesson!==lesson||JSON.stringify(state.noteVisibility||{})===JSON.stringify(lesson.noteVisibility||{}))return;
+            const version=noteInputVersion;await flushDraftSaves();if(openedLesson!==lesson||version!==noteInputVersion)return;
+            const fresh=await invokeLessonApi({action:'load',lessonId:lesson.id,classId:lesson.classId});
+            if(openedLesson!==lesson||version!==noteInputVersion||activeRecorders.size)return;
+            const inputs=[...pageContent.querySelectorAll('input,textarea')],focused=inputs.indexOf(document.activeElement),start=document.activeElement?.selectionStart,end=document.activeElement?.selectionEnd;
+            openedLesson={...fresh.lesson,className:lesson.className};render();
+            const replacement=pageContent.querySelectorAll('input,textarea')[focused];if(replacement){replacement.focus({preventScroll:true});try{replacement.setSelectionRange(start,end);}catch{}}
+        }catch(error){console.warn('Could not refresh note visibility.',error);}finally{noteSyncBusy=false;}
+    }
+    window.setInterval(syncLessonNotes,2500);
     async function openStudentLesson(lessonId, classId = null) {
         if (openedLesson) {
             try { await flushDraftSaves(); }

@@ -172,7 +172,7 @@ test("workspace navigation data loads without a redundant network user lookup", 
     });
     assert.ok(queriedTables.length > 0);
     assert.equal(workspace.role, "teacher");
-    assert.deepEqual(JSON.parse(JSON.stringify(workspace.data)), { classes: [], lessons: [], studentDirectory: [], categories: ["Conversation"] });
+    assert.deepEqual(JSON.parse(JSON.stringify(workspace.data)), { classes: [], lessons: [], studentDirectory: [], categoryPresentation: { Conversation: {name:"Conversation"} }, categories: ["Conversation"] });
     assert.equal(workspace.staff.length, 0);
 });
 

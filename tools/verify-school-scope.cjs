@@ -258,5 +258,26 @@ const migrationPath = process.argv[3] || path.join(root,'supabase/migrations/202
  assert.equal((await rows(`select * from profiles where id='${uid(306)}'`)).length,1,'Class deletion preserves account');
  console.log('PASS: Student school/private defaults, admin-only classification, director and other teacher privacy, owner access, incompatible memberships rejected without deleting progress, class delete authorization and account preservation.');
  console.log('PASS: Homework deadlines, submission/review workflow and isolation; version snapshots, restore/concurrency protection, immutable scoped audit log and actor attribution; shared lesson creation/editing and media uploads; PostgreSQL migration, existing-class privacy, default school / explicit personal, director read-only across classes/rosters/assignments/calendar/progress/recordings, stale-role isolation, teacher isolation, student membership and admin transfer.');
+ await db.exec("select set_config('request.jwt.claim.sub','',false)");
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20261125_category_presentation.sql'),'utf8'));
+ await db.exec(`insert into teacher_lessons(id,teacher_id,title,unit,activities) values('${uid(401)}','${uid(2)}','Note controls','A1','[{"id":"${uid(402)}","type":"text","content":"Note","settings":{"note":true}}]');`);
+ const revision=(await rows(`select updated_at from teacher_lessons where id='${uid(401)}'`))[0].updated_at;
+ await asUser(2,async()=>{
+  await db.query('select set_category_cover($1,$2)',['A1','https://test.example/cover.png']);
+  const order=(await rows("select id from teacher_lessons where unit='A1' order by id desc")).map(r=>r.id);
+  await db.query('select set_category_order($1,$2,$3)',['A1',order,[]]);
+  assert.deepEqual((await rows("select lesson_order from lesson_categories where name='A1'"))[0].lesson_order,order);
+  await assert.rejects(()=>db.query('select set_category_order($1,$2,$3)',['A1',order,[]]),/Порядок уже изменён/);
+  await db.query('select set_note_visibility($1,$2,$3)',[uid(401),uid(402),false]);
+  assert.equal((await rows(`select note_visibility from teacher_lessons where id='${uid(401)}'`))[0].note_visibility[uid(402)],false);
+  assert.deepEqual((await rows(`select updated_at from teacher_lessons where id='${uid(401)}'`))[0].updated_at,revision,'Eye toggle preserves pupil revision');
+  await db.query('select set_note_visibility($1,$2,$3)',[uid(401),uid(402),true]);
+  await assert.rejects(()=>db.query('select set_note_visibility($1,$2,$3)',[uid(401),uid(999),false]),/Заметка не найдена/);
+ });
+ await asUser(5,async()=>{
+  await assert.rejects(()=>db.query('select set_category_cover($1,$2)',['A1','https://test.example/no.png']),/Нет права/);
+  await assert.rejects(()=>db.query('select set_note_visibility($1,$2,$3)',[uid(401),uid(402),false]),/Нет права/);
+ });
+ console.log('PASS: Category cover, persisted order with concurrency checks, note eye permissions and unchanged student revision.');
  await db.close();
 })().catch(e=>{console.error(e);process.exit(1);});

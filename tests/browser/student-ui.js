@@ -40,6 +40,13 @@
         const assert=(condition,message)=>{if(!condition)throw Error(message);};
         const run=async(name,fn)=>{try{await fn();results.push('PASS '+name);}catch(e){results.push('FAIL '+name+' — '+e.message);}};
         for(const activity of qaActivities)await run('Ученик: '+activity.type,()=>{qaReset(activity.type);assert(pageContent.textContent.includes(qaLesson.title),'Не отрисован урок');});
+        await run('Заметка появляется и скрывается без перезагрузки страницы',async()=>{
+            const originalInvoke=invokeLessonApi;
+            try{qaReset('text');const note=openedLesson.sections[0].activities[0];note.id='00000000-0000-4000-8000-000000000801';note.content='LIVE NOTE';note.settings={note:true};openedLesson.hasNotes=true;openedLesson.noteVisibility={};render();const template=structuredClone(openedLesson);let visible=false;
+                invokeLessonApi=async payload=>payload.action==='note-state'?{noteVisibility:{[note.id]:visible}}:{lesson:{...structuredClone(template),noteVisibility:{[note.id]:visible},sections:template.sections.map((s,i)=>i===0?{...s,activities:visible?s.activities:[]}:s)}};
+                await syncLessonNotes();assert(!pageContent.textContent.includes('LIVE NOTE'),'Скрытая заметка осталась у ученика');visible=true;await syncLessonNotes();assert(pageContent.textContent.includes('LIVE NOTE'),'Заметка не появилась без перезагрузки');
+            }finally{invokeLessonApi=originalInvoke;}
+        });
         await run('Рисунок ученика отправляется через автосохранение и восстанавливается',async()=>{
             const card=qaReset('image'),url='https://example.invalid/image.png';const img=card.querySelector('img');img.src='wide.svg';await img.decode();
             card.querySelector('[data-photo-tool="text"]').click();card.querySelector('[data-photo-caption]').value='Мой ответ';const canvas=card.querySelector('canvas'),r=canvas.getBoundingClientRect();const before=qaRequests.length;
