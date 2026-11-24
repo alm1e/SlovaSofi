@@ -93,16 +93,19 @@ function workspaceContext() {
         switchLessonWorkspaceMode(){},openActivityPicker(){},openLessonTextImport(){},enhanceSelects(){},bindLessonPreviewActions(){},
         bindLiveAnswerActions(){},bindTrueFalseEditors(){},bindLessonNotes(){},bindBlankCardSettings(){},bindActivityBlockActions(){},bindActivityAuthoring(){}
     });
-    vm.runInContext(readFunction('escapeHtml')+readFunction('lessonCategories')+readFunction('categoryText')+readFunction('renderLessonWorkspace'),ctx);return ctx;
+    vm.runInContext(readFunction('escapeHtml')+readFunction('lessonCategories')+readFunction('categoryText')+readFunction('acceptsLiveAnswer')+readFunction('renderLessonWorkspace'),ctx);return ctx;
 }
-test('lesson mode controls appear once above the answer card, and stay available in the editor',()=>{
+test('lesson modes use one toolbar and both modes show the sections in the same rail',()=>{
     const ctx=workspaceContext();ctx.renderLessonWorkspace();const html=ctx.pageContent.innerHTML;
-    assert.match(html,/<aside class="lesson-monitor-rail"><nav class="lesson-workspace-tabs"/);
+    assert.match(html,/<div class="lesson-workspace-toolbar"><nav class="lesson-workspace-tabs"/);
+    assert.match(html,/<aside class="lesson-workspace-rail">\s*<section class="lesson-sections-panel"/);
     assert.ok(html.indexOf('data-workspace-mode="edit"')<html.indexOf('<section class="live-monitor-bar">'));
+    assert.equal((html.match(/aria-current="location"/g)||[]).length,1);
     assert.equal((html.match(/data-workspace-mode="edit"/g)||[]).length,1);
     ctx.lessonWorkspaceMode='edit';ctx.renderLessonWorkspace();
     assert.equal((ctx.pageContent.innerHTML.match(/data-workspace-mode="preview"/g)||[]).length,1);
-    assert.doesNotMatch(ctx.pageContent.innerHTML,/<aside class="lesson-monitor-rail">/);
+    assert.match(ctx.pageContent.innerHTML,/<aside class="lesson-workspace-rail">\s*<section class="lesson-sections-panel"/);
+    assert.doesNotMatch(ctx.pageContent.innerHTML,/class="live-monitor-bar"/);
 });
 
 test('grouped live answers retain their block identity and correction settings when rendering the lesson',()=>{

@@ -1,5 +1,25 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 require('./fill-blanks.js');require('./table.js');const format=require('./exercise-format.js'),ready=require('./lesson-readiness.js');
+test('sequence shuffles vary without using rotations or reversals and keep repeated tiles',()=>{
+    const correct = Array.from('Dovidenia');
+    const tiles = correct.map((text, index) => ({ text, index }));
+    const rotations = [...correct.keys()].flatMap(index => [correct, [...correct].reverse()]
+        .map(sequence => sequence.slice(index).concat(sequence.slice(0, index)).join('')));
+    let seed = 14;
+    const random = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32);
+    const layouts = new Set();
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+        const shuffled = format.shuffleSequence(tiles, tile => tile.text, random);
+        const layout = shuffled.map(tile => tile.text).join('');
+        assert.ok(!rotations.includes(layout));
+        assert.ok(shuffled.filter((tile, index) => tile.text !== tiles[index].text).length >= 5);
+        assert.deepEqual([...shuffled].sort((a, b) => a.index - b.index), tiles);
+        layouts.add(layout);
+    }
+    assert.ok(layouts.size > 10);
+    assert.deepEqual(format.shuffleSequence(['a', 'b']), ['b', 'a']);
+    assert.deepEqual(format.shuffleSequence(['a', 'a']), ['a', 'a']);
+});
 test('cards accept bracket translations and preserve legacy formats and per-line answers',()=>{
     assert.deepEqual(format.cards('auto [машина]\ndom [дом]'),[{front:'auto',back:'машина'},{front:'dom',back:'дом'}]);
     assert.deepEqual(format.cards('auto | car\ndom: house'),[{front:'auto',back:'car'},{front:'dom',back:'house'}]);

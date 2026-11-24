@@ -209,6 +209,9 @@
  });
  await run('Пометки учителя сохраняются в настройках и возвращаются в редактор',async()=>{
   currentLanguage='ru';reset();const section=data.lessons[0].sections[0];section.activities=[{id:'qa-photo',type:'image',content:'https://school.example/photo.png',settings:{}}];openLessonEditor(data.lessons[0],'qa-intro',0);
+  const toggle=pageContent.querySelector('[data-photo-interactive-toggle]');assert(toggle&&!toggle.checked,'Обычное фото стало заданием автоматически');
+  toggle.click();assert(activeDraftSection().activities[0].settings.photoInteractive===true&&pageContent.querySelector('[data-builder-preview] [data-photo-tool="input"]'),'Не включилось написание на фото');toggle.click();
+  assert(activeDraftSection().activities[0].settings.photoInteractive===false,'Не выключилось написание на фото');
   const panel=[...pageContent.querySelectorAll('details')].find(el=>el.querySelector('summary')?.textContent.includes('на фото'));assert(panel,'Нет панели рисования');panel.open=true;panel.dispatchEvent(new Event('toggle'));
   let image=panel.querySelector('img');image.src='wide.svg';await image.decode();
   panel.querySelector('[data-photo-tool="text"]').click();panel.querySelector('[data-photo-caption]').value='Подпись учителя';const canvas=panel.querySelector('canvas'),rect=canvas.getBoundingClientRect();canvas.dispatchEvent(new PointerEvent('pointerdown',{button:0,clientX:rect.left+10,clientY:rect.top+20,pointerId:1}));
@@ -220,7 +223,7 @@
  await run('Учитель печатает прямо в фото в режиме урока и сохраняет без редактора',async()=>{
   const before={user:currentUser,api:window.teacherWorkspaceApi,client:window.supabaseClient};let fail=true;const writes=[];
   try{
-   currentLanguage='ru';reset();data.lessons[0].sections[0].activities=[{id:'qa-direct-photo',type:'image',content:'https://school.example/photo.png',settings:{}}];
+   currentLanguage='ru';reset();data.lessons[0].sections[0].activities=[{id:'qa-direct-photo',type:'image',content:'https://school.example/photo.png',settings:{photoInteractive:true}}];
    currentUser={id:'qa-teacher'};window.supabaseClient={};window.teacherWorkspaceApi={saveWorkspace:async(client,user,snapshot)=>{if(fail)throw Error('Test offline');writes.push(snapshot);}};
    openLessonPreview(data.lessons[0].id);
    const host=pageContent.querySelector('[data-photo-live-index]');assert(host&&lessonWorkspaceMode==='preview','Нужно переключаться в редактор');const img=host.querySelector('img');img.src='wide.svg';await img.decode();const canvas=host.querySelector('canvas'),r=canvas.getBoundingClientRect();canvas.dispatchEvent(new PointerEvent('pointerdown',{button:0,pointerId:15,clientX:r.left+r.width*.4,clientY:r.top+r.height*.4}));
@@ -232,7 +235,7 @@
  await run('Фотоответы приходят в основной снимок, считаются в прогрессе и восстанавливаются после переподключения',async()=>{
   const before={user:currentUser,api:window.teacherWorkspaceApi,client:window.supabaseClient};let onEvent,onStatus,rows=[];
   try{
-   currentLanguage='ru';reset();const lesson=data.lessons[0];lesson.classIds=['qa-class'];lesson.sections=[{id:'qa-intro',title:'Photo',activities:[{id:'00000000-0000-4000-8000-000000000099',type:'image',content:'https://school.example/photo.png',settings:{}}]}];lesson.homeworkSections=[];
+   currentLanguage='ru';reset();const lesson=data.lessons[0];lesson.classIds=['qa-class'];lesson.sections=[{id:'qa-intro',title:'Photo',activities:[{id:'00000000-0000-4000-8000-000000000099',type:'image',content:'https://school.example/photo.png',settings:{photoInteractive:true}}]}];lesson.homeworkSections=[];
    data.classes[0].studentRecords=[{id:'qa-member',display_name:'First learner'},{id:'qa-member2',display_name:'Second learner'}];
    currentUser={id:'qa-teacher'};window.supabaseClient={removeChannel:async()=> 'ok'};window.teacherWorkspaceApi={loadLessonProgress:async()=>structuredClone(rows),subscribeLessonProgress:(client,id,event,status)=>{onEvent=event;onStatus=status;return {};}};
    openLessonPreview(lesson.id);await new Promise(resolve=>setTimeout(resolve,10));onStatus('SUBSCRIBED');await new Promise(resolve=>setTimeout(resolve,10));

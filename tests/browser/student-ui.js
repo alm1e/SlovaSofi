@@ -20,7 +20,7 @@
         {type:'find-error',content:'Ja bývať v Bratislave.'},
         {type:'audio',content:'http://127.0.0.1:1/qa.wav'},
         {type:'video',content:'http://127.0.0.1:1/qa.mp4'},
-        {type:'image',content:'https://example.invalid/image.png'},
+        {type:'image',content:'https://example.invalid/image.png',photoInteractive:true},
         {type:'interactive-image',content:'https://example.invalid/image.png',hotspots:[{x:30,y:40,word:'dom',translation:'дім'}]},
         {type:'pronunciation-recording',content:'Прочитайте текст'},
         {type:'listening-questions',content:'http://127.0.0.1:1/qa.wav',options:['dom','škola']}
@@ -46,6 +46,22 @@
                 invokeLessonApi=async payload=>payload.action==='note-state'?{noteVisibility:{[note.id]:visible}}:{lesson:{...structuredClone(template),noteVisibility:{[note.id]:visible},sections:template.sections.map((s,i)=>i===0?{...s,activities:visible?s.activities:[]}:s)}};
                 await syncLessonNotes();assert(!pageContent.textContent.includes('LIVE NOTE'),'Скрытая заметка осталась у ученика');visible=true;await syncLessonNotes();assert(pageContent.textContent.includes('LIVE NOTE'),'Заметка не появилась без перезагрузки');
             }finally{invokeLessonApi=originalInvoke;}
+        });
+        await run('Обычное фото можно открыть, оно не принимает ответ и не меняет прогресс',()=>{
+            qaReset('image');
+            const photo=openedLesson.sections[0].activities[0];
+            const url=photo.content;
+            openedLesson.progress={'a0':{response:JSON.stringify({[url]:[{type:'text',text:'Прежний ответ',x:10,y:10,color:'#e53935',width:4}]}),draft:true}};
+            assert(progressActivityCountFor(openedLesson)===2&&answeredCountFor(openedLesson)===1,'Интерактивное фото должно засчитываться');
+            photo.photoInteractive=false;
+            render();
+            const card=pageContent.querySelector('[data-activity-type="image"]');
+            assert(card.querySelector('[data-gallery-zoom]')&&!card.querySelector('[data-answer-kind], [data-answer-feedback], [data-photo-tool]'),'Обычное фото отрисовалось как задание');
+            assert(progressActivityCountFor(openedLesson)===1&&answeredCountFor(openedLesson)===0,'Обычное фото попало в прогресс');
+            card.querySelector('[data-gallery-zoom]').click();
+            const lightbox=document.querySelector('.slova-lightbox');
+            assert(lightbox&&!lightbox.hidden&&lightbox.querySelector('img').src===url,'Фото не открылось в полном размере');
+            lightbox.querySelector('[data-lightbox-close]').click();
         });
         await run('Рисунок ученика отправляется через автосохранение и восстанавливается',async()=>{
             const card=qaReset('image'),url='https://example.invalid/image.png';const img=card.querySelector('img');img.src='wide.svg';await img.decode();

@@ -3,25 +3,61 @@ window.qaRunLessonImprovements=async function(){
  const run=async(name,fn)=>{try{await fn();results.push('PASS '+name);}catch(e){results.push('FAIL '+name+': '+e.message);}};
  const original=structuredClone(data);
  const reset=(activity={type:'text',prompt:'Text',content:'## Heading\nSome text'})=>{
-   clearTimeout(lessonDraftAutosaveTimer);lessonUndoHistory=null;lessonUndoKey='';
+   clearTimeout(lessonDraftAutosaveTimer);lessonUndoHistory=null;lessonUndoKey='';liveMonitorOpen=false;
    data=structuredClone(original);data.lessons[0].sections=[{id:'qa-intro',title:'Introduction',activities:[{...activity,id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'},{type:'text',id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',content:'Second activity'}]}];
    data.lessons[0].classIds=['qa-class'];openLessonEditor(data.lessons[0],'qa-intro',0);return pageContent;
  };
- await run('Sections drawer opens and closes without narrowing lesson',()=>{
-   reset();const layout=pageContent.querySelector('.lesson-workspace-layout'),width=layout.getBoundingClientRect().width;
-   assert(getComputedStyle(pageContent.querySelector('.lesson-sections-panel')).display==='none','Panel initially visible');
-   pageContent.querySelector('[data-tools-sections]').click();assert(getComputedStyle(pageContent.querySelector('.lesson-sections-panel')).display!=='none','Panel hidden after opening');
-   assert(Math.abs(layout.getBoundingClientRect().width-width)<1,'Lesson width changed');pageContent.querySelector('[data-tools-close]').click();assert(!document.body.classList.contains('lesson-sections-open'),'Panel did not close');
+ await run('Lesson sections and homework are directly reachable from the same panel in both modes',()=>{
+   reset();
+   const lesson=data.lessons[0];
+   lesson.sections.push({id:'qa-next',title:'Next section',activities:[{type:'text',content:'Second section content'}]});
+   openLessonPreview(lesson.id);
+   for(const mode of ['preview','edit']){
+     pageContent.querySelector(`[data-workspace-mode="${mode}"]`).click();
+     const panel=pageContent.querySelector('.lesson-sections-panel'),main=pageContent.querySelector('.lesson-workspace-main');
+     const p=panel.getBoundingClientRect(),m=main.getBoundingClientRect();
+     assert(panel.closest('.lesson-workspace-rail')&&p.width>0&&p.height>0,'Sections not visible');
+     assert(innerWidth<=700?p.bottom<=m.top:p.left>=m.right,'Sections not in the expected position');
+     assert(!pageContent.querySelector('[data-tools-sections]'),'Duplicate sections button');
+     pageContent.querySelector('[data-select-section="qa-next"]').click();
+     assert(pageContent.querySelector('[aria-current="location"]')?.dataset.selectSection==='qa-next','Selected section not marked');
+     assert(pageContent.querySelector('.lesson-workspace-main').textContent.includes('Second section content'),'Section did not render');
+     pageContent.querySelector('[data-select-section="qa-homework"]').click();
+     assert(lessonWorkspaceTab==='homework'&&pageContent.querySelector('[aria-current="location"]')?.dataset.selectSection==='qa-homework','Homework not reachable');
+     assert(pageContent.querySelector('[data-select-section="qa-intro"]'),'Lesson navigation disappeared on homework');
+   }
+ });
+ await run('Right rail stays in reach while the lesson scrolls',()=>{
+   reset();
+   openLessonPreview(data.lessons[0].id);
+   const rail=pageContent.querySelector('.lesson-workspace-rail');
+   const monitor=rail.querySelector('#lessonLiveAnswers'),toggle=rail.querySelector('[data-toggle-live-monitor]');
+   if(innerWidth<=700){
+     assert(toggle.getClientRects().length&&!monitor.getClientRects().length,'Phone answers disclosure has wrong default');
+     toggle.click();
+     assert(monitor.getClientRects().length&&toggle.getAttribute('aria-expanded')==='true','Phone answers did not open');
+     toggle.focus();toggle.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+     assert(!monitor.getClientRects().length&&document.activeElement===toggle,'Escape did not close phone answers');
+   }else{
+     assert(monitor.getClientRects().length&&!toggle.getClientRects().length,'Desktop answers are not visible');
+     pageContent.querySelector('.lesson-workspace-main').style.minHeight='210vh';
+     window.scrollTo({top:350,behavior:'instant'});
+     const topbar=document.querySelector('.topbar').getBoundingClientRect();
+     const box=rail.getBoundingClientRect();
+     assert(box.top>=topbar.bottom-1&&box.top<=topbar.bottom+20&&box.bottom<=innerHeight+1,'Sticky rail overlaps the header or loses controls');
+     window.scrollTo({top:0,behavior:'instant'});
+   }
  });
  await run('Undo and redo restore a deleted activity',()=>{
    reset();pageContent.querySelector('[data-remove-block]').click();assert(draftSections[0].activities.length===1,'Not deleted');
    pageContent.querySelector('[data-tools-undo]').click();assert(draftSections[0].activities.length===2,'Undo failed');pageContent.querySelector('[data-tools-redo]').click();assert(draftSections[0].activities.length===1,'Redo failed');
  });
- await run('Presentation and arrow keys show one activity',()=>{
-   reset();switchLessonWorkspaceMode('preview');pageContent.querySelector('[data-tools-present]').click();
-   assert(document.body.classList.contains('lesson-presenting'),'Not presenting');const cards=[...pageContent.querySelectorAll('.lesson-preview-list > .preview-activity')];assert(cards.length===2,'Two cards expected');assert(cards[1].classList.contains('presentation-hidden'),'Second card visible');
-   document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));assert(cards[0].classList.contains('presentation-hidden')&&!cards[1].classList.contains('presentation-hidden'),'Arrow failed');
-   document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert(!document.body.classList.contains('lesson-presenting'),'Escape failed');
+ await run('Opening a lesson shows its title, sections and every activity',()=>{
+   reset();openLessonPreview(data.lessons[0].id);
+   assert(window.scrollY===0,'Lesson skipped its heading');
+   assert(!pageContent.querySelector('[data-tools-present]'),'Presentation control remains');
+   const cards=[...pageContent.querySelectorAll('.lesson-preview-list > .preview-activity')];
+   assert(cards.length===2&&cards.every(card=>card.getClientRects().length),'Some activities are hidden');
  });
  await run('Readiness explains the problem and opens its block',()=>{
    reset({type:'audio',content:''});pageContent.querySelector('[data-tools-validate]').click();assert(modalCard.querySelector('[data-readiness-go]'),'No issue link');modalCard.querySelector('[data-readiness-go]').click();assert(modalBackdrop.hidden,'Issue dialog still open');assert(pageContent.querySelector('.builder-block.is-expanded'),'Problem not expanded');

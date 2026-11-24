@@ -14,15 +14,27 @@ html=html.replace('</body>','<pre id="qa-log"></pre></body>');
 const child=html.replace('</body>',"<script>openLessonEditor(data.lessons[0],'qa-intro',0);</script></body>");
 write('teacher-ui.js',read('tests/browser/teacher-ui.js').replace('__QA_CHILD_HTML__',JSON.stringify(child)));
 write('teacher.html',html.replace('</body>',`<script src="${url('teacher-ui.js')}"></script></body>`));
+function workspaceReport(testFunction) {
+    return `<pre id="qa-report"></pre><script>
+    window[${JSON.stringify(testFunction)}]().catch(error=>['FAIL '+error.message]).then(results=>{
+        const failed=results.filter(result=>result.startsWith('FAIL')).length;
+        document.querySelector('#qa-report').textContent=[...results,'TOTAL '+results.length+'; FAIL '+failed].join('\\n');
+    });
+    </script>`;
+}
+write('teacher-workspace.html',html.replace('</body>',`<script src="${pathToFileURL(path.join(root,'tests/browser/lesson-improvements.js')).href}"></script>${workspaceReport('qaRunLessonImprovements')}</body>`));
 write('live-photo-ui.js',read('tests/browser/live-photo-ui.js'));
 write('live-photo.html',html.replace('</body>',`<script src="${url('live-photo-ui.js')}"></script></body>`));
 let student=read('assets/js/student.js');
 const studentStart='start().catch((error) => {\n        console.error("Could not start the student dashboard.", error);\n        showError(text("loadError"), error);\n    });';
 if(!student.includes(studentStart))throw Error('Student startup changed');
-student=student.replace(studentStart,read('tests/browser/student-ui.js'));
+student=student.replace(studentStart,read('tests/browser/student-ui.js')+'\n'+read('tests/browser/student-improvements.js'));
 const start=student.indexOf('    async function invokeLessonApi(payload) {'),end=student.indexOf('    function responseForActivity(',start);
 student=student.slice(0,start)+`    async function invokeLessonApi(payload) {qaRequests.push(structuredClone(payload));if(payload.action==='load'){const lesson=structuredClone(qaLesson);let index=0;lesson.sections.forEach(section=>section.activities.forEach(activity=>{activity.index=index++;}));lesson.classId=payload.classId||'qa-class';return {lesson,className:'Тестовый класс'};}return {answers:payload.activityIndex!==undefined?{['a'+payload.activityIndex]:{response:payload.response,correct:null,draft:true}}:{},completed:false,correct:true,reviewRequired:typeof payload.response==='object'&&!Array.isArray(payload.response)};}\n`+student.slice(end);
-write('student-fixture.js',student);write('student.html',isolate('student.html').replace(/src="[^"]*\/assets\/js\/student.js"/,`src="${url('student-fixture.js')}"`));
+write('student-fixture.js',student);
+const studentHtml=isolate('student.html').replace(/src="[^"]*\/assets\/js\/student.js"/,`src="${url('student-fixture.js')}"`);
+write('student.html',studentHtml);
+write('student-workspace.html',studentHtml.replace('</body>',workspaceReport('qaRunStudentImprovements')+'</body>'));
 const publicPages=Object.fromEntries(['index.html','login.html','register.html','reset-password.html','teacher-setup.html'].map(name=>[name,isolate(name)]));
 write('public.html',`<meta charset="utf-8"><div id="qa-report"></div><script>
 const pages=${JSON.stringify(publicPages).replace(/</g,'\\u003c')},results=[],report=document.querySelector('#qa-report');
@@ -59,9 +71,12 @@ const keepAlive=setInterval(()=>{},1000);
  ws.onmessage=e=>{const r=JSON.parse(e.data),p=pending.get(r.id);if(p){pending.delete(r.id);r.error?p.reject(Error(r.error.message)):p.resolve(r.result);}};
  await send('Page.enable');
  const reports=[];
- for(const [name,width] of [['teacher',1280],['student',1280],['student',390],['public',1280],['photo',1280],['photo',390],['live-photo',1280],['live-photo',390],...['mobile-teacher','mobile-student'].flatMap(name=>[320,360,390,430,768].map(width=>[name,width]))].filter(([name,width])=>(!process.env.QA_PAGES||process.env.QA_PAGES.split(',').includes(name))&&(!process.env.QA_WIDTHS||process.env.QA_WIDTHS.split(',').includes(String(width))))){
-  await send('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:name.startsWith('mobile-')});
-  await send('Emulation.setTouchEmulationEnabled',{enabled:name.startsWith('mobile-'),maxTouchPoints:1});
+ const workspaceSizes=[[360,800],[390,844],[768,1024],[820,1180],[1024,768],[1180,820],[1366,768],[1920,1080]];
+ const workspaces=['teacher-workspace','student-workspace'].flatMap(name=>workspaceSizes.map(([width,height])=>[name,width,height]));
+ for(const [name,width,height=900] of [['teacher',1280],['student',1280],['student',390],['public',1280],['photo',1280],['photo',390],...[320,390,768,1024,1280,1920].map(width=>['live-photo',width]),...['mobile-teacher','mobile-student'].flatMap(name=>[320,360,390,430,768].map(width=>[name,width])),...workspaces].filter(([name,width])=>(!process.env.QA_PAGES||process.env.QA_PAGES.split(',').includes(name))&&(!process.env.QA_WIDTHS||process.env.QA_WIDTHS.split(',').includes(String(width))))){
+  const mobile=name.startsWith('mobile-') || (name.endsWith('-workspace') && width<=1180);
+  await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
+  await send('Emulation.setTouchEmulationEnabled',{enabled:mobile,maxTouchPoints:1});
   await send('Page.navigate',{url:url(name+'.html')});
   if(name==='student'){for(let i=0;i<100;i++){if(await evaluate("!![...document.querySelectorAll('button')].find(b=>b.textContent.includes('QA'))"))break;await delay(100);}await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.includes('QA')).click()");}
   let result='';for(let i=0;i<600;i++){result=await evaluate("document.body?.innerText||''");if(/TOTAL \d+; FAIL \d+/.test(result))break;await delay(100);}

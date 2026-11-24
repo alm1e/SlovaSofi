@@ -276,7 +276,7 @@
         "pronunciation-recording", "listening-questions", "find-error"
     ]);
     const progressActivitiesFor = (lesson) => activitiesFor(lesson).flatMap((activity) => {
-        if (!answerableActivityTypes.has(activity.type)) return [];
+        if (!answerableActivityTypes.has(activity.type) && !window.SlovaPhotoAnnotations?.isInteractive(activity)) return [];
         return Array.isArray(activity.questions) && activity.questions.length
             ? activity.questions.map((question, questionIndex) => ({
                 activity,
@@ -287,10 +287,11 @@
     });
     const activityCount = (lesson) => activitiesFor(lesson).length || Number(lesson.activityCount) || 0;
     function progressActivityCountFor(lesson) {
+        if (Array.isArray(lesson.sections)) return progressActivitiesFor(lesson).length;
         const reported = Number(lesson.progressActivityCount);
         if (lesson.progressActivityCount !== undefined && lesson.progressActivityCount !== null
             && lesson.progressActivityCount !== "" && Number.isInteger(reported) && reported >= 0) return reported;
-        return Array.isArray(lesson.sections) ? progressActivitiesFor(lesson).length : null;
+        return null;
     }
     function hasAnswerResponse(response) {
         if (typeof response === "string") return response.trim().length > 0;
@@ -314,7 +315,7 @@
                 const answer = answers?.[key]
                     || (questionId && legacyKey ? answers?.[`${legacyKey}.q${questionId}`] : null)
                     || ((questionIndex === 0 || !questionId) && legacyKey ? answers?.[legacyKey] : null);
-                return hasAnswerResponse(answer?.response);
+                return activity.type === "image" ? window.SlovaPhotoAnnotations.hasContent(answer?.response) : hasAnswerResponse(answer?.response);
             }).length;
         }
         return Number(lesson.answeredCount) || 0;
@@ -671,6 +672,7 @@
 
     function renderActivityItem(activity, index, questionIndex, saved) {
         const savedResponse = saved?.response;
+        const interactivePhoto = window.SlovaPhotoAnnotations?.isInteractive(activity);
         const radioName = questionIndex === null ? `student-answer-${index}` : `student-answer-${index}-${questionIndex}`;
         let body = "";
         let controls = "";
@@ -774,7 +776,13 @@
             body = image ? `<div class="student-hotspot-image"><img src="${escapeHtml(image)}" alt="${escapeHtml(activity.prompt || text("imageAlt"))}" loading="lazy">${hotspots.map((hotspot, hotspotIndex) => `<button type="button" class="student-hotspot" data-hotspot-index="${hotspotIndex}" style="left:${Number(hotspot.x)}%;top:${Number(hotspot.y)}%" aria-label="${escapeHtml(hotspot.word)}">${hotspotIndex + 1}</button>`).join("")}</div><p class="student-hotspot-detail" data-hotspot-detail>${escapeHtml(text("selectHotspot"))}</p>` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
         } else if (activity.type === "image") {
             const images = window.slovaGallery.parse(activity.content);
-            body = images.length ? window.SlovaPhotoEditor.markup(images,activity.imageAnnotations||{},window.SlovaPhotoAnnotations.read(savedResponse),true,language,{direct:true}) + `<input type="hidden" data-answer-kind="photo">` : `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
+            const annotations = window.SlovaPhotoAnnotations.forDisplay(activity.imageAnnotations, interactivePhoto);
+            if (!images.length) body = `<p class="student-muted">${escapeHtml(text("noContent"))}</p>`;
+            else if (interactivePhoto) {
+                body = window.SlovaPhotoEditor.markup(images, annotations, window.SlovaPhotoAnnotations.read(savedResponse), true, language, {direct:true})
+                    + '<input type="hidden" data-answer-kind="photo">';
+            } else if (Object.keys(annotations).length) body = window.SlovaPhotoEditor.markup(images, annotations, {}, false, language);
+            else body = window.slovaGallery.html(images, activity.alt || activity.prompt || text("imageAlt"), "student-activity-image");
         } else if (activity.type === "audio" || activity.type === "video") {
             const embed = activity.type === "video" ? videoEmbedUrl(activity.content) : "";
             const source = mediaUrl(activity.content);
@@ -789,17 +797,17 @@
         }
         const incompleteResponse = Array.isArray(savedResponse) && ["fill-blank", "table", "match", "columns", "one-of-many"].includes(activity.type)
             && savedResponse.some((value) => !value.trim());
-        const photoPending=activity.type==='image'&&pendingDrafts.has(activityDraftKey(index,null));
+        const photoPending=interactivePhoto&&pendingDrafts.has(activityDraftKey(index,null));
         const feedback = photoPending ? text(saveState==='error'?'answerPending':'savingAnswer') : saved?.draft ? text("progressSaved") : incompleteResponse ? ""
             : saved?.correct === true ? text("correct")
                 : saved?.correct === false ? text("incorrect")
                     : saved?.correct === null ? text("submitted") : "";
         const isQuestion = Number.isInteger(questionIndex);
         const canSubmit = activity.type!=="find-error" && Boolean(activity.gradable || activity.reviewRequired);
-        const feedbackMarkup = canSubmit || activity.type === "flashcards" || activity.type === "image"
+        const feedbackMarkup = canSubmit || activity.type === "flashcards" || interactivePhoto
             ? `<p class="student-answer-feedback ${!incompleteResponse && saved?.correct === true ? "is-correct" : !incompleteResponse && saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml([feedback, saved?.feedback].filter(Boolean).join(" "))}</p>`
             : "";
-        const photoRetry = activity.type === 'image' ? `<button type="button" class="button secondary small" data-retry-answer-save data-photo-retry-save ${photoPending&&saveState==='error'?'':'hidden'}>${escapeHtml(text('retrySave'))}</button>` : '';
+        const photoRetry = interactivePhoto ? `<button type="button" class="button secondary small" data-retry-answer-save data-photo-retry-save ${photoPending&&saveState==='error'?'':'hidden'}>${escapeHtml(text('retrySave'))}</button>` : '';
         const recordingSubmit = activity.type === "pronunciation-recording"
             ? `<button class="button small" type="button" data-submit-answer>${escapeHtml(text("save"))}</button>` : "";
         const submitMarkup = !canSubmit ? feedbackMarkup + photoRetry
@@ -1547,13 +1555,12 @@
             ? `${recoveryMarkup()}<p data-draft-save-status role="status" aria-live="polite"></p>${renderLessonDetail(openedLesson)}`
             : activeView === "classes" ? renderClasses() : activeView === "calendar" ? renderStudentCalendar() : renderLessons()}`;
         updateSaveStatus();
-        window.SlovaLessonTools?.sync({container:pageContent,language});
         pageHistory?.sync();
         window.SlovaFindErrorUI?.bind(pageContent,{send:(event,root)=>saveFindErrorEvent(root,event)});
         pageContent.querySelectorAll('[data-activity-type="image"]').forEach(element=>{
             window.SlovaPhotoEditor?.bind(element,{language});
             // A completed stroke is one durable answer change, not a stream of pointer events.
-            element.addEventListener('photo-change',()=>scheduleDraftSave(element));
+            if (element.querySelector('[data-answer-kind="photo"]')) element.addEventListener('photo-change',()=>scheduleDraftSave(element));
         });
         window.SlovaBlankCards?.bind(pageContent);
         window.SlovaActivityUI?.enhancePairing(pageContent, { empty: text("choose") });

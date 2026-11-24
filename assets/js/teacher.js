@@ -780,8 +780,13 @@ const activityQuestionLabels = SlovaI18n.locales({
 const liveAnswerActivityTypes = new Set([
     "drag-words", "fill-blank", "multiple-choice", "one-of-many", "order-items",
     "sentence-order", "true-false", "table", "match", "columns", "open-answer",
-    "pronunciation-recording", "listening-questions", "find-error", "image"
+    "pronunciation-recording", "listening-questions", "find-error"
 ]);
+
+function acceptsLiveAnswer(activity) {
+    return liveAnswerActivityTypes.has(activity.type)
+        || Boolean(window.SlovaPhotoAnnotations?.isInteractive(activity));
+}
 
 function activityQuestionText(key) {
     return activityQuestionLabels[currentLanguage]?.[key] || activityQuestionLabels.en[key];
@@ -1783,11 +1788,13 @@ function liveStudentText(key, values = {}) {
     return text.replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? ""));
 }
 
-function progressResetText(key) {
+function progressResetText(key, studentName, lessonTitle) {
     const labels = SlovaI18n.locales({
-        ua: { action: "Скинути відповіді", confirm: "Скинути всі відповіді цього учня за урок?", success: "Відповіді учня скинуто.", error: "Не вдалося скинути відповіді." },
-        ru: { action: "Сбросить ответы", confirm: "Сбросить все ответы этого ученика за урок?", success: "Ответы ученика сброшены.", error: "Не удалось сбросить ответы." },
-        en: { action: "Reset answers", confirm: "Reset all of this student's answers for the lesson?", success: "Student answers were reset.", error: "Could not reset student answers." }
+        ua: { action: "Скинути відповіді", confirm: `Видалити всі відповіді учня «${studentName}» за урок «${lessonTitle}»? Цю дію не можна скасувати.`, success: "Відповіді учня скинуто.", error: "Не вдалося скинути відповіді." },
+        ru: { action: "Сбросить ответы", confirm: `Удалить все ответы ученика «${studentName}» за урок «${lessonTitle}»? Это действие нельзя отменить.`, success: "Ответы ученика сброшены.", error: "Не удалось сбросить ответы." },
+        en: { action: "Reset answers", confirm: `Delete all answers from “${studentName}” for the lesson “${lessonTitle}”? This cannot be undone.`, success: "Student answers were reset.", error: "Could not reset student answers." },
+        sk: { action: "Vymazať odpovede", confirm: `Vymazať všetky odpovede žiaka „${studentName}“ v lekcii „${lessonTitle}“? Túto akciu nemožno vrátiť späť.`, success: "Odpovede žiaka boli vymazané.", error: "Odpovede žiaka sa nepodarilo vymazať." },
+        kk: { action: "Жауаптарды өшіру", confirm: `«${studentName}» оқушысының «${lessonTitle}» сабағындағы барлық жауаптарын өшіру керек пе? Бұл әрекетті кері қайтару мүмкін емес.`, success: "Оқушының жауаптары өшірілді.", error: "Оқушының жауаптарын өшіру мүмкін болмады." }
     });
     return labels[currentLanguage]?.[key] || labels.en[key];
 }
@@ -2963,8 +2970,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         body=`<p class="preview-instruction">${inline.content.split('___').map((part,i)=>escapeHtml(part)+(inline.choices[i]?`<select data-inline-choice aria-label="${previewText('choose')}"><option value="">---</option>${window.SlovaExerciseFormat.shuffleChoices(inline.choices[i]).map(option=>`<option value="${escapeHtml(option)}" ${option===inline.answers[i]?'data-correct-option':''}>${escapeHtml(option)}</option>`).join('')}</select>`:'')).join('')}</p>`;
     } else if (type === "drag-words") {
         const expected = answer ? previewTokens(answer) : content.trim().split(/\s+/).filter(Boolean);
-        const tokens = expected.map((word, wordIndex) => ({ word, wordIndex }));
-        if (tokens.length > 1) tokens.push(tokens.shift());
+        const tokens = window.SlovaExerciseFormat.shuffleSequence(expected.map((word, wordIndex) => ({ word, wordIndex })), item => item.word);
         const previewKey = isQuestion ? `${index}-q${questionIndex}` : String(index);
         body = `<div class="preview-drag-layout sequence-exercise ${expected.every(word => Array.from(word).length === 1) ? 'sequence-letters' : ''}"><div><strong>${previewText("bank")}</strong><div class="preview-word-bank" data-word-bank>${tokens.map(({ word, wordIndex }) => `<button type="button" class="preview-word" draggable="true" data-word-index="${previewKey}-${wordIndex}">${escapeHtml(word)}</button>`).join("")}</div></div><div><strong>${previewText("answer")}</strong><div class="preview-dropzone" data-dropzone data-token-count="${expected.length}" aria-label="${previewText("answer")}" tabindex="0">${expected.map(() => '<span class="sequence-slot" aria-hidden="true"></span>').join('')}</div></div></div>`;
         if (!expected.length) checkable = false;
@@ -3002,8 +3008,7 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         body = `${statement}<div class="preview-options">${options.map((option, optionIndex) => `<label class="preview-option ${isCorrect(option, optionIndex) ? "is-correct-option" : ""}"><input type="${multiple ? "checkbox" : "radio"}" name="${radioName}" value="${optionIndex}"><span>${escapeHtml(option)}</span>${isCorrect(option, optionIndex) ? `<span class="preview-correct-mark" title="${liveStudentText("correctAnswer")}" aria-label="${liveStudentText("correctAnswer")}">&#10003;</span>` : ""}</label>`).join("")}</div>`;
         if (!answer) checkable = false;
     } else if (type === "order-items" || type === "sentence-order") {
-        const items = lines.map((line, itemIndex) => ({ text: line.replace(/^\d+[.)]\s*/, ""), itemIndex }));
-        if (items.length > 1) items.reverse();
+        const items = window.SlovaExerciseFormat.shuffleSequence(lines.map((line, itemIndex) => ({ text: line.replace(/^\d+[.)]\s*/, ""), itemIndex })), item => item.text);
         const previewKey = isQuestion ? `${index}-q${questionIndex}` : String(index);
         body = `<ol class="preview-order-list" data-order-list>${items.map(({ text, itemIndex }) => `<li class="preview-order-item" draggable="true" data-order-index="${previewKey}-${itemIndex}"><span class="preview-order-item-text">${escapeHtml(text)}</span><span class="preview-order-actions"><button type="button" data-move="up" aria-label="${previewText("up")}">↑</button><button type="button" data-move="down" aria-label="${previewText("down")}">↓</button></span></li>`).join("")}</ol>`;
     } else if (type === "columns") {
@@ -3024,10 +3029,15 @@ function renderPreviewActivity(activity, index, canEdit = false, quickEditing = 
         checkable = false;
     } else if (type === "image") {
         const images = window.slovaGallery.parse(content, true);
-        body = images.length ? (activity.settings?.imageAnnotations && window.SlovaPhotoEditor ? window.SlovaPhotoEditor.markup(images,activity.settings.imageAnnotations,{},false,currentLanguage) : window.slovaGallery.html(images, activity.prompt || "", "preview-image")) : `<p class="preview-material">${escapeHtml(displayContent || previewText("imageError"))}</p>`;
-        if(images.length && lessonWorkspaceMode === 'preview' && hasPermission('edit_lessons')){
+        const interactive = window.SlovaPhotoAnnotations.isInteractive(activity);
+        const annotations = window.SlovaPhotoAnnotations.forDisplay(activity.settings?.imageAnnotations, interactive);
+        const tryPhoto = interactive && lessonWorkspaceMode === 'edit';
+        if (!images.length) body = `<p class="preview-material">${escapeHtml(displayContent || previewText("imageError"))}</p>`;
+        else if(interactive && lessonWorkspaceMode === 'preview' && hasPermission('edit_lessons')){
             body = renderTeacherPhotoSurface(activity,index);
-        }
+        } else if (window.SlovaPhotoEditor && (tryPhoto || Object.keys(annotations).length)) {
+            body = window.SlovaPhotoEditor.markup(images, annotations, {}, tryPhoto, currentLanguage, {direct:tryPhoto});
+        } else body = window.slovaGallery.html(images, activity.prompt || "", "preview-image");
         if(liveAnswerMarkup.includes('data-live-photo-answer')){
             body=liveAnswerMarkup;
             liveAnswerMarkup='';
@@ -3205,8 +3215,9 @@ function openLessonPreview(id) {
     previewActivityEdit = null;
     activeLessonSectionId = normalizeLessonSections(lesson)[0].id;
     activeHomeworkSectionId = normalizePreviewHomeworkSections(lesson)[0].id;
+    liveMonitorOpen = false;
     render();
-    scrollToFirstWorkspaceActivity();
+    window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 function bindSortableActivityCards(container, cardSelector, handleSelector, indexAttribute, onReorder) {
@@ -3913,7 +3924,7 @@ function openLessonEditor(item, sectionId = "", activityIndex = -1, tab = "lesso
         const activityBlock = pageContent.querySelector(`.builder-block[data-block-index="${activityIndex}"]`);
         activityBlock?.scrollIntoView({ behavior: "smooth", block: "center" });
         activityBlock?.querySelector("[data-field]")?.focus({ preventScroll: true });
-    } else scrollToFirstWorkspaceActivity();
+    } else window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 function switchLessonWorkspaceMode(mode) {
@@ -3926,7 +3937,7 @@ function switchLessonWorkspaceMode(mode) {
             lessonWorkspaceMode = "edit";
             editorReturnToPreview = false;
             render();
-            scrollToFirstWorkspaceActivity();
+            window.scrollTo({ top: 0, behavior: "instant" });
             return;
         }
         openLessonEditor(lesson, lessonWorkspaceTab === "lesson" ? activeLessonSectionId : activeHomeworkSectionId, -1, lessonWorkspaceTab);
@@ -4345,7 +4356,7 @@ function liveStudentAnswerProgress(lesson, studentId, progressIndexes) {
     let total = 0;
     const sections = [...normalizeLessonSections(lesson), ...normalizeHomeworkSections(lesson)];
     sections.forEach((section) => section.activities.forEach((activity, activityIndex) => {
-        if (!liveAnswerActivityTypes.has(activity.type)) return;
+        if (!acceptsLiveAnswer(activity)) return;
         const progressIndex = progressIndexes.get(`${section.id}:${activityIndex}`);
         if (progressIndex === undefined) return;
         const questionEntries = Array.isArray(activity.questions) && activity.questions.length
@@ -4475,7 +4486,7 @@ function renderLiveMonitor(lesson, progressIndexes) {
     const resetProgressButton = selectedStudent && selectedGroup && hasPermission("edit_lessons")
         ? `<button type="button" class="button secondary small" data-reset-lesson-progress="${escapeHtml(selectedStudent.id)}">${progressResetText("action")}</button>`
         : "";
-    return `<section class="live-monitor-bar"><div class="live-monitor-heading"><strong>${lessonSectionText("liveHint")}</strong><p>${selectedGroup ? escapeHtml(selectedGroup.name) : lessonSectionText("liveNoClass")}</p></div>${groupPicker}${studentPicker}${resetProgressButton}<p class="live-monitor-status ${statusClass}" role="status" aria-live="polite">${escapeHtml(statusText)}</p></section>`;
+    return `<section class="live-monitor-bar" aria-label="${lessonSectionText("liveAnswers")}"><header class="live-monitor-heading"><h2>${lessonSectionText("liveAnswers")}</h2></header>${groupPicker}${studentPicker}${resetProgressButton}<p class="live-monitor-status ${statusClass}" role="status" aria-live="polite">${escapeHtml(statusText)}</p></section>`;
 }
 
 function renderLessonWorkspace() {
@@ -4513,16 +4524,12 @@ function renderLessonWorkspace() {
         && previewActivityEdit.sectionId === section.id && previewActivityEdit.isHomework === isHomework;
     const title = isEditing ? lessonFormDraft.title : lesson.title;
     const unit = isEditing ? lessonFormDraft.unit : lesson.unit || inferLessonUnit(lesson);
-    const progress = !isEditing && liveStudent ? liveStudentAnswerProgress(lesson, liveStudent.id, progressIndexes) : null;
-    const progressValue = progress ? progress.answered : sections.indexOf(section) + 1;
-    const progressTotal = progress ? progress.total : sections.length;
-    const progressLabel = progress
-        ? (SlovaI18n.locales({ ru: "Ответы ученика", ua: "Відповіді учня", en: "Student answers" }))[currentLanguage]
-        : (SlovaI18n.locales({ ru: "Текущий раздел", ua: "Поточний розділ", en: "Current section" }))[currentLanguage];
-    const sectionProgress = `<div class="lesson-section-progress"><div><span>${progressLabel}</span><strong>${progressValue}/${progressTotal}</strong></div><progress max="${Math.max(1, progressTotal)}" value="${progressValue}" aria-label="${progressLabel}"></progress></div>`;
-    const renderSectionMenu = (items, isHomeworkSection) => items.map((item, index) => `<div class="lesson-section-row ${item.id === (isHomeworkSection ? activeHomeworkSectionId : activeLessonSectionId) ? "active" : ""}">
-        <button type="button" class="lesson-section-select" data-select-section="${escapeHtml(item.id)}" data-section-homework="${isHomeworkSection}" ${quickEditActive ? "disabled" : ""}><span class="lesson-section-number">${index + 1}</span><span class="lesson-section-label" data-section-label="${escapeHtml(item.id)}">${escapeHtml(item.title)}</span></button>
-        ${isEditing ? `<div class="lesson-section-tools"><button type="button" data-move-section-from="${escapeHtml(item.id)}" data-move-section="${index - 1}" data-section-homework="${isHomeworkSection}" ${index === 0 ? "disabled" : ""} aria-label="${lessonSectionText("previous")}">↑</button><button type="button" data-move-section-from="${escapeHtml(item.id)}" data-move-section="${index + 1}" data-section-homework="${isHomeworkSection}" ${index === items.length - 1 ? "disabled" : ""} aria-label="${lessonSectionText("next")}">↓</button><button type="button" data-delete-section="${escapeHtml(item.id)}" data-section-homework="${isHomeworkSection}" ${items.length === 1 ? "disabled" : ""} aria-label="${lessonSectionText("remove")}">×</button></div>` : ""}</div>`).join("");
+    const renderSectionMenu = (items, isHomeworkSection) => items.map((item, index) => {
+        const current = isHomeworkSection === isHomework && item.id === selectedSectionId;
+        return `<div class="lesson-section-row ${current ? "active" : ""}">
+            <button type="button" class="lesson-section-select" data-select-section="${escapeHtml(item.id)}" data-section-homework="${isHomeworkSection}" ${current ? 'aria-current="location"' : ""} ${quickEditActive ? "disabled" : ""}><span class="lesson-section-number">${index + 1}</span><span class="lesson-section-label" data-section-label="${escapeHtml(item.id)}">${escapeHtml(item.title)}</span></button>
+            ${isEditing ? `<div class="lesson-section-tools"><button type="button" data-move-section-from="${escapeHtml(item.id)}" data-move-section="${index - 1}" data-section-homework="${isHomeworkSection}" ${index === 0 ? "disabled" : ""} aria-label="${lessonSectionText("previous")}">↑</button><button type="button" data-move-section-from="${escapeHtml(item.id)}" data-move-section="${index + 1}" data-section-homework="${isHomeworkSection}" ${index === items.length - 1 ? "disabled" : ""} aria-label="${lessonSectionText("next")}">↓</button><button type="button" data-delete-section="${escapeHtml(item.id)}" data-section-homework="${isHomeworkSection}" ${items.length === 1 ? "disabled" : ""} aria-label="${lessonSectionText("remove")}">×</button></div>` : ""}</div>`;
+    }).join("");
     const lessonSectionMenu = renderSectionMenu(lessonSections, false);
     const homeworkSectionMenu = renderSectionMenu(homeworkSections, true);
     const sectionBody = isEditing
@@ -4530,7 +4537,7 @@ function renderLessonWorkspace() {
         : `<p class="preview-note">${previewText("practice")}</p><div class="lesson-preview-list">${section.activities.length ? section.activities.map((activity, index) => {
             activity=window.SlovaExerciseFormat?.prepare?.(activity)||activity;
             const progressIndex = progressIndexes.get(`${section.id}:${index}`);
-            const liveAnswerMarkup = liveGroup && (liveAnswerActivityTypes.has(activity.type) || activity.type === 'image') && progressIndex !== undefined
+            const liveAnswerMarkup = liveGroup && acceptsLiveAnswer(activity) && progressIndex !== undefined
                 ? Array.isArray(activity.questions) && activity.questions.length
                     ? activity.questions.map((question, questionIndex) => renderLiveAnswerPanel(liveStudent, {
                         ...activity,
@@ -4579,25 +4586,27 @@ function renderLessonWorkspace() {
             </div>
             ${isEditing ? "" : `<div class="lesson-workspace-preview-actions"><span class="lesson-workspace-unit">${escapeHtml(unit)}</span>${lesson ? `<button type="button" class="button secondary small" data-open-lesson-history>${historyText("versions")}</button>` : ""}</div>`}
         </header>
-        ${liveMonitor ? "" : workspaceTabs}
+        <div class="lesson-workspace-toolbar">${workspaceTabs}<div class="lesson-tools" data-lesson-tools></div></div>
         ${previewDraftNotice}
-        <div class="lesson-workspace-layout ${liveMonitor ? "has-live-monitor" : ""}">
-            ${liveMonitor ? `<aside class="lesson-monitor-rail">${workspaceTabs}<div class="live-monitor-column ${liveMonitorOpen ? "is-expanded" : ""}">
-                <button type="button" class="live-monitor-backdrop" data-close-live-monitor aria-label="${lessonSectionText("liveAnswers")}" tabindex="-1" ${liveMonitorOpen ? "" : "hidden"}></button>
-                <button type="button" class="live-monitor-toggle" data-toggle-live-monitor aria-expanded="${liveMonitorOpen}"><span aria-hidden="true">☷</span><span>${lessonSectionText("liveAnswers")}</span></button>
-                ${liveMonitor}
-            </div></aside>` : ""}
+        <div class="lesson-workspace-layout">
+            <aside class="lesson-workspace-rail">
+                <section class="lesson-sections-panel" aria-labelledby="lessonSectionsHeading">
+                    <h2 id="lessonSectionsHeading">${lessonSectionText("section")}</h2><nav class="lesson-sections-list" aria-label="${lessonSectionText("section")}">${lessonSectionMenu}</nav>
+                    ${isEditing && !isHomework ? `<button type="button" class="button secondary lesson-add-section" data-add-section="lesson">${lessonSectionText("addSection")}</button>` : ""}
+                    <h3 class="homework-sections-heading">${lessonSectionText("homework")}</h3><nav class="lesson-sections-list homework-sections-list" aria-label="${lessonSectionText("homework")}">${homeworkSectionMenu}</nav>
+                    ${isEditing && isHomework ? `<button type="button" class="button secondary lesson-add-section" data-add-section="homework">${lessonSectionText("addSection")}</button>` : ""}
+                </section>
+                ${liveMonitor ? `<div class="live-monitor-column ${liveMonitorOpen ? "is-expanded" : ""}">
+                    <button type="button" class="button secondary small live-monitor-toggle" data-toggle-live-monitor aria-controls="lessonLiveAnswers" aria-expanded="${liveMonitorOpen}">${lessonSectionText("liveAnswers")}</button>
+                    <div id="lessonLiveAnswers">${liveMonitor}</div>
+                </div>` : ""}
+            </aside>
             <main class="lesson-workspace-main"><section class="lesson-workspace-section">
                 ${isEditing ? `${sourcePanel}${sectionBody}${dropZone}` : `<h2>${escapeHtml(section.title)}</h2>${sectionBody}`}
             </section>
                 <div class="lesson-workspace-footer"><button type="button" class="button secondary small" data-section-step="-1" ${sections.indexOf(section) === 0 || quickEditActive ? "disabled" : ""}>${lessonSectionText("previous")}</button><span>${sections.indexOf(section) + 1} / ${sections.length}</span><button type="button" class="button secondary small" data-section-step="1" ${sections.indexOf(section) === sections.length - 1 || quickEditActive ? "disabled" : ""}>${lessonSectionText("next")}</button>
                 ${isEditing ? `<span class="lesson-workspace-spacer"></span><button type="button" class="button secondary small" data-action="choose-activity">${lessonSectionText("addElement")}</button><button type="button" class="button secondary small" data-copy-activity ${section.activities.length ? "" : "disabled"}>${lessonSectionText("copyElement")}</button>` : ""}</div>
             </main>
-            <aside class="lesson-sections-panel">${sectionProgress}<h2>${lessonSectionText("section")}</h2><nav class="lesson-sections-list" aria-label="${lessonSectionText("section")}">${lessonSectionMenu}</nav>
-                ${isEditing && !isHomework ? `<button type="button" class="button secondary lesson-add-section" data-add-section="lesson">${lessonSectionText("addSection")}</button>` : ""}
-                <h3 class="homework-sections-heading">${lessonSectionText("homework")}</h3><nav class="lesson-sections-list homework-sections-list" aria-label="${lessonSectionText("homework")}">${homeworkSectionMenu}</nav>
-                ${isEditing && isHomework ? `<button type="button" class="button secondary lesson-add-section" data-add-section="homework">${lessonSectionText("addSection")}</button>` : ""}
-            </aside>
         </div>
         ${actionBar ? `<div class="lesson-workspace-actions">${actionBar}</div>` : ""}
     </form></section>`;
@@ -4631,14 +4640,16 @@ function renderLessonWorkspace() {
         if (!hasPermission("edit_lessons")) return;
         const button = event.currentTarget;
         const studentId = button.dataset.resetLessonProgress;
-        if (!lesson || !monitorClassId || !studentId || !window.teacherWorkspaceApi?.resetLessonProgress) {
+        const classId = monitorClassId;
+        if (button.disabled) return;
+        if (!lesson || !classId || studentId !== liveStudent?.id || !studentId || !window.teacherWorkspaceApi?.resetLessonProgress) {
             showToast(progressResetText("error"));
             return;
         }
-        if (!window.confirm(progressResetText("confirm"))) return;
+        if (!window.confirm(progressResetText("confirm", liveStudent.name, lesson.title))) return;
         button.disabled = true;
         try {
-            await window.teacherWorkspaceApi.resetLessonProgress(window.supabaseClient, monitorClassId, lesson.id, studentId);
+            await window.teacherWorkspaceApi.resetLessonProgress(window.supabaseClient, classId, lesson.id, studentId);
             liveProgressRows.delete(studentId);
             render();
             showToast(progressResetText("success"));
@@ -4651,17 +4662,8 @@ function renderLessonWorkspace() {
     bindLiveAnswerActions(pageContent);
     pageContent.querySelector("[data-toggle-live-monitor]")?.addEventListener("click", (event) => {
         liveMonitorOpen = !liveMonitorOpen;
-        const column = event.currentTarget.closest(".live-monitor-column");
-        column?.classList.toggle("is-expanded", liveMonitorOpen);
+        event.currentTarget.closest(".live-monitor-column")?.classList.toggle("is-expanded", liveMonitorOpen);
         event.currentTarget.setAttribute("aria-expanded", String(liveMonitorOpen));
-        column?.querySelector("[data-close-live-monitor]")?.toggleAttribute("hidden", !liveMonitorOpen);
-    });
-    pageContent.querySelector("[data-close-live-monitor]")?.addEventListener("click", () => {
-        liveMonitorOpen = false;
-        const column = pageContent.querySelector(".live-monitor-column");
-        column?.classList.remove("is-expanded");
-        column?.querySelector("[data-toggle-live-monitor]")?.setAttribute("aria-expanded", "false");
-        column?.querySelector("[data-close-live-monitor]")?.setAttribute("hidden", "");
     });
     pageContent.querySelectorAll("[data-import-lesson]").forEach(button => button.addEventListener("click", openLessonTextImport));
     pageContent.querySelectorAll('[data-action="choose-activity"]').forEach((button) => button.addEventListener("click", openActivityPicker));
@@ -5262,16 +5264,44 @@ function bindActivityBlockActions() {
             }
         });
         if (contentField && currentBlock()?.type === "image") {
+            const photoInteraction = document.createElement('label');
+            photoInteraction.className = 'photo-interaction-option';
+            const photoEnabled = document.createElement('input');
+            photoEnabled.type = 'checkbox';
+            photoEnabled.dataset.photoInteractiveToggle = '';
+            photoEnabled.checked = window.SlovaPhotoAnnotations.isInteractive(currentBlock());
+            const photoLabels = SlovaI18n.locales({
+                ru: ['Разрешить ученику писать на фото', 'Когда включено, фото входит в прогресс урока.'],
+                ua: ['Дозволити учню писати на фото', 'Коли ввімкнено, фото зараховується до прогресу уроку.'],
+                en: ['Let the student write on the photo', 'When enabled, the photo counts towards lesson progress.'],
+                sk: ['Povoliť žiakovi písať do obrázka', 'Keď je táto možnosť zapnutá, obrázok sa započítava do pokroku v lekcii.'],
+                kk: ['Оқушыға фотосуретке жазуға рұқсат беру', 'Қосылғанда фотосурет сабақ барысына есептеледі.']
+            });
+            const [photoLabel, photoHelp] = photoLabels[currentLanguage] || photoLabels.en;
+            const photoDescription = document.createElement('small');
+            photoDescription.textContent = photoHelp;
+            photoInteraction.append(photoEnabled, document.createTextNode(photoLabel), photoDescription);
+            const photoSettings = blockElement.querySelector('[data-field="settings"]');
+            const savePhotoSettings = (settings) => {
+                currentBlock().settings = { ...currentBlock().settings, ...settings };
+                if (photoSettings) photoSettings.value = JSON.stringify(currentBlock().settings, null, 2);
+                scheduleLessonDraftAutosave();
+                refreshRichPreview();
+            };
+            photoEnabled.addEventListener('change', () => {
+                savePhotoSettings({photoInteractive: photoEnabled.checked});
+            });
+            photoSettings?.addEventListener('input', () => { photoEnabled.checked = window.SlovaPhotoAnnotations.isInteractive(currentBlock()); });
             const photoPanel = document.createElement('details');
             const photoTitle = document.createElement('summary');
             photoTitle.textContent = currentLanguage === 'ru' ? '✎ Рисовать, писать и добавлять поля на фото' : currentLanguage === 'ua' ? '✎ Малювати, писати та додавати поля на фото' : '✎ Draw, write and add fields on photos';
-            const photoBody = document.createElement('div');photoPanel.append(photoTitle,photoBody);contentField.after(photoPanel);
+            const photoBody = document.createElement('div');photoPanel.append(photoTitle,photoBody);contentField.after(photoInteraction, photoPanel);
             const refreshPhotoEditor = () => {
                 const images = window.slovaGallery.parse(contentField.value);
                 photoBody.innerHTML = window.SlovaPhotoEditor.markup(images,{},currentBlock().settings?.imageAnnotations||{},true,currentLanguage,{authorFields:true});
                 window.SlovaPhotoEditor.bind(photoBody,{language:currentLanguage,change:annotations=>{
-                    currentBlock().settings={...currentBlock().settings,imageAnnotations:annotations};
-                    scheduleLessonDraftAutosave();refreshRichPreview();
+                    savePhotoSettings({imageAnnotations: annotations});
+                    photoEnabled.checked = window.SlovaPhotoAnnotations.isInteractive(currentBlock());
                 }});
             };
             photoPanel.addEventListener('toggle',()=>{if(photoPanel.open)refreshPhotoEditor();});
@@ -5753,11 +5783,12 @@ modalBackdrop.addEventListener("click", (event) => {
     if (event.target === modalBackdrop) closeModal();
 });
 document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && liveMonitorOpen) {
-        liveMonitorOpen = false;
-        pageContent.querySelector(".live-monitor-column")?.classList.remove("is-expanded");
-        pageContent.querySelector("[data-toggle-live-monitor]")?.setAttribute("aria-expanded", "false");
-        pageContent.querySelector("[data-close-live-monitor]")?.setAttribute("hidden", "");
+    if (event.key === "Escape" && liveMonitorOpen && modalBackdrop.hidden && !openPopover) {
+        const button = pageContent.querySelector(".live-monitor-column.is-expanded [data-toggle-live-monitor]");
+        if (button?.getClientRects().length && button.closest(".live-monitor-column").contains(document.activeElement)) {
+            button.click();
+            button.focus({ preventScroll: true });
+        }
     }
     if (event.key === "Escape" && !modalBackdrop.hidden) closeModal();
     if (event.key === "Escape" && openPopover) closePopover();

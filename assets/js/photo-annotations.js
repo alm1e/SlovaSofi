@@ -43,6 +43,20 @@
     }
     function read(value){try{return validate(value||{});}catch{return {};}}
     function hasContent(value){return Object.values(read(value)).some(ops=>ops.some(op=>op.type==='pen'?op.points.length>0:typeof op.text==='string'&&op.text.trim().length>0));}
-    root.SlovaPhotoAnnotations={validate,read,hasContent,MAX_BYTES};
+    function isInteractive(activity){
+        if(activity?.type!=='image')return false;
+        const enabled=activity.photoInteractive??activity.settings?.photoInteractive;
+        if(typeof enabled==='boolean')return enabled;
+        // A field placed by the author already makes a legacy photo an exercise.
+        return Object.values(read(activity.imageAnnotations??activity.settings?.imageAnnotations))
+            .some(ops=>ops.some(op=>op.type==='field'));
+    }
+    function forDisplay(value,interactive){
+        return Object.fromEntries(Object.entries(read(value)).flatMap(([url,ops])=>{
+            const visible=interactive?ops:ops.filter(op=>op.type!=='field'&&op.type!=='field-answer');
+            return visible.length?[[url,visible]]:[];
+        }));
+    }
+    root.SlovaPhotoAnnotations={validate,read,hasContent,isInteractive,forDisplay,MAX_BYTES};
     if(typeof module!=='undefined')module.exports=root.SlovaPhotoAnnotations;
 })(typeof window!=='undefined'?window:globalThis);

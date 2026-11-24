@@ -4,6 +4,44 @@
     function shuffleChoices(items,random=Math.random){
         const result=[...items];for(let i=result.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result;
     }
+    function shuffleSequence(items, label = item => item, random = Math.random) {
+        const ids = new Map();
+        const indexed = items.map(item => {
+            const value = label(item);
+            if (!ids.has(value)) ids.set(value, ids.size);
+            return { item, id: ids.get(value) };
+        });
+        if (ids.size < 2) return [...items];
+
+        const encode = sequence => sequence.map(({ id }) => id).join("|");
+        const forward = encode(indexed);
+        const backward = encode([...indexed].reverse());
+        const rotations = [`|${forward}|${forward}|`, `|${backward}|${backward}|`];
+        const isRotation = sequence => {
+            const encoded = `|${encode(sequence)}|`;
+            return rotations.some(pattern => pattern.includes(encoded));
+        };
+        let best = [...indexed];
+        const different = best.findIndex(entry => entry.id !== best[0].id);
+        [best[0], best[different]] = [best[different], best[0]];
+        let bestScore = 2 + (isRotation(best) ? 0 : items.length);
+
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+            const candidate = shuffleChoices(indexed, random);
+            const changed = candidate.reduce((total, entry, index) => total + Number(entry.id !== indexed[index].id), 0);
+            if (!changed) continue;
+            if (items.length < 4) return candidate.map(({ item }) => item);
+
+            const rotated = isRotation(candidate);
+            if (!rotated && changed >= Math.ceil(items.length / 2)) return candidate.map(({ item }) => item);
+            const score = changed + (rotated ? 0 : items.length);
+            if (score > bestScore) {
+                best = candidate;
+                bestScore = score;
+            }
+        }
+        return best.map(({ item }) => item);
+    }
     function sentenceParts(content) {
         const text=String(content||'').replace(/\[([^\[\]]+)\]/g,'$1');
         const sentences=new Intl.Segmenter('sk',{granularity:'sentence'}),graphemes=new Intl.Segmenter('sk',{granularity:'grapheme'});
@@ -254,6 +292,6 @@
         kk:['Мысалы: Ja [bývam] v Bratislave. Жақшадағы сөз бос орынға айналады.','Сөздерді дұрыс ретпен жазыңыз: Ja bývam v Bratislave. Олар автоматты түрде араласады.','Элементтерді дұрыс ретпен, әрқайсын жаңа жолға жазыңыз. Олар автоматты түрде араласады.','Сөйлемдерді дұрыс ретпен, әрқайсын жаңа жолға жазыңыз. Олар автоматты түрде араласады.','Мысалы: Anna / [Bratislava] / [slovenčina]. Жақшадағы жауаптар бос орынға айналады.','Мысалы: auto [көлік]. Әр жаңа жол жаңа карточка жасайды.','Жауап батырмалары','Тізімі бар бос орын','Мысалы: астананы таңдаңыз — Bratislava, Košice немесе Žilina.','Мысалы: Ja [bývam/bývaš/býva] v Bratislave. Бірінші нұсқа дұрыс.']
     };
     function hint(type,language){const index={'fill-blank':0,'drag-words':1,'order-items':2,'sentence-order':3,table:4,flashcards:5,'multiple-choice':8,'one-of-many':9}[type];return index===undefined?'':(copy[language]||copy.en)[index];}
-    root.SlovaExerciseFormat={sentenceParts,sentenceQuestions,cards,cardsFor,cardsEditorContent,sequenceAnswer,sequenceTypes,answerFieldNeeded,contentEdited,dropdown,hint,copy,prepare,editorContent,applyContent,applyQuestionContent,shuffleChoices,parseColumns,findErrors};
+    root.SlovaExerciseFormat={sentenceParts,sentenceQuestions,cards,cardsFor,cardsEditorContent,sequenceAnswer,sequenceTypes,answerFieldNeeded,contentEdited,dropdown,hint,copy,prepare,editorContent,applyContent,applyQuestionContent,shuffleChoices,shuffleSequence,parseColumns,findErrors};
     if(typeof module!=='undefined')module.exports=root.SlovaExerciseFormat;
 })(typeof window!=='undefined'?window:globalThis);

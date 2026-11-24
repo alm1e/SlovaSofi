@@ -236,19 +236,33 @@ test('a late legacy write during rollout is merged by timestamp without affectin
     assert.equal(result['b'+id(1)].response,'new');assert.equal(result.a0,undefined);assert.equal(result['b'+id(2)],undefined);
 });
 
-test('photo drafts retain teacher annotations and isolated student strokes without changing scored progress',async()=>{
+test('only enabled photos accept drafts and count towards answer progress',async()=>{
  const url='https://school.example/photo.png',pen={type:'pen',color:'#e53935',width:4,points:[[20,30],[60,70]]};
- const annotations={[url]:[pen]},e=engine([{id:id(1),type:'image',content:url,answer:'',settings:{imageAnnotations:annotations}},{id:id(2),type:'multiple-choice',content:'yes\nno',answer:'yes'}]);
+ const annotations={[url]:[pen]},e=engine([
+  {id:id(1),type:'image',content:url,answer:'',settings:{photoInteractive:true,imageAnnotations:annotations}},
+  {id:id(2),type:'multiple-choice',content:'yes\nno',answer:'yes'},
+  {id:id(3),type:'image',content:url,answer:'',settings:{imageAnnotations:annotations}}
+ ]);
+ const response=JSON.stringify(annotations);
+ e.seedProgress({['b'+id(3)]:{response,correct:null,draft:true}});
  let loaded=(await e.request({action:'load'})).body.lesson;
  assert.deepEqual(loaded.sections[0].activities[0].imageAnnotations,annotations);
- const before=loaded.progressActivityCount;
- const response=JSON.stringify(annotations);assert.equal((await e.write(0,response,'save-draft')).status,200);
- loaded=(await e.request({action:'load'})).body.lesson;assert.equal(loaded.progress['b'+id(1)].response,response);assert.equal(before,1);assert.equal(loaded.progressActivityCount,before);assert.equal(loaded.answeredCount,0);assert.equal(loaded.completed,false);
+ assert.equal(loaded.sections[0].activities[0].photoInteractive,true);
+ assert.equal(loaded.sections[0].activities[2].photoInteractive,false);
+ assert.equal(loaded.progressActivityCount,2);
+ assert.equal(loaded.answeredCount,0);
+ assert.equal((await e.write(2,response,'save-draft')).status,400);
+ assert.equal((await e.write(0,response,'save-draft')).status,200);
+ loaded=(await e.request({action:'load'})).body.lesson;
+ assert.equal(loaded.progress['b'+id(1)].response,response);
+ assert.equal(loaded.progressActivityCount,2);assert.equal(loaded.answeredCount,1);assert.equal(loaded.completed,false);
+ assert.equal((await e.request({action:'list'})).body.lessons[0].answeredCount,1);
  const writes=e.writes;
  for(const invalid of [JSON.stringify({'https://other.example/photo.png':[pen]}),JSON.stringify({[url]:[{...pen,points:[[-1,0]]}]}),'x'.repeat(60001)])assert.equal((await e.write(0,invalid,'save-draft')).status,400);
  assert.equal(e.writes,writes);
  assert.equal((await e.write(0,'{}','save-draft')).status,200);
  loaded=(await e.request({action:'load'})).body.lesson;assert.equal(loaded.progress['b'+id(1)].response,'{}');assert.deepEqual(loaded.sections[0].activities[0].imageAnnotations,annotations);
+ assert.equal(loaded.answeredCount,0);
 });
 
 test('photo fields restore typed answers and reject forged fields or coordinates',async()=>{
@@ -257,13 +271,19 @@ test('photo fields restore typed answers and reject forged fields or coordinates
  let lesson=(await e.request({action:'load'})).body.lesson;assert.deepEqual(lesson.sections[0].activities[0].imageAnnotations[url][0],field);
  const answer=JSON.stringify({[url]:[{type:'field-answer',id:'gap-1',text:'á'}]});assert.equal((await e.write(0,answer,'save-draft')).status,200);
  lesson=(await e.request({action:'load'})).body.lesson;assert.equal(lesson.progress['b'+id(1)].response,answer);
+ assert.equal(lesson.answeredCount,1);
  const writes=e.writes;
  for(const ops of [[field],[{type:'field-answer',id:'other-gap',text:'á'}],[{type:'field-answer',id:'gap-1',text:'a'.repeat(201)}]])assert.equal((await e.write(0,JSON.stringify({[url]:ops}),'save-draft')).status,400);
  assert.equal(e.writes,writes);assert.equal((await e.write(0,JSON.stringify({[url]:[]}),'save-draft')).status,200);
+ e.lesson.activities[0].settings.photoInteractive=false;
+ lesson=(await e.request({action:'load'})).body.lesson;
+ assert.equal(lesson.progressActivityCount,0);
+ assert.deepEqual(lesson.sections[0].activities[0].imageAnnotations,{});
+ assert.equal((await e.write(0,answer,'save-draft')).status,400);
 });
 
 test('students can type anywhere on an unprepared photo and reload the saved inline text',async()=>{
- const url='https://school.example/plain.png',e=engine([{id:id(1),type:'image',content:url,answer:''}]);
+ const url='https://school.example/plain.png',e=engine([{id:id(1),type:'image',content:url,answer:'',settings:{photoInteractive:true}}]);
  const note={type:'input',id:'inline-1',x:100,y:200,w:100,h:40,text:'áno',font:32,mask:{x:100,y:230,w:100,h:5,color:'#ceccd0'}};
  const response=JSON.stringify({[url]:[note]});assert.equal((await e.write(0,response,'save-draft')).status,200);
  const loaded=(await e.request({action:'load'})).body.lesson;assert.equal(loaded.progress['b'+id(1)].response,response);

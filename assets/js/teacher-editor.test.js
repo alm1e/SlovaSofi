@@ -29,6 +29,7 @@ function createEditorContext() {
     vm.runInContext(fs.readFileSync(path.join(__dirname, "table.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "phrase-list.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "image-gallery.js"), "utf8"), context);
+    vm.runInContext(fs.readFileSync(path.join(__dirname, "photo-annotations.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(path.join(__dirname, "lesson-import-ui.js"), "utf8"), context);
     vm.runInContext(fs.readFileSync(`${__dirname}/exercise-format.js`, "utf8"), context);
     vm.runInContext(fs.readFileSync(`${__dirname}/flashcard-deck.js`, "utf8"), context);
