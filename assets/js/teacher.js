@@ -1110,7 +1110,12 @@ function lessonAutosaveText(key) {
 
 function setLessonAutosaveStatus(key) {
     const status = pageContent.querySelector("[data-lesson-autosave-status]");
-    if (status) status.textContent = lessonAutosaveText(key);
+    if (status) {
+        const local=!editingLessonId;
+        const labels={ru:{saved:local?'Черновик сохранён на этом устройстве':'Сохранено на сервере',error:'Не сохранено — проверьте соединение'},ua:{saved:local?'Чернетку збережено на цьому пристрої':'Збережено на сервері',error:'Не збережено — перевірте з’єднання'},en:{saved:local?'Draft saved on this device':'Saved to server',error:'Not saved — check your connection'}};
+        status.textContent=labels[currentLanguage]?.[key]||lessonAutosaveText(key);
+        status.dataset.saveState=key;
+    }
 }
 
 function loadNewLessonDraft() {
@@ -1165,6 +1170,41 @@ function clearNewLessonDraft() {
     }
 }
 
+let lessonUndoHistory = null, lessonUndoKey = '', restoringLessonHistory = false;
+function lessonEditorSnapshot() {
+    return { title: pageContent.querySelector('#lessonTitle')?.value ?? lessonFormDraft.title,
+        unit: pageContent.querySelector('#lessonUnit')?.value ?? lessonFormDraft.unit,
+        sections: structuredClone(draftSections), homeworkSections: structuredClone(draftHomeworkSections) };
+}
+function restoreLessonEdit(direction) {
+    const value = lessonUndoHistory?.[direction]();
+    if (!value) return;
+    restoringLessonHistory = true;
+    lessonFormDraft = { title: value.title, unit: value.unit };
+    draftSections = value.sections; draftHomeworkSections = value.homeworkSections;
+    ensureActivityBlockIds([...draftSections, ...draftHomeworkSections]);
+    expandedActivityBlocks = new WeakSet([...draftSections,...draftHomeworkSections].flatMap(section=>section.activities));
+    render();scheduleLessonDraftAutosave();restoringLessonHistory = false;
+}
+function syncLessonTools() {
+    const editing = lessonWorkspaceMode === 'edit';
+    if (editing && window.SlovaLessonTools) {
+        const key = editingLessonId || '__new__';
+        if (!lessonUndoHistory || lessonUndoKey !== key) { lessonUndoKey = key;lessonUndoHistory=window.SlovaLessonTools.createHistory();lessonUndoHistory.reset(lessonEditorSnapshot()); }
+    } else { lessonUndoKey='';lessonUndoHistory=null; }
+    window.SlovaLessonTools?.sync({container:pageContent,editing,language:currentLanguage,history:lessonUndoHistory,
+        undo:()=>restoreLessonEdit('undo'),redo:()=>restoreLessonEdit('redo'),validate:()=>showLessonReadiness()});
+}
+function showLessonReadiness() {
+    const lesson = lessonWorkspaceMode==='edit' ? lessonEditorSnapshot() : data.lessons.find(item=>item.id===workspaceLessonId);
+    if (!lesson) return;
+    const sections=[...(lesson.sections||[]),...(lesson.homeworkSections||[])];
+    const problems=sections.flatMap(section=>section.activities.flatMap((activity,index)=>(window.SlovaLessonReadiness?.issues?.(activity,currentLanguage)||[]).map(message=>({section:section.id,index,message,label:`${section.title} · ${index+1}`}))));
+    const title = currentLanguage==='ru'?'Проверка урока':currentLanguage==='ua'?'Перевірка уроку':'Lesson check';
+    openModal(`${modalHeader(title)}${problems.length?`<ul class="lesson-check-list">${problems.map((item,index)=>`<li><button type="button" class="text-link" data-readiness-go="${index}">${escapeHtml(item.label)}</button>: ${escapeHtml(item.message)}</li>`).join('')}</ul>`:`<p>${currentLanguage==='ru'?'Задания заполнены. Урок готов к назначению.':currentLanguage==='ua'?'Завдання заповнено. Урок готовий до призначення.':'Activities are complete. The lesson is ready to assign.'}</p>`}<button type="button" class="button secondary" data-close>${t('modal.close')}</button>`,true);
+    modalCard.querySelectorAll('[data-readiness-go]').forEach(button=>button.onclick=()=>{const problem=problems[Number(button.dataset.readinessGo)];closeModal();const homework=(lesson.homeworkSections||[]).some(section=>section.id===problem.section);if(lessonWorkspaceMode==='edit'){lessonWorkspaceTab=homework?'homework':'lesson';setActiveWorkspaceSectionId(problem.section);expandedActivityBlocks.add(activeDraftSection().activities[problem.index]);render();}else openLessonEditor(lesson,problem.section,problem.index,homework?'homework':'lesson');});
+}
+
 function scheduleLessonDraftAutosave() {
     if (lessonWorkspaceMode !== "edit") return;
     clearTimeout(lessonDraftAutosaveTimer);
@@ -1176,6 +1216,10 @@ function scheduleLessonDraftAutosave() {
         sections: structuredClone(draftSections),
         homeworkSections: structuredClone(draftHomeworkSections)
     };
+    if (!restoringLessonHistory) lessonUndoHistory?.record(snapshot);
+    const undoButton=pageContent.querySelector('[data-tools-undo]'),redoButton=pageContent.querySelector('[data-tools-redo]');
+    if(undoButton)undoButton.disabled=!lessonUndoHistory?.canUndo;
+    if(redoButton)redoButton.disabled=!lessonUndoHistory?.canRedo;
     setLessonAutosaveStatus("saving");
     lessonDraftAutosaveTimer = setTimeout(async () => {
         if (!targetLessonId) {
@@ -1615,11 +1659,13 @@ function render() {
     document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === activeView));
     if (lessonWorkspaceMode) {
         renderLessonWorkspace();
+        syncLessonTools();
         workspaceHistory?.sync();
         return;
     }
     const renderers = { overview: renderOverview, classes: renderClasses, lessons: renderLessons, calendar: renderCalendar, students: renderStudents, staff: renderStaff };
     pageContent.innerHTML = renderers[activeView]();
+    window.SlovaLessonTools?.sync({container:pageContent,language:currentLanguage});
     bindPageActions();
     enhanceSelects(pageContent);
     workspaceHistory?.sync();
@@ -3828,6 +3874,7 @@ async function deleteClass(id) {
 }
 
 function openLessonEditor(item, sectionId = "", activityIndex = -1, tab = "lesson") {
+    lessonUndoKey="";lessonUndoHistory=null;
     if (!hasPermission("edit_lessons")) return;
     stopLiveProgressSubscription();
     const recoveredDraft = item ? null : loadNewLessonDraft();
@@ -3978,59 +4025,114 @@ function applyLiveProgressEvent(rows, payload, classId, lessonId = null) {
 }
 
 // Realtime updates must leave the teacher's reading/editing position unchanged.
-function refreshLiveProgressView() {
-    const root = pageContent;
-    const x = window.scrollX;
-    const y = window.scrollY;
-    const active = document.activeElement;
-    const controls = [...root.querySelectorAll("input, textarea, select, [contenteditable='true']")];
-    const focusIndex = controls.indexOf(active);
-    const drafts = controls.map(input => ({
-        value: input.value,
-        checked: input.checked,
-        html: input.isContentEditable ? input.innerHTML : null
-    }));
-    const selection = focusIndex >= 0 ? { start: active.selectionStart, end: active.selectionEnd } : null;
-    const details = [...root.querySelectorAll("details")].map(panel => panel.open);
-    const previousElements = [...root.querySelectorAll("*")];
-    const scrollers = previousElements.map((element, index) => ({ index, top: element.scrollTop, left: element.scrollLeft }))
-        .filter(saved => saved.top || saved.left);
-    const candidates = [...root.querySelectorAll(".lesson-preview-list > *, .live-monitor-column, .lesson-workspace-section")];
-    const anchorIndex = candidates.findIndex(element => element.getBoundingClientRect().bottom > 90);
-    const anchorTop = candidates[anchorIndex]?.getBoundingClientRect().top;
-    const oldMinHeight = root.style.minHeight;
-    // Avoid an intermediate shorter document clamping scrollY while DOM is replaced.
-    root.style.minHeight = `${root.getBoundingClientRect().height}px`;
-    try {
-        render();
-        root.querySelectorAll("details").forEach((panel, index) => { if (index < details.length) panel.open = details[index]; });
-        const replacements = [...root.querySelectorAll("input, textarea, select, [contenteditable='true']")];
-        replacements.forEach((input, index) => {
-            const draft = drafts[index];
-            if (!draft) return;
-            // Preserve teacher review drafts as well as the active lesson exercise.
-            if (input.value !== draft.value && draft.value !== undefined) input.value = draft.value;
-            if (draft.checked !== undefined) input.checked = draft.checked;
-            if (draft.html !== null) input.innerHTML = draft.html;
-        });
-        const replacement = replacements[focusIndex];
-        if (replacement && selection) {
-            replacement.focus({ preventScroll: true });
-            if (typeof replacement.setSelectionRange === "function" && selection.start !== null) {
-                try { replacement.setSelectionRange(selection.start, selection.end); } catch { /* Non-text inputs. */ }
-            }
+function bindLiveAnswerActions(root) {
+    root.querySelectorAll("[data-play-recording]").forEach((button) => {
+        if (button.dataset.liveActionBound) return;
+        button.dataset.liveActionBound = "true";
+        button.addEventListener("click", async () => {
+        if (!window.supabaseClient?.storage) return;
+        button.disabled = true;
+        try {
+            const { data: signed, error } = await window.supabaseClient.storage
+                .from("student-recordings")
+                .createSignedUrl(button.dataset.playRecording, 300);
+            if (error) throw error;
+            if (!signed?.signedUrl) throw new Error("Could not create a secure audio link.");
+            const player = document.createElement("audio");
+            player.controls = true;
+            player.autoplay = true;
+            player.src = signed.signedUrl;
+            button.closest(".live-answer-inline")?.querySelector("[data-recording-player]")?.replaceChildren(player);
+        } catch (error) {
+            console.error("Could not open the student's pronunciation recording.", error);
+            showToast(`${liveStudentText("recording")} ${error.message || ""}`);
+        } finally {
+            if (button.isConnected) button.disabled = false;
         }
-        const elements = [...root.querySelectorAll("*")];
-        scrollers.forEach(saved => {
-            const element = elements[saved.index];
-            if (element) { element.scrollTop = saved.top; element.scrollLeft = saved.left; }
-        });
-    } finally {
-        root.style.minHeight = oldMinHeight;
-        const anchor = root.querySelectorAll(".lesson-preview-list > *, .live-monitor-column, .lesson-workspace-section")[anchorIndex];
-        const delta = anchor && anchorTop !== undefined ? anchor.getBoundingClientRect().top - anchorTop : 0;
-        window.scrollTo({ left: x, top: y + delta, behavior: "instant" });
-    }
+    }); });
+    root.querySelectorAll("[data-save-live-review]").forEach((button) => {
+        if (button.dataset.liveActionBound) return;
+        button.dataset.liveActionBound = "true";
+        button.addEventListener("click", async () => {
+        if (!hasPermission("edit_lessons") || !window.teacherWorkspaceApi?.saveLessonAnswerReview || !window.supabaseClient) return;
+        const panel = button.closest(".live-answer-review");
+        const answerKey = button.dataset.reviewAnswerKey;
+        const classId = button.dataset.reviewClassId;
+        const lessonId = button.dataset.reviewLessonId;
+        const studentId = button.dataset.reviewStudentId;
+        if (!panel || !answerKey || !classId || !lessonId || !studentId) return;
+        const feedback = panel.querySelector("[data-live-review-feedback]")?.value || "";
+        const correction = panel.querySelector("[data-live-review-correction]")?.value || "";
+        const score = panel.querySelector("[data-live-review-score]")?.value || "";
+        button.disabled = true;
+        try {
+            const answers = await window.teacherWorkspaceApi.saveLessonAnswerReview(
+                window.supabaseClient,
+                classId,
+                lessonId,
+                studentId,
+                answerKey,
+                { feedback, correction, score }
+            );
+            const row = liveProgressRows.get(studentId) || { student_id: studentId, class_id: classId, lesson_id: lessonId, answers: {}, completed_at: null, updated_at: new Date().toISOString() };
+            row.answers = answers;
+            row.updated_at = new Date().toISOString();
+            liveProgressRows.set(studentId, row);
+            refreshLiveProgressView();
+            button.disabled = false;
+            showToast(liveReviewText("saved"));
+        } catch (error) {
+            console.error("Could not save teacher review.", error);
+            showToast(`${liveReviewText("save")} · ${error.message || ""}`);
+            if (button.isConnected) button.disabled = false;
+        }
+    }); });
+}
+
+function refreshLiveProgressView() {
+    const lesson = data.lessons.find(item => item.id === workspaceLessonId);
+    if (!lesson || lessonWorkspaceMode !== "preview" || !window.SlovaLiveDOM) return;
+    const sections = lessonWorkspaceTab === "homework" ? normalizePreviewHomeworkSections(lesson) : normalizeLessonSections(lesson);
+    const section = sections.find(item => item.id === (lessonWorkspaceTab === "homework" ? activeHomeworkSectionId : activeLessonSectionId));
+    const group = data.classes.find(item => item.id === monitorClassId);
+    const students=group?liveStudentsForGroup(group):[];
+    const student=students.find(item=>item.id===selectedLiveStudentId)||students[0]||null;
+    if (!section) return;
+    const scrollX = window.scrollX, scrollY = window.scrollY;
+    const inserted = [];
+    pageContent.querySelectorAll('[data-live-progress-index]').forEach(panel => {
+        const index = Number(panel.dataset.livePhotoIndexValue);
+        let activity = window.SlovaExerciseFormat?.prepare?.(section.activities[index]) || section.activities[index];
+        if (!activity) return;
+        const questionIndex = panel.dataset.liveQuestionIndex === '' ? null : Number(panel.dataset.liveQuestionIndex);
+        const questionId = panel.dataset.liveQuestionId || null;
+        if (questionIndex !== null) {
+            const question = activity.questions?.[questionIndex];
+            if (!question) return;
+            activity = { ...activity, prompt:String(question.prompt||""),content:String(question.content||""),answer:String(question.answer||""),questions: undefined, settings: { ...activity.settings, ...question.settings } };
+        }
+        const template = document.createElement('template');
+        template.innerHTML = renderLiveAnswerPanel(student, activity, Number(panel.dataset.liveProgressIndex), questionId, questionIndex,
+            { classId: monitorClassId, lessonId: lesson.id, photoIndex: index });
+        window.SlovaLiveDOM.patch(panel, template.content.firstElementChild, inserted);
+    });
+    const template = document.createElement('template');
+    template.innerHTML = renderLiveMonitor(lesson, lessonProgressIndexes(lesson));
+    const fresh = template.content;
+    const status = pageContent.querySelector('.live-monitor-status');
+    if (status && fresh.querySelector('.live-monitor-status')) window.SlovaLiveDOM.patch(status, fresh.querySelector('.live-monitor-status'));
+    pageContent.querySelectorAll('[data-live-student-id]').forEach(button => {
+        const replacement = [...fresh.querySelectorAll('[data-live-student-id]')].find(item => item.dataset.liveStudentId === button.dataset.liveStudentId);
+        if (replacement) window.SlovaLiveDOM.patch(button, replacement);
+    });
+    bindLiveAnswerActions(pageContent);
+    inserted.forEach(node => {
+        if (node.matches('[data-photo-live-index]') || node.querySelector('[data-photo-live-index]')) {
+            const wrapper = document.createElement('div');
+            node.before(wrapper); wrapper.append(node); bindLessonPreviewActions(wrapper); wrapper.replaceWith(node);
+        }
+    });
+    window.scrollTo({ left: scrollX, top: scrollY, behavior: 'instant' });
 }
 
 function ensureLiveProgressSubscription(lesson, group) {
@@ -4321,7 +4423,7 @@ function renderLiveAnswerPanel(student, activity, progressIndex, questionId = nu
         </details>`
         : "";
     const teacherFeedback = answer?.teacher_feedback ? `<small class="live-answer-teacher-feedback">${escapeHtml(answer.teacher_feedback)}</small>` : "";
-    return `<div ${activity.type==='image'?'data-live-photo-answer':''} class="live-answer-inline ${answerTone}" aria-label="${escapeHtml(name)}"><span class="live-answer-avatar" aria-hidden="true">${escapeHtml(name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2))}</span><strong>${escapeHtml(name)}</strong>${answerStatus}<span class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</span>${recordingPath ? `<button class="button secondary small" type="button" data-play-recording="${escapeHtml(recordingPath)}">${escapeHtml(liveStudentText("playRecording"))}</button>` : ""}<span data-recording-player></span>${teacherFeedback}${reviewForm}${photoAnswer}</div>`;
+    return `<div data-live-progress-index="${progressIndex}" data-live-photo-index-value="${reviewContext?.photoIndex ?? progressIndex}" data-live-question-index="${questionIndex ?? ''}" data-live-question-id="${escapeHtml(questionId || '')}" ${activity.type==='image'?'data-live-photo-answer':''} class="live-answer-inline ${answerTone}" aria-label="${escapeHtml(name)}"><span class="live-answer-avatar" aria-hidden="true">${escapeHtml(name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2))}</span><strong>${escapeHtml(name)}</strong>${answerStatus}<span class="live-answer-response">${escapeHtml(response || lessonSectionText("liveWait"))}</span>${recordingPath ? `<button class="button secondary small" type="button" data-play-recording="${escapeHtml(recordingPath)}">${escapeHtml(liveStudentText("playRecording"))}</button>` : ""}<span data-recording-player></span>${teacherFeedback}${reviewForm}${photoAnswer}</div>`;
 }
 
 function renderLiveMonitor(lesson, progressIndexes) {
@@ -4546,60 +4648,7 @@ function renderLessonWorkspace() {
             if (button.isConnected) button.disabled = false;
         }
     });
-    pageContent.querySelectorAll("[data-play-recording]").forEach((button) => button.addEventListener("click", async () => {
-        if (!window.supabaseClient?.storage) return;
-        button.disabled = true;
-        try {
-            const { data: signed, error } = await window.supabaseClient.storage
-                .from("student-recordings")
-                .createSignedUrl(button.dataset.playRecording, 300);
-            if (error) throw error;
-            if (!signed?.signedUrl) throw new Error("Could not create a secure audio link.");
-            const player = document.createElement("audio");
-            player.controls = true;
-            player.autoplay = true;
-            player.src = signed.signedUrl;
-            button.closest(".live-answer-inline")?.querySelector("[data-recording-player]")?.replaceChildren(player);
-        } catch (error) {
-            console.error("Could not open the student's pronunciation recording.", error);
-            showToast(`${liveStudentText("recording")} ${error.message || ""}`);
-        } finally {
-            if (button.isConnected) button.disabled = false;
-        }
-    }));
-    pageContent.querySelectorAll("[data-save-live-review]").forEach((button) => button.addEventListener("click", async () => {
-        if (!hasPermission("edit_lessons") || !window.teacherWorkspaceApi?.saveLessonAnswerReview || !window.supabaseClient) return;
-        const panel = button.closest(".live-answer-review");
-        const answerKey = button.dataset.reviewAnswerKey;
-        const classId = button.dataset.reviewClassId;
-        const lessonId = button.dataset.reviewLessonId;
-        const studentId = button.dataset.reviewStudentId;
-        if (!panel || !answerKey || !classId || !lessonId || !studentId) return;
-        const feedback = panel.querySelector("[data-live-review-feedback]")?.value || "";
-        const correction = panel.querySelector("[data-live-review-correction]")?.value || "";
-        const score = panel.querySelector("[data-live-review-score]")?.value || "";
-        button.disabled = true;
-        try {
-            const answers = await window.teacherWorkspaceApi.saveLessonAnswerReview(
-                window.supabaseClient,
-                classId,
-                lessonId,
-                studentId,
-                answerKey,
-                { feedback, correction, score }
-            );
-            const row = liveProgressRows.get(studentId) || { student_id: studentId, class_id: classId, lesson_id: lessonId, answers: {}, completed_at: null, updated_at: new Date().toISOString() };
-            row.answers = answers;
-            row.updated_at = new Date().toISOString();
-            liveProgressRows.set(studentId, row);
-            render();
-            showToast(liveReviewText("saved"));
-        } catch (error) {
-            console.error("Could not save teacher review.", error);
-            showToast(`${liveReviewText("save")} · ${error.message || ""}`);
-            if (button.isConnected) button.disabled = false;
-        }
-    }));
+    bindLiveAnswerActions(pageContent);
     pageContent.querySelector("[data-toggle-live-monitor]")?.addEventListener("click", (event) => {
         liveMonitorOpen = !liveMonitorOpen;
         const column = event.currentTarget.closest(".live-monitor-column");
@@ -5015,6 +5064,19 @@ function bindActivityBlockActions() {
             if(legacy)legacy.hidden=!window.SlovaExerciseFormat.answerFieldNeeded(questionElement?{...block.questions[Number(questionElement.dataset.questionIndex)],type:block.type,settings:block.settings}:block);
             refreshRichPreview();
         }));
+        if (blockElement.classList.contains('is-expanded')) window.SlovaActivitySettingsUI?.bind(blockElement.querySelector('.builder-block-editor'),currentBlock(),()=>{
+            scheduleLessonDraftAutosave();refreshRichPreview();
+            const settingsField=blockElement.querySelector('textarea[data-field="settings"]');if(settingsField)settingsField.value=JSON.stringify(currentBlock().settings||{},null,2);
+        },currentLanguage);
+        blockElement.querySelectorAll('.builder-block-editor [data-question-index]').forEach(questionHost=>{
+            const block=currentBlock(),question=block.questions?.[Number(questionHost.dataset.questionIndex)];
+            if(!question)return;
+            const visual={...question,type:block.type==='listening-questions'?'multiple-choice':block.type,settings:{...block.settings,...question.settings}};
+            window.SlovaActivitySettingsUI?.bind(questionHost,visual,()=>{
+                question.content=visual.content;question.answer=visual.answer;question.settings=visual.settings;
+                scheduleLessonDraftAutosave();refreshRichPreview();
+            },currentLanguage);
+        });
         const contentField = currentBlock().questions?.length ? null : blockElement.querySelector('.builder-block-editor textarea[data-field="content"]');
         if (["text", "fill-blank"].includes(currentBlock().type)) visualEditor = window.SlovaRichEditor?.attach(blockElement, contentField, window.SlovaActivityUI.renderRichText, { upload: uploadLessonImage, error: error => showToast(error.message || String(error)) });
         contentField?.addEventListener('slova-source-sync', () => visualEditor?.refresh());
@@ -5547,7 +5609,7 @@ function classLessonText(key) {
 function lessonAssignmentIncomplete(lesson) {
     return [...normalizeLessonSections(lesson), ...normalizeHomeworkSections(lesson)]
         .flatMap(section => section.activities.map((activity, index) => ({ activity, label: `${section.title} · ${index + 1}` })))
-        .filter(item => window.SlovaLessonReadiness?.incomplete(item.activity));
+        .map(item=>({...item,reasons:window.SlovaLessonReadiness?.issues?.(item.activity,currentLanguage)||[]})).filter(item=>item.reasons.length||window.SlovaLessonReadiness?.incomplete(item.activity));
 }
 
 function classLessonPickerItems(classId, query = "", unit = "") {
@@ -5622,7 +5684,7 @@ function openLessonAssignment(id) {
     openModal(`${modalHeader(assignmentText("dialog"))}
         <form id="lessonAssignmentForm">
             <p class="assignment-hint">${assignmentText("hint")}</p>
-            ${incomplete.length ? `<div class="lesson-readiness-warning" role="status">${window.SlovaLessonReadiness.message(currentLanguage)}<ul>${incomplete.map(item=>`<li>${escapeHtml(item.label)}</li>`).join('')}</ul></div>` : ''}
+            ${incomplete.length ? `<div class="lesson-readiness-warning" role="status">${window.SlovaLessonReadiness.message(currentLanguage)}<ul>${incomplete.map(item=>`<li>${escapeHtml(item.label)}${item.reasons?.length?`: ${escapeHtml(item.reasons.join(" "))}`:""}</li>`).join('')}</ul></div>` : ''}
             <div class="class-assignment-list">${classAssignmentChoices(lessonClassIds(lesson))}</div>
             <div class="modal-actions"><button type="button" class="button secondary" data-close>${t("action.cancel")}</button><button class="button" type="submit">${assignmentText("save")}</button></div>
         </form>`);

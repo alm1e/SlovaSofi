@@ -22,8 +22,37 @@
         if(activity.type==='text')return !content&&!String(activity.prompt||'').trim();
         return !content&&activity.type!=='pronunciation-recording'&&activity.type!=='open-answer';
     }
+    function issues(activity, language='en') {
+        const copy={
+            ru:{content:'Добавьте текст задания.',media:'Добавьте ссылку на изображение, аудио или видео.',url:'Используйте корректную ссылку http:// или https://.',answer:'Укажите правильные ответы.',options:'Добавьте не менее двух вариантов ответа и отметьте правильный.',words:'Добавьте слова и переводы.',markers:'Добавьте метки на изображении.',empty:'Добавьте содержимое и заполните ответы.'},
+            ua:{content:'Додайте текст завдання.',media:'Додайте посилання на зображення, аудіо чи відео.',url:'Вкажіть коректне посилання http:// або https://.',answer:'Вкажіть правильні відповіді.',options:'Додайте щонайменше два варіанти й позначте правильний.',words:'Додайте слова та переклади.',markers:'Додайте мітки на зображенні.',empty:'Додайте вміст і відповіді.'},
+            en:{content:'Add activity text.',media:'Add an image, audio or video URL.',url:'Use a valid http:// or https:// URL.',answer:'Set the correct answers.',options:'Add at least two options and mark the correct answer.',words:'Add words and translations.',markers:'Add image markers.',empty:'Add content and complete the answers.'}
+        };
+        const t=copy[language]||copy.en, result=[],type=activity.type,content=String(activity.content||'').trim();
+        if(activity.questions?.length){
+            if(type==='listening-questions'&&!content)result.push(t.media);
+            activity.questions.forEach((question,index)=>issues({...question,type:type==='listening-questions'?'multiple-choice':type,settings:{...activity.settings,...question.settings}},language).forEach(message=>result.push(`${index+1}. ${message}`)));
+            return result;
+        }
+        if(['image','interactive-image','audio','video','listening-questions'].includes(type)){
+            if(!content)result.push(t.media);
+            else content.split(/\r?\n/).forEach(line=>{const value=line.match(/^!\[[^\]]*\]\((.*)\)$/)?.[1]||line;try{const url=new URL(value);if(!['http:','https:'].includes(url.protocol))throw Error();}catch{result.push(t.url);}});
+            if(type==='interactive-image'&&!(activity.settings?.hotspots||[]).some(spot=>String(spot.word||'').trim()))result.push(t.markers);
+        }
+        const prepared=root.SlovaExerciseFormat?.prepare(activity)||activity;
+        if(['multiple-choice','one-of-many'].includes(type)&&!root.SlovaExerciseFormat?.dropdown?.(content)){
+            const options=prepared.settings?.options||content.split(/\r?\n/).filter(Boolean).map(text=>({text}));
+            if(options.length<2||options.some(option=>!String(typeof option==='string'?option:option.text||'').trim())||(!String(prepared.answer||'').trim()&&!options.some(option=>option.correct)))result.push(t.options);
+        }
+        if(['vocabulary','phrase-list'].includes(type)&&Array.isArray(activity.settings?.words)&&(!activity.settings.words.length||activity.settings.words.some(word=>!String(word.word||'').trim()||!String(word.translation||'').trim())))result.push(t.words);
+        if(type==='match'&&content&&content.split(/\r?\n/).some(line=>line.trim()&&!/^.+?\s*(?:=|\[).+/.test(line)))result.push(t.answer);
+        if(incomplete(activity)&&!result.length){
+            result.push(['vocabulary','phrase-list'].includes(type)?t.words:['multiple-choice','one-of-many'].includes(type)?t.options:['fill-blank','table','find-error','true-false'].includes(type)?t.answer:type==='text'?t.content:t.empty);
+        }
+        return [...new Set(result)];
+    }
     function message(language){return(labels[language]||labels.en)[0];}
     function blocked(language){return(labels[language]||labels.en)[1];}
-    root.SlovaLessonReadiness={incomplete,message,blocked};
+    root.SlovaLessonReadiness={incomplete,message,blocked,issues};
     if(typeof module!=='undefined')module.exports=root.SlovaLessonReadiness;
 })(typeof window!=='undefined'?window:globalThis);

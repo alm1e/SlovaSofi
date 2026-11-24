@@ -2396,3 +2396,29 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 
 .preview-question-activity .preview-q-badge {width:auto;min-width:36px;white-space:nowrap;}
 .preview-question-activity .preview-activity-header > .preview-q-prompt {margin:0;}
+
+/* Lesson controls remain reachable on laptops, tablets and phones. */
+.lesson-tools { position: sticky; top: 76px; z-index: 3; display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:16px; padding:10px; border:1px solid var(--line); border-radius:12px; background:var(--page); }
+.lesson-tools .button { min-height:44px; white-space:normal; }
+.lesson-presentation-controls { display:flex; align-items:center; gap:12px; margin-left:auto; }
+.lesson-presentation-controls[hidden] { display:none; }
+body.lesson-focus .lesson-workspace-layout, body.lesson-focus .lesson-workspace-layout.has-live-monitor, body.lesson-focus.student-platform .student-workspace-layout { grid-template-columns:minmax(0,1fr); }
+body.lesson-focus .lesson-sections-panel, body.lesson-focus.student-platform .student-sections-panel { display:none; }
+body.lesson-focus.lesson-sections-open .lesson-sections-panel, body.lesson-focus.lesson-sections-open.student-platform .student-sections-panel { display:block; position:fixed; inset:150px 16px 16px auto; width:min(330px,calc(100vw - 32px)); max-height:calc(100dvh - 166px); overflow:auto; z-index:7; box-shadow:0 12px 50px #0006; background:var(--page); border:1px solid var(--line); padding:16px; border-radius:14px; }
+body.lesson-focus .student-sections-toggle, body.lesson-focus .student-section-drawer-backdrop { display:none; }
+.lesson-sections-panel [data-tools-close], .student-sections-panel [data-tools-close] { width:100%; margin-bottom:12px; }
+.lesson-presenting .presentation-hidden { display:none !important; }
+.lesson-presenting .lesson-preview-list, .lesson-presenting .student-activity-list { font-size:clamp(18px,2vw,24px); }
+.lesson-presenting .preview-activity, .lesson-presenting .student-activity { min-height:45vh; }
+.lesson-presenting .preview-note, .lesson-presenting .student-welcome, .lesson-presenting .welcome-row { display:none; }
+.lesson-check-list { padding-left:20px; overflow-wrap:anywhere; }
+.lesson-check-list li { margin-bottom:12px; }
+@media(max-width:700px){ .lesson-tools {top:64px;gap:6px;padding:8px;} .lesson-tools .button {flex:1 1 130px;} .lesson-presentation-controls {width:100%;justify-content:center;} }
+.visual-activity-settings { min-width:0; margin:16px 0; padding:14px; border:1px solid var(--line); border-radius:12px; }
+.visual-setting-row { display:flex; flex-wrap:wrap; gap:10px; align-items:end; border-bottom:1px solid var(--line); margin-bottom:12px; padding-bottom:12px; }
+.visual-setting-row .form-field { flex:1 1 150px;min-width:0;margin:0; }
+.visual-activity-settings input,.visual-activity-settings textarea { min-width:0;max-width:100%; }
+.visual-activity-settings input[type=checkbox] { width:24px;height:24px;min-height:24px; }
+.settings-hotspot-image { display:block;max-width:100%;max-height:400px;cursor:crosshair; }
+.lesson-presenting .live-monitor-column { display:none !important; }
+.lesson-presenting .lesson-monitor-rail { position:static !important;max-height:none !important; }

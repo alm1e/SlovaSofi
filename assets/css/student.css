@@ -536,3 +536,5 @@
 .sequence-letters .preview-word, .sequence-letters .student-word-token, .sequence-letters .sequence-slot { width: 44px; min-width: 44px; padding: 7px 4px; text-align: center; }
 [data-theme="light"] .sequence-exercise { --tile-bg: #fff; --tile-border: #b8cdc5; }
 @media(max-width:700px) { .sequence-exercise { gap: 10px; } .sequence-exercise .preview-word-bank, .sequence-exercise .student-word-bank, .sequence-exercise .preview-dropzone, .sequence-exercise .student-answer-zone { padding: 8px 0; gap: 7px; } }
+[data-draft-save-status] { min-height:30px; overflow-wrap:anywhere; }
+[data-draft-save-status][data-save-state="error"] { border:1px solid #d9ae58; border-radius:10px; padding:10px; }

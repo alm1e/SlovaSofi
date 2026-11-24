@@ -118,6 +118,7 @@
                 if(remember){history.push(structuredClone(ops));if(history.length>20)history.shift();}
                 ops=next;el.dataset.photoValue=JSON.stringify(ops);if(hint)hint.textContent='';draw();if(refreshFields)renderFields();change(value(container));el.dispatchEvent(new CustomEvent('photo-change',{bubbles:true}));
             }
+            el.addEventListener('photo-base-update',()=>{base=JSON.parse(el.dataset.photoBase||'[]');draw();renderFields();});
             img.addEventListener('load',()=>{draw();scan();});img.addEventListener('error',()=>{el.querySelector('[data-photo-error]').hidden=false;});draw();renderFields();scan();
             const observer=new ResizeObserver(()=>{if(!el.isConnected){observer.disconnect();return;}draw();});observer.observe(img);
             if(!canvas.hasAttribute('data-photo-editable'))return;

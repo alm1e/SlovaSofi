@@ -31,7 +31,7 @@ print((output / 'teacher.html').as_uri())
 student = (root / 'assets/js/student.js').read_text()
 startup = 'start().catch((error) => {\n        console.error("Could not start the student dashboard.", error);\n        showError(text("loadError"), error);\n    });'
 assert startup in student, 'Student startup changed; update QA isolation.'
-student = student.replace(startup, (root / 'tests/browser/student-ui.js').read_text())
+student = student.replace(startup, (root / 'tests/browser/student-ui.js').read_text() + '\n' + (root / 'tests/browser/student-improvements.js').read_text())
 start = student.index('    async function invokeLessonApi(payload) {')
 end = student.index('    function responseForActivity(', start)
 student = student[:start] + '''    async function invokeLessonApi(payload) {
@@ -83,3 +83,19 @@ const p=document.createElement('p');p.textContent='TOTAL '+results.length+'; FAI
 (output / 'public-ui.js').write_text(public_script)
 (output / 'public.html').write_text(f'<meta charset="utf-8"><style>body{{background:#0f191e;color:#dff5e7;font:16px Arial}}p{{margin:8px}}</style><div id="report"></div><script src="{(output / "public-ui.js").as_uri()}"></script>')
 print((output / 'public.html').as_uri())
+
+improvement_html = (output / 'teacher.html').read_text().replace('</body>', f'<script src="{(root / "tests/browser/lesson-improvements.js").as_uri()}"></script></body>')
+(output / 'lesson-improvements-frame.html').write_text(improvement_html)
+runner = '''
+const sizes=[[360,800,'Phone small'],[390,844,'Phone'],[768,1024,'iPad portrait'],[820,1180,'iPad Air portrait'],[1024,768,'iPad landscape'],[1180,820,'iPad Air landscape'],[1366,768,'Laptop'],[1920,1080,'Desktop']];
+(async()=>{let count=0,failed=0;for(const [width,height,label] of sizes){const f=document.createElement('iframe');f.style=`position:fixed;inset:0;width:${width}px;height:${height}px;z-index:2;border:0`;const loaded=new Promise(resolve=>f.onload=resolve);f.srcdoc=__IMPROVEMENT_HTML__;document.body.append(f);await loaded;await new Promise(resolve=>f.contentWindow.requestAnimationFrame(()=>f.contentWindow.requestAnimationFrame(resolve)));try{const results=await f.contentWindow.qaRunLessonImprovements();for(const result of results){const p=document.createElement('p');p.textContent=label+' '+width+'×'+height+' '+result;document.querySelector('#results').append(p);count++;if(result.startsWith('FAIL'))failed++;}}catch(error){const p=document.createElement('p');p.textContent='FAIL '+label+': '+error.message;document.querySelector('#results').append(p);failed++;}finally{f.remove();}}const p=document.createElement('p');p.textContent='TOTAL '+count+'; FAIL '+failed;document.querySelector('#results').append(p);document.title='Lesson improvements — '+failed+' failures';})();
+'''
+(output / 'improvements-runner.js').write_text(runner.replace('__IMPROVEMENT_HTML__',json.dumps(improvement_html)))
+(output / 'improvements.html').write_text('<meta charset="utf-8"><title>Lesson improvements</title><style>body{background:#102027;color:#e0f6e8;font:16px Arial}p{margin:6px}</style><div id="results"></div><script src="improvements-runner.js"></script>')
+print((output / 'improvements.html').as_uri())
+
+student_html=(output / 'student.html').read_text()
+student_runner=runner.replace('__IMPROVEMENT_HTML__',json.dumps(student_html)).replace('qaRunLessonImprovements','qaRunStudentImprovements')
+(output / 'student-improvements-runner.js').write_text(student_runner)
+(output / 'student-improvements.html').write_text('<meta charset="utf-8"><title>Student improvements</title><style>body{background:#102027;color:#e0f6e8;font:16px Arial}p{margin:6px}</style><div id="results"></div><script src="student-improvements-runner.js"></script>')
+print((output / 'student-improvements.html').as_uri())

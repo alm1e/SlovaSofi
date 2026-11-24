@@ -5,7 +5,7 @@ const test = require("node:test");
 const source = fs.readFileSync(`${__dirname}/teacher.js`, "utf8");
 function fn(name) { const start=source.indexOf(`function ${name}(`); return source.slice(start,source.indexOf("\n}",start)+2); }
 function context() {
-    const ctx=vm.createContext({data:{lessons:[{id:"assigned",title:"Intro",unit:"A1",classIds:["class"],sections:[{title:"Text",activities:[{content:"Ready"}]}]},{id:"new",title:"Body",unit:"B1",classIds:["other"],sections:[{title:"Text",activities:[{content:"Ready"}]}]},{id:"draft",title:"Draft",unit:"A1",classIds:[],sections:[{title:"Text",activities:[{incomplete:true}]}]}]},lessonClassIds:lesson=>lesson.classIds,normalizeLessonSections:lesson=>lesson.sections,normalizeHomeworkSections:()=>[],window:{SlovaLessonReadiness:{incomplete:activity=>Boolean(activity.incomplete)}}});
+    const ctx=vm.createContext({currentLanguage:'en',data:{lessons:[{id:"assigned",title:"Intro",unit:"A1",classIds:["class"],sections:[{title:"Text",activities:[{content:"Ready"}]}]},{id:"new",title:"Body",unit:"B1",classIds:["other"],sections:[{title:"Text",activities:[{content:"Ready"}]}]},{id:"draft",title:"Draft",unit:"A1",classIds:[],sections:[{title:"Text",activities:[{incomplete:true}]}]}]},lessonClassIds:lesson=>lesson.classIds,normalizeLessonSections:lesson=>lesson.sections,normalizeHomeworkSections:()=>[],window:{SlovaLessonReadiness:{incomplete:activity=>Boolean(activity.incomplete)}}});
     vm.runInContext(fn("lessonAssignmentIncomplete")+fn("classLessonPickerItems"),ctx);return ctx;
 }
 test("picker searches the entire shared library, including lessons not assigned to this class",()=>{

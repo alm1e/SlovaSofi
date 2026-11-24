@@ -12,7 +12,7 @@ function readFunction(name) {
 function savingContext() {
     const button = {disabled:false,isConnected:true};
     const ctx = vm.createContext({
-        structuredClone, clearTimeout, crypto:require('node:crypto').webcrypto,
+        restoringLessonHistory:false,lessonUndoHistory:null,structuredClone, clearTimeout, crypto:require('node:crypto').webcrypto,
         FormData:class { get(key) {return {title:'Updated lesson',unit:'A1'}[key];} },
         hasPermission:()=>true, lessonDraftAutosaveTimer:0, lessonDraftAutosaveRevision:0,
         editingLessonId:'lesson', workspaceLessonId:'lesson', lessonWorkspaceMode:'edit',
@@ -91,7 +91,7 @@ function workspaceContext() {
         lessonSectionText:key=>key,lessonText:key=>key,previewText:key=>key,t:key=>key,lessonClassNames:()=>'',emptyMessage:()=>'',
         renderActivityBlocks:()=>'',exitLessonWorkspace(){},saveLesson(){},scheduleLessonDraftAutosave(){},
         switchLessonWorkspaceMode(){},openActivityPicker(){},openLessonTextImport(){},enhanceSelects(){},bindLessonPreviewActions(){},
-        bindTrueFalseEditors(){},bindLessonNotes(){},bindBlankCardSettings(){},bindActivityBlockActions(){},bindActivityAuthoring(){}
+        bindLiveAnswerActions(){},bindTrueFalseEditors(){},bindLessonNotes(){},bindBlankCardSettings(){},bindActivityBlockActions(){},bindActivityAuthoring(){}
     });
     vm.runInContext(readFunction('escapeHtml')+readFunction('lessonCategories')+readFunction('categoryText')+readFunction('renderLessonWorkspace'),ctx);return ctx;
 }

@@ -1032,7 +1032,16 @@
         saveState = state;
         const status = pageContent.querySelector("[data-draft-save-status]");
         if (!status) return;
-        status.innerHTML = `<span>${escapeHtml(text(state === "error" ? "answerPending" : state === "saving" ? "savingAnswer" : "answerSaved"))}</span>${state === "error" ? ` <button type="button" class="button secondary small" data-retry-answer-save>${escapeHtml(text("retrySave"))}</button>` : ""}${backupFailed && pendingDrafts.size ? `<p>${escapeHtml(text("localUnavailable"))}</p>` : ""}`;
+        const labels={
+            ru:{saved:'Ответы сохранены на сервере',saving:'Сохраняем на сервер…',local:'Нет подтверждения сервера. Ответ сохранён на этом устройстве и будет отправлен при восстановлении связи.',unsafe:'Ответ не сохранён на сервере; локальная копия недоступна. Не закрывайте вкладку.'},
+            ua:{saved:'Відповіді збережено на сервері',saving:'Зберігаємо на сервер…',local:'Немає підтвердження сервера. Відповідь збережено на пристрої та буде надіслано після відновлення зв’язку.',unsafe:'Відповідь не збережено на сервері; локальна копія недоступна. Не закривайте вкладку.'},
+            en:{saved:'Answers saved to server',saving:'Saving to server…',local:'No server confirmation. Your answer is saved on this device and will be sent when the connection returns.',unsafe:'Not saved to server; device backup is unavailable. Keep this tab open.'}
+        };
+        const copy=labels[language]||labels.en;
+        const pending=state==='error';
+        status.dataset.saveState=state;
+        status.innerHTML = `<span>${escapeHtml(pending?(backupFailed?copy.unsafe:copy.local):copy[state]||copy.saving)}</span>${pending?` <button type="button" class="button secondary small" data-retry-answer-save>${escapeHtml(text('retrySave'))}</button>`:''}`;
+
     }
 
     function recoveryMarkup() {
@@ -1538,6 +1547,7 @@
             ? `${recoveryMarkup()}<p data-draft-save-status role="status" aria-live="polite"></p>${renderLessonDetail(openedLesson)}`
             : activeView === "classes" ? renderClasses() : activeView === "calendar" ? renderStudentCalendar() : renderLessons()}`;
         updateSaveStatus();
+        window.SlovaLessonTools?.sync({container:pageContent,language});
         pageHistory?.sync();
         window.SlovaFindErrorUI?.bind(pageContent,{send:(event,root)=>saveFindErrorEvent(root,event)});
         pageContent.querySelectorAll('[data-activity-type="image"]').forEach(element=>{
