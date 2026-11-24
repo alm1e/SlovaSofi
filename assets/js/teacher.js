@@ -3977,6 +3977,62 @@ function applyLiveProgressEvent(rows, payload, classId, lessonId = null) {
     rows.set(progress.student_id, progress);
 }
 
+// Realtime updates must leave the teacher's reading/editing position unchanged.
+function refreshLiveProgressView() {
+    const root = pageContent;
+    const x = window.scrollX;
+    const y = window.scrollY;
+    const active = document.activeElement;
+    const controls = [...root.querySelectorAll("input, textarea, select, [contenteditable='true']")];
+    const focusIndex = controls.indexOf(active);
+    const drafts = controls.map(input => ({
+        value: input.value,
+        checked: input.checked,
+        html: input.isContentEditable ? input.innerHTML : null
+    }));
+    const selection = focusIndex >= 0 ? { start: active.selectionStart, end: active.selectionEnd } : null;
+    const details = [...root.querySelectorAll("details")].map(panel => panel.open);
+    const previousElements = [...root.querySelectorAll("*")];
+    const scrollers = previousElements.map((element, index) => ({ index, top: element.scrollTop, left: element.scrollLeft }))
+        .filter(saved => saved.top || saved.left);
+    const candidates = [...root.querySelectorAll(".lesson-preview-list > *, .live-monitor-column, .lesson-workspace-section")];
+    const anchorIndex = candidates.findIndex(element => element.getBoundingClientRect().bottom > 90);
+    const anchorTop = candidates[anchorIndex]?.getBoundingClientRect().top;
+    const oldMinHeight = root.style.minHeight;
+    // Avoid an intermediate shorter document clamping scrollY while DOM is replaced.
+    root.style.minHeight = `${root.getBoundingClientRect().height}px`;
+    try {
+        render();
+        root.querySelectorAll("details").forEach((panel, index) => { if (index < details.length) panel.open = details[index]; });
+        const replacements = [...root.querySelectorAll("input, textarea, select, [contenteditable='true']")];
+        replacements.forEach((input, index) => {
+            const draft = drafts[index];
+            if (!draft) return;
+            // Preserve teacher review drafts as well as the active lesson exercise.
+            if (input.value !== draft.value && draft.value !== undefined) input.value = draft.value;
+            if (draft.checked !== undefined) input.checked = draft.checked;
+            if (draft.html !== null) input.innerHTML = draft.html;
+        });
+        const replacement = replacements[focusIndex];
+        if (replacement && selection) {
+            replacement.focus({ preventScroll: true });
+            if (typeof replacement.setSelectionRange === "function" && selection.start !== null) {
+                try { replacement.setSelectionRange(selection.start, selection.end); } catch { /* Non-text inputs. */ }
+            }
+        }
+        const elements = [...root.querySelectorAll("*")];
+        scrollers.forEach(saved => {
+            const element = elements[saved.index];
+            if (element) { element.scrollTop = saved.top; element.scrollLeft = saved.left; }
+        });
+    } finally {
+        root.style.minHeight = oldMinHeight;
+        const anchor = root.querySelectorAll(".lesson-preview-list > *, .live-monitor-column, .lesson-workspace-section")[anchorIndex];
+        const delta = anchor && anchorTop !== undefined ? anchor.getBoundingClientRect().top - anchorTop : 0;
+        window.scrollTo({ left: x, top: y + delta, behavior: "instant" });
+    }
+}
+
 function ensureLiveProgressSubscription(lesson, group) {
     const key = `${lesson.id}:${group.id}`;
     if (liveProgressKey === key) return;
@@ -3996,15 +4052,12 @@ function ensureLiveProgressSubscription(lesson, group) {
     let channelReady = false;
     let channelFailed = false;
     const bufferedEvents = [];
-    function refreshView(){
-        const root=typeof pageContent==='undefined'?null:pageContent;
-        const active=typeof document==='undefined'?null:document.activeElement;
-        const focusedHost=active?.closest?.('[data-photo-live-index]');
-        const focus=focusedHost&&active.dataset?.photoFieldAnswer?{index:focusedHost.dataset.photoLiveIndex,id:active.dataset.photoFieldAnswer,start:active.selectionStart,end:active.selectionEnd}:null;
-        const expanded=root?[...root.querySelectorAll('[data-photo-live-index]')].filter(host=>host.closest('.photo-teacher-notes')?.open).map(host=>host.dataset.photoLiveIndex):[];
-        render();
-        expanded.forEach(index=>{const panel=root?.querySelector(`[data-photo-live-index="${index}"]`)?.closest('.photo-teacher-notes');if(panel)panel.open=true;});
-        if(focus){const input=root?.querySelector(`[data-photo-live-index="${focus.index}"] [data-photo-field-answer="${focus.id}"]`);input?.focus({preventScroll:true});input?.setSelectionRange(focus.start,focus.end);}
+    function refreshView() {
+        if (typeof pageContent === "undefined" || typeof document === "undefined") {
+            render();
+            return;
+        }
+        refreshLiveProgressView();
     }
     let snapshotGeneration=0;
     function loadSnapshot(){

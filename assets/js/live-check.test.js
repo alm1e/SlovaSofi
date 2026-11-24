@@ -204,3 +204,34 @@ test('a delete from another lesson cannot erase the currently monitored photo an
  ctx.applyLiveProgressEvent(rows,{eventType:'DELETE',old:{student_id:'learner',lesson_id:'other'}},'class','current');assert.equal(rows.size,1);
  ctx.applyLiveProgressEvent(rows,{eventType:'DELETE',old:{student_id:'learner',lesson_id:'current'}},'class','current');assert.equal(rows.size,0);
 });
+
+test('teacher realtime refresh preserves viewport, expanded answers, review draft and caret', () => {
+    let rendered = false, focused = false, restoredSelection, scroll;
+    const oldInput = { value: 'Unsaved teacher feedback', checked: false, selectionStart: 3, selectionEnd: 8 };
+    const newInput = { value: 'server feedback', checked: false, focus: options => { focused = options.preventScroll; }, setSelectionRange: (...args) => { restoredSelection = args; } };
+    const oldPanel = { open: true }, newPanel = { open: false };
+    const oldScroller = { scrollTop: 42, scrollLeft: 6 }, newScroller = { scrollTop: 0, scrollLeft: 0 };
+    const oldAnchor = { getBoundingClientRect: () => ({ top: 100, bottom: 500 }) };
+    const newAnchor = { getBoundingClientRect: () => ({ top: 160, bottom: 560 }) };
+    const root = {
+        style: { minHeight: '' }, getBoundingClientRect: () => ({ height: 2400 }),
+        querySelectorAll: selector => {
+            if (selector === 'details') return [rendered ? newPanel : oldPanel];
+            if (selector === '*') return [rendered ? newScroller : oldScroller];
+            if (selector.startsWith('.lesson-preview-list')) return [rendered ? newAnchor : oldAnchor];
+            return [rendered ? newInput : oldInput];
+        }
+    };
+    vm.runInNewContext(readFunction(teacher, 'refreshLiveProgressView') + '\nrefreshLiveProgressView();', {
+        pageContent: root, document: { activeElement: oldInput },
+        window: { scrollX: 0, scrollY: 900, scrollTo: value => { scroll = value; } },
+        render: () => { rendered = true; }
+    });
+    assert.deepEqual(JSON.parse(JSON.stringify(scroll)), { left: 0, top: 960, behavior: 'instant' });
+    assert.equal(newPanel.open, true);
+    assert.equal(newInput.value, oldInput.value);
+    assert.equal(focused, true);
+    assert.deepEqual(restoredSelection, [3, 8]);
+    assert.equal(newScroller.scrollTop, 42);
+    assert.equal(root.style.minHeight, '');
+});
