@@ -4,15 +4,26 @@
     const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const words={ru:['Рисовать','Текст','Цвет','Толщина','Отменить','Очистить мои пометки','Подпись (до 200 символов)','Нажмите на фото, чтобы поставить подпись.','Достигнут предел рисунка. Отмените лишние линии.','Фото не загрузилось. Проверьте ссылку или подключение.'],ua:['Малювати','Текст','Колір','Товщина','Скасувати','Очистити мої позначки','Підпис (до 200 символів)','Натисніть на фото, щоб додати підпис.','Досягнуто межі малюнка. Скасуйте зайві лінії.','Фото не завантажилось. Перевірте посилання або з’єднання.'],en:['Draw','Text','Colour','Width','Undo','Clear my annotations','Caption (up to 200 characters)','Click the photo to place the caption.','Drawing limit reached. Undo unnecessary lines.','Image could not load. Check the link or connection.']};
     const fieldWords={ru:['＋ Поле ответа','Ширина, %','Высота, %','Нажмите на пропуск на фото. Поле можно передвинуть и растянуть за угол.','Ответ','Удалить поле','Переместить поле','Изменить размер'],ua:['＋ Поле відповіді','Ширина, %','Висота, %','Натисніть на пропуск на фото. Поле можна пересунути та розтягнути за кут.','Відповідь','Видалити поле','Пересунути поле','Змінити розмір'],en:['＋ Answer field','Width, %','Height, %','Click a gap on the photo. Drag a field or resize its corner.','Answer','Delete field','Move field','Resize field']};
+    const inputLabels = { ru: 'Вписать', ua: 'Вписати', en: 'Type here', sk: 'Písať sem', kk: 'Осында жазу' };
     function markup(images,base={},value={},editable=false,language='ru',options={}){
         const t=words[language]||words.en,f=fieldWords[language]||fieldWords.en;
         const template=core.read(base),responses=core.read(value);
         const visibleOps=url=>(responses[url]||[]).filter(op=>options.authorFields||options.preserveFields||(op.type!=='field'&&(op.type!=='field-answer'||(template[url]||[]).some(field=>field.type==='field'&&field.id===op.id))));
         return images.map(image=>`<div class="photo-editor" data-photo-editor data-photo-direct="${options.direct?'true':'false'}" data-photo-author="${options.authorFields?'true':'false'}" data-photo-url="${escape(image.url)}" data-photo-base="${escape(JSON.stringify(template[image.url]||[]))}" data-photo-value="${escape(JSON.stringify(visibleOps(image.url)))}">
-            ${editable?`<div class="photo-tools">${options.direct?`<button type="button" class="button secondary small" data-photo-tool="input" aria-pressed="true">${language==='ru'?'Вписать':language==='ua'?'Вписати':'Type here'}</button>`:''}<button type="button" class="button secondary small" data-photo-tool="pen" aria-pressed="${options.direct?'false':'true'}">✎ ${t[0]}</button><button type="button" class="button secondary small" data-photo-tool="text" aria-pressed="false">T ${t[1]}</button>${options.authorFields?`<button type="button" class="button secondary small" data-photo-tool="field" aria-pressed="false">${f[0]}</button><label>${f[1]} <input type="number" min="2" max="50" step="0.5" value="8" data-photo-field-width></label><label>${f[2]} <input type="number" min="1" max="20" step="0.5" value="3.5" data-photo-field-height></label>`:''}<label>${t[2]} <input type="color" data-photo-color value="#e53935"></label><label>${t[3]} <select data-photo-width><option value="2">2</option><option value="4" selected>4</option><option value="8">8</option></select></label><button type="button" class="button secondary small" data-photo-undo>${t[4]}</button><button type="button" class="button secondary small" data-photo-clear>${t[5]}</button></div><input class="photo-caption" data-photo-caption maxlength="200" placeholder="${t[6]}" aria-label="${t[6]}" hidden><p class="photo-hint" data-photo-hint role="status"></p>`:''}
+            ${editable?`<div class="photo-tools">${options.direct?`<button type="button" class="button secondary small" data-photo-tool="input" aria-pressed="true">${inputLabels[language] || inputLabels.en}</button>`:''}<button type="button" class="button secondary small" data-photo-tool="pen" aria-pressed="${options.direct?'false':'true'}">✎ ${t[0]}</button><button type="button" class="button secondary small" data-photo-tool="text" aria-pressed="false">T ${t[1]}</button>${options.authorFields?`<button type="button" class="button secondary small" data-photo-tool="field" aria-pressed="false">${f[0]}</button><label>${f[1]} <input type="number" min="2" max="50" step="0.5" value="8" data-photo-field-width></label><label>${f[2]} <input type="number" min="1" max="20" step="0.5" value="3.5" data-photo-field-height></label>`:''}<label>${t[2]} <input type="color" data-photo-color value="#e53935"></label><label>${t[3]} <select data-photo-width><option value="2">2</option><option value="4" selected>4</option><option value="8">8</option></select></label><button type="button" class="button secondary small" data-photo-undo>${t[4]}</button><button type="button" class="button secondary small" data-photo-clear>${t[5]}</button></div><input class="photo-caption" data-photo-caption maxlength="200" placeholder="${t[6]}" aria-label="${t[6]}" hidden><p class="photo-hint" data-photo-hint role="status"></p>`:''}
             <div class="photo-stage"><img src="${escape(image.url)}" alt="${escape(image.alt||'')}" draggable="false"><canvas ${editable?'data-photo-editable tabindex="0" aria-label="'+t[0]+'"':''}></canvas><div class="photo-fields" data-photo-fields></div></div><p data-photo-error hidden role="alert">${t[9]}</p></div>`).join('');
     }
     function value(container){const result={};container.querySelectorAll('[data-photo-editor]').forEach(el=>{result[el.dataset.photoUrl]=JSON.parse(el.dataset.photoValue||'[]');});return core.validate(result);}
+    function savedText(images, base, value, language) {
+        const imageUrls = new Set(images.map(image => image.url));
+        const template = core.read(base);
+        const detached = Object.entries(core.read(value)).flatMap(([url, operations]) =>
+            operations.filter(op => op.text?.trim() && (!imageUrls.has(url)
+                || (op.type === "field-answer" && !template[url]?.some(field => field.type === "field" && field.id === op.id)))));
+        if (!detached.length) return "";
+        const labels = { ru: "Сохранённый текст с фото", ua: "Збережений текст з фото", en: "Saved text from the photo", sk: "Uložený text z obrázka", kk: "Фотосуреттен сақталған мәтін" };
+        return `<div class="photo-saved-text"><p>${labels[language] || labels.en}</p><ul>${detached.map(op => `<li>${escape(op.text)}</li>`).join("")}</ul></div>`;
+    }
     function bind(container,{change=()=>{},language='ru'}={}){
         const t=words[language]||words.en,f=fieldWords[language]||fieldWords.en;
         container.querySelectorAll('[data-photo-editor]').forEach(el=>{
@@ -25,7 +36,7 @@
             const gapHint=language==='ru'?['Нажмите на точки, чтобы вписать ответ.','Пропуски не найдены. Можно нажать на фото и вписать ответ вручную.','Не удалось распознать фото. Доступен ручной ввод.']:language==='ua'?['Натисніть на крапки, щоб вписати відповідь.','Пропусків не знайдено. Доступне ручне введення.','Не вдалося розпізнати фото. Доступне ручне введення.']:['Click the dots to type an answer.','No gaps found. Click the photo to type manually.','Could not analyse this image. Manual typing is available.'];
             const overlaps=(a,b)=>Math.abs(a.x+a.w/2-b.x-b.w/2)<Math.max(a.w,b.w)*.65&&Math.abs(a.y+a.h/2-b.y-b.h/2)<Math.max(a.h,b.h)*.65;
             async function scan(){
-                if(!root.SlovaPhotoGapDetector||!img.naturalWidth)return;
+                if(!editable||el.dataset.photoDirect!=='true'||!root.SlovaPhotoGapDetector||!img.naturalWidth)return;
                 const version=++scanVersion;
                 const read=source=>{const scale=Math.min(1,1200/source.naturalWidth,1400/source.naturalHeight);const temp=document.createElement('canvas');temp.width=Math.max(1,Math.round(source.naturalWidth*scale));temp.height=Math.max(1,Math.round(source.naturalHeight*scale));const c=temp.getContext('2d',{willReadFrequently:true});c.drawImage(source,0,0,temp.width,temp.height);return c.getImageData(0,0,temp.width,temp.height);};
                 try{
@@ -40,9 +51,9 @@
             }
             function insertInput(x,y,gap=null){
                 const existing=gap?ops.find(op=>op.type==='input'&&overlaps(op,gap)):null;
-                if(existing){fieldsLayer.querySelector(`[data-photo-field-answer="${existing.id}"]`)?.focus();return;}
+                if(existing){fieldsLayer.querySelector(`[data-photo-field-answer="${existing.id}"]`)?.focus({preventScroll:true});return;}
                 const {w,h}=fieldSize(),field={type:'input',id:crypto.randomUUID(),x:Math.max(0,Math.min(1000-w,x-w/2)),y:Math.max(0,Math.min(1000-h,y-h/2)),w,h,text:'',...(gap||{})};
-                selected=field.id;commit([...ops,field]);fieldsLayer.querySelector(`[data-photo-field-answer="${field.id}"]`)?.focus();
+                selected=field.id;commit([...ops,field]);fieldsLayer.querySelector(`[data-photo-field-answer="${field.id}"]`)?.focus({preventScroll:true});
             }
             function fieldSize(){return {w:Math.max(20,Math.min(500,(Number(el.querySelector('[data-photo-field-width]')?.value)||8)*10)),h:Math.max(10,Math.min(200,(Number(el.querySelector('[data-photo-field-height]')?.value)||3.5)*10))};}
             function selectField(field){
@@ -149,5 +160,5 @@
             canvas.addEventListener('pointerup',finish);canvas.addEventListener('pointercancel',finish);canvas.addEventListener('lostpointercapture',finish);
         });
     }
-    root.SlovaPhotoEditor={markup,bind,value};
+    root.SlovaPhotoEditor={markup,bind,value,savedText};
 })(window);

@@ -294,17 +294,23 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .preview-activity-editable:hover { border-color: #cbdccc; }
 .preview-activity-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
 .preview-activity .preview-activity-header h3 { flex: 1 1 auto; min-width: 0; margin: 3px 0 0; }
-.preview-activity-drag { display: grid; flex: 0 0 22px; place-items: center; width: 22px; height: 28px; border: 0; border-radius: 5px; padding: 0; background: transparent; color: #899a8d; font-size: 20px; cursor: grab; touch-action: none; }
-.preview-activity-drag:hover { background: #edf3ed; color: #456a4e; }
-.preview-activity-drag:active { cursor: grabbing; }
-.preview-activity-actions { display: flex; flex: 0 0 auto; gap: 4px; }
-.preview-activity-actions .mini-action { width: 26px; height: 26px; background: #edf3ed; color: #58705d; font-size: 14px; }
-.preview-activity-actions .mini-action:hover { background: #dfece1; color: #2b6446; }
-.preview-activity-actions .preview-activity-delete:hover { background: #fae9e7; color: #a33e35; }
-.preview-activity-drag:focus-visible, .preview-activity-actions .mini-action:focus-visible { outline: 2px solid #6b9d78; outline-offset: 2px; }
-.preview-activity-editing { border-color: #b9d3bc; box-shadow: 0 5px 18px #2544320e; }
-.preview-inline-editor { display: grid; gap: 12px; border-top: 1px solid #e7eee7; padding-top: 14px; }
-.preview-inline-editor .form-field { margin: 0; }
+:root .preview-block-edit {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    margin-left: auto;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface-soft);
+    color: var(--ink);
+    cursor: pointer;
+}
+:root .preview-block-edit:hover:not(:disabled) { background: var(--purple-light); color: var(--purple); }
+.preview-block-edit:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+.preview-block-edit:disabled { opacity: .45; cursor: default; }
+.preview-block-edit svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+.platform.lesson-focus .lesson-preview-list > :is(.preview-activity, [data-inline-block-editor]) { scroll-margin-top: var(--lesson-panel-top); }
+.inline-activity-actions { flex-wrap: wrap; }
 .preview-activity.is-dragging, .builder-block.is-dragging { position: relative; z-index: 2; opacity: .68; pointer-events: none; box-shadow: 0 12px 30px #25443220; }
 .preview-activity.is-drop-target, .builder-block.is-drop-target { border-color: #6b9d78; box-shadow: 0 0 0 2px #6b9d7820; }
 .preview-activity h3 { color: var(--ink); font-size: 19px; }
@@ -839,7 +845,6 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .preview-inline-select, .student-inline-select { appearance: none; min-width: 110px; margin: 0 4px; padding: 4px 28px 4px 12px; border: 1px solid #b9d0be; border-radius: 10px; background: #f2f8f4 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%232b6446' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center; color: #1f4634; font: inherit; font-weight: 600; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
 .preview-inline-select:hover, .student-inline-select:hover, .preview-inline-select:focus, .student-inline-select:focus { border-color: #2b6446; box-shadow: 0 0 0 3px #2b644622; outline: none; }
 .preview-note-card { position: relative; padding: 0; border: 0; background: none; box-shadow: none; }
-.preview-note-card .note-actions { position: absolute; top: 8px; right: 8px; }
 .lesson-nav-buttons, .student-lesson-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
 .lesson-nav-buttons .button, .student-lesson-nav .button { flex: 1 1 200px; }
 
@@ -2198,18 +2203,23 @@ h1 { margin-bottom: 8px; font-size: clamp(23px, 3vw, 30px); letter-spacing: -.7p
 .unit-card-mark img {width:100%;height:100%;object-fit:cover;border-radius:inherit;}
 .lesson-sort-controls {display:flex;gap:3px;flex-shrink:0;}
 .course-lesson-row[draggable="true"] {cursor:grab;}
-.preview-note-card {position:relative;}
-.preview-note-card .note-visibility-toggle {position:absolute;right:12px;top:12px;z-index:2;background:var(--white);color:var(--purple);}
-.preview-note-card .activity-note summary {padding-right:42px;}
 @media(max-width:700px){.lesson-sort-controls{flex-direction:column;}.lesson-sort-controls button{min-width:32px;min-height:32px;}}
 
 .course-hero-art img {width:100%;height:100%;object-fit:cover;border-radius:inherit;}
 
-/* Keep visibility control in the note heading, including wrapped mobile titles. */
 .preview-activity.preview-note-card {padding:0;border:0;background:none;box-shadow:none;}
 .preview-note-card > .activity-note {margin:0;}
-.preview-note-card .activity-note > summary {position:relative;min-height:32px;padding-right:44px;}
-.preview-note-card .activity-note > summary > .note-visibility-toggle {position:absolute;top:0;right:0;width:32px;height:32px;min-width:32px;min-height:32px;display:inline-flex;align-items:center;justify-content:center;margin:0;padding:4px;background:transparent;}
+.preview-note-card .activity-note > summary:has(.preview-note-controls) { position: relative; min-height: 44px; padding-right: 92px; }
+.preview-note-controls { position: absolute; top: 0; right: 0; display: flex; align-items: center; gap: 4px; }
+.preview-note-controls .note-visibility-toggle { width: 40px; height: 44px; color: var(--purple); }
+.teacher-photo-writing { margin-block: 0 12px; }
+.teacher-photo-writing > summary { min-height: 44px; cursor: pointer; }
+.teacher-photo-writing > summary::after { content: "▾"; margin-left: 8px; }
+.teacher-photo-writing[open] > summary::after { content: "▴"; }
+.teacher-photo-writing[open] + [data-teacher-photo-material] { display: none; }
+[data-photo-history-index]:empty,
+.teacher-photo-writing[open] ~ [data-photo-history-index],
+.preview-activity:has(> [data-photo-history-index] > [data-live-photo-answer]) > [data-teacher-photo-material] { display: none; }
 
 .preview-question-activity .preview-q-badge {width:auto;min-width:36px;white-space:nowrap;}
 .preview-question-activity .preview-activity-header > .preview-q-prompt {margin:0;}

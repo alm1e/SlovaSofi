@@ -59,6 +59,101 @@ window.qaRunLessonImprovements=async function(){
    const cards=[...pageContent.querySelectorAll('.lesson-preview-list > .preview-activity')];
    assert(cards.length===2&&cards.every(card=>card.getClientRects().length),'Some activities are hidden');
  });
+ await run('The pencil on activity 21 edits only that photo and keeps its position',async()=>{
+   reset();
+   const lesson=data.lessons[0], photoUrl='https://example.invalid/workspace-photo.png';
+   lesson.sections[0].activities=[
+     ...Array.from({length:19},(_,index)=>({type:'text',content:'Activity '+(index+1)})),
+     {type:'open-answer',prompt:'Keep the practice answer'},
+     {type:'image',prompt:'Original photo',content:photoUrl},
+     {type:'text',prompt:'Keep this last activity',content:'Last activity'}
+   ];
+   openLessonPreview(lesson.id);
+   const list=pageContent.querySelector('.lesson-preview-list');
+   const practice=list.querySelector('[data-preview-activity="19"] [data-open-answer]');
+   practice.value='Unsaved practice answer';
+   const pencil=list.querySelector('[data-edit-preview-block="20"]');
+   pencil.scrollIntoView({block:'center',behavior:'instant'});
+   const card=list.querySelector('[data-preview-activity="20"]');
+   const position=card.getBoundingClientRect().top;
+   const pencilBox=pencil.getBoundingClientRect(),cardBox=card.getBoundingClientRect();
+   assert(pencilBox.width>=44&&pencilBox.left>cardBox.left+cardBox.width/2&&pencilBox.right<=cardBox.right,'Pencil does not fit on the top right');
+   pencil.click();
+   const editor=list.querySelector('[data-inline-block-editor][data-block-index="20"]');
+   assert(editor&&lessonWorkspaceMode==='preview','Pencil did not open the block in place');
+   assert(Math.abs(editor.getBoundingClientRect().top-position)<=2,'Page jumped when opening the editor');
+   assert(list.querySelector('[data-open-answer]')===practice&&practice.value==='Unsaved practice answer','Another exercise changed');
+   assert(editor.querySelector('[data-pick-image]'),'Photo upload missing');
+   const updatePrompt=value=>{
+     const prompt=list.querySelector('[data-inline-block-editor] [data-field="prompt"]');
+     prompt.value=value;prompt.dispatchEvent(new Event('input',{bubbles:true}));
+   };
+   updatePrompt('Cancel this edit');
+   editor.querySelector('[data-photo-interactive-toggle]').click();
+   editor.querySelector('[data-cancel-inline-activity]').click();
+   assert(lesson.sections[0].activities[20].prompt==='Original photo'&&!lesson.sections[0].activities[20].settings?.photoInteractive,'Cancel changed the lesson');
+   const restoredPencil=list.querySelector('[data-edit-preview-block="20"]');
+   assert(document.activeElement===restoredPencil,'Cancel did not return focus to the pencil');
+   restoredPencil.click();
+   updatePrompt('Edited photo');
+   const photoPanel=list.querySelector('[data-inline-block-editor] [data-builder-preview]');
+   const image=photoPanel.querySelector('img');
+   image.src='wide.svg';await image.decode();
+   const write=photoPanel.querySelector('[data-photo-tool="input"]');
+   assert(write.getClientRects().length&&!list.querySelector('[data-photo-interactive-toggle]').checked,'Teacher writing is unavailable until student answers are enabled');
+   write.click();
+   const canvas=photoPanel.querySelector('canvas'),box=canvas.getBoundingClientRect();
+   canvas.dispatchEvent(new PointerEvent('pointerdown',{button:0,clientX:box.left+box.width*.4,clientY:box.top+box.height*.5,pointerId:1}));
+   const annotation=photoPanel.querySelector('[data-photo-field-answer]');
+   annotation.value='Ahoj';annotation.dispatchEvent(new InputEvent('input',{bubbles:true}));
+   list.querySelector('[data-photo-interactive-toggle]').click();
+   list.querySelector('[data-save-inline-activity]').click();
+   await new Promise(requestAnimationFrame);
+   const updated=lesson.sections[0].activities[20];
+   assert(updated.prompt==='Edited photo'&&updated.settings.photoInteractive&&updated.content===photoUrl,'Wrong photo content saved');
+   assert(updated.settings.imageAnnotations[photoUrl][0].text==='Ahoj','Inline photo annotation was not saved');
+   assert(!list.querySelector('[data-inline-block-editor]')&&list.querySelector('[data-preview-activity="20"] h3').textContent.includes('Edited photo'),'Saved photo did not reappear');
+   const restored=list.querySelector('[data-preview-activity="20"]');
+   const restoredBox=restored.getBoundingClientRect();
+   assert(restoredBox.top<innerHeight&&restoredBox.bottom>document.querySelector('.topbar').getBoundingClientRect().bottom
+     &&document.activeElement===restored.querySelector('[data-edit-preview-block]'),'Saving did not return to the same activity');
+   assert(practice.isConnected&&practice.value==='Unsaved practice answer','Saving recreated another activity');
+ });
+ await run('Inline homework edit keeps its draft after a failed save and can retry',async()=>{
+   reset();
+   const lesson=data.lessons[0];
+   lesson.homeworkSections[0].activities=[{type:'multiple-choice',prompt:'Homework question',content:'[dom]\nauto'}];
+   openLessonPreview(lesson.id);
+   pageContent.querySelector('[data-select-section="qa-homework"]').click();
+   pageContent.querySelector('[data-edit-preview-block="0"]').click();
+   assert(pageContent.querySelector('[data-inline-block-editor] [data-visual-settings]'),'Graphical editor missing');
+   pageContent.querySelector('[data-inline-block-editor] [data-add-question]').click();
+   assert(pageContent.querySelectorAll('[data-inline-block-editor] .activity-question-editor-item').length===2,'Question did not get added in place');
+   const prompt=pageContent.querySelector('[data-inline-block-editor] [data-field="prompt"]');
+   prompt.value='Edited homework';prompt.dispatchEvent(new Event('input',{bubbles:true}));
+   const write=persistWorkspaceChange;
+   try {
+     persistWorkspaceChange=async previous=>{data=previous;render();return false;};
+     pageContent.querySelector('[data-save-inline-activity]').click();
+     await new Promise(requestAnimationFrame);
+     assert(pageContent.querySelector('[data-inline-block-editor] [data-field="prompt"]').value==='Edited homework','Failed save lost the draft');
+     assert(!pageContent.querySelector('[data-save-inline-activity]').disabled,'Retry is disabled');
+     assert(data.lessons[0].homeworkSections[0].activities[0].prompt==='Homework question','Failed write changed the stored lesson');
+   } finally {persistWorkspaceChange=write;}
+   pageContent.querySelector('[data-save-inline-activity]').click();
+   await new Promise(requestAnimationFrame);
+   const saved=data.lessons[0].homeworkSections[0].activities[0];
+   assert(saved.prompt==='Edited homework'&&saved.questions.length===2,'Homework did not save on retry');
+   assert(data.lessons[0].sections[0].activities[0].prompt==='Text','Homework edit changed the main section');
+ });
+ await run('The pencil resumes the correct card when the full editor already has a draft',()=>{
+   reset();
+   draftSections[0].activities[1].prompt='Existing draft';
+   switchLessonWorkspaceMode('preview');
+   pageContent.querySelector('[data-edit-preview-block="1"]').click();
+   const editor=pageContent.querySelector('#activityBlocks [data-block-index="1"].is-expanded');
+   assert(editor&&editor.querySelector('[data-field="prompt"]').value==='Existing draft','Existing editor draft was discarded or wrong card expanded');
+ });
  await run('Readiness explains the problem and opens its block',()=>{
    reset({type:'audio',content:''});pageContent.querySelector('[data-tools-validate]').click();assert(modalCard.querySelector('[data-readiness-go]'),'No issue link');modalCard.querySelector('[data-readiness-go]').click();assert(modalBackdrop.hidden,'Issue dialog still open');assert(pageContent.querySelector('.builder-block.is-expanded'),'Problem not expanded');
  });

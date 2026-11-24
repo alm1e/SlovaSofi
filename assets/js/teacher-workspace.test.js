@@ -93,7 +93,7 @@ function workspaceContext() {
         switchLessonWorkspaceMode(){},openActivityPicker(){},openLessonTextImport(){},enhanceSelects(){},bindLessonPreviewActions(){},
         bindLiveAnswerActions(){},bindTrueFalseEditors(){},bindLessonNotes(){},bindBlankCardSettings(){},bindActivityBlockActions(){},bindActivityAuthoring(){}
     });
-    vm.runInContext(readFunction('escapeHtml')+readFunction('lessonCategories')+readFunction('categoryText')+readFunction('acceptsLiveAnswer')+readFunction('renderLessonWorkspace'),ctx);return ctx;
+    vm.runInContext(readFunction('escapeHtml')+readFunction('lessonCategories')+readFunction('categoryText')+readFunction('acceptsLiveAnswer')+readFunction('renderLessonActivity')+readFunction('renderLessonWorkspace'),ctx);return ctx;
 }
 test('lesson modes use one toolbar and both modes show the sections in the same rail',()=>{
     const ctx=workspaceContext();ctx.renderLessonWorkspace();const html=ctx.pageContent.innerHTML;

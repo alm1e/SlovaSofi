@@ -47,15 +47,23 @@
                 await syncLessonNotes();assert(!pageContent.textContent.includes('LIVE NOTE'),'Скрытая заметка осталась у ученика');visible=true;await syncLessonNotes();assert(pageContent.textContent.includes('LIVE NOTE'),'Заметка не появилась без перезагрузки');
             }finally{invokeLessonApi=originalInvoke;}
         });
-        await run('Обычное фото можно открыть, оно не принимает ответ и не меняет прогресс',()=>{
+        await run('Обычное фото возвращает сохранённый ответ, а без ответа открывается в галерее',()=>{
             qaReset('image');
             const photo=openedLesson.sections[0].activities[0];
             const url=photo.content;
-            openedLesson.progress={'a0':{response:JSON.stringify({[url]:[{type:'text',text:'Прежний ответ',x:10,y:10,color:'#e53935',width:4}]}),draft:true}};
+            openedLesson.progress={'a0':{response:JSON.stringify({
+                [url]:[{type:'input',id:'word',text:'Прежний ответ',x:10,y:10,w:200,h:40}],
+                'https://example.invalid/old.png':[{type:'field-answer',id:'previous-gap',text:'Старый адрес'}]
+            }),draft:true}};
             assert(progressActivityCountFor(openedLesson)===2&&answeredCountFor(openedLesson)===1,'Интерактивное фото должно засчитываться');
             photo.photoInteractive=false;
             render();
-            const card=pageContent.querySelector('[data-activity-type="image"]');
+            let card=pageContent.querySelector('[data-activity-type="image"]');
+            assert(card.querySelector('[data-photo-field-answer]')?.value==='Прежний ответ'&&card.querySelector('[data-photo-field-answer]').readOnly,'Сохранённый ответ исчез с фото');
+            assert(card.querySelector('.photo-saved-text').textContent.includes('Старый адрес'),'Ответ со старого изображения пропал');
+            assert(progressActivityCountFor(openedLesson)===2&&answeredCountFor(openedLesson)===1,'Сохранённый ответ исчез из прогресса');
+            openedLesson.progress={};render();
+            card=pageContent.querySelector('[data-activity-type="image"]');
             assert(card.querySelector('[data-gallery-zoom]')&&!card.querySelector('[data-answer-kind], [data-answer-feedback], [data-photo-tool]'),'Обычное фото отрисовалось как задание');
             assert(progressActivityCountFor(openedLesson)===1&&answeredCountFor(openedLesson)===0,'Обычное фото попало в прогресс');
             card.querySelector('[data-gallery-zoom]').click();

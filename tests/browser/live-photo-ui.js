@@ -15,18 +15,45 @@
         const [,plainPhoto,recording]=normalizeLessonSections(data.lessons[0])[0].activities;
         liveProgressRows=new Map([['qa-member',{student_id:'qa-member',class_id:'qa-class',lesson_id:'qa-lesson',answers:{
             ['b'+blockId]:{response:JSON.stringify({[url]:[note]}),correct:null,draft:true},
-            [activityProgressKey(plainPhoto,1)]:{response:JSON.stringify({[url]:[note]}),correct:null,draft:true},
             [activityProgressKey(recording,2)]:{response:recordingPath,correct:null,draft:true}
         }}]]);
         render();
         const panel=pageContent.querySelector('[data-live-photo-answer]'),editor=panel.querySelector('.photo-editor'),img=editor.querySelector('img');
         const staticCard=pageContent.querySelector('[data-preview-activity="1"]');
-        check('ordinary photo shows only the gallery even with a legacy answer',Boolean(staticCard.querySelector('[data-gallery-zoom]')&&!staticCard.querySelector('.live-answer-inline, [data-photo-tool]')));
+        const writing=staticCard.querySelector('[data-teacher-photo-writing]'),material=staticCard.querySelector('[data-teacher-photo-material]');
+        check('ordinary photo starts in the gallery with a separate teacher writing button',Boolean(writing?.querySelector('summary')&&material.querySelector('[data-gallery-zoom]')&&!staticCard.querySelector('.live-answer-inline, [data-photo-tool]')));
         const progressBar=pageContent.querySelector('.live-student-tab [role="progressbar"]');
         check('completion counts the interactive photo and recording only',progressBar?.getAttribute('aria-valuenow')==='2'&&progressBar.getAttribute('aria-valuemax')==='2');
         check('one primary photo without a collapsed teacher notes panel',panel.querySelectorAll('.photo-editor').length===1&&!pageContent.querySelector('.photo-teacher-notes'));
         check('teacher can type directly on the primary photo',Boolean(editor.querySelector('[data-photo-tool="input"]')&&editor.querySelector('[data-photo-editable]')));
         check('student words remain separate from saved teacher annotations',!JSON.stringify(window.SlovaPhotoEditor.value(panel)).includes('áno'));
+
+        const changeWriting=()=>{
+            const toggled=new Promise(resolve=>writing.addEventListener('toggle',resolve,{once:true}));
+            writing.querySelector('summary').click();
+            return toggled;
+        };
+        await changeWriting();
+        const plainEditor=writing.querySelector('[data-photo-live-index]'),plainImage=plainEditor.querySelector('img');
+        plainImage.src='wide.svg';await plainImage.decode();
+        const plainCanvas=plainEditor.querySelector('canvas'),bounds=plainCanvas.getBoundingClientRect();
+        plainEditor.querySelector('[data-photo-tool="input"]').click();
+        plainCanvas.dispatchEvent(new PointerEvent('pointerdown',{button:0,pointerId:12,clientX:bounds.left+bounds.width*.4,clientY:bounds.top+bounds.height*.5}));
+        const plainInput=plainEditor.querySelector('[data-photo-field-answer]');
+        check('teacher can type on an ordinary photo and the gallery gives the editor its space',plainInput&&!plainInput.readOnly&&document.activeElement===plainInput&&!material.getClientRects().length);
+        plainInput.value='Teacher annotation';plainInput.dispatchEvent(new InputEvent('input',{bubbles:true}));
+        plainEditor.querySelector('[data-save-photo-live]').click();
+        await new Promise(requestAnimationFrame);
+        await changeWriting();
+        const teacherNote=material.querySelector('[data-photo-field-answer]');
+        check('the teacher annotation appears in the read-only photo without enabling student answers',teacherNote?.readOnly&&teacherNote.value==='Teacher annotation'&&!window.SlovaPhotoAnnotations.isInteractive(plainPhoto)&&!staticCard.querySelector('[data-live-photo-answer]'));
+        liveProgressRows.get('qa-member').answers[activityProgressKey(plainPhoto,1)]={
+            response:JSON.stringify({[url]:[{...note,id:'history',text:'Saved work'}]}),correct:null,draft:true,submitted_at:'2026-11-24T09:00:00Z'
+        };
+        refreshLiveProgressView();
+        const historical=staticCard.querySelector('[data-photo-history-index] [data-photo-field-answer="history"]');
+        check('historical answer appears on the current photo after loading progress',historical?.value==='Saved work'&&historical.readOnly&&!material.getClientRects().length);
+        check('completed photo is returned to the progress count',pageContent.querySelector('.live-student-tab [role="progressbar"]').getAttribute('aria-valuenow')==='3');
 
         const playButton=pageContent.querySelector('[data-play-recording]'),playbackPanel=playButton.closest('.live-answer-inline');
         const signedPaths=[];

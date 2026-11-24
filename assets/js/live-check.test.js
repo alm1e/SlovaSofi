@@ -207,10 +207,10 @@ test('a delete from another lesson cannot erase the currently monitored photo an
 
 test('realtime updates patch only live answer panels, without rendering the workspace', () => {
     const calls=[];
-    const panel={dataset:{liveProgressIndex:'0',livePhotoIndexValue:'0',liveQuestionIndex:'',liveQuestionId:''}};
+    const panel={closest:()=>null,dataset:{liveProgressIndex:'0',livePhotoIndexValue:'0',liveQuestionIndex:'',liveQuestionId:''}};
     const fresh={querySelector:()=>null,querySelectorAll:()=>[]};
     const ctx={data:{lessons:[{id:'lesson'}],classes:[{id:'class'}]},workspaceLessonId:'lesson',lessonWorkspaceMode:'preview',lessonWorkspaceTab:'lesson',activeLessonSectionId:'section',monitorClassId:'class',selectedLiveStudentId:'student',
-        normalizeLessonSections:()=>[{id:'section',activities:[{type:'open-answer'}]}],liveStudentsForGroup:()=>[{id:'student'}],
+        normalizeLessonSections:()=>[{id:'section',activities:[{type:'open-answer'}]}],liveStudentsForGroup:()=>[{id:'student'}],liveProgressRows:new Map(),
         window:{scrollX:0,scrollY:700,SlovaLiveDOM:{patch:(old,next)=>calls.push([old,next])},scrollTo:position=>calls.push(position)},
         document:{createElement:()=>({set innerHTML(value){this.html=value;},content:{...fresh,firstElementChild:{updated:true}}})},
         pageContent:{querySelectorAll:selector=>selector==='[data-live-progress-index]'?[panel]:[],querySelector:()=>null},

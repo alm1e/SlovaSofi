@@ -236,33 +236,35 @@ test('a late legacy write during rollout is merged by timestamp without affectin
     assert.equal(result['b'+id(1)].response,'new');assert.equal(result.a0,undefined);assert.equal(result['b'+id(2)],undefined);
 });
 
-test('only enabled photos accept drafts and count towards answer progress',async()=>{
+test('photo progress keeps historical answers while only enabled photos accept new drafts',async()=>{
  const url='https://school.example/photo.png',pen={type:'pen',color:'#e53935',width:4,points:[[20,30],[60,70]]};
  const annotations={[url]:[pen]},e=engine([
   {id:id(1),type:'image',content:url,answer:'',settings:{photoInteractive:true,imageAnnotations:annotations}},
   {id:id(2),type:'multiple-choice',content:'yes\nno',answer:'yes'},
-  {id:id(3),type:'image',content:url,answer:'',settings:{imageAnnotations:annotations}}
+  {id:id(3),type:'image',content:url,answer:'',settings:{imageAnnotations:annotations}},
+  {id:id(4),type:'image',content:url,answer:'',settings:{photoInteractive:false}}
  ]);
  const response=JSON.stringify(annotations);
- e.seedProgress({['b'+id(3)]:{response,correct:null,draft:true}});
+ e.seedProgress({['b'+id(3)]:{response,correct:null,draft:true},['b'+id(4)]:{response:'{}',correct:null,draft:true}});
  let loaded=(await e.request({action:'load'})).body.lesson;
  assert.deepEqual(loaded.sections[0].activities[0].imageAnnotations,annotations);
  assert.equal(loaded.sections[0].activities[0].photoInteractive,true);
  assert.equal(loaded.sections[0].activities[2].photoInteractive,false);
- assert.equal(loaded.progressActivityCount,2);
- assert.equal(loaded.answeredCount,0);
+ assert.equal(loaded.progressActivityCount,3);
+ assert.equal(loaded.answeredCount,1);
  assert.equal((await e.write(2,response,'save-draft')).status,400);
  assert.equal((await e.write(0,response,'save-draft')).status,200);
  loaded=(await e.request({action:'load'})).body.lesson;
  assert.equal(loaded.progress['b'+id(1)].response,response);
- assert.equal(loaded.progressActivityCount,2);assert.equal(loaded.answeredCount,1);assert.equal(loaded.completed,false);
- assert.equal((await e.request({action:'list'})).body.lessons[0].answeredCount,1);
+ assert.equal(loaded.progressActivityCount,3);assert.equal(loaded.answeredCount,2);assert.equal(loaded.completed,false);
+ assert.equal((await e.request({action:'list'})).body.lessons[0].answeredCount,2);
  const writes=e.writes;
  for(const invalid of [JSON.stringify({'https://other.example/photo.png':[pen]}),JSON.stringify({[url]:[{...pen,points:[[-1,0]]}]}),'x'.repeat(60001)])assert.equal((await e.write(0,invalid,'save-draft')).status,400);
  assert.equal(e.writes,writes);
  assert.equal((await e.write(0,'{}','save-draft')).status,200);
  loaded=(await e.request({action:'load'})).body.lesson;assert.equal(loaded.progress['b'+id(1)].response,'{}');assert.deepEqual(loaded.sections[0].activities[0].imageAnnotations,annotations);
- assert.equal(loaded.answeredCount,0);
+ assert.equal(loaded.answeredCount,1);
+ assert.equal(loaded.progress['b'+id(3)].response,response);
 });
 
 test('photo fields restore typed answers and reject forged fields or coordinates',async()=>{
@@ -278,7 +280,7 @@ test('photo fields restore typed answers and reject forged fields or coordinates
  e.lesson.activities[0].settings.photoInteractive=false;
  lesson=(await e.request({action:'load'})).body.lesson;
  assert.equal(lesson.progressActivityCount,0);
- assert.deepEqual(lesson.sections[0].activities[0].imageAnnotations,{});
+ assert.deepEqual(lesson.sections[0].activities[0].imageAnnotations,{[url]:[field]});
  assert.equal((await e.write(0,answer,'save-draft')).status,400);
 });
 

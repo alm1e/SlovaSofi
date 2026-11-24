@@ -49,7 +49,7 @@ function createEditorContext() {
         "addActivityQuestion", "renderActivityQuestionEditor", "activitySummary", "activityEditorMeta",
         "duplicateBlockButton", "previewText", "previewTokens", "previewLines", "previewMediaUrl",
         "previewFlashcardSideMarkup", "previewVideoEmbedUrl", "renderPreviewActivity", "checkPreviewActivity",
-        "renderSupplementaryPreview", "renderActivityBlocks", "activityEditorIcon", "renderBuilderPreview", "formatLiveCorrectAnswer",
+        "renderSupplementaryPreview", "renderActivityBlocks", "renderActivityBlock", "previewActivityEditButton", "activityEditorIcon", "renderBuilderPreview", "renderPreviewPhotoMaterial", "teacherPhotoText", "formatLiveCorrectAnswer",
         "previewRichContent", "renderFillBlankEditor", "contentHint", "renderActivityAnswerField", "preventLessonInputSubmit", "answerHint", "contentPlaceholder", "answerPlaceholder",
         "richTextToolbar", "activitySettingsPlaceholder", "activityMetadataEditor", "activitySettingsField", "updateActivitySettings", "activityAuthoringContext", "refreshActivityAuthoring", "bindActivityAuthoring"
     ]) {
@@ -72,7 +72,7 @@ test("all 21 activity types have an expanded editor and student preview", () => 
         assert.match(markup, /class="builder-block-editor"/);
         assert.match(markup, /class="builder-block-preview"/);
         assert.match(markup, /class="builder-preview-body"/);
-        assert.match(markup, /Practice answers here are not saved/);
+        assert.match(markup, id === "image" ? /Photo annotations/ : /Practice answers here are not saved/);
         assert.equal(JSON.stringify(block), before, `${id}: preview changed draft`);
         assert.doesNotMatch(markup,/data-field="answer"|data-preview-field="answer"|data-preview-question-field="answer"|data-tf-answer/);
     }
@@ -115,7 +115,9 @@ test("all activity editors render in Slovak and Kazakh while preserving authored
             const html = editor.renderActivityBlocks([block]);
             assert.match(html, /Slovenské zadanie/);
             assert.doesNotMatch(html, /undefined/);
-            assert.match(html, language === 'sk' ? /Skúšobné odpovede sa tu neukladajú/ : /Сынақ жауаптары мұнда сақталмайды/);
+            assert.match(html, id === 'image'
+                ? (language === 'sk' ? /Poznámky v obrázku/ : /Фотосуреттегі белгілер/)
+                : (language === 'sk' ? /Skúšobné odpovede sa tu neukladajú/ : /Сынақ жауаптары мұнда сақталмайды/));
             assert.equal(JSON.stringify(block), before);
         }
     }

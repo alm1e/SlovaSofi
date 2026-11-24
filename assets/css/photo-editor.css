@@ -11,3 +11,5 @@
 .photo-teacher-notes{margin:14px 0}.photo-teacher-notes>summary{cursor:pointer;font-weight:600;padding:10px 0}.photo-teacher-notes[open]{border-top:1px solid #7e9b9166}
 
 [data-photo-retry-save][hidden]{display:none!important}
+.photo-saved-text { overflow-wrap: anywhere; margin-block: 12px; }
+.live-answer-inline > .photo-saved-text { grid-column: 1 / -1; }

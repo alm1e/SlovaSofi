@@ -72,6 +72,33 @@ test("single file and imported original uploads both validate pixels before stor
     await ctx.uploadLessonImage(valid, true);
     assert.equal(uploads[1][1], valid);
 });
+test("copying an annotated photo into lesson storage keeps the marks attached to that photo", async () => {
+    const sourceUrl = "https://example.test/photo.png";
+    const storedUrl = "https://school.example/lesson-images/photo.png";
+    const secondUrl = "https://example.test/second.png";
+    const mark = {type: "input", id: "word", x: 100, y: 100, w: 80, h: 35, text: "Áno"};
+    const block = {content: `${sourceUrl}\n${secondUrl}`, settings: {photoInteractive: false, imageAnnotations: {
+        [sourceUrl]: [mark],
+        [secondUrl]: [mark]
+    }}};
+    const textarea = {value: block.content, disabled: false};
+    const ctx = vm.createContext({
+        currentLanguage: "en", imageUploadMessages: { en: {} }, Blob, atob, console,
+        showToast() {}, uploadLessonImage: async () => storedUrl,
+        window: {
+            slovaGallery: {parse: address => [{url: new URL(address).href}]},
+            SlovaPhotoAnnotations: require('./photo-annotations.js'),
+            supabaseClient: {functions: {invoke: async () => ({data: {base64: "AA==", contentType: "image/png"}})}}
+        }
+    });
+    vm.runInContext(fn("attachImageToBlock"), ctx);
+    assert.equal(await ctx.attachImageToBlock(null, textarea, block, sourceUrl), true);
+    assert.equal(textarea.value, `${storedUrl}\n${secondUrl}`);
+    assert.deepEqual(block.settings.imageAnnotations[storedUrl], [mark]);
+    assert.deepEqual(block.settings.imageAnnotations[secondUrl], [mark]);
+    assert.equal(block.settings.imageAnnotations[sourceUrl], undefined);
+    assert.equal(block.settings.photoInteractive, false);
+});
 test("a white JPEG is rejected while a decoded picture with varied colours is encoded", async () => {
     let pixels = new Uint8ClampedArray([255, 255, 255, 255, 255, 255, 255, 255]);
     let encoded = false, closed = 0;

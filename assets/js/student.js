@@ -275,8 +275,10 @@
         "sentence-order", "true-false", "table", "match", "columns", "open-answer", "flashcards",
         "pronunciation-recording", "listening-questions", "find-error"
     ]);
-    const progressActivitiesFor = (lesson) => activitiesFor(lesson).flatMap((activity) => {
-        if (!answerableActivityTypes.has(activity.type) && !window.SlovaPhotoAnnotations?.isInteractive(activity)) return [];
+    const progressActivitiesFor = (lesson, answers = lesson.progress) => activitiesFor(lesson).flatMap((activity) => {
+        const photos = window.SlovaPhotoAnnotations;
+        const savedPhotoAnswer = activity.type === "image" && photos?.hasContent(savedActivityAnswer(activity, answers)?.response);
+        if (!answerableActivityTypes.has(activity.type) && !photos?.isInteractive(activity) && !savedPhotoAnswer) return [];
         return Array.isArray(activity.questions) && activity.questions.length
             ? activity.questions.map((question, questionIndex) => ({
                 activity,
@@ -306,13 +308,13 @@
     }
     function answeredCountFor(lesson, answers = lesson.progress) {
         if (Array.isArray(lesson.sections)) {
-            return progressActivitiesFor(lesson).filter(({ activity, questionId, questionIndex }) => {
+            return progressActivitiesFor(lesson, answers).filter(({ activity, questionId, questionIndex }) => {
                 if (!Number.isInteger(activity.index)) return false;
                 const key = questionId
                     ? `${activityProgressKey(activity, activity.index)}.q${questionId}`
                     : activityProgressKey(activity, activity.index);
                 const legacyKey = legacyActivityProgressKey(activity, activity.index);
-                const answer = answers?.[key]
+                const answer = !questionId ? savedActivityAnswer(activity, answers) : answers?.[key]
                     || (questionId && legacyKey ? answers?.[`${legacyKey}.q${questionId}`] : null)
                     || ((questionIndex === 0 || !questionId) && legacyKey ? answers?.[legacyKey] : null);
                 return activity.type === "image" ? window.SlovaPhotoAnnotations.hasContent(answer?.response) : hasAnswerResponse(answer?.response);
@@ -533,12 +535,18 @@
             : null;
     }
 
+    function savedActivityAnswer(activity, answers) {
+        const index = activity.index;
+        if (!Number.isInteger(index)) return null;
+        const legacyKey = legacyActivityProgressKey(activity, index);
+        return answers?.[activityProgressKey(activity, index)] || (legacyKey ? answers?.[legacyKey] : null) || null;
+    }
+
     function progressForActivity(lesson, activity) {
         const index = activity.index;
-        const legacyKey = legacyActivityProgressKey(activity, index);
         const pending = lesson.id === openedLesson?.id ? pendingDrafts.get(activityDraftKey(index, null)) : null;
         if (pending) return { response: pending.response, draft: true };
-        return lesson.progress?.[activityProgressKey(activity, index)] || (legacyKey ? lesson.progress?.[legacyKey] : null) || null;
+        return savedActivityAnswer(activity, lesson.progress);
     }
 
     function progressForQuestion(lesson, activity, index, questionId, questionIndex) {
@@ -673,6 +681,7 @@
     function renderActivityItem(activity, index, questionIndex, saved) {
         const savedResponse = saved?.response;
         const interactivePhoto = window.SlovaPhotoAnnotations?.isInteractive(activity);
+        const savedPhoto = activity.type === "image" && window.SlovaPhotoAnnotations?.hasContent(savedResponse);
         const radioName = questionIndex === null ? `student-answer-${index}` : `student-answer-${index}-${questionIndex}`;
         let body = "";
         let controls = "";
@@ -781,8 +790,10 @@
             else if (interactivePhoto) {
                 body = window.SlovaPhotoEditor.markup(images, annotations, window.SlovaPhotoAnnotations.read(savedResponse), true, language, {direct:true})
                     + '<input type="hidden" data-answer-kind="photo">';
-            } else if (Object.keys(annotations).length) body = window.SlovaPhotoEditor.markup(images, annotations, {}, false, language);
+            } else if (savedPhoto) body = window.SlovaPhotoEditor.markup(images, activity.imageAnnotations || {}, savedResponse, false, language);
+            else if (Object.keys(annotations).length) body = window.SlovaPhotoEditor.markup(images, annotations, {}, false, language);
             else body = window.slovaGallery.html(images, activity.alt || activity.prompt || text("imageAlt"), "student-activity-image");
+            if (savedPhoto) body += window.SlovaPhotoEditor.savedText(images, activity.imageAnnotations, savedResponse, language);
         } else if (activity.type === "audio" || activity.type === "video") {
             const embed = activity.type === "video" ? videoEmbedUrl(activity.content) : "";
             const source = mediaUrl(activity.content);
@@ -804,7 +815,7 @@
                     : saved?.correct === null ? text("submitted") : "";
         const isQuestion = Number.isInteger(questionIndex);
         const canSubmit = activity.type!=="find-error" && Boolean(activity.gradable || activity.reviewRequired);
-        const feedbackMarkup = canSubmit || activity.type === "flashcards" || interactivePhoto
+        const feedbackMarkup = canSubmit || activity.type === "flashcards" || interactivePhoto || savedPhoto
             ? `<p class="student-answer-feedback ${!incompleteResponse && saved?.correct === true ? "is-correct" : !incompleteResponse && saved?.correct === false ? "is-incorrect" : ""}" data-answer-feedback aria-live="polite">${escapeHtml([feedback, saved?.feedback].filter(Boolean).join(" "))}</p>`
             : "";
         const photoRetry = interactivePhoto ? `<button type="button" class="button secondary small" data-retry-answer-save data-photo-retry-save ${photoPending&&saveState==='error'?'':'hidden'}>${escapeHtml(text('retrySave'))}</button>` : '';

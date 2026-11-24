@@ -580,7 +580,7 @@ function safeActivity(activity: Activity): Record<string, unknown> {
                 return { url: markdown ? markdown[2] : line, alt: markdown ? markdown[1] : "" };
             });
             const photoInteractive = photoAnnotations.isInteractive(activity);
-            return { type: activity.type, prompt, content: images.map((image) => image.url).join("\n"), alt: images[0]?.alt || prompt, photoInteractive, imageAnnotations: photoAnnotations.forDisplay(settings?.imageAnnotations, photoInteractive) };
+            return { type: activity.type, prompt, content: images.map((image) => image.url).join("\n"), alt: images[0]?.alt || prompt, photoInteractive, imageAnnotations: photoAnnotations.forDisplay(settings?.imageAnnotations, true) };
         }
         case "pronunciation-recording":
             return { type: activity.type, prompt, content: activity.content, reviewRequired: true };
@@ -867,12 +867,17 @@ function normalizeOpenAnswerResponse(response: unknown): OpenAnswerResponse | nu
 
 function progressSummary(activities: Activity[], value: unknown): { progressActivityCount: number; answeredCount: number } {
     const answers = canonicalProgress(activities, value);
-    const answerableItems = activityProgressItems(activities).filter(({ activity }) => acceptsAnswer(activity));
-    const answeredCount = answerableItems.filter((item) => {
+    let progressActivityCount = 0;
+    let answeredCount = 0;
+    for (const item of activityProgressItems(activities)) {
         const response = progressEntry(answers, item)?.response;
-        return item.activity.type === "image" ? photoAnnotations.hasContent(response) : hasAnswerResponse(response);
-    }).length;
-    return { progressActivityCount: answerableItems.length, answeredCount };
+        const photo = item.activity.type === "image";
+        const answered = photo ? photoAnnotations.hasContent(response) : hasAnswerResponse(response);
+        if (!acceptsAnswer(item.activity) && !(photo && answered)) continue;
+        progressActivityCount++;
+        if (answered) answeredCount++;
+    }
+    return { progressActivityCount, answeredCount };
 }
 
 Deno.serve(async (request: Request) => {

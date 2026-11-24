@@ -210,15 +210,28 @@
  await run('Пометки учителя сохраняются в настройках и возвращаются в редактор',async()=>{
   currentLanguage='ru';reset();const section=data.lessons[0].sections[0];section.activities=[{id:'qa-photo',type:'image',content:'https://school.example/photo.png',settings:{}}];openLessonEditor(data.lessons[0],'qa-intro',0);
   const toggle=pageContent.querySelector('[data-photo-interactive-toggle]');assert(toggle&&!toggle.checked,'Обычное фото стало заданием автоматически');
-  toggle.click();assert(activeDraftSection().activities[0].settings.photoInteractive===true&&pageContent.querySelector('[data-builder-preview] [data-photo-tool="input"]'),'Не включилось написание на фото');toggle.click();
+  const panel=pageContent.querySelector('[data-builder-preview]');
+  const write=panel.querySelector('[data-photo-tool="input"]');
+  assert(write&&write.getClientRects().length,'Кнопка ввода скрыта, когда фото только для просмотра учеником');
+  toggle.click();assert(activeDraftSection().activities[0].settings.photoInteractive===true,'Не включилось написание на фото для ученика');toggle.click();
   assert(activeDraftSection().activities[0].settings.photoInteractive===false,'Не выключилось написание на фото');
-  const panel=[...pageContent.querySelectorAll('details')].find(el=>el.querySelector('summary')?.textContent.includes('на фото'));assert(panel,'Нет панели рисования');panel.open=true;panel.dispatchEvent(new Event('toggle'));
   let image=panel.querySelector('img');image.src='wide.svg';await image.decode();
+  write.click();
+  const firstCanvas=panel.querySelector('canvas'),firstRect=firstCanvas.getBoundingClientRect();
+  firstCanvas.dispatchEvent(new PointerEvent('pointerdown',{button:0,clientX:firstRect.left+firstRect.width*.5,clientY:firstRect.top+firstRect.height*.5,pointerId:1}));
+  const input=panel.querySelector('[data-photo-field-answer]');
+  assert(input&&!input.readOnly&&document.activeElement===input,'Ввод на фото не открывается');
+  input.value='Slovenský text';input.dispatchEvent(new InputEvent('input',{bubbles:true}));
+  assert(document.activeElement===input&&input.isConnected,'Сохранение текста прерывает ввод');
+  assert(activeDraftSection().activities[0].settings.imageAnnotations['https://school.example/photo.png'][0].text==='Slovenský text','Текст на фото не попал в редактор');
   panel.querySelector('[data-photo-tool="text"]').click();panel.querySelector('[data-photo-caption]').value='Подпись учителя';const canvas=panel.querySelector('canvas'),rect=canvas.getBoundingClientRect();canvas.dispatchEvent(new PointerEvent('pointerdown',{button:0,clientX:rect.left+10,clientY:rect.top+20,pointerId:1}));
-  const saved=activeDraftSection().activities[0].settings.imageAnnotations;assert(saved?.['https://school.example/photo.png']?.[0]?.text==='Подпись учителя','Настройки урока не обновились');
+  const saved=activeDraftSection().activities[0].settings.imageAnnotations;assert(saved?.['https://school.example/photo.png']?.some(op=>op.text==='Подпись учителя'),'Настройки урока не обновились');
   assert(pageContent.querySelector('[data-builder-preview] [data-photo-editor]'),'Пометки не попали в предварительный просмотр');
   const student={id:'qa-member',name:'Learner'},activity=activeDraftSection().activities[0];liveProgressRows.set(student.id,{answers:{[activityProgressKey(activity,0)]:{response:JSON.stringify(saved),correct:null,draft:true}}});const liveMarkup=renderLiveAnswerPanel(student,activity,0);assert(liveMarkup.includes('data-photo-editor')&&!liveMarkup.includes('data-photo-editable'),'Ответ не показывается учителю как рисунок');
-  panel.querySelector('[data-photo-clear]').click();assert(activeDraftSection().activities[0].settings.imageAnnotations['https://school.example/photo.png'].length===0,'Очистка не сохранена');
+  openLessonEditor({...data.lessons[0],sections:[{...section,activities:[structuredClone(activity)]}]},'qa-intro',0);
+  assert(pageContent.querySelector('[data-builder-preview] [data-photo-field-answer]')?.value==='Slovenský text','Текст не вернулся после открытия редактора');
+  const reopenedPanel=pageContent.querySelector('[data-builder-preview]');
+  reopenedPanel.querySelector('[data-photo-clear]').click();assert(activeDraftSection().activities[0].settings.imageAnnotations['https://school.example/photo.png'].length===0,'Очистка не сохранена');
  });
  await run('Учитель печатает прямо в фото в режиме урока и сохраняет без редактора',async()=>{
   const before={user:currentUser,api:window.teacherWorkspaceApi,client:window.supabaseClient};let fail=true;const writes=[];
